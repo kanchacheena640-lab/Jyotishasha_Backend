@@ -1,0 +1,53 @@
+{
+  "en": {
+    "heading_present": "Kaalsarp Dosh Detected",
+    "report_paragraph_present": [
+  "{dosh_type} has been detected. Rahu is placed in the {rahu_house} house, Ketu is in the {ketu_house} house, and {planets_between} planets are situated between them.",
+  "Kaalsarp Dosh is a unique astrological condition when all planets fall between Rahu and Ketu 🐍.",
+  "This alignment may bring challenges like delays, obstacles, and mental restlessness.",
+  "Remedies like worship of Lord Shiva, chanting of Mahamrityunjaya Mantra, and observing fast on Nag Panchami can bring relief 🔱.",
+  "Although it may sound intimidating, strong planetary yogas and a positive mindset can balance its effects. It is not a curse, but an opportunity for self-growth ✨."
+],
+    "general_explanation_present": "Kaalsarp Dosh may create hurdles in career, finance, or personal life depending on the chart.",
+    "remedies_present": ["Chant Maha Mrityunjaya Mantra", "Offer milk to Shivling", "Perform Kaalsarp Shanti Pooja"],
+
+    "heading_absent": "Kaalsarp Dosh Not Found",
+    "report_paragraph_absent": [
+  "{planets_outside} planets are placed outside the Rahu–Ketu axis, hence this dosh is not formed in your kundali.",
+  "Kaalsarp Dosh is a unique astrological condition when all planets fall between Rahu and Ketu 🐍.",
+  "This alignment can bring delays, challenges, and mental unrest in life.",
+  "Worship of Lord Shiva, chanting of Mahamrityunjaya Mantra, and fasting on Nag Panchami are known to bring relief 🔱.",
+  "While it may sound alarming, strong planetary yogas and a positive mindset can neutralize its impact. It is not a curse, but a chance for self-growth ✨."
+],
+    "general_explanation_absent": "Kaalsarp Dosh is a unique planetary alignment that may bring phases of emotional turbulence or uncertainty in life. However, it is not always negative — it can also spark deep spiritual growth and inner awakening. The key is to understand its influence and seek proper guidance to channel its energy positively.",
+    "remedies_absent": ["No specific remedy required."],
+
+    "summary_block": "Kaalsarp Dosh is said to occur when all planets lie between Rahu and Ketu. Depending on its type and placement, it can indicate struggles in personal or professional life. However, its effect varies based on other yogas and planetary strengths. Remedial measures can reduce its impact."
+  },
+
+  "hi": {
+    "heading_present": "कालसर्प दोष पाया गया",
+    "report_paragraph_present": [
+    "{dosh_type} पाया गया है। राहु {rahu_house} भाव में है, केतु {ketu_house} भाव में है और {planets_between} ग्रह इनके बीच में स्थित हैं।",
+    "Kaalsarp Dosh एक विशेष ज्योतिषीय स्थिति है, जब सभी ग्रह राहु और केतु के बीच आ जाते हैं 🐍।",
+      "यह योग जीवन में बाधाएं, देरी, और मानसिक अस्थिरता ला सकता है।",
+      "शिव पूजा, महामृत्युंजय जाप, और नाग पंचमी व्रत जैसे उपाय इससे राहत दिला सकते हैं 🔱।",
+      "हालांकि यह दोष डराने वाला लगता है, लेकिन मजबूत ग्रह योग और सकारात्मक दृष्टिकोण इसे संतुलित कर सकते हैं। यह एक चेतावनी नहीं, बल्कि आत्म-सुधार का अवसर हो सकता है ✨।"
+     ],
+    "general_explanation_present": "कालसर्प दोष जीवन में बाधाएं, देरी या मानसिक तनाव ला सकता है। हालांकि यह सभी पर समान प्रभाव नहीं डालता।",
+    "remedies_present": ["महामृत्युंजय मंत्र का जाप करें", "शिवलिंग पर दूध अर्पित करें", "कालसर्प दोष की शांति पूजा कराएं"],
+
+    "heading_absent": "कालसर्प दोष नहीं पाया गया",
+    "report_paragraph_absent": [
+      "{planets_outside} ग्रह राहु और केतु की धुरी के बाहर स्थित हैं, इसलिए आपकी कुंडली में यह दोष नहीं बनता।",
+      "Kaalsarp Dosh एक विशेष ज्योतिषीय स्थिति है, जब सभी ग्रह राहु और केतु के बीच आ जाते हैं 🐍।",
+      "यह योग जीवन में बाधाएं, देरी, और मानसिक अस्थिरता ला सकता है।",
+      "शिव पूजा, महामृत्युंजय जाप, और नाग पंचमी व्रत जैसे उपाय इससे राहत दिला सकते हैं 🔱।",
+      "हालांकि यह दोष डराने वाला लगता है, लेकिन मजबूत ग्रह योग और सकारात्मक दृष्टिकोण इसे संतुलित कर सकते हैं। यह एक चेतावनी नहीं, बल्कि आत्म-सुधार का अवसर हो सकता है ✨।"
+     ],
+    "general_explanation_absent": "कालसर्प दोष एक विशेष योग है जो व्यक्ति के जीवन में मानसिक दबाव, असमंजस या अस्थिरता ला सकता है। हालांकि यह दोष हमेशा नकारात्मक नहीं होता — यह व्यक्ति को आध्यात्मिक रूप से जागरूक भी बना सकता है। इससे जुड़े प्रभावों को समझना और सही मार्गदर्शन लेना ही इसका श्रेष्ठ समाधान है।",
+    "remedies_absent": ["कोई विशेष उपाय आवश्यक नहीं है।"],
+
+    "summary_block": "जब सभी ग्रह राहु और केतु के बीच आ जाते हैं तब कालसर्प दोष बनता है। इसका प्रभाव व्यक्ति के जीवन के विभिन्न क्षेत्रों में देखा जा सकता है जैसे करियर, मानसिक स्थिति, या पारिवारिक जीवन। हालांकि, इसकी तीव्रता कुंडली में अन्य योगों और ग्रहों की स्थिति पर निर्भर करती है। उचित उपाय करने से इसके प्रभाव को कम किया जा सकता है।"
+  }
+}

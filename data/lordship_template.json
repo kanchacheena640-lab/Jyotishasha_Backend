@@ -1,0 +1,49 @@
+{
+  "mahadasha_antardasha_template": {
+    "en": "You are currently under the influence of {maha_planet} Mahadasha and {antar_planet} Antardasha. {maha_sentence} {antar_sentence}",
+    "hi": "आप इस समय {maha_planet} की महादशा और {antar_planet} की अंतर्दशा से प्रभावित हैं। {maha_sentence} {antar_sentence}"
+  },
+  "template": {
+    "en": "{planet} is the lord of the {x}{x_unit}{and_y}{y}{y_unit}, and it is placed in the {house} house. This placement may influence {traits}.",
+    "hi": "{planet} {x}{x_unit}{and_y}{y}{y_unit} का स्वामी है और यह {house} भाव में स्थित है। यह स्थिति {traits} को प्रभावित कर सकती है।"
+  },
+  "special_planets": {
+    "Rahu": {
+      "en": "{planet} does not rule any house but is currently placed in the {house} house. This placement may affect {traits}.",
+      "hi": "{planet} किसी भाव का स्वामी नहीं होता, लेकिन यह {house} भाव में स्थित है और {traits} को प्रभावित कर सकता है।"
+    },
+    "Ketu": {
+      "en": "{planet} is a karmic planet and not the lord of any house. Its placement in the {house} house may influence {traits}.",
+      "hi": "{planet} एक कार्मिक ग्रह है और किसी भाव का स्वामी नहीं होता। इसका {house} भाव में होना {traits} को प्रभावित कर सकता है।"
+    }
+  },
+  "lordship_rules": {
+    "Sun": [5],
+    "Moon": [4],
+    "Mars": [1, 8],
+    "Mercury": [3, 6],
+    "Jupiter": [9, 12],
+    "Venus": [2, 7],
+    "Saturn": [10, 11]
+  },
+  "planet_labels": {
+    "en": {
+      "Sun": "Sun", "Moon": "Moon", "Mars": "Mars", "Mercury": "Mercury",
+      "Jupiter": "Jupiter", "Venus": "Venus", "Saturn": "Saturn",
+      "Rahu": "Rahu", "Ketu": "Ketu"
+    },
+    "hi": {
+      "Sun": "सूर्य", "Moon": "चंद्रमा", "Mars": "मंगल", "Mercury": "बुध",
+      "Jupiter": "बृहस्पति", "Venus": "शुक्र", "Saturn": "शनि",
+      "Rahu": "राहु", "Ketu": "केतु"
+    }
+  },
+  "units": {
+    "en": {
+      "x_unit": " house", "y_unit": " house", "and_y": " and "
+    },
+    "hi": {
+      "x_unit": " भाव", "y_unit": " भाव", "and_y": " और "
+    }
+  }
+}

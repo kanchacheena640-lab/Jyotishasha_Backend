@@ -1,0 +1,30 @@
+{
+  "tool_id": "gemstone-suggestion",
+  "language": "en",
+  "main_report": "We have deeply analyzed your Kundali and found that {planet}, the most supportive and auspicious planet for you, holds the key to your growth, protection, and prosperity. Wearing its gemstone can bring lifelong benefits.",
+  "cta": {
+    "heading": "Looking for the right gemstone for love, career, or life goals? Get it Free",
+    "sections": [
+      {
+        "title": "❤️ Love Life Report",
+        "description": "Get a free gemstone suggestion to enhance your love life.",
+        "button_text": "Buy Now"
+      },
+      {
+        "title": "💼 Business Growth Report",
+        "description": "Unlock financial and career success with a free gemstone recommendation.",
+        "button_text": "Buy Now"
+      },
+      {
+        "title": "💍 Marriage Report",
+        "description": "Get a gemstone recommendation for stability and happiness in married life.",
+        "button_text": "Buy Now"
+      },
+      {
+        "title": "🌟 Personality Boost Report",
+        "description": "Discover the right gemstone to enhance your inner strength and aura.",
+        "button_text": "Buy Now"
+      }
+    ]
+  }
+}

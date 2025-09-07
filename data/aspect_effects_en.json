@@ -1,0 +1,29 @@
+  {
+    "Saturn": {
+      "description": "The aspect of Saturn on {planet} brings delays, seriousness, and karmic pressure, influencing these areas of life."
+    },
+    "Mars": {
+      "description": "The aspect of Mars on {planet} adds aggression, urgency, and intense drive, influencing these areas of life."
+    },
+    "Jupiter": {
+      "description": "The aspect of Jupiter on {planet} provides wisdom, protection, and spiritual upliftment, influencing these areas of life."
+    },
+    "Moon": {
+      "description": "The aspect of Moon on {planet} enhances emotional sensitivity, intuition, and fluctuation, influencing these areas of life."
+    },
+    "Venus": {
+      "description": "The aspect of Venus on {planet} adds charm, harmony, and a desire for comfort, influencing these areas of life."
+    },
+    "Mercury": {
+      "description": "The aspect of Mercury on {planet} improves logic, speech, and analytical thinking, influencing these areas of life."
+    },
+    "Sun": {
+      "description": "The aspect of Sun on {planet} increases confidence, ego, and vitality, influencing these areas of life."
+    },
+    "Rahu": {
+      "description": "The aspect of Rahu on {planet} creates intensity, obsession, and illusion, influencing these areas of life."
+    },
+    "Ketu": {
+      "description": "The aspect of Ketu on {planet} brings detachment, spiritual awakening, and unpredictability, influencing these areas of life."
+    }
+  }

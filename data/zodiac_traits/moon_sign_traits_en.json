@@ -1,0 +1,98 @@
+{
+  "Aries": {
+    "title": "Your Moon Sign is Aries (Mesh)",
+    "personality": "🧠 Nature:\nBold, honest, quick-tempered, but soft-hearted. Loves independence, hates delays.\n\n❤️ Love Nature:\nPassionate, loyal, intense. Gets attached fast, a bit possessive.\n\n🪔 Spiritual Tip:\nWorship Hanuman or Mars (Mangal).\nMantra: Om Angarakaya Namah",
+    "element": "Fire",
+    "symbol": "Ram",
+    "ruling_planet": "Mars",
+    "image": "/Zodiac/aries.png"
+  },
+  "Taurus": {
+    "title": "Your Moon Sign is Taurus (Vrishabh)",
+    "personality": "🧠 Nature:\nCalm, grounded, and determined. Loves beauty, luxury, and routine.\n\n❤️ Love Nature:\nLoyal, slow to open up, but deeply committed. May be possessive.\n\n🪔 Spiritual Tip:\nWorship Lakshmi or Venus (Shukra).\nMantra: Om Shrim Shukraya Namah",
+    "element": "Earth",
+    "symbol": "Bull",
+    "ruling_planet": "Venus",
+    "image": "/Zodiac/taurus.png"
+  },
+  "Gemini": {
+    "title": "Your Moon Sign is Gemini (Mithun)",
+    "personality": "🧠 Nature:\nSmart, curious, talkative, and quick-witted. Loves change and variety.\n\n❤️ Love Nature:\nPlayful, flirty, but inconsistent. Needs mental stimulation in love.\n\n🪔 Spiritual Tip:\nWorship Lord Vishnu or Mercury (Budh).\nMantra: Om Bum Budhaya Namah",
+    "element": "Air",
+    "symbol": "Twins",
+    "ruling_planet": "Mercury",
+    "image": "/Zodiac/gemini.png"
+  },
+  "Cancer": {
+    "title": "Your Moon Sign is Cancer (Karka)",
+    "personality": "🧠 Nature:\nEmotional, nurturing, and intuitive. Highly protective of loved ones.\n\n❤️ Love Nature:\nLoyal and loving, but moody. Needs emotional security in relationships.\n\n🪔 Spiritual Tip:\nWorship Lord Shiva or Moon (Chandra).\nMantra: Om Chandraya Namah",
+    "element": "Water",
+    "symbol": "Crab",
+    "ruling_planet": "Moon",
+    "image": "/Zodiac/cancer.png"
+  },
+  "Leo": {
+    "title": "Your Moon Sign is Leo (Simha)",
+    "personality": "🧠 Nature:\nProud, bold, and creative. Loves attention and leadership roles.\n\n❤️ Love Nature:\nRomantic, loyal, and expressive. Needs admiration from their partner.\n\n🪔 Spiritual Tip:\nWorship Sun (Surya) or recite Aditya Hridayam.\nMantra: Om Suryaya Namah",
+    "element": "Fire",
+    "symbol": "Lion",
+    "ruling_planet": "Sun",
+    "image": "/Zodiac/leo.png"
+  },
+  "Virgo": {
+    "title": "Your Moon Sign is Virgo (Kanya)",
+    "personality": "🧠 Nature:\nAnalytical, detail-oriented, and modest. Loves cleanliness and order.\n\n❤️ Love Nature:\nCaring and loyal, but critical at times. Shows love through actions.\n\n🪔 Spiritual Tip:\nWorship Lord Vishnu or Mercury (Budh).\nMantra: Om Namo Bhagavate Vasudevaya",
+    "element": "Earth",
+    "symbol": "Virgin",
+    "ruling_planet": "Mercury",
+    "image": "/Zodiac/virgo.png"
+  },
+  "Libra": {
+    "title": "Your Moon Sign is Libra (Tula)",
+    "personality": "🧠 Nature:\nCharming, balanced, and diplomatic. Seeks fairness and beauty in life.\n\n❤️ Love Nature:\nRomantic and peace-loving. Hates conflict, loves harmony in relationships.\n\n🪔 Spiritual Tip:\nWorship Goddess Lakshmi or Venus (Shukra).\nMantra: Om Shrim Mahalakshmyai Namah",
+    "element": "Air",
+    "symbol": "Balance",
+    "ruling_planet": "Venus",
+    "image": "/Zodiac/libra.png"
+  },
+  "Scorpio": {
+    "title": "Your Moon Sign is Scorpio (Vrishchik)",
+    "personality": "🧠 Nature:\nIntense, secretive, and powerful. Loves depth and emotional intensity.\n\n❤️ Love Nature:\nPassionate, possessive, and loyal. Struggles with trust but loves deeply.\n\n🪔 Spiritual Tip:\nWorship Lord Hanuman or Mars (Mangal).\nMantra: Om Hanumate Namah",
+    "element": "Water",
+    "symbol": "Scorpion",
+    "ruling_planet": "Mars",
+    "image": "/Zodiac/scorpio.png"
+  },
+  "Sagittarius": {
+    "title": "Your Moon Sign is Sagittarius (Dhanu)",
+    "personality": "🧠 Nature:\nAdventurous, optimistic, and spiritual. Loves freedom and exploration.\n\n❤️ Love Nature:\nHonest and open, but commitment-shy. Loves a partner who shares ideals.\n\n🪔 Spiritual Tip:\nWorship Lord Vishnu or Jupiter (Guru).\nMantra: Om Brim Brihaspataye Namah",
+    "element": "Fire",
+    "symbol": "Archer",
+    "ruling_planet": "Jupiter",
+    "image": "/Zodiac/sagittarius.png"
+  },
+  "Capricorn": {
+    "title": "Your Moon Sign is Capricorn (Makar)",
+    "personality": "🧠 Nature:\nDisciplined, practical, and responsible. Goal-oriented and hardworking.\n\n❤️ Love Nature:\nReserved but loyal. Shows love through stability and long-term vision.\n\n🪔 Spiritual Tip:\nWorship Lord Shani or Saturn (Shani).\nMantra: Om Sham Shanicharaya Namah",
+    "element": "Earth",
+    "symbol": "Mountain Goat",
+    "ruling_planet": "Saturn",
+    "image": "/Zodiac/capricorn.png"
+  },
+  "Aquarius": {
+    "title": "Your Moon Sign is Aquarius (Kumbh)",
+    "personality": "🧠 Nature:\nInnovative, independent, and humanitarian. Thinks outside the box.\n\n❤️ Love Nature:\nUnconventional, friendly, but detached. Loves intellectual bonding.\n\n🪔 Spiritual Tip:\nWorship Lord Shiva or Saturn (Shani).\nMantra: Om Namah Shivaya",
+    "element": "Air",
+    "symbol": "Water Bearer",
+    "ruling_planet": "Saturn",
+    "image": "/Zodiac/aquarius.png"
+  },
+  "Pisces": {
+    "title": "Your Moon Sign is Pisces (Meen)",
+    "personality": "🧠 Nature:\nDreamy, sensitive, and imaginative. Deeply emotional and intuitive.\n\n❤️ Love Nature:\nRomantic and selfless. Sometimes overly idealistic or escapist.\n\n🪔 Spiritual Tip:\nWorship Lord Vishnu or Jupiter (Guru).\nMantra: Om Namo Narayanaya",
+    "element": "Water",
+    "symbol": "Fishes",
+    "ruling_planet": "Jupiter",
+    "image": "/Zodiac/pisces.png"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "Exalted": {
+    "description": "{planet} is exalted in your chart, giving it immense strength and positive expression. This enhances the planet's blessings in all related areas of life."
+  },
+  "Debilitated": {
+    "description": "{planet} is debilitated in your chart, which may weaken its natural qualities and create internal struggles. Conscious effort is needed to balance this influence."
+  },
+  "Own Sign": {
+    "description": "{planet} is in its own sign in your chart, providing balance, comfort, and a natural flow of its energies in your life."
+  },
+  "Friendly Sign": {
+    "description": "{planet} is placed in a friendly sign, allowing it to function smoothly and support your growth in relevant aspects."
+  },
+  "Enemy Sign": {
+    "description": "{planet} is in an enemy sign, which may bring friction and inconsistency in its results. Effort and remedies can help align this energy."
+  },
+  "Neutral": {
+    "description": "{planet} is in a neutral sign, leading to moderate results — neither too strong nor too weak — in its areas of influence."
+  }
+}

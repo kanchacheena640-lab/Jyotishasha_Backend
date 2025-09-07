@@ -1,0 +1,17 @@
+{
+  "Strong": {
+    "heading": "You are Mangalik",
+    "description": "As per Vedic Astrology rules, you are Mangalik because your Mars is situated in the {mars_house_no} house. This may cause conflicts in your relationships, delays in marriage, or domestic stress.",
+    "remedy": "Recite Hanuman Chalisa on Tuesdays and donate red lentils on the same day. Practicing anger management will benefit you greatly."
+  },
+  "Cancelled": {
+    "heading": "Your Mangal Dosh is cancelled",
+    "description": "As per Vedic Astrology rules, you are Mangalik because your Mars is situated in the {mars_house_no} house, but you're fortunate that Mars is in {mars_sign}, which is its Own/Exalted sign. This nullifies your Mangal Dosh.",
+    "remedy": "Chanting Shiva mantras and controlling anger is beneficial for you."
+  },
+  "None": {
+    "heading": "You are 100% Non-Mangalik",
+    "description": "Your Mars placement does not fulfill any Mangal Dosh condition. You are free from Mangalik influences.",
+    "remedy": "No remedy needed. Enjoy peace and harmony in your relationships."
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "Aries": {
+    "en": "Your Lagna is Aries. You are courageous, bold, and action-oriented. Your personality reflects leadership and drive.",
+    "hi": "आपका लग्न मेष है। आप साहसी, निडर और कर्मशील हैं। आपके स्वभाव में नेतृत्व की भावना होती है।"
+  },
+  "Taurus": {
+    "en": "Your Lagna is Taurus. You are grounded, stable, and sensual. You value beauty and persistence.",
+    "hi": "आपका लग्न वृषभ है। आप स्थिर, व्यावहारिक और सौंदर्य प्रेमी हैं। आप अपने लक्ष्यों के प्रति अटल रहते हैं।"
+  },
+  "Gemini": {
+    "en": "Your Lagna is Gemini. You are witty, curious, and a communicator. You enjoy learning and sharing knowledge.",
+    "hi": "आपका लग्न मिथुन है। आप चतुर, जिज्ञासु और संवादप्रिय हैं। आपको ज्ञान प्राप्त करना और साझा करना पसंद है।"
+  },
+  "Cancer": {
+    "en": "Your Lagna is Cancer. You are emotional, nurturing, and protective. You deeply value home and relationships.",
+    "hi": "आपका लग्न कर्क है। आप संवेदनशील, स्नेही और रक्षक प्रवृत्ति के हैं। आपको घर और संबंधों से विशेष लगाव होता है।"
+  },
+  "Leo": {
+    "en": "Your Lagna is Leo. You are confident, charismatic, and ambitious. Leadership comes naturally to you.",
+    "hi": "आपका लग्न सिंह है। आप आत्मविश्वासी, आकर्षक और महत्वाकांक्षी हैं। आप स्वाभाविक नेता होते हैं।"
+  },
+  "Virgo": {
+    "en": "Your Lagna is Virgo. You are analytical, detail-oriented, and service-driven.",
+    "hi": "आपका लग्न कन्या है। आप विश्लेषणात्मक, सूक्ष्मदर्शी और सेवा भाव रखने वाले व्यक्ति हैं।"
+  },
+  "Libra": {
+    "en": "Your Lagna is Libra. You are diplomatic, balanced, and peace-loving.",
+    "hi": "आपका लग्न तुला है। आप संतुलित, कूटनीतिक और शांति प्रिय स्वभाव के हैं।"
+  },
+  "Scorpio": {
+    "en": "Your Lagna is Scorpio. You are intense, mysterious, and transformational.",
+    "hi": "आपका लग्न वृश्चिक है। आप गंभीर, रहस्यमयी और परिवर्तनकारी स्वभाव के हैं।"
+  },
+  "Sagittarius": {
+    "en": "Your Lagna is Sagittarius. You are adventurous, optimistic, and truth-seeking.",
+    "hi": "आपका लग्न धनु है। आप साहसी, आशावादी और सत्य की खोज में रहने वाले होते हैं।"
+  },
+  "Capricorn": {
+    "en": "Your Lagna is Capricorn. You are disciplined, ambitious, and grounded.",
+    "hi": "आपका लग्न मकर है। आप अनुशासित, महत्वाकांक्षी और व्यावहारिक स्वभाव के हैं।"
+  },
+  "Aquarius": {
+    "en": "Your Lagna is Aquarius. You are visionary, unique, and humanitarian.",
+    "hi": "आपका लग्न कुंभ है। आप दूरदर्शी, विशिष्ट और मानवतावादी प्रवृत्ति के हैं।"
+  },
+  "Pisces": {
+    "en": "Your Lagna is Pisces. You are imaginative, spiritual, and empathetic.",
+    "hi": "आपका लग्न मीन है। आप कल्पनाशील, आध्यात्मिक और सहानुभूति रखने वाले व्यक्ति हैं।"
+  }
+}

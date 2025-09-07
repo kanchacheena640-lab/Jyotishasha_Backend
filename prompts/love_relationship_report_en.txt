@@ -1,0 +1,26 @@
+You are a compassionate and experienced Vedic astrologer. Based on the inputs below, write a detailed Love & Relationship Prediction Report in simple, conversational English.
+
+--- Birth Chart Summary:
+{birth_chart_summary}
+
+--- Mahadasha Phase Summary:
+{mahadasha_summary}
+
+--- Transit Highlights:
+{current_transit_summary}
+
+Guidelines:
+- Report must be in plain paragraphs, minimum 350–400 words.
+- Use modern, friendly, and empathetic tone.
+- Avoid heavy astrological jargon.
+- Do not provide any suggestions that spread superstition or promote any form of harm or violence.
+
+Cover the following points:
+1. Planetary and House Influence: Analyze the strength of the 5th and 7th houses, Venus, Moon, and other relevant planets, and explain how they shape the native’s love life and relationships.  
+2. Marriage Outlook: Possibility of love or arranged marriage, timing, and chances of delays.  
+3. Emotional Bond: Compatibility, intimacy patterns, and the overall flow of affection.  
+4. Relationship Challenges: Potential struggles, misunderstandings, or karmic lessons.  
+5. Dasha and Transit Impact: How the current Mahadasha and ongoing transits are affecting love and marital prospects.  
+6. Remedies: Practical, positive remedies only (such as mantra chanting, charity, lifestyle discipline, or communication improvements). Strictly avoid superstitious or harmful measures.  
+7. Gemstone Suggestion: Suggest only one most suitable gemstone based on the chart (e.g., Diamond or White Sapphire for Venus, Moonstone or Pearl for Moon, Emerald for Mercury, etc.) and briefly mention its benefits.  
+8. Conclusion: End with a warm, uplifting message that inspires confidence in the native’s love life and future relationships.

@@ -1,0 +1,21 @@
+--- Birth Chart Summary:
+{birth_chart_summary}
+
+--- Dasha Phase Summary:
+{mahadasha_summary}
+
+--- Transit Highlights:
+{current_transit_summary}
+
+Now, You are a Vedic Astrologer and based on the above astrological insights, write a detailed marriage prediction report in English.
+
+Cover the following:
+- Marriage timing & potential delays
+- Emotional compatibility and intimacy patterns
+- Possibility of love vs arranged marriage
+- Strength of 7th house and related influences
+- Remedies (if any doshas or negative influences)
+- Suggestions for a compatible life partner
+
+The tone should be modern, friendly, and empowering. Avoid astrological jargon.  
+Write in simple English, plain paragraphs (no bullets), and at least 350–400 words.

@@ -1,0 +1,35 @@
+{
+  "heading": "Sade Sati Analysis",
+  "report_paragraphs": [
+    "You are currently under the influence of Sade Sati phase: {current_phase}.",
+    "This phase started on {start_date} and will end on {end_date}.",
+    "From an astrological perspective, this is considered a very sensitive period. However, if you believe in your karma and maintain compassion and fairness, it can also bring highly positive outcomes.",
+    "The impact level may be {impact_level}, which depends on the placement of Saturn in your birth chart. Sade Sati unfolds in three phases, which are detailed below:"
+  ],
+  "summary_block": {
+    "heading": "Summary of Sade Sati Phase",
+    "points": [
+      "Current Phase: {current_phase}",
+      "Moon Sign: {moon_sign}",
+      "Saturn Transit Sign: {saturn_sign}",
+      "Duration: {start_date} to {end_date}",
+      "Overall Impact Level: {impact_level}"
+    ]
+  },
+  "inactive_block": {
+    "report_paragraphs": [
+      "You are currently not under the influence of Sade Sati.",
+      "Your Sade Sati is expected to begin when Saturn enters {moon_sign_minus_one} on {future_start_date}. Currently Saturn is transiting in {saturn_sign}",
+      "The timing of Sade Sati's influence in your life is given below:"
+    ],
+    "summary_block": {
+      "heading": "Sade Sati Forecast",
+      "points": [
+        "Moon Sign: {moon_sign}",
+        "Upcoming Start: {future_start_date}",
+        "Starting Rashi: {moon_sign_minus_one}"
+      ]
+    }
+  },
+  "general_explanation": "Sade Sati is a 7.5-year astrological period associated with Saturn’s transit over the natal Moon. It is divided into three phases and often teaches important life lessons. The impact varies based on your karma, placement of Saturn, and other planetary influences."
+}

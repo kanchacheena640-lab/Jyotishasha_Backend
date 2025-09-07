@@ -1,0 +1,207 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from factory import create_app
+from extensions import db
+from models import Order
+from modules.auth.models import User
+from full_kundali_api import calculate_full_kundali
+from services.zodiac_service import get_zodiac_traits
+from transit_engine import get_current_positions, get_all_planets_next_12
+from life_tools_report import life_tools_bp
+from routes.generate_report import generate_report_bp
+from openai import OpenAI
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from config.razorpay_config import razorpay_client
+from config.pricing import PRODUCT_PRICES
+from routes.admin_orders import admin_orders_bp
+from summary_api import summary_api
+from routes.daily_horoscope import daily_bp
+from routes.monthly_horoscope import monthly_bp
+from flask_migrate import Migrate
+from extensions import db, jwt
+from modules.auth import register_auth
+from modules.subscription import register_subscription
+from modules.auth.routes_profile import profile_bp
+
+
+
+
+
+
+app = create_app()
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+migrate = Migrate(app, db)
+app.register_blueprint(life_tools_bp)
+app.register_blueprint(generate_report_bp)
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+app.register_blueprint(admin_orders_bp)
+app.register_blueprint(summary_api)
+app.register_blueprint(daily_bp)
+app.register_blueprint(monthly_bp)
+jwt.init_app(app)
+register_auth(app)
+register_subscription(app)
+app.register_blueprint(profile_bp, url_prefix="/api/profile")
+
+# ------------------- ROOT ------------------- #
+@app.route("/")
+def home():
+        return "Backend is connected with DB + Celery!"
+
+# ------------------- USER APIs ------------------- #
+@app.route("/add_user", methods=["POST"])
+def add_user():
+    data = request.get_json()
+    name = data.get("name")
+    email = data.get("email")
+    if not name or not email:
+        return jsonify({"error": "Name and Email are required"}), 400
+
+    user = User(name=name, email=email)
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({"message": "User added successfully!", "user_id": user.id})
+
+# ------------------- ZODIAC TRAITS ------------------- #
+@app.route('/api/zodiac-traits')
+def zodiac_traits():
+    sign = request.args.get('sign', '')
+    lang = request.args.get('lang', 'en')  # Default to English
+    data = get_zodiac_traits(sign, lang)
+
+    if not data:
+        return jsonify({"error": f"No data found for '{sign}'"}), 404
+
+    return jsonify(data)
+
+# ------------------- WEBHOOK ------------------- #
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid data"}), 400
+
+    name = data.get("name")
+    email = data.get("email")
+    phone = data.get("phone")
+    product = data.get("product")
+    dob = data.get("dob")
+    tob = data.get("tob")
+    pob = data.get("pob")
+    language = data.get("language", "en")
+
+    if not all([name, email, product]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    # Save Paid Order
+    order = Order(
+        name=name,
+        email=email,
+        phone=phone,
+        product=product,
+        dob=dob,
+        tob=tob,
+        pob=pob,
+        language=language,  # ✅ New
+        status="PAID"
+    )
+    db.session.add(order)
+    db.session.commit()
+
+    # Generate Report and Email (Async)
+    from tasks import generate_and_send_report  # ✅ Local import to avoid circular error
+    task = generate_and_send_report.delay(order.id)
+    return jsonify({"message": "Webhook received", "order_id": order.id, "task_id": task.id})
+
+# ------------------- FOR TRANSIT DATA ------------------- #
+
+@app.route("/api/transit/current", methods=["GET"])
+def transit_current_plus_12():
+    """
+    Clean, single payload:
+    {
+      "timestamp_ist": "...",
+      "positions": { ...9 planets... },
+      "future_transits": {
+        "Sun":   [ {planet, from_rashi, to_rashi, entering_date, exit_date} x12 ],
+        "Moon":  [ ... x12 ],
+        ...
+        "Ketu":  [ ... x12 ]
+      }
+    }
+    """
+    current = get_current_positions()
+    future = get_all_planets_next_12()
+    return jsonify({**current, "future_transits": future})
+
+# ------------------- Summary API ------------------- #
+
+    
+# ------------------- KUNDALI API ------------------- #
+@app.route("/api/full-kundali", methods=["POST", "OPTIONS"])
+def full_kundali():
+    # ✅ Handle CORS preflight (OPTIONS request)
+    if request.method == "OPTIONS":
+        response = jsonify({"message": "CORS preflight successful"})
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        return response, 200
+
+    try:
+        data = request.get_json()
+        language = data.get("language", "en")
+        kundali = calculate_full_kundali(
+            name=data.get("name", "User"),
+            dob=data["dob"],
+            tob=data["tob"],
+            lat=float(data["latitude"]),
+            lon=float(data["longitude"]),
+            language=language
+        )
+        response = jsonify(kundali)
+        response.headers.add("Access-Control-Allow-Origin", "*")  # ✅ Ensure CORS header on actual POST
+        return response
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    
+# ------------------- RAZORPAY ORDER CREATE ------------------- #
+@app.route("/api/razorpay-order", methods=["POST"])
+def create_razorpay_order():
+    try:
+        data = request.get_json()
+        product_id = data.get("product")
+
+        if product_id not in PRODUCT_PRICES:
+            return jsonify({"error": "Invalid product selected"}), 400
+
+        amount_rupees = PRODUCT_PRICES[product_id]
+        amount_paise = amount_rupees * 100
+
+        receipt = f"order_rcptid_{os.urandom(4).hex()}"
+
+        razorpay_order = razorpay_client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": receipt,
+            "payment_capture": 1,
+            "notes": {
+                "product": product_id
+            }
+        })
+
+        return jsonify({
+            "order_id": razorpay_order["id"],
+            "currency": razorpay_order["currency"],
+            "amount": razorpay_order["amount"],
+            "product": product_id
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+# ------------------- MAIN ------------------- #
+if __name__ == "__main__":
+    app.run(debug=True)
