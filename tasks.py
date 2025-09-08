@@ -45,7 +45,7 @@ def generate_and_send_report(order_id):
                 tob=order["tob"],
                 lat=float(order.get("latitude", 28.6139)),
                 lon=float(order.get("longitude", 77.2090)),
-                language="en"
+                language=language 
             )
             print("[DEBUG] Kundali keys:", kundali.keys())
             transit = get_current_positions()
@@ -183,7 +183,8 @@ def get_order_details(order_id):
             "status": order.status,
             "created_at": order.created_at.isoformat() if order.created_at else None,
             "latitude": getattr(order, "latitude", 28.6139),
-            "longitude": getattr(order, "longitude", 77.2090)
+            "longitude": getattr(order, "longitude", 77.2090),
+            "language": getattr(order, "language", "en")
         }
 
 # ✅ Windows-only safety

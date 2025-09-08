@@ -1,5 +1,8 @@
 import json
 import os
+from flask import Blueprint, request, jsonify
+
+daily_bp = Blueprint("daily_bp", __name__)
 
 # Paths
 POOL_PATH = "C:/jyotishasha_backend/data/daily_pool.json"
