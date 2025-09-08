@@ -50,6 +50,10 @@ app.register_blueprint(profile_bp, url_prefix="/api/profile")
 def home():
         return "Backend is connected with DB + Celery!"
 
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    return jsonify({"ok": True})
+
 # ------------------- USER APIs ------------------- #
 @app.route("/add_user", methods=["POST"])
 def add_user():
