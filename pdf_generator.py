@@ -46,20 +46,21 @@ def generate_pdf_report(
 
     story = []
 
-    # 1. Cover Page
-    story.append(Spacer(1, 1.5 * inch))
-
-    # Elegant Main Title
-    story.append(Paragraph("🪔 Jyotishasha Presents", styles["CustomTitle"]))
-
-    # Report Title with underline
-    story.append(Spacer(1, 0.2 * inch))
-    story.append(Paragraph("<b>Personal Astrology Report</b>", styles["CustomTitle"]))
-    story.append(Spacer(1, 0.1 * inch))
+    # 1. Cover Page — Clean and Centered
+    story.append(Spacer(1, 2 * inch))
     report_title = product.replace("_", " ").title()
-    story.append(Paragraph(f"<u>{report_title}</u>", styles["Body"]))
 
-    story.append(Spacer(1, 1 * inch))
+    story.append(Paragraph(f"Jyotishasha {report_title}", styles["CustomTitle"]))
+    story.append(Spacer(1, 0.5 * inch))
+    story.append(Paragraph(f"for: {user_info['name']}", styles["CustomTitle"]))
+    story.append(Spacer(1, 0.2 * inch))
+
+    from datetime import datetime
+    today_str = datetime.now().strftime("%d %b %Y")
+    story.append(Paragraph(f"Date: {today_str}", styles["CustomTitle"]))
+
+    story.append(PageBreak())
+
 
     # Recipient Name centered
     story.append(Paragraph(f"Prepared especially for", styles["Body"]))
@@ -97,7 +98,7 @@ def generate_pdf_report(
 
     # 3. Kundali Image
     try:
-        img = Image(kundali_image_path, width=5*inch, height=5*inch)
+        img = Image(kundali_image_path, width=4.2*inch, height=4.2*inch)
         img.hAlign = 'CENTER'
         story.append(Spacer(1, 0.2 * inch))
         story.append(Paragraph("Birth Chart (Kundali)", styles["Heading"]))
