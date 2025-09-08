@@ -4,7 +4,7 @@ import os
 
 monthly_bp = Blueprint("monthly_bp", __name__)
 
-MONTHLY_FILE = "C:/jyotishasha_backend/data/monthly_fixed.json"
+MONTHLY_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "monthly_fixed.json")
 
 ZODIACS = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",

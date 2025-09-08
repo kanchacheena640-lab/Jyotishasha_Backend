@@ -4,7 +4,7 @@ import os
 
 daily_bp = Blueprint("daily_bp", __name__)
 
-DAILY_FILE = "C:/jyotishasha_backend/data/daily_fixed.json"
+DAILY_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "daily_fixed.json")
 
 ZODIACS = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
