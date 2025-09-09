@@ -36,8 +36,13 @@ def generate_and_send_report(order_id):
             if not order:
                 print(f"[ERROR] Order {order_id} not found!")
                 return
+            
+            # ✅ Language set here
+            language = order.get("language", "en")
+            print("[DEBUG] Language for this order:", language)
 
             # Step 2: Kundali calculation
+
             print("[Step 2] Calculating kundali")
             kundali = calculate_full_kundali(
                 name=order["name"],
@@ -45,9 +50,10 @@ def generate_and_send_report(order_id):
                 tob=order["tob"],
                 lat=float(order.get("latitude", 28.6139)),
                 lon=float(order.get("longitude", 77.2090)),
-                language=language 
+                language=language  # ✅ now dynamic (hi/en)
             )
             print("[DEBUG] Kundali keys:", kundali.keys())
+
             transit = get_current_positions()
             kundali["transit_summary"] = transit
 
@@ -58,16 +64,21 @@ def generate_and_send_report(order_id):
             # Step 4: Prompt load
             print("[Step 4] Loading prompt template")
             product_slug = order["product"]
-            language = order.get("language", "en")
             template_path = f"prompts/{product_slug}_{language}.txt"
 
-            with open(template_path, encoding="utf-8") as f:
-                template = f.read()
+            try:
+                with open(template_path, encoding="utf-8") as f:
+                    template = f.read()
+            except FileNotFoundError:
+                # Optional safe fallback if Hindi template missing
+                print(f"[WARN] Template not found: {template_path}. Falling back to EN.")
+                with open(f"prompts/{product_slug}_en.txt", encoding="utf-8") as f:
+                    template = f.read()
 
             used_placeholders = re.findall(r"{(.*?)}", template)
             prompt_final = template.format(**summary_blocks)
 
-            # ✅ THIS LINE to just check the prompt
+            # ✅ Save prompt for debugging
             with open(f"debug_prompts/{product_slug}_{order_id}_prompt.txt", "w", encoding="utf-8") as debug_file:
                 debug_file.write(prompt_final)
             print(f"[DEBUG] Prompt written to debug_prompts/{product_slug}_{order_id}_prompt.txt")
