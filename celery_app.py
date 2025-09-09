@@ -1,13 +1,16 @@
 # celery_app.py
 
+import os
 from celery import Celery
 
 def make_celery():
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")  # ✅ fallback for local dev
+
     celery = Celery(
         "jyotishasha",
-        broker="redis://localhost:6379/0",
-        backend="redis://localhost:6379/0",
-        include=["tasks"]  # ✅ Add this line
+        broker=redis_url,
+        backend=redis_url,
+        include=["tasks"]
     )
     celery.conf.update(
         task_serializer='json',
