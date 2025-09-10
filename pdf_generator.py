@@ -1,6 +1,6 @@
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle, Image
+    SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
@@ -8,6 +8,7 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.graphics import renderPDF
 
 # Register Unicode font for Hindi support
 pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
@@ -17,7 +18,7 @@ def generate_pdf_report(
     user_info: dict,
     summary_blocks: dict,
     gpt_response: str,
-    kundali_image_path: str,
+    kundali_drawing,  # 🔑 ab Drawing aayega, path nahi
     used_placeholders: list,
     product: str
 ):
@@ -28,28 +29,29 @@ def generate_pdf_report(
         leftMargin=40,
         topMargin=50,
         bottomMargin=50,
-        CustomTitle="Astrology Report",
+        title="Astrology Report",
         author="Team Jyotishasha"
     )
 
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(
         name="CustomTitle",
-        fontSize=24,  # 👈 Bigger size
+        fontSize=24,
         alignment=TA_CENTER,
         fontName="HeiseiMin-W3",
         spaceAfter=20,
-        textColor=colors.black  # 👈 Clean black color
+        textColor=colors.black
     ))
-    styles.add(ParagraphStyle(name="Heading", fontSize=14, alignment=TA_LEFT, fontName="HeiseiMin-W3", spaceAfter=10))
-    styles.add(ParagraphStyle(name="Body", fontSize=11, alignment=TA_LEFT, fontName="HeiseiMin-W3", spaceAfter=12))
+    styles.add(ParagraphStyle(name="Heading", fontSize=14, alignment=TA_LEFT,
+                              fontName="HeiseiMin-W3", spaceAfter=10))
+    styles.add(ParagraphStyle(name="Body", fontSize=11, alignment=TA_LEFT,
+                              fontName="HeiseiMin-W3", spaceAfter=12))
 
     story = []
 
-    # 1. Cover Page — Clean and Centered
+    # 1. Cover Page
     story.append(Spacer(1, 2 * inch))
     report_title = product.replace("_", " ").title()
-
     story.append(Paragraph(f"Jyotishasha {report_title}", styles["CustomTitle"]))
     story.append(Spacer(1, 0.5 * inch))
     story.append(Paragraph(f"for: {user_info['name']}", styles["CustomTitle"]))
@@ -58,19 +60,15 @@ def generate_pdf_report(
     from datetime import datetime
     today_str = datetime.now().strftime("%d %b %Y")
     story.append(Paragraph(f"Date: {today_str}", styles["CustomTitle"]))
-
     story.append(PageBreak())
 
-
-    # Recipient Name centered
+    # Recipient Page
     story.append(Paragraph(f"Prepared especially for", styles["Body"]))
     story.append(Spacer(1, 0.1 * inch))
     story.append(Paragraph(f"<b>{user_info['name']}</b>", styles["CustomTitle"]))
-
     story.append(Spacer(1, 4.5 * inch))
     story.append(Paragraph("With blessings,", styles["Body"]))
     story.append(Paragraph("🙏 Team Jyotishasha 🙏", styles["CustomTitle"]))
-
     story.append(PageBreak())
 
     # 2. Client Snapshot
@@ -81,10 +79,9 @@ def generate_pdf_report(
         ["Time of Birth", user_info["tob"]],
         ["Place of Birth", user_info["pob"]],
     ]
-
     if "birth_chart_summary" in summary_blocks:
-        snapshot.append(["Lagna Sign", summary_blocks["birth_chart_summary"].split()[3]])
-
+        snapshot.append(["Lagna Sign",
+                         summary_blocks["birth_chart_summary"].split()[3]])
     table = Table(snapshot, colWidths=[120, 350])
     table.setStyle(TableStyle([
         ("FONTNAME", (0, 0), (-1, -1), "HeiseiMin-W3"),
@@ -96,51 +93,18 @@ def generate_pdf_report(
     story.append(table)
     story.append(Spacer(1, 0.3 * inch))
 
-    # 3. Kundali Image
-    try:
-        img = Image(kundali_image_path, width=4.2*inch, height=4.2*inch)
-        img.hAlign = 'CENTER'
-        story.append(Spacer(1, 0.2 * inch))
-        story.append(Paragraph("Birth Chart (Kundali)", styles["Heading"]))
-        story.append(img)
-        story.append(Spacer(1, 0.3 * inch))
-    except Exception:
-        story.append(Paragraph("(Kundali image not found)", styles["Body"]))
+    # 3. Kundali Chart (vector drawing)
+    story.append(Paragraph("Birth Chart (Kundali)", styles["Heading"]))
+    story.append(Spacer(1, 0.2 * inch))
 
-    # 4. Summary Sections (only if in used_placeholders)
-    if "birth_chart_summary" in used_placeholders:
-        story.append(Paragraph("Birth Chart Summary", styles["Heading"]))
-        story.append(Paragraph(summary_blocks["birth_chart_summary"], styles["Body"]))
+    def draw_chart(canvas, doc):
+        # draw kundali_drawing at center of page
+        renderPDF.draw(kundali_drawing, canvas,
+                       x=doc.width/2 - 200,  # center align
+                       y=doc.height/2 - 200)
 
-    if "mahadasha_summary" in used_placeholders:
-        story.append(Paragraph("Mahadasha Summary", styles["Heading"]))
-        story.append(Paragraph(summary_blocks["mahadasha_summary"], styles["Body"]))
+    story.append(Spacer(1, 4.5 * inch))
+    doc.build(story, onFirstPage=draw_chart, onLaterPages=draw_chart)
 
-    if "current_transit_summary" in used_placeholders:
-        story.append(Paragraph("Transit Summary", styles["Heading"]))
-        story.append(Paragraph(summary_blocks["current_transit_summary"], styles["Body"]))
-
-    if "aspect_summary" in used_placeholders:
-        story.append(Paragraph("Planetary Aspects", styles["Heading"]))
-        story.append(Paragraph(summary_blocks["aspect_summary"], styles["Body"]))
-
-    if "manglik_summary" in used_placeholders:
-        story.append(Paragraph("Manglik Status", styles["Heading"]))
-        story.append(Paragraph(summary_blocks["manglik_summary"], styles["Body"]))
-
-    story.append(PageBreak())
-
-    # 5. GPT Response
-    story.append(Paragraph("Personalized Astrology Report", styles["Heading"]))
-    for line in gpt_response.split("\n"):
-        if line.strip():
-            story.append(Paragraph(line.strip(), styles["Body"]))
-
-    # 6. Final Sign-off
-    story.append(Spacer(1, 0.5 * inch))
-    story.append(Paragraph(
-        "With warm regards,<br/>Team Jyotishasha<br/>May your stars guide you to success.",
-        styles["Body"]
-    ))
-
-    doc.build(story)
+    # ⚠️ Note: Agar tumhe chart sirf ek hi page pe chahiye
+    # to `onFirstPage` me draw_chart rakho aur `onLaterPages=None` use karo.

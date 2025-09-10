@@ -12,7 +12,7 @@ from summary_blocks import build_summary_blocks_with_transit
 from full_kundali_api import calculate_full_kundali
 from transit_engine import get_current_positions
 from openai import OpenAI
-from kundali_chart_generator import generate_kundali_image
+from kundali_chart_generator import generate_kundali_drawing
 
 # 🔧 Fix for app context
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -125,11 +125,10 @@ def generate_and_send_report(order_id):
 
             print("[DEBUG] lagna_rashi (number):", rashi_number)
 
-            # Generate Kundali Image
-            generate_kundali_image(
+            # Generate Kundali Drawing (no PNG now)
+            kundali_drawing = generate_kundali_drawing(
                 planets=kundali["planets"],
-                lagna_rashi=rashi_number,
-                output_path=kundali_image_path
+                lagna_rashi=rashi_number
             )
 
             # Generate PDF
@@ -146,7 +145,7 @@ def generate_and_send_report(order_id):
                 },
                 summary_blocks=summary_blocks,
                 gpt_response=gpt_content,
-                kundali_image_path=kundali_image_path,
+                kundali_drawing=kundali_drawing,   # 🔑 new arg
                 used_placeholders=used_placeholders,
                 product=order["product"]
             )

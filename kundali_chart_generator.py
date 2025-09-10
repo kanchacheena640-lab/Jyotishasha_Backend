@@ -1,6 +1,4 @@
 from reportlab.graphics.shapes import Drawing, Rect, Line, String
-from reportlab.graphics import renderPM
-import os
 
 BASE = 400
 CENTER = BASE / 2
@@ -10,13 +8,13 @@ HOUSE_CENTERS = {
     1: (CENTER, 245),             # Top-middle
     2: (CENTER - 100, 320),       # Top-right
     3: (CENTER - 130, CENTER + 95),
-    4: (CENTER - 90, CENTER),     # Right
+    4: (CENTER - 100, CENTER),     # Right
     5: (CENTER - 130, CENTER - 95),
     6: (CENTER - 100, 80),        # Bottom-right
     7: (CENTER, CENTER - 50),     # Bottom-middle
     8: (CENTER + 100, 80),        # Bottom-left
     9: (CENTER + 130, CENTER - 95),
-    10: (CENTER + 90, CENTER),    # Left
+    10: (CENTER + 100, CENTER),    # Left
     11: (CENTER + 130, CENTER + 95),
     12: (CENTER + 100, 320),      # Top-left
 }
@@ -83,15 +81,14 @@ def draw_kundali(planets, lagna_rashi):
             elif house in [9, 10, 11]:
                 dx = -30
 
-            d.add(String(x + dx, y + dy, ", ".join(planets_here), fontSize=10, textAnchor="middle"))
+            d.add(String(x + dx, y + dy, ", ".join(planets_here),
+                         fontSize=10, textAnchor="middle"))
 
     return d
 
-def generate_kundali_image(planets, lagna_rashi, output_path):
-    if not output_path:
-        raise ValueError("❌ Missing output_path. Cannot proceed with kundali image generation.")
-
-    d = draw_kundali(planets, lagna_rashi)
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    renderPM.drawToFile(d, output_path, fmt="PNG")
-    print(f"✅ Kundali chart saved at {output_path}")
+def generate_kundali_drawing(planets, lagna_rashi):
+    """
+    Kundali chart ke liye Drawing object banata hai.
+    PNG likhne ki zarurat nahi.
+    """
+    return draw_kundali(planets, lagna_rashi)
