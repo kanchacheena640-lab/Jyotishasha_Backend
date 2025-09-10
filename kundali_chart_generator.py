@@ -40,7 +40,7 @@ def to_abbr(name):
     return PLANET_SYMBOLS.get(canon, canon[:2].capitalize())
 
 def get_rashis_by_house(lagna_rashi):
-    return [((lagna_rashi - 1 - i) % 12) + 1 for i in range(12)]
+    return [((lagna_rashi - 1 + i) % 12) + 1 for i in range(12)]
 
 def draw_kundali(planets, lagna_rashi):
     d = Drawing(BASE, BASE)

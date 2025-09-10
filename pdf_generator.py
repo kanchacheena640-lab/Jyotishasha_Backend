@@ -12,7 +12,7 @@ from reportlab.graphics import renderPDF
 import os
 
 # Unicode font (as you already used)
-pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))
+pdfmetrics.registerFont(UnicodeCIDFont("HYSMyeongJo-Medium"))  # ✅ Hindi/Devanagari
 
 # Flowable to draw the vector kundali on the page
 class KundaliFlowable(Flowable):
@@ -57,7 +57,7 @@ def generate_pdf_report(
         name="CustomTitle",
         fontSize=24,
         alignment=TA_CENTER,
-        fontName="HeiseiMin-W3",
+        fontName="Helvetica",
         spaceAfter=20,
         textColor=colors.black
     ))
@@ -65,15 +65,17 @@ def generate_pdf_report(
         name="Heading",
         fontSize=14,
         alignment=TA_LEFT,
-        fontName="HeiseiMin-W3",
+        fontName="Helvetica",
         spaceAfter=10
     ))
     styles.add(ParagraphStyle(
         name="Body",
         fontSize=11,
         alignment=TA_LEFT,
-        fontName="HeiseiMin-W3",
-        spaceAfter=12
+        fontName="HYSMyeongJo-Medium",
+        spaceAfter=12,
+        textColor=colors.black,
+        leading=15 
     ))
 
     story = []
@@ -124,7 +126,7 @@ def generate_pdf_report(
     # Kundali chart
     story.append(Paragraph("Birth Chart (Kundali)", styles["Heading"]))
     story.append(Spacer(1, 0.2 * inch))
-    story.append(KundaliFlowable(kundali_drawing, width=400, height=400))
+    story.append(KundaliFlowable(kundali_drawing, width=300, height=300))
     story.append(Spacer(1, 0.2 * inch))
 
     # Birth Chart Summary only on Page 2 if used
