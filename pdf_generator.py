@@ -74,7 +74,7 @@ def generate_pdf_report(
     ))
     styles.add(ParagraphStyle(
         name="Body",
-        fontSize=11,
+        fontSize=12,
         alignment=TA_LEFT,
         fontName="NotoSansDevanagari",
         spaceAfter=12,
@@ -119,7 +119,7 @@ def generate_pdf_report(
     table = Table(snapshot, colWidths=[120, 350])
     table.setStyle(TableStyle([
         ("FONTNAME", (0, 0), (-1, -1), "NotoSansDevanagari"),
-        ("FONTSIZE", (0, 0), (-1, -1), 11),
+        ("FONTSIZE", (0, 0), (-1, -1), 12),
         ("ALIGN", (0, 0), (-1, -1), "LEFT"),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
