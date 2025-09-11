@@ -12,7 +12,7 @@ from reportlab.graphics import renderPDF
 from reportlab.pdfbase.ttfonts import TTFont
 import os
 
-FONT_DIR = "/home/Jyotishasha/fonts"
+FONT_DIR = os.path.join(os.path.dirname(__file__), "fonts")
 
 pdfmetrics.registerFont(
     TTFont("NotoSansDevanagari", os.path.join(FONT_DIR, "NotoSansDevanagari-Regular.ttf"))
