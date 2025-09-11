@@ -86,7 +86,7 @@ def generate_and_send_report(order_id):
             # Step 5: GPT call
             print("[Step 5] Calling OpenAI GPT")
             response = openai_client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt_final}]
             )
             gpt_content = response.choices[0].message.content.strip()
