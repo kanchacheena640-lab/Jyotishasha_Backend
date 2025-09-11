@@ -9,10 +9,14 @@ from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.graphics import renderPDF
+from reportlab.pdfbase.ttfonts import TTFont
 import os
 
-# Unicode font (as you already used)
-pdfmetrics.registerFont(UnicodeCIDFont("HYSMyeongJo-Medium"))  # ✅ Hindi/Devanagari
+FONT_DIR = "/home/Jyotishasha/fonts"
+
+pdfmetrics.registerFont(
+    TTFont("NotoSansDevanagari", os.path.join(FONT_DIR, "NotoSansDevanagari-Regular.ttf"))
+)
 
 # Flowable to draw the vector kundali on the page
 class KundaliFlowable(Flowable):
@@ -72,7 +76,7 @@ def generate_pdf_report(
         name="Body",
         fontSize=11,
         alignment=TA_LEFT,
-        fontName="HYSMyeongJo-Medium",
+        fontName="NotoSansDevanagari",
         spaceAfter=12,
         textColor=colors.black,
         leading=15 
@@ -114,7 +118,7 @@ def generate_pdf_report(
 
     table = Table(snapshot, colWidths=[120, 350])
     table.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), "HeiseiMin-W3"),
+        ("FONTNAME", (0, 0), (-1, -1), "NotoSansDevanagari"),
         ("FONTSIZE", (0, 0), (-1, -1), 11),
         ("ALIGN", (0, 0), (-1, -1), "LEFT"),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
