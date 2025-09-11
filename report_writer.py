@@ -2,7 +2,9 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from email_utils import send_email as send_email_with_attachment
-from pdf_generator import generate_pdf_report
+from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
+
+#from pdf_generator import generate_pdf_report
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

@@ -6,13 +6,14 @@ from dotenv import load_dotenv
 from celery_app import celery
 from extensions import db
 from models import Order
-from pdf_generator import generate_pdf_report
+#from pdf_generator import generate_pdf_report
 from email_utils import send_email
 from summary_blocks import build_summary_blocks_with_transit
 from full_kundali_api import calculate_full_kundali
 from transit_engine import get_current_positions
 from openai import OpenAI
 from kundali_chart_generator import generate_kundali_drawing
+from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
 
 # 🔧 Fix for app context
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
