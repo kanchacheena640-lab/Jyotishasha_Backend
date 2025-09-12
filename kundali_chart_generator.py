@@ -7,15 +7,15 @@ CENTER = BASE / 2
 HOUSE_CENTERS = {
     1: (CENTER, 245),             # Top-middle
     2: (CENTER - 100, 320),       # Top-right
-    3: (CENTER - 130, CENTER + 95),
-    4: (CENTER - 100, CENTER),     # Right
+    3: (CENTER - 130, CENTER - 95),
+    4: (CENTER - 100, CENTER ),     # Right
     5: (CENTER - 130, CENTER - 95),
     6: (CENTER - 100, 80),        # Bottom-right
     7: (CENTER, CENTER - 50),     # Bottom-middle
     8: (CENTER + 100, 80),        # Bottom-left
     9: (CENTER + 130, CENTER - 95),
-    10: (CENTER + 100, CENTER),    # Left
-    11: (CENTER + 130, CENTER + 95),
+    10: (CENTER + 100, CENTER ),    # Left
+    11: (CENTER + 130, CENTER - 95),
     12: (CENTER + 100, 320),      # Top-left
 }
 
