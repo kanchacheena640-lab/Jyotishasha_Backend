@@ -17,25 +17,40 @@ env = Environment(
     autoescape=select_autoescape(['html', 'xml'])
 )
 
-# Helper to convert plain text to HTML (line breaks)
+# Helper to convert linebreak text to <br/>
 def _to_html(text: str | None) -> str:
     if not text:
         return ""
     return "<br/>".join([line.strip() for line in text.split("\n") if line.strip()])
 
-# ✅ This converts markdown-style **Heading** into section block
-def convert_headings(text: str) -> str:
-    text = _to_html(text)
-    # Replace **Heading** with end card, heading, then open new card
-    html = re.sub(
-        r"\*\*(.+?)\*\*",
-        r"</div><h2 class='section-heading'>\1</h2><div class='card hi'>",
-        text
-    )
-    # Ensure it's wrapped inside 1 <div class='card hi'>...</div>
-    return f"<div class='card hi'>{html}</div>"
+# ✅ NEW: Convert GPT plain numbered text to HTML-formatted headings + paragraphs
+def convert_numbered_report(text: str) -> str:
+    output = ""
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    heading_pattern = re.compile(r'^(\d\.\s+.+)$')
 
-# Main function
+    current_heading = None
+    current_para = []
+
+    for line in lines:
+        if heading_pattern.match(line):
+            # Flush previous block
+            if current_heading:
+                output += f"<h2 class='section-heading'>{current_heading}</h2>\n"
+                output += f"<p>{' '.join(current_para)}</p>\n"
+                current_para = []
+            current_heading = line
+        else:
+            current_para.append(line)
+
+    # Flush last section
+    if current_heading:
+        output += f"<h2 class='section-heading'>{current_heading}</h2>\n"
+        output += f"<p>{' '.join(current_para)}</p>\n"
+
+    return output
+
+# ✅ Main function
 def generate_pdf_report_weasy(
     output_path: str,
     user_info: dict,
@@ -64,7 +79,7 @@ def generate_pdf_report_weasy(
         "report_title": product.replace("_", " ").title(),
         "today_str": today_str,
         "user_info": user_info,
-        "kundali_img_src": kundali_rel,      # ✅ now an SVG path
+        "kundali_img_src": kundali_rel,
         "logo_src": logo_src,
         "fonts_dir_rel": FONTS_REL,
 
@@ -75,9 +90,8 @@ def generate_pdf_report_weasy(
         "aspect_summary": _to_html(summary_blocks.get("aspect_summary")) if "aspect_summary" in used_placeholders else "",
         "manglik_summary": _to_html(summary_blocks.get("manglik_summary")) if "manglik_summary" in used_placeholders else "",
 
-        # Main GPT body
-        "gpt_response_html": convert_headings(gpt_response),
-
+        # ✅ Final GPT response converted via numbered parser
+        "gpt_response_html": convert_numbered_report(gpt_response),
     }
 
     # ✅ Step 3: Render to HTML and convert to PDF
