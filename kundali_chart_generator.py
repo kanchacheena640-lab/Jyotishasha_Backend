@@ -7,15 +7,15 @@ CENTER = BASE / 2
 HOUSE_CENTERS = {
     1: (CENTER, 245),             # Top-middle
     2: (CENTER - 100, 320),       # Top-right
-    3: (CENTER - 130, CENTER - 95),
-    4: (CENTER - 100, CENTER ),     # Right
+    3: (CENTER - 130, CENTER + 95),
+    4: (CENTER - 40, CENTER ),     # Right
     5: (CENTER - 130, CENTER - 95),
     6: (CENTER - 100, 80),        # Bottom-right
     7: (CENTER, CENTER - 50),     # Bottom-middle
     8: (CENTER + 100, 80),        # Bottom-left
     9: (CENTER + 130, CENTER - 95),
-    10: (CENTER + 100, CENTER ),    # Left
-    11: (CENTER + 130, CENTER - 95),
+    10: (CENTER + 40, CENTER ),    # Left
+    11: (CENTER + 130, CENTER + 95),
     12: (CENTER + 100, 320),      # Top-left
 }
 
@@ -75,11 +75,11 @@ def draw_kundali(planets, lagna_rashi):
             if house in [1, 12, 2]:
                 dy = 28
             elif house in [3, 4, 5]:
-                dx = 30
+                dx = -30
             elif house in [6, 7, 8]:
                 dy = -28
             elif house in [9, 10, 11]:
-                dx = -30
+                dx = +30
 
             d.add(String(x + dx, y + dy, ", ".join(planets_here),
                          fontSize=10, textAnchor="middle"))
