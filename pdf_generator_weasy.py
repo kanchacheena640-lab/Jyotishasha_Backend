@@ -24,29 +24,16 @@ def _to_html(text: str | None) -> str:
     return "<br/>".join([line.strip() for line in text.split("\n") if line.strip()])
 
 # ✅ NEW: Convert GPT plain numbered text to HTML-formatted headings + paragraphs
-def convert_numbered_report(text: str) -> str:
-    output = ""
-    lines = [line.strip() for line in text.split("\n") if line.strip()]
-    heading_pattern = re.compile(r'^\d\.\s+')
-
-    current_heading = None
-    current_para = []
-
-    for line in lines:
-        if heading_pattern.match(line):
-            if current_heading:
-                output += f"<h2 class='section-heading hi'>{current_heading}</h2>\n"
-                output += f"<p class='hi'>{' '.join(current_para)}</p>\n"
-                current_para = []
-            current_heading = line
-        else:
-            current_para.append(line)
-
-    if current_heading:
-        output += f"<h2 class='section-heading hi'>{current_heading}</h2>\n"
-        output += f"<p class='hi'>{' '.join(current_para)}</p>\n"
-
-    return output
+def convert_headings(text: str) -> str:
+    text = _to_html(text)
+    # Replace **Heading** with end card, heading, then open new card
+    html = re.sub(
+        r"\*\*(.+?)\*\*",
+        r"</div><h2 class='section-heading'>\1</h2><div class='card hi'>",
+        text
+    )
+    # Ensure it's wrapped inside 1 <div class='card hi'>...</div>
+    return f"<div class='card hi'>{html}</div>"
 
 
     # Flush last section
@@ -97,7 +84,8 @@ def generate_pdf_report_weasy(
         "manglik_summary": _to_html(summary_blocks.get("manglik_summary")) if "manglik_summary" in used_placeholders else "",
 
         # ✅ Final GPT response converted via numbered parser
-        "gpt_response_html": convert_numbered_report(gpt_response),
+        "gpt_response_html": convert_headings(gpt_response),
+
     }
 
     # ✅ Step 3: Render to HTML and convert to PDF
