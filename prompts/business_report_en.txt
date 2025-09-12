@@ -23,8 +23,6 @@ Instructions:
 
 Output format:
 
-Business Report
----------------
 1. Business Orientation  
 [Paragraph on how 2nd, 7th, 10th houses and Mercury, Jupiter, Saturn relate to business potential.]
 
@@ -37,11 +35,11 @@ Business Report
 4. Challenges  
 [Paragraph on possible difficulties and how to handle them.]
 
-5. Remedies (Practical only)  
+5. Remedies  
 [Paragraph with practical solutions only — no superstition.]
 
 6. Gemstone Suggestion  
 [Paragraph recommending one gemstone and why it helps.]
 
-7. Motivational Summary  
+7. Summary  
 [Final paragraph with an inspiring closing message.]
