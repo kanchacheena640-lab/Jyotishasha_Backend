@@ -13,15 +13,15 @@
 --- वर्तमान गोचर मुख्य बिंदु:  
 {current_transit_summary}
 
-Instructions:
-- The report should be 350–400 words long in Hindi devnagari style.
-- Use exactly 7 sections with numbered headings as shown below.
-- Do not change the heading names or their order.
-- Write clear, engaging paragraphs in devanagari style of Hindi under each heading (4–6 lines).
-- Do not merge the report into one flow — use spacing and structure as shown.
-- Avoid repeating any suggestion across sections, take your time and write a good quality deep analytical report.
+**निर्देश:**  
+- पूरी रिपोर्ट लगभग 350–400 शब्दों की होनी चाहिए।  
+- नीचे दिए गए 1-7 हैडिंग का ही प्रयोग करें, उनकी क्रम या शीर्षक में कोई बदलाव न करें।  
+- हर heading के नीचे 4–6 पंक्तियों का संबंधित किन्‍तु जन्‍मकुंडली के विश्‍लेषण पर आधारित स्पष्ट पैराग्राफ लिखें।  
+- सुझावों की पुनरावृत्ति न करें। विश्लेषण को गहरा और गुणवत्तापूर्ण रखें।  
+- **ग्रहों और राशियों के नाम हिन्दी में ही लिखें** (जैसे बुध, गुरु, मकर, वृश्चिक आदि)।  
+- किसी भी सेक्‍शन को खाली न छोड़ें।
 
-Output Format:
+**आउटपुट फॉर्मेट (Output Format):**
 
 1. आपकी कुंडली और व्‍यवसाय  
 [2वें, 7वें और 10वें भाव, साथ ही बुध, गुरु और शनि व्यवसाय योग को कैसे दर्शाते हैं — इस पर विश्लेषण करें।]

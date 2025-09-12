@@ -27,21 +27,27 @@ def _to_html(text: str | None) -> str:
 def convert_numbered_report(text: str) -> str:
     output = ""
     lines = [line.strip() for line in text.split("\n") if line.strip()]
-    heading_pattern = re.compile(r'^(\d\.\s+.+)$')
+    heading_pattern = re.compile(r'^\d\.\s+')
 
     current_heading = None
     current_para = []
 
     for line in lines:
         if heading_pattern.match(line):
-            # Flush previous block
             if current_heading:
-                output += f"<h2 class='section-heading'>{current_heading}</h2>\n"
-                output += f"<p>{' '.join(current_para)}</p>\n"
+                output += f"<h2 class='section-heading hi'>{current_heading}</h2>\n"
+                output += f"<p class='hi'>{' '.join(current_para)}</p>\n"
                 current_para = []
             current_heading = line
         else:
             current_para.append(line)
+
+    if current_heading:
+        output += f"<h2 class='section-heading hi'>{current_heading}</h2>\n"
+        output += f"<p class='hi'>{' '.join(current_para)}</p>\n"
+
+    return output
+
 
     # Flush last section
     if current_heading:
