@@ -5,18 +5,18 @@ CENTER = BASE / 2
 
 # ✅ Corrected anti-clockwise house layout with House 1 (Lagna) at top
 HOUSE_CENTERS = {
-    1:  (CENTER,      155),
-    2:  (CENTER - 100, 80),
-    3:  (CENTER - 130, CENTER - 95),
-    4:  (CENTER - 40,  CENTER),
-    5:  (CENTER - 130, CENTER + 95),
-    6:  (CENTER - 100, CENTER + 120),
-    7:  (CENTER,      CENTER + 50),
-    8:  (CENTER + 100, CENTER + 120),
-    9:  (CENTER + 130, CENTER + 95),
-    10: (CENTER + 40,  CENTER),
-    11: (CENTER + 130, CENTER - 95),
-    12: (CENTER + 100, 80),
+    1: (CENTER, 245),             # Top-middle
+    2: (CENTER - 100, 320),       # Top-right
+    3: (CENTER - 130, CENTER + 95),
+    4: (CENTER - 100, CENTER),     # Right
+    5: (CENTER - 130, CENTER - 95),
+    6: (CENTER - 100, 80),        # Bottom-right
+    7: (CENTER, CENTER - 50),     # Bottom-middle
+    8: (CENTER + 100, 80),        # Bottom-left
+    9: (CENTER + 130, CENTER - 95),
+    10: (CENTER + 100, CENTER),    # Left
+    11: (CENTER + 130, CENTER + 95),
+    12: (CENTER + 100, 320),      # Top-left
 }
 
 PLANET_SYMBOLS = {
@@ -81,8 +81,8 @@ def draw_kundali(planets, lagna_rashi):
             elif house in [9, 10, 11]:
                 dx = -30
 
-            for i, planet in enumerate(planets_here):
-                d.add(String(x + dx, y + dy + i * 12, planet, fontSize=10, textAnchor="middle"))
+            d.add(String(x + dx, y + dy, ", ".join(planets_here),
+                         fontSize=10, textAnchor="middle"))
 
     return d
 
