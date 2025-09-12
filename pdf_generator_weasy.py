@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
@@ -21,6 +22,18 @@ def _to_html(text: str | None) -> str:
     if not text:
         return ""
     return "<br/>".join([line.strip() for line in text.split("\n") if line.strip()])
+
+# ✅ This converts markdown-style **Heading** into section block
+def convert_headings(text: str) -> str:
+    text = _to_html(text)
+    # Replace **Heading** with end card, heading, then open new card
+    html = re.sub(
+        r"\*\*(.+?)\*\*",
+        r"</div><h2 class='section-heading'>\1</h2><div class='card hi'>",
+        text
+    )
+    # Ensure it's wrapped inside 1 <div class='card hi'>...</div>
+    return f"<div class='card hi'>{html}</div>"
 
 # Main function
 def generate_pdf_report_weasy(
@@ -63,7 +76,8 @@ def generate_pdf_report_weasy(
         "manglik_summary": _to_html(summary_blocks.get("manglik_summary")) if "manglik_summary" in used_placeholders else "",
 
         # Main GPT body
-        "gpt_response_html": _to_html(gpt_response),
+        "gpt_response_html": convert_headings(gpt_response),
+
     }
 
     # ✅ Step 3: Render to HTML and convert to PDF
