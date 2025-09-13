@@ -24,6 +24,7 @@ from extensions import db, jwt
 from modules.auth import register_auth
 from modules.subscription import register_subscription
 from modules.auth.routes_profile import profile_bp
+from routes.order_create_offer import order_offer_bp
 
 
 
@@ -45,6 +46,8 @@ jwt.init_app(app)
 register_auth(app)
 register_subscription(app)
 app.register_blueprint(profile_bp, url_prefix="/api/profile")
+app.register_blueprint(order_offer_bp)
+
 
 # ------------------- ROOT ------------------- #
 @app.route("/")
