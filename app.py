@@ -24,8 +24,7 @@ from extensions import db, jwt
 from modules.auth import register_auth
 from modules.subscription import register_subscription
 from modules.auth.routes_profile import profile_bp
-import hmac
-import hashlib
+
 
 
 
@@ -85,30 +84,14 @@ def zodiac_traits():
 # ------------------- WEBHOOK ------------------- #
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    # Raw payload
-    payload = request.data
-    received_sig = request.headers.get("X-Razorpay-Signature")
-    secret = os.getenv("RAZORPAY_WEBHOOK_SECRET")
-
-    if not secret:
-        return jsonify({"error": "Webhook secret not set"}), 500
-
-    # ✅ Verify signature
-    expected_sig = hmac.new(
-        bytes(secret, "utf-8"),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
-
-    if received_sig != expected_sig:
-        return jsonify({"error": "Invalid signature"}), 400
-
-    # Parse JSON after verification
     data = request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid data"}), 400
 
-    # ---- Extract fields (custom payload from frontend if any) ---- #
+    # ✅ Case A: Razorpay webhook (event = payment.captured)
+    if "event" in data and data.get("event") == "payment.captured":
+        print("[Webhook] Razorpay payment.captured webhook received. Ignored for now.")
+        return jsonify({"status": "Webhook received (ignored)"}), 200
+
+    # ✅ Case B: Frontend-triggered report request
     name = data.get("name")
     email = data.get("email")
     phone = data.get("phone")
@@ -121,7 +104,7 @@ def webhook():
     if not all([name, email, product]):
         return jsonify({"error": "Missing required fields"}), 400
 
-    # ---- Save Paid Order ---- #
+    # Save order in DB
     order = Order(
         name=name,
         email=email,
@@ -136,15 +119,15 @@ def webhook():
     db.session.add(order)
     db.session.commit()
 
-    # ---- Trigger async report ---- #
+    # 🔁 Local import to avoid circular import error
     from tasks import generate_and_send_report
     task = generate_and_send_report.delay(order.id)
 
     return jsonify({
-        "message": "Webhook received & verified",
+        "message": "Webhook received and report task started",
         "order_id": order.id,
         "task_id": task.id
-    })
+    }), 200
 
 
 # ------------------- FOR TRANSIT DATA ------------------- #
