@@ -27,7 +27,8 @@ def create_discounted_order():
     # Razorpay expects amount in paise
     amount_paise = final_price * 100
 
-    receipt = f"order_rcptid_{product_id}_{final_price}_{offer_name or 'regular'}"
+    offer_tag = (offer_name or "regular").replace(" ", "")[:10]
+    receipt = f"rcpt_{product_id}_{final_price}_{offer_tag}"
 
     try:
         razorpay_order = razorpay_client.order.create({
