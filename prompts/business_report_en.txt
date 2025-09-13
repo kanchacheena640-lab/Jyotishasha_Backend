@@ -30,7 +30,7 @@ Output format:
 [Paragraph on personal traits favorable for business: communication, leadership, etc.]
 
 3. Timing and Opportunities  
-[Paragraph on how current dasha or transit favors business start/growth.]
+[According to the given Mahadasha–Antardasha and Current Transit details, first describe the user’s mental state and thinking pattern in this period, and then explain how favorable or challenging this time is for the business start/growth.]
 
 4. Challenges  
 [Paragraph on possible difficulties and how to handle them.]
@@ -42,4 +42,4 @@ Output format:
 [Paragraph recommending one gemstone and why it helps.]
 
 7. Summary  
-[Final paragraph with an inspiring closing message.]
+[Conclude with a summary of above report and end with a motivating message.]
