@@ -24,6 +24,8 @@ from extensions import db, jwt
 from modules.auth import register_auth
 from modules.subscription import register_subscription
 from modules.auth.routes_profile import profile_bp
+import hmac
+import hashlib
 
 
 
@@ -83,10 +85,30 @@ def zodiac_traits():
 # ------------------- WEBHOOK ------------------- #
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    # Raw payload
+    payload = request.data
+    received_sig = request.headers.get("X-Razorpay-Signature")
+    secret = os.getenv("RAZORPAY_WEBHOOK_SECRET")
+
+    if not secret:
+        return jsonify({"error": "Webhook secret not set"}), 500
+
+    # ✅ Verify signature
+    expected_sig = hmac.new(
+        bytes(secret, "utf-8"),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+
+    if received_sig != expected_sig:
+        return jsonify({"error": "Invalid signature"}), 400
+
+    # Parse JSON after verification
     data = request.get_json()
     if not data:
         return jsonify({"error": "Invalid data"}), 400
 
+    # ---- Extract fields (custom payload from frontend if any) ---- #
     name = data.get("name")
     email = data.get("email")
     phone = data.get("phone")
@@ -99,7 +121,7 @@ def webhook():
     if not all([name, email, product]):
         return jsonify({"error": "Missing required fields"}), 400
 
-    # Save Paid Order
+    # ---- Save Paid Order ---- #
     order = Order(
         name=name,
         email=email,
@@ -108,16 +130,22 @@ def webhook():
         dob=dob,
         tob=tob,
         pob=pob,
-        language=language, 
+        language=language,
         status="PAID"
     )
     db.session.add(order)
     db.session.commit()
 
-    # Generate Report and Email (Async)
-    from tasks import generate_and_send_report  # ✅ Local import to avoid circular error
+    # ---- Trigger async report ---- #
+    from tasks import generate_and_send_report
     task = generate_and_send_report.delay(order.id)
-    return jsonify({"message": "Webhook received", "order_id": order.id, "task_id": task.id})
+
+    return jsonify({
+        "message": "Webhook received & verified",
+        "order_id": order.id,
+        "task_id": task.id
+    })
+
 
 # ------------------- FOR TRANSIT DATA ------------------- #
 
