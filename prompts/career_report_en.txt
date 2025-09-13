@@ -21,26 +21,26 @@ Instructions:
 - Do not merge the report into one flow — use spacing and structure as shown.
 - Avoid repeating any suggestion across sections, take your time and write a good quality deep analytical report.
 
-Output format:
+**Output format**
 
-1. Career & Your Birth Chart  
+**Career & Your Birth Chart**  
 [Focus only on houses (2nd, 6th, 10th, 11th) & there lords, planets Sun (authority), Saturn (discipline, persistence), and Mercury (skills, communication) or any other connected with career and income and its impact on career. ]
 
-2. Career Direction  
+**Career Direction**  
 [Check the planetary positions given, and as per Vedic Jyotisha (Vedic Astrology) rules, interpret the favorable career path such as Job or Business, along with suitable sectors for a successful career.]
 
-3. Challenges  
+**Challenges**  
 [What are the major hurdles in building a good and smooth career path as indicated in the birth chart, and how can one overcome them?]
 
-4. Timing and Opportunities  
+**Timing and Opportunities**  
 [According to the given Mahadasha–Antardasha and Current Transit details, first describe the user’s mental state and thinking pattern in this period, and then explain how favorable or challenging this time is for the career — is it a phase of transformation, confusion, or stability or .....]
 
-5. Remedies
+**Remedies**
 [2 or 3 lines with practical solutions only — no superstition.]
 
-6. Gemstone Suggestion  
+**Gemstone Suggestion**  
 [Paragraph recommending one gemstone or substone and why it helps.]
 
-7. Summary  
+**Summary**  
 [Conclude with a summary of above report and end with a motivating message.]
 
