@@ -11,7 +11,7 @@ PRODUCT_PRICES = {
     "startup_suggestion_report" : 98,
     "love_marriage_report" : 98,
     "business_report": 98,
-    "legal_disputes_report" : 1,
+    "legal_disputes_report" : 98,
 
     # Add more here...
 }
