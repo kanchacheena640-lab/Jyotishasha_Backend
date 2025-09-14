@@ -18,28 +18,30 @@ def create_discounted_order():
 
     if active_offer:
         discount = int((active_offer["discount_percent"] / 100) * base_price)
-        final_price = base_price - discount
+        final_price = max(base_price - discount, 1)  # never below 1
         offer_name = active_offer["name"]
     else:
         final_price = base_price
         offer_name = None
 
-    # Razorpay expects amount in paise
-    amount_paise = final_price * 100
+    # 👉 If just checking price (no "create_order" flag), return safe JSON
+    if not data.get("create_order", False):
+        return jsonify({
+            "product": product_id,
+            "offer": offer_name,
+            "base_price": base_price,
+            "final_price": final_price,
+            "discount_percent": active_offer["discount_percent"] if active_offer else 0
+        })
 
-    offer_tag = (offer_name or "regular").replace(" ", "")[:10]
-    receipt = f"rcpt_{product_id}_{final_price}_{offer_tag}"
-
+    # 👉 Only then call Razorpay
     try:
         razorpay_order = razorpay_client.order.create({
-            "amount": amount_paise,
+            "amount": final_price * 100,
             "currency": "INR",
-            "receipt": receipt,
+            "receipt": f"rcpt_{product_id}_{final_price}",
             "payment_capture": 1,
-            "notes": {
-                "product": product_id,
-                "offer": offer_name or "None"
-            }
+            "notes": {"product": product_id, "offer": offer_name or "None"}
         })
 
         return jsonify({
@@ -55,3 +57,4 @@ def create_discounted_order():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
