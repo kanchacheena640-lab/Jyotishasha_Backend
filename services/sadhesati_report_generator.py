@@ -76,8 +76,12 @@ def generate_sadhesati_report(kundali_data: dict) -> dict:
 
     if status == "Active":
         key = phase.lower().replace(" ", "_")
-        start_date = phase_dates[key]["start"]
-        end_date = phase_dates[key]["end"]
+        if key in phase_dates:   # 🔥 safe check added
+            start_date = phase_dates[key]["start"]
+            end_date = phase_dates[key]["end"]
+        else:
+            start_date = end_date = ""   # fallback if not found
+
         short_description = (
             f"You are currently in the {phase} of Sade Sati."
             if language == "en"
