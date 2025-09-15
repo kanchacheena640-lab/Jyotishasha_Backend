@@ -38,102 +38,99 @@ def generate_sadhesati_report(kundali_data: dict) -> dict:
             "explanation": "Moon sign or Saturn sign could not be matched."
         }
 
-    # collect transit data
+    delta = (saturn_index - moon_index) % 12
+    phase = None
+    status = "Inactive"
+    if delta == 11:
+        phase = "1st Phase"
+        status = "Active"
+    elif delta == 0:
+        phase = "2nd Phase"
+        status = "Active"
+    elif delta == 1:
+        phase = "3rd Phase"
+        status = "Active"
+
     prev_transits = get_prev_transits("Saturn", 12)
     next_transits = get_next_transits("Saturn", 12)
-    combined = sorted(prev_transits + next_transits, key=lambda x: x["entering_date"])
 
-    # --- Build Phase Blocks (multiple entries allowed) ---
-    phase_dates = {"first_phase": [], "second_phase": [], "third_phase": []}
     rashi_sequence = [
-        SATURN_RASHIS[(moon_index - 1) % 12],  # 1st Phase
-        SATURN_RASHIS[moon_index],             # 2nd Phase
-        SATURN_RASHIS[(moon_index + 1) % 12]   # 3rd Phase
+        SATURN_RASHIS[(moon_index - 1) % 12],
+        SATURN_RASHIS[moon_index],
+        SATURN_RASHIS[(moon_index + 1) % 12]
     ]
 
-    for idx, label in enumerate(["first_phase", "second_phase", "third_phase"]):
-        entries = [t for t in combined if t["to_rashi"] == rashi_sequence[idx]]
-        for e in entries:
-            phase_dates[label].append({
-                "start": e["entering_date"],
-                "end": e["exit_date"]
-            })
-
-    # --- Total Sade Sati Period ---
-    start_date = phase_dates["first_phase"][0]["start"] if phase_dates["first_phase"] else ""
-    end_date = phase_dates["third_phase"][-1]["end"] if phase_dates["third_phase"] else ""
-
-    # --- Status Detection ---
-    today = datetime.now().date()
-    status = "Inactive"
-    active_phase = None
-
-    def in_range(d1, d2):
-        return datetime.strptime(d1, "%Y-%m-%d").date() <= today <= datetime.strptime(d2, "%Y-%m-%d").date()
-
-    for label in ["first_phase", "second_phase", "third_phase"]:
-        for block in phase_dates[label]:
-            if block["start"] and block["end"] and in_range(block["start"], block["end"]):
-                status = "Active"
-                active_phase = label
+    combined = sorted(prev_transits + next_transits, key=lambda x: x["entering_date"])
+    phase_dates = {}
+    for i, label in enumerate(["first_phase", "second_phase", "third_phase"]):
+            phase_dates[label] = []  # make it a list
+            for t in combined:
+                if t["to_rashi"] == rashi_sequence[i]:
+                    phase_dates[label].append({
+                        "start": t["entering_date"],
+                        "end": t["exit_date"]
+                    })
+            # agar ek bhi na mile to safe rakho
+            if not phase_dates[label]:
+                phase_dates[label] = [{"start": "", "end": ""}]
                 break
-        if status == "Active":
-            break
 
-    if status == "Inactive":
-        if start_date and today < datetime.strptime(start_date, "%Y-%m-%d").date():
-            status = "Upcoming"
-        elif end_date and today > datetime.strptime(end_date, "%Y-%m-%d").date():
-            status = "Ended"
-
-    # --- Template Load ---
+    impact_level = "Moderate"
     template = load_template(language)
+
     if status == "Active":
+        key = phase.lower().replace(" ", "_")
+        if key in phase_dates:   # 🔥 safe check added
+            start_date = phase_dates[key]["start"]
+            end_date = phase_dates[key]["end"]
+        else:
+            start_date = end_date = ""   # fallback if not found
+
         short_description = (
-            f"You are currently in the {active_phase.replace('_', ' ')} of Sade Sati."
+            f"You are currently in the {phase} of Sade Sati."
             if language == "en"
-            else f"आप वर्तमान में साढ़े साती के {active_phase.replace('_', ' ')} में हैं।"
+            else f"आप वर्तमान में साढ़े साती के {phase} में हैं।"
         )
         paragraph_source = template["report_paragraphs"]
         summary_source = template["summary_block"]
-    elif status == "Upcoming":
-        short_description = (
-            f"Your Sade Sati will begin from {start_date}."
-            if language == "en"
-            else f"आपकी साढ़े साती {start_date} से शुरू होगी।"
-        )
-        paragraph_source = template["inactive_block"]["report_paragraphs"]
-        summary_source = template["inactive_block"]["summary_block"]
-    elif status == "Ended":
-        short_description = (
-            "Your Sade Sati has ended."
-            if language == "en"
-            else "आपकी साढ़े साती समाप्त हो चुकी है।"
-        )
-        paragraph_source = template["inactive_block"]["report_paragraphs"]
-        summary_source = template["inactive_block"]["summary_block"]
     else:
-        short_description = (
-            "You are currently not under Sade Sati."
-            if language == "en"
-            else "आप वर्तमान में साढ़े साती के प्रभाव में नहीं हैं।"
-        )
+        phase = None  # ensure not set
+        future_phase = next((t for t in next_transits if t["to_rashi"] == rashi_sequence[0]), None)
+        if future_phase:
+            start_date = future_phase["entering_date"]
+            end_date = future_phase["exit_date"]
+            short_description = (
+                f"Your Sade Sati will begin when Saturn enters {rashi_sequence[0]} on {start_date}."
+                if language == "en"
+                else f"आपकी साढ़े साती {rashi_sequence[0]} में शनि के प्रवेश के साथ {start_date} से शुरू होगी।"
+            )
+            phase_dates["first_phase"] = {"start": start_date, "end": end_date}
+        else:
+            start_date = end_date = ""
+            short_description = (
+                "You are currently not under Sade Sati."
+                if language == "en"
+                else "आप वर्तमान में साढ़े साती के प्रभाव में नहीं हैं।"
+            )
+
         paragraph_source = template["inactive_block"]["report_paragraphs"]
         summary_source = template["inactive_block"]["summary_block"]
 
-    # --- Placeholders ---
     placeholder_data = {
-        "moon_sign": moon_sign,
-        "saturn_sign": saturn_rashi,
+        "current_phase": phase or "None",
         "start_date": start_date,
         "end_date": end_date,
-        "status": status,
-        "active_phase": active_phase or "None",
+        "moon_sign": moon_sign,
+        "saturn_sign": saturn_rashi,
+        "impact_level": impact_level,
+        "future_start_date": start_date,
+        "moon_sign_minus_one": rashi_sequence[0],
+        "moon_sign_plus_one": rashi_sequence[2],
     }
 
     def inject(text):
         for key, val in placeholder_data.items():
-            text = text.replace(f"{{{key}}}", str(val))
+            text = text.replace(f"{{{key}}}", val)
         return text
 
     report_paragraphs = [inject(p) for p in paragraph_source]
@@ -144,9 +141,8 @@ def generate_sadhesati_report(kundali_data: dict) -> dict:
         "status": status,
         "moon_rashi": moon_sign,
         "saturn_rashi": saturn_rashi,
-        "active_phase": active_phase,
-        "phase_blocks": phase_dates,
-        "total_period": {"start": start_date, "end": end_date},
+        "phase": phase,
+        "phase_dates": phase_dates,
         "short_description": short_description,
         "report_paragraphs": report_paragraphs,
         "summary_block": {
@@ -155,4 +151,3 @@ def generate_sadhesati_report(kundali_data: dict) -> dict:
         },
         "explanation": general_explanation
     }
-
