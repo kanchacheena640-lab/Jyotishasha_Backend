@@ -192,9 +192,11 @@ def create_razorpay_order():
         data = request.get_json()
         product_id = data.get("product")
 
+        # ✅ Product validate karo
         if product_id not in PRODUCT_PRICES:
             return jsonify({"error": "Invalid product selected"}), 400
 
+        # ✅ Apni pricing table se hi amount lo
         amount_rupees = PRODUCT_PRICES[product_id]
         amount_paise = amount_rupees * 100
 
@@ -213,12 +215,13 @@ def create_razorpay_order():
         return jsonify({
             "order_id": razorpay_order["id"],
             "currency": razorpay_order["currency"],
-            "amount": razorpay_order["amount"],
+            "amount": amount_rupees,   # ✅ user ko clean amount dikhao
             "product": product_id
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
 
 # ------------------- MAIN ------------------- #
 if __name__ == "__main__":
