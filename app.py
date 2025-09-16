@@ -195,12 +195,11 @@ def create_razorpay_order():
         if product_id not in PRODUCT_PRICES:
             return jsonify({"error": "Invalid product selected"}), 400
 
-        # ✅ Amount from pricing.py
         amount_rupees = PRODUCT_PRICES[product_id]
         amount_paise = amount_rupees * 100
 
-        # ✅ Create order with Razorpay SDK
         receipt = f"order_rcptid_{os.urandom(4).hex()}"
+
         razorpay_order = razorpay_client.order.create({
             "amount": amount_paise,
             "currency": "INR",
