@@ -63,16 +63,12 @@ def generate_sadhesati_report(kundali_data: dict) -> dict:
     combined = sorted(prev_transits + next_transits, key=lambda x: x["entering_date"])
     phase_dates = {}
     for i, label in enumerate(["first_phase", "second_phase", "third_phase"]):
-            phase_dates[label] = []  # make it a list
-            for t in combined:
-                if t["to_rashi"] == rashi_sequence[i]:
-                    phase_dates[label].append({
-                        "start": t["entering_date"],
-                        "end": t["exit_date"]
-                    })
-            # agar ek bhi na mile to safe rakho
-            if not phase_dates[label]:
-                phase_dates[label] = [{"start": "", "end": ""}]
+        for t in combined:
+            if t["to_rashi"] == rashi_sequence[i]:
+                phase_dates[label] = {
+                    "start": t["entering_date"],
+                    "end": t["exit_date"]
+                }
                 break
 
     impact_level = "Moderate"
