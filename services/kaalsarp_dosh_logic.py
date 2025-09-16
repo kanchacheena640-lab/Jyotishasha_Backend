@@ -46,14 +46,17 @@ def generate_kaalsarp_dosh_report(planets: List[Dict], language: str = "en") -> 
 
     planets_between = [
         p for p in planets
-        if p["name"].lower() not in ["rahu", "ketu"] and p.get("house") in blocked_houses_set
+        if p["name"].lower() not in ["rahu", "ketu"] 
+        and "ascendant" not in p["name"].lower()
+        and p.get("house") in blocked_houses_set
     ]
 
     planets_outside = [
         p for p in planets
-        if p["name"].lower() not in ["rahu", "ketu"] and p.get("house") not in blocked_houses_set
+        if p["name"].lower() not in ["rahu", "ketu"] 
+        and "ascendant" not in p["name"].lower()
+        and p.get("house") not in blocked_houses_set
     ]
-
     triggered = len(planets_outside) == 0
 
     if triggered:
