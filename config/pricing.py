@@ -1,17 +1,17 @@
 # config/pricing.py
 
 PRODUCT_PRICES = {
-    "marriage_report": 98,
-    "career_report": 98,
-    "love_relationship_report": 98,
-    "foreign_travel_report": 98,
-    "government_job_report": 111,
-    "sadhesati_report": 98,
-    "financial_report": 98,
-    "startup_suggestion_report" : 98,
-    "love_marriage_report" : 98,
-    "business_report": 98,
-    "legal_disputes_report" : 98,
+    "marriage_report": 49,
+    "career_report": 49,
+    "love_relationship_report": 49,
+    "foreign_travel_report": 49,
+    "government_job_report": 49,
+    "sadhesati_report": 49,
+    "financial_report": 49,
+    "startup_suggestion_report" : 49,
+    "love_marriage_report" : 49,
+    "business_report": 49,
+    "legal_disputes_report" : 49,
 
     # Add more here...
 }
