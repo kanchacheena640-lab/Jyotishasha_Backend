@@ -40,9 +40,9 @@ def generate_kaalsarp_dosh_report(planets: List[Dict], language: str = "en") -> 
     rahu_house = rahu.get("house")
     ketu_house = ketu.get("house")
 
-    blocked_houses = [(h % 12) or 12 for h in range(rahu_house + 1, rahu_house + 12)]
-    blocked_houses = blocked_houses[:11]
+    blocked_houses = [(h - 1) % 12 + 1 for h in range(rahu_house + 1, rahu_house + 7)]
     blocked_houses_set = set(blocked_houses)
+    
 
     planets_between = [
         p for p in planets
