@@ -12,6 +12,7 @@ PRODUCT_PRICES = {
     "love_marriage_report" : 49,
     "business_report": 49,
     "legal_disputes_report" : 49,
+    "gemstone_consultation": 1,
 
     # Add more here...
 }
