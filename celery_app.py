@@ -1,5 +1,3 @@
-# celery_app.py
-
 import os
 from celery import Celery
 import ssl
@@ -16,10 +14,15 @@ celery = Celery(
     include=["tasks"]
 )
 
-# Use Python None (not string) for SSL setting
 celery.conf.update(
     task_serializer='json',
     result_serializer='json',
     accept_content=['json'],
     broker_use_ssl={"ssl_cert_reqs": ssl.CERT_NONE},
+    result_backend=None,  # ✅ make sure result backend is off
+    worker_prefetch_multiplier=1,  # ✅ har worker ek time me ek hi task lega
+    broker_transport_options={
+        "visibility_timeout": 3600,  # ✅ task 1 hr tak queue me rahega agar fail ho
+        "polling_interval": 1.0      # ✅ default 0.2s → ab har 1 sec me poll karega
+    }
 )
