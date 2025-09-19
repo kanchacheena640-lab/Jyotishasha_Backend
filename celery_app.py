@@ -23,6 +23,6 @@ celery.conf.update(
     worker_prefetch_multiplier=1,  # ✅ har worker ek time me ek hi task lega
     broker_transport_options={
         "visibility_timeout": 3600,  # ✅ task 1 hr tak queue me rahega agar fail ho
-        "polling_interval": 10.0      # ✅ default 0.2s → ab har 1 sec me poll karega
+        "polling_interval": 180.0      # ✅ default 0.2s → ab har 1 sec me poll karega
     }
 )
