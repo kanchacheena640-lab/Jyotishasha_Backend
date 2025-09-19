@@ -154,7 +154,7 @@ def generate_and_send_report(order_id):
             # Save PDF URL to database
             order_model = Order.query.get(order_id)
             if order_model:
-                order_model.pdf_url = output_path
+                order_model.pdf_url = output_path                
                 order_model.report_stage = "Ready"
                 db.session.commit()
                 print(f"[DEBUG] PDF URL saved to DB: {output_path}")
