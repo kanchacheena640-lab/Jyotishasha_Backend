@@ -13,6 +13,21 @@ PRODUCT_PRICES = {
     "business_report": 49,
     "legal_disputes_report" : 49,
     "gemstone_consultation": 21,
+    "children_parenting_report": 49,
+    "delay_in_marriage_report": 21,
+    "children_parenting_report": 49,
+    "delay_in_marriage_report": 49,
+    "financial_stability_report": 49,
+    "jupiter_transit_report": 25,
+    "lifestyle_analysis_report": 25,
+    "love_disappointment_report": 25,
+    "problem_in_marriage_report": 25,
+    "mood_mental_health_report": 25,
+    "property_report": 25,
+    "saturn_transit_report": 25,
+    "second_marriage_report": 25,
+    "divorce_possibility_report": 25,
+
 
     # Add more here...
 }
