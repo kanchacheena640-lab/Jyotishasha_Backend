@@ -1,7 +1,5 @@
 # config/pricing.py
 
-# config/pricing.py
-
 PRODUCT_PRICES = {
     "marriage_report": 49,
     "career_report": 49,
