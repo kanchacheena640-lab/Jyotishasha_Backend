@@ -3,6 +3,8 @@
 from flask import Blueprint, jsonify
 from extensions import db
 from models import Order
+from tasks import generate_and_send_report   # ✅ NEW import
+
 
 admin_orders_bp = Blueprint('admin_orders', __name__)
 
@@ -26,3 +28,19 @@ def get_all_orders():
         })
 
     return jsonify(data), 200
+
+# ------------------- RESEND ORDER ------------------- #
+@admin_orders_bp.route('/admin/api/resend/<int:order_id>', methods=['POST'])
+def resend_order(order_id):
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+
+    # Celery task फिर से चलाओ
+    generate_and_send_report.delay(order_id)
+
+    # Optional: stage update
+    order.report_stage = "Regenerating"
+    db.session.commit()
+
+    return jsonify({"message": f"Report regeneration started for order {order_id}"}), 200
