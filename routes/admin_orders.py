@@ -3,7 +3,6 @@
 from flask import Blueprint, jsonify
 from extensions import db
 from models import Order
-from tasks import generate_and_send_report   # ✅ NEW import
 
 
 admin_orders_bp = Blueprint('admin_orders', __name__)
@@ -32,6 +31,8 @@ def get_all_orders():
 # ------------------- RESEND ORDER ------------------- #
 @admin_orders_bp.route('/admin/api/resend/<int:order_id>', methods=['POST'])
 def resend_order(order_id):
+    from tasks import generate_and_send_report   # ✅ NEW import
+
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Order not found"}), 404
