@@ -45,3 +45,26 @@ def resend_order(order_id):
     db.session.commit()
 
     return jsonify({"message": f"Report regeneration started for order {order_id}"}), 200
+
+# ------------------- UPDATE ORDER ------------------- #
+@admin_orders_bp.route('/admin/api/order/<int:order_id>', methods=['PUT'])
+def update_order(order_id):
+    from flask import request
+
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+
+    data = request.get_json()
+
+    # ✅ update only allowed fields
+    order.dob = data.get("dob", order.dob)
+    order.tob = data.get("tob", order.tob)
+    order.pob = data.get("pob", order.pob)
+    order.latitude = data.get("latitude", order.latitude)
+    order.longitude = data.get("longitude", order.longitude)
+
+    # save changes
+    db.session.commit()
+
+    return jsonify({"message": f"Order {order_id} updated successfully"}), 200
