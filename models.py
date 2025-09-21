@@ -16,3 +16,5 @@ class Order(db.Model):
     language = db.Column(db.String(10), default="en")
     report_stage = db.Column(db.String(50), default="Pending")  # e.g., Pending, Generating, Ready
     pdf_url = db.Column(db.String(255))  
+    latitude = db.Column(db.String)
+    longitude = db.Column(db.String)
