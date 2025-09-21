@@ -21,7 +21,7 @@ def get_all_orders():
             "payment_status": o.status,       # ✅ map: status → payment_status
             "order_time": o.created_at.isoformat() if o.created_at else None,
             "report_stage": o.report_stage or "Pending",        # ✅ placeholder (abhi column nahi)
-            "pdf_url": o.pdf_url or None,                   # ✅ placeholder (abhi column nahi)
+            "pdf_url": f"/admin/download/{o.id}" if o.pdf_url else None,                   
             "language": o.language or "en" 
         })
 

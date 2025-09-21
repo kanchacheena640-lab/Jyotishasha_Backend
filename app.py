@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from factory import create_app
 from extensions import db
-from models import Order
 from modules.auth.models import User
 from full_kundali_api import calculate_full_kundali
 from services.zodiac_service import get_zodiac_traits
@@ -24,6 +23,8 @@ from extensions import db, jwt
 from modules.auth import register_auth
 from modules.subscription import register_subscription
 from modules.auth.routes_profile import profile_bp
+from flask import send_file
+from models import Order
 
 
 
@@ -150,8 +151,26 @@ def transit_current_plus_12():
     future = get_all_planets_next_12()
     return jsonify({**current, "future_transits": future})
 
-# ------------------- Summary API ------------------- #
+# ------------------- ADD MORE HEre ------------------- #
 
+# ------------------- ADMIN REPORT DOWNLOAD ------------------- #
+
+@app.route("/admin/download/<int:order_id>")
+def admin_download_report(order_id):
+    """
+    Admin ke liye report download endpoint.
+    Jab admin panel se link click hoga, ye PDF ko direct download karega.
+    File system ka path expose nahi hoga.
+    """
+    order = Order.query.get(order_id)
+    if not order or not order.pdf_url:
+        return {"error": "Report not found"}, 404
+
+    return send_file(
+        order.pdf_url,
+        as_attachment=True,   # ✅ force download karega
+        download_name=f"{order.product}_{order.name}.pdf"
+    )
     
 # ------------------- KUNDALI API ------------------- #
 @app.route("/api/full-kundali", methods=["POST", "OPTIONS"])
