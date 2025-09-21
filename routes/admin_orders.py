@@ -56,6 +56,8 @@ def update_order(order_id):
         return jsonify({"error": "Order not found"}), 404
 
     data = request.get_json()
+    print("[DEBUG] Incoming Data:", data)   # ✅ Add this line to check payload
+
 
     # ✅ update only allowed fields
     order.dob = data.get("dob", order.dob)
