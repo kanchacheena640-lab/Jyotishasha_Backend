@@ -114,7 +114,9 @@ def webhook():
         tob=tob,
         pob=pob,
         language=language,
-        status="PAID"
+        status="PAID",
+        latitude=data.get("latitude"),
+        longitude=data.get("longitude")
     )
     db.session.add(order)
     db.session.commit()
