@@ -205,39 +205,57 @@ def full_kundali():
 # ------------------- RAZORPAY ORDER CREATE ------------------- #
 @app.route("/api/razorpay-order", methods=["POST"])
 def create_razorpay_order():
+    import time
     try:
-        data = request.get_json()
-        product_id = data.get("product")
+        data = request.get_json() or {}
+        product_id_raw = data.get("product", "")
+        product_id = (product_id_raw or "").strip().lower()   # ✅ normalize
 
-        # ✅ Product validate karo
-        if product_id not in PRODUCT_PRICES:
-            return jsonify({"error": "Invalid product selected"}), 400
+        # ✅ Lowercase mapping banado
+        prices_lc = {str(k).lower(): v for k, v in PRODUCT_PRICES.items()}
+        if product_id not in prices_lc:
+            return jsonify({"error": f"Invalid product selected: {product_id_raw}"}), 400
 
-        # ✅ Apni pricing table se hi amount lo
-        amount_rupees = PRODUCT_PRICES[product_id]
-        amount_paise = amount_rupees * 100
+        amount_rupees = prices_lc[product_id]
 
-        receipt = f"order_rcptid_{os.urandom(4).hex()}"
+        # ✅ Always int paise
+        try:
+            amount_paise = int(round(float(amount_rupees) * 100))
+        except Exception:
+            return jsonify({"error": f"Invalid amount for {product_id_raw}: {amount_rupees}"}), 400
 
-        razorpay_order = razorpay_client.order.create({
+        receipt = f"order_{os.urandom(4).hex()}"
+
+        payload = {
             "amount": amount_paise,
             "currency": "INR",
             "receipt": receipt,
             "payment_capture": 1,
-            "notes": {
-                "product": product_id
-            }
-        })
+            "notes": {"product": product_id},
+        }
 
+        # ✅ Retry safeguard
+        try:
+            rp_order = razorpay_client.order.create(payload)
+        except Exception as e1:
+            print("⚠️ Razorpay order first attempt failed:", str(e1))
+            time.sleep(0.8)
+            try:
+                rp_order = razorpay_client.order.create(payload)
+            except Exception as e2:
+                print("❌ Razorpay order second attempt also failed:", str(e2))
+                raise e2
+            
         return jsonify({
-            "order_id": razorpay_order["id"],
-            "currency": razorpay_order["currency"],
-            "amount": amount_rupees,   # ✅ user ko clean amount dikhao
-            "product": product_id
-        })
+            "order_id": rp_order.get("id"),
+            "currency": rp_order.get("currency", "INR"),
+            "amount": int(round(float(amount_rupees))),
+            "product": product_id_raw
+        }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
 
 
 # ------------------- MAIN ------------------- #
