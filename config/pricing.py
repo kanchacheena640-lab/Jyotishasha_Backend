@@ -16,7 +16,7 @@ PRODUCT_PRICES = {
     "children_parenting_report": 49,
     "delay_in_marriage_report": 49,
     "financial_stability_report": 49,
-    "jupiter_transit_report": 1,
+    "jupiter_transit_report": 49,
     "lifestyle_analysis_report": 25,
     "love_disappointment_report": 25,
     "problem_in_marriage_report": 25,
