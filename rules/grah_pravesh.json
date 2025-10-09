@@ -1,0 +1,10 @@
+{
+  "allowed_tithis": [2,3,5,7,10,11,13],
+  "avoid_tithis": [4,8,9,14,15,30],
+  "allowed_weekdays": ["Monday","Wednesday","Thursday","Friday"],
+  "avoid_weekdays": ["Saturday","Sunday"],
+  "allowed_nakshatras": ["Rohini","Mrigashira","Uttara Phalguni","Hasta","Swati","Anuradha","Shravana","Dhanishta","Revati"],
+  "avoid_nakshatras": ["Krittika","Ashlesha","Magha","Mula","Jyeshtha"],
+  "avoid_yogas": ["Vyatipata","Vaidhriti"],
+  "avoid_karans": ["Vishti (Bhadra)"]
+}
