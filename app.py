@@ -18,6 +18,7 @@ from routes.admin_orders import admin_orders_bp
 from summary_api import summary_api
 from routes.daily_horoscope import daily_bp
 from routes.monthly_horoscope import monthly_bp
+from routes.routes_panchang import routes_panchang
 from flask_migrate import Migrate
 from extensions import db, jwt
 from modules.auth import register_auth
@@ -25,7 +26,6 @@ from modules.subscription import register_subscription
 from modules.auth.routes_profile import profile_bp
 from flask import send_file
 from models import Order
-from routes.routes_panchang import routes_panchang
 
 
 
@@ -43,11 +43,11 @@ app.register_blueprint(admin_orders_bp)
 app.register_blueprint(summary_api)
 app.register_blueprint(daily_bp)
 app.register_blueprint(monthly_bp)
+app.register_blueprint(routes_panchang)
 jwt.init_app(app)
 register_auth(app)
 register_subscription(app)
 app.register_blueprint(profile_bp, url_prefix="/api/profile")
-app.register_blueprint(routes_panchang)
 
 
 
