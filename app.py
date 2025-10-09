@@ -25,6 +25,8 @@ from modules.subscription import register_subscription
 from modules.auth.routes_profile import profile_bp
 from flask import send_file
 from models import Order
+from routes.panchang_routes import panchang_bp
+
 
 
 
@@ -45,6 +47,8 @@ jwt.init_app(app)
 register_auth(app)
 register_subscription(app)
 app.register_blueprint(profile_bp, url_prefix="/api/profile")
+app.register_blueprint(panchang_bp)
+
 
 # ------------------- ROOT ------------------- #
 @app.route("/")
