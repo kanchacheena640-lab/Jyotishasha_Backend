@@ -43,11 +43,11 @@ app.register_blueprint(admin_orders_bp)
 app.register_blueprint(summary_api)
 app.register_blueprint(daily_bp)
 app.register_blueprint(monthly_bp)
+app.register_blueprint(routes_panchang)
 jwt.init_app(app)
 register_auth(app)
 register_subscription(app)
 app.register_blueprint(profile_bp, url_prefix="/api/profile")
-app.register_blueprint(routes_panchang)
 
 
 # ------------------- ROOT ------------------- #
