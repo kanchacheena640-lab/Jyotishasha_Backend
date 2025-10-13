@@ -87,8 +87,12 @@ def zodiac_traits():
     return jsonify(data)
 
 # ------------------- WEBHOOK ------------------- #
+# ------------------- WEBHOOK ------------------- #
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    from app_config import USE_CELERY  # 🔁 toggle flag
+    from tasks import generate_and_send_report  # local import (avoid circular)
+
     data = request.get_json()
 
     # ✅ Case A: Razorpay webhook (event = payment.captured)
@@ -126,15 +130,26 @@ def webhook():
     db.session.add(order)
     db.session.commit()
 
-    # 🔁 Local import to avoid circular import error
-    from tasks import generate_and_send_report
-    task = generate_and_send_report.delay(order.id)
-
-    return jsonify({
-        "message": "Webhook received and report task started",
-        "order_id": order.id,
-        "task_id": task.id
-    }), 200
+    # ----------------------------------------------------------
+    # 🔁 DUAL MODE LOGIC — Decide based on USE_CELERY flag
+    # ----------------------------------------------------------
+    if USE_CELERY:
+        # 🧵 ASYNC MODE (Celery + Redis)
+        print(f"[Webhook] Queuing async task for Order {order.id}")
+        task = generate_and_send_report.delay(order.id)
+        return jsonify({
+            "message": "Webhook received — report task queued",
+            "order_id": order.id,
+            "task_id": task.id
+        }), 200
+    else:
+        # ⚡ SYNC MODE (Direct execution, no Celery)
+        print(f"[Webhook] Running report directly for Order {order.id}")
+        generate_and_send_report(order.id)
+        return jsonify({
+            "message": "Webhook received — report generated successfully",
+            "order_id": order.id
+        }), 200
 
 
 # ------------------- FOR TRANSIT DATA ------------------- #
