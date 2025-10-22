@@ -5,7 +5,7 @@
     "element": "अग्‍नी तत्‍व",
     "symbol": "मेष (भेड़)",
     "ruling_planet": "मंगल",
-    "image": "/Zodiac/aries.png"
+    "image": "/zodiac/aries.png"
   },
   "Taurus": {
     "title": "आपकी कुंडली के अनुसार आपकी वृषभ राशि है।",
@@ -13,7 +13,7 @@
     "element": "पृथ्‍वी तत्‍व",
     "symbol": "बैल",
     "ruling_planet": "शुक्र",
-    "image": "/Zodiac/taurus.png"
+    "image": "/zodiac/taurus.png"
   },
   "Gemini": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि मिथुन है।",
@@ -21,7 +21,7 @@
     "element": "जल तत्‍व",
     "symbol": "जुड़वा",
     "ruling_planet": "बुध",
-    "image": "/Zodiac/gemini.png"
+    "image": "/zodiac/gemini.png"
   },
   "Cancer": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि कर्क है।",
@@ -29,7 +29,7 @@
     "element": "जल तत्‍व",
     "symbol": "केकड़ा",
     "ruling_planet": "चंद्रमा",
-    "image": "/Zodiac/cancer.png"
+    "image": "/zodiac/cancer.png"
   },
   "Leo": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि सिंह है।",
@@ -37,7 +37,7 @@
     "element": "अग्‍नि तत्‍व",
     "symbol": "शेर",
     "ruling_planet": "सूर्य",
-    "image": "/Zodiac/leo.png"
+    "image": "/zodiac/leo.png"
   },
   "Virgo": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि कन्‍या है।",
@@ -45,7 +45,7 @@
     "element": "पृथ्‍वी तत्‍व",
     "symbol": "नव युवति",
     "ruling_planet": "बुध",
-    "image": "/Zodiac/virgo.png"
+    "image": "/zodiac/virgo.png"
   },
   "Libra": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि तुला है।",
@@ -53,7 +53,7 @@
     "element": "जल तत्‍व",
     "symbol": "तुला (तराजू)",
     "ruling_planet": "शुक्र",
-    "image": "/Zodiac/libra.png"
+    "image": "/zodiac/libra.png"
   },
   "Scorpio": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि वृश्‍चिक है।",
@@ -61,7 +61,7 @@
     "element": "जल तत्‍व",
     "symbol": "बिच्‍छू",
     "ruling_planet": "मंगल",
-    "image": "/Zodiac/scorpio.png"
+    "image": "/zodiac/scorpio.png"
   },
   "Sagittarius": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि धनु है।",
@@ -69,7 +69,7 @@
     "element": "अग्‍नि तत्‍व",
     "symbol": "धनुष",
     "ruling_planet": "बृहस्‍पति",
-    "image": "/Zodiac/sagittarius.png"
+    "image": "/zodiac/sagittarius.png"
   },
   "Capricorn": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि मकर है।",
@@ -77,7 +77,7 @@
     "element": "पृथ्‍वी तत्‍व",
     "symbol": "पहाड़ी बकरी",
     "ruling_planet": "शनि",
-    "image": "/Zodiac/capricorn.png"
+    "image": "/zodiac/capricorn.png"
   },
   "Aquarius": {
     "title": "आपकी कुंडली के अनुसार आपकी राशि कुंभ है।",
@@ -85,7 +85,7 @@
     "element": "वायु तत्‍व",
     "symbol": "कुंभ",
     "ruling_planet": "शनि",
-    "image": "/Zodiac/aquarius.png"
+    "image": "/zodiac/aquarius.png"
   },
   "Pisces": {
     "title": "आपकी कुंडली के अनुसार आपकी मीन राशि है।",
@@ -93,6 +93,6 @@
     "element": "जल तत्‍व",
     "symbol": "मछली (मीन)",
     "ruling_planet": "बृहस्‍पति",
-    "image": "/Zodiac/pisces.png"
+    "image": "/zodiac/pisces.png"
   }
 }
