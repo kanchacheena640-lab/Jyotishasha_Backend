@@ -5,7 +5,7 @@
     "element": "Fire",
     "symbol": "Ram",
     "ruling_planet": "Mars",
-    "image": "/Zodiac/aries.png"
+    "image": "/zodiac/aries.png"
   },
   "Taurus": {
     "title": "Your Moon Sign is Taurus (Vrishabh)",
@@ -13,7 +13,7 @@
     "element": "Earth",
     "symbol": "Bull",
     "ruling_planet": "Venus",
-    "image": "/Zodiac/taurus.png"
+    "image": "/zodiac/taurus.png"
   },
   "Gemini": {
     "title": "Your Moon Sign is Gemini (Mithun)",
@@ -21,7 +21,7 @@
     "element": "Air",
     "symbol": "Twins",
     "ruling_planet": "Mercury",
-    "image": "/Zodiac/gemini.png"
+    "image": "/zodiac/gemini.png"
   },
   "Cancer": {
     "title": "Your Moon Sign is Cancer (Karka)",
@@ -29,7 +29,7 @@
     "element": "Water",
     "symbol": "Crab",
     "ruling_planet": "Moon",
-    "image": "/Zodiac/cancer.png"
+    "image": "/zodiac/cancer.png"
   },
   "Leo": {
     "title": "Your Moon Sign is Leo (Simha)",
@@ -37,7 +37,7 @@
     "element": "Fire",
     "symbol": "Lion",
     "ruling_planet": "Sun",
-    "image": "/Zodiac/leo.png"
+    "image": "/zodiac/leo.png"
   },
   "Virgo": {
     "title": "Your Moon Sign is Virgo (Kanya)",
@@ -45,7 +45,7 @@
     "element": "Earth",
     "symbol": "Virgin",
     "ruling_planet": "Mercury",
-    "image": "/Zodiac/virgo.png"
+    "image": "/zodiac/virgo.png"
   },
   "Libra": {
     "title": "Your Moon Sign is Libra (Tula)",
@@ -53,7 +53,7 @@
     "element": "Air",
     "symbol": "Balance",
     "ruling_planet": "Venus",
-    "image": "/Zodiac/libra.png"
+    "image": "/zodiac/libra.png"
   },
   "Scorpio": {
     "title": "Your Moon Sign is Scorpio (Vrishchik)",
@@ -61,7 +61,7 @@
     "element": "Water",
     "symbol": "Scorpion",
     "ruling_planet": "Mars",
-    "image": "/Zodiac/scorpio.png"
+    "image": "/zodiac/scorpio.png"
   },
   "Sagittarius": {
     "title": "Your Moon Sign is Sagittarius (Dhanu)",
@@ -69,7 +69,7 @@
     "element": "Fire",
     "symbol": "Archer",
     "ruling_planet": "Jupiter",
-    "image": "/Zodiac/sagittarius.png"
+    "image": "/zodiac/sagittarius.png"
   },
   "Capricorn": {
     "title": "Your Moon Sign is Capricorn (Makar)",
@@ -77,7 +77,7 @@
     "element": "Earth",
     "symbol": "Mountain Goat",
     "ruling_planet": "Saturn",
-    "image": "/Zodiac/capricorn.png"
+    "image": "/zodiac/capricorn.png"
   },
   "Aquarius": {
     "title": "Your Moon Sign is Aquarius (Kumbh)",
@@ -85,7 +85,7 @@
     "element": "Air",
     "symbol": "Water Bearer",
     "ruling_planet": "Saturn",
-    "image": "/Zodiac/aquarius.png"
+    "image": "/zodiac/aquarius.png"
   },
   "Pisces": {
     "title": "Your Moon Sign is Pisces (Meen)",
@@ -93,6 +93,6 @@
     "element": "Water",
     "symbol": "Fishes",
     "ruling_planet": "Jupiter",
-    "image": "/Zodiac/pisces.png"
+    "image": "/zodiac/pisces.png"
   }
 }
