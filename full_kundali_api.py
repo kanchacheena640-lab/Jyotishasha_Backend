@@ -285,11 +285,20 @@ def calculate_full_kundali(name, dob, tob, lat, lon, language='en'):
 
     # ✅ Load Lagna Trait from JSON
     try:
-        with open("data/lagna_traits.json", encoding="utf-8") as f:
+        file_path = (
+            "data/lagna_traits_hi.json"
+            if language == "hi"
+            else "data/lagna_traits_en.json"
+        )
+        with open(file_path, encoding="utf-8") as f:
             lagna_traits_data = json.load(f)
-            lagna_trait_text = lagna_traits_data.get(lagna_sign, {}).get(language, "Trait not found")
+            lagna_trait_text = lagna_traits_data.get(lagna_sign, {}).get(language, "")
+            # fallback if key structure is simple string
+            if not lagna_trait_text and isinstance(lagna_traits_data.get(lagna_sign), str):
+                lagna_trait_text = lagna_traits_data.get(lagna_sign)
     except Exception as e:
-        lagna_trait_text = "Error loading lagna traits"
+        print("⚠️ Lagna traits load error:", e)
+        lagna_trait_text = "Lagna description not found."
 
       # ✅ Inject Manglik Dosh Analysis
     manglik_result = build_manglik_dosh({
