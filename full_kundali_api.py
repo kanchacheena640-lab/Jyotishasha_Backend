@@ -265,7 +265,16 @@ def calculate_full_kundali(name, dob, tob, lat, lon, language='en'):
 
     moon_sign = next((p['sign'] for p in planets if p["name"] == "Moon"), None)
     lagna_sign = next((p['sign'] for p in planets if "Ascendant" in p["name"]), None)
-    moon_traits = get_zodiac_traits(moon_sign, language)
+    # 🌙 Moon Sign Traits (with safe fallback)
+    try:
+        moon_traits = get_zodiac_traits(moon_sign, language)
+    except Exception as e:
+        print(f"⚠️ Moon traits error: {e}")
+        moon_traits = {
+            "sign": moon_sign,
+            "summary": "Moon sign data unavailable.",
+            "image": f"/zodiac/{moon_sign.lower()}.png",
+        }
 
     grah_dasha = get_grah_dasha_block(
         lagna_sign, current_maha, current_antar, planets, language
