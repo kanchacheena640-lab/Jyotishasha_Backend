@@ -273,7 +273,7 @@ def calculate_full_kundali(name, dob, tob, lat, lon, language='en'):
         moon_traits = {
             "sign": moon_sign,
             "summary": "Moon sign data unavailable.",
-            "image": f"/zodiac/{moon_sign.lower()}.webp",
+            "image": f"/zodiac/{moon_sign.lower()}.png",
         }
 
     grah_dasha = get_grah_dasha_block(
