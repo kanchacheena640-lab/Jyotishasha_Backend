@@ -326,9 +326,8 @@ def calculate_full_kundali(name, dob, tob, lat, lon, language='en'):
     moon_sign = next((p['sign'] for p in planets if p["name"] == "Moon"), None)
     lagna_sign = next((p['sign'] for p in planets if "Ascendant" in p["name"]), None)
 
+    print("🔁 Render rebuild test - zodiac path active")
 
-
- 
 
     return {
         "name": name,
