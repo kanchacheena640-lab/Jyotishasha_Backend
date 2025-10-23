@@ -663,7 +663,7 @@ def generate_full_kundali_payload(form_data: Dict[str, Any]) -> Dict[str, Any]:
         lon=form_data.get("lng"),  # ✅ use lon instead of lng
         language=form_data.get("language", "en"),
     )
-    # ✅ Validate Lagna Trait content (Hindi fallback fix)
+     # ✅ Validate & Load Lagna Trait content (with placeholder fix)
     try:
         import json
         lang = form_data.get("language", "en")
@@ -677,6 +677,21 @@ def generate_full_kundali_payload(form_data: Dict[str, Any]) -> Dict[str, Any]:
             trait_text = lagna_traits.get(sign, "")
             if trait_text:
                 base["lagna_trait"] = trait_text
+
+                # 🧭 Replace placeholders dynamically
+                try:
+                    lagna_p = base.get("ascendant", {}) or {}
+                    nakshatra = lagna_p.get("nakshatra") or ""
+                    pada = lagna_p.get("pada") or ""
+                    aspect_effects = base.get("aspect_effects", "")
+                    base["lagna_trait"] = (
+                        base["lagna_trait"]
+                        .replace("{nakshatra}", str(nakshatra))
+                        .replace("{pada}", str(pada))
+                        .replace("{aspect_effects}", str(aspect_effects))
+                    )
+                except Exception as e:
+                    print("⚠️ Placeholder replacement failed:", e)
             else:
                 print(f"⚠️ Missing lagna trait for {sign} in {lang_file}")
         else:
