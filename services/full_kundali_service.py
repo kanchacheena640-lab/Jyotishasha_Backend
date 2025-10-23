@@ -742,6 +742,23 @@ def generate_full_kundali_payload(form_data: Dict[str, Any]) -> Dict[str, Any]:
         "current_block": _build_current_dasha_snippet(base, form_data.get("language", "en")),
     }
 
+        # 🧭 AUTO-COLLECT all Yogas & Doshas from base (even if not nested)
+    possible_yogs = [
+        "adhi_rajyog", "budh_aditya_yog", "chandra_mangal_yog",
+        "dhan_yog", "dharma_karmadhipati_rajyog", "gajakesari_yog",
+        "kuber_rajyog", "lakshmi_yog", "neechbhang_rajyog",
+        "panch_mahapurush_yog", "parashari_rajyog", "rajya_sambandh_rajyog",
+        "shubh_kartari_yog", "vipreet_rajyog"
+    ]
+
+    # build base["yogas"] dynamically so rest of file can pick it up
+    base["yogas"] = {}
+    for key in possible_yogs:
+        val = base.get(key)
+        if isinstance(val, dict) and (val.get("is_active") or val.get("heading")):
+            base["yogas"][key] = val
+
+    
     # 7) Yogas / Doshas & gemstone suggestion  ✅ FIXED
     yogas = {}
 
