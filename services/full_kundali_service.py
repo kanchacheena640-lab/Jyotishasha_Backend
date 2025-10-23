@@ -678,12 +678,19 @@ def generate_full_kundali_payload(form_data: Dict[str, Any]) -> Dict[str, Any]:
             if trait_text:
                 base["lagna_trait"] = trait_text
 
-                # 🧭 Replace placeholders dynamically
+                 # 🧭 Replace placeholders dynamically
                 try:
-                    lagna_p = base.get("ascendant", {}) or {}
+                    # Find Lagna planet info safely from planets list
+                    lagna_p = {}
+                    for p in base.get("planets", []):
+                        if "Ascendant" in str(p.get("name")) or "Lagna" in str(p.get("name")):
+                            lagna_p = p
+                            break
+
                     nakshatra = lagna_p.get("nakshatra") or ""
                     pada = lagna_p.get("pada") or ""
                     aspect_effects = base.get("aspect_effects", "")
+
                     base["lagna_trait"] = (
                         base["lagna_trait"]
                         .replace("{nakshatra}", str(nakshatra))
