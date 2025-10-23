@@ -734,7 +734,7 @@ def generate_full_kundali_payload(form_data: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         transit_analysis = base.get("transit_analysis", []) or []
 
-    # 6) Dasha — full table + current snippet
+        # 6) Dasha — full table + current snippet
     dasha_summary = {
         "mahadashas": base.get("Mahadasha") or base.get("mahadasha") or [],
         "current_mahadasha": base.get("current_mahadasha"),
@@ -742,7 +742,7 @@ def generate_full_kundali_payload(form_data: Dict[str, Any]) -> Dict[str, Any]:
         "current_block": _build_current_dasha_snippet(base, form_data.get("language", "en")),
     }
 
-        # 🧭 AUTO-COLLECT all Yogas & Doshas from base (even if not nested)
+    # 🧭 AUTO-COLLECT all Yogas & Doshas from base (even if not nested)
     possible_yogs = [
         "adhi_rajyog", "budh_aditya_yog", "chandra_mangal_yog",
         "dhan_yog", "dharma_karmadhipati_rajyog", "gajakesari_yog",
@@ -751,7 +751,6 @@ def generate_full_kundali_payload(form_data: Dict[str, Any]) -> Dict[str, Any]:
         "shubh_kartari_yog", "vipreet_rajyog"
     ]
 
-    # build base["yogas"] dynamically so rest of file can pick it up
     base["yogas"] = {}
     for key in possible_yogs:
         val = base.get(key)
