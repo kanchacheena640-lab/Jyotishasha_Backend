@@ -665,14 +665,24 @@ def generate_full_kundali_payload(form_data: Dict[str, Any]) -> Dict[str, Any]:
     )
     # ✅ Validate Lagna Trait content (Hindi fallback fix)
     try:
-        lagna_text = base.get("lagna_trait", "")
-        if form_data.get("language") == "hi":
-            if not lagna_text or "शुभ स्थान" in lagna_text or len(lagna_text) < 120:
-                print(f"⚠️ WARNING: Fallback Lagna text detected → {lagna_text[:50]}...")
-                base["lagna_trait"] = f"{base.get('lagna_sign','')} लग्न का विवरण उपलब्ध नहीं है या अपूर्ण है। कृपया सुनिश्चित करें कि /data/lagna_traits_hi.json में पूरा पाठ मौजूद है।"
-    except Exception as e:
-        print("⚠️ Lagna trait validation failed:", e)
+        import json
+        lang = form_data.get("language", "en")
+        lang_file = "lagna_traits_hi.json" if lang == "hi" else "lagna_traits_en.json"
+        traits_path = os.path.join(os.path.dirname(__file__), "..", "data", lang_file)
 
+        if os.path.exists(traits_path):
+            with open(traits_path, "r", encoding="utf-8") as f:
+                lagna_traits = json.load(f)
+            sign = base.get("lagna_sign")
+            trait_text = lagna_traits.get(sign, "")
+            if trait_text:
+                base["lagna_trait"] = trait_text
+            else:
+                print(f"⚠️ Missing lagna trait for {sign} in {lang_file}")
+        else:
+            print(f"⚠️ Lagna trait file not found: {traits_path}")
+    except Exception as e:
+        print("⚠️ Lagna trait loading failed:", e)
 
     # 2) Chart data for frontend (only structured, no image)
     planets_arr: List[Dict[str, Any]] = base.get("planets") or base.get("Planets") or []
