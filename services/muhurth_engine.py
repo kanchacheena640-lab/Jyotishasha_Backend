@@ -64,6 +64,8 @@ def next_best_dates(activity, lat, lon, days=30, top_k=10):
         out.append({
             "date": p["date"],
             "weekday": p["weekday"],
+            "nakshatra": p["nakshatra"]["name"],
+            "tithi": p["tithi"]["name"],
             "score": score,
             "reasons": reasons,
             "rules_file": file_path   # ✅ file path added
