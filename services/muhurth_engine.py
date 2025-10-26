@@ -6,7 +6,8 @@ from services.panchang_engine import calculate_panchang
 RULES_DIR = os.path.join(os.path.dirname(__file__), "..", "rules")
 
 def _load_rules(activity):
-    file_path = os.path.join(RULES_DIR, f"{activity}.json")
+    safe_name = activity.replace("-", "_").replace(" ", "_")
+    file_path = os.path.join(RULES_DIR, f"{safe_name}.json")
     with open(file_path, encoding="utf-8") as f:
         return json.load(f), file_path
 
