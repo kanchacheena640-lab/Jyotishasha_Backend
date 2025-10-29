@@ -27,6 +27,7 @@ from modules.auth.routes_profile import profile_bp
 from flask import send_file
 from models import Order
 from routes.full_kundali_route import full_kundali_modern_bp
+from routes.routes_free_consult import routes_free_consult
 
 
 
@@ -51,6 +52,7 @@ register_auth(app)
 register_subscription(app)
 app.register_blueprint(profile_bp, url_prefix="/api/profile")
 app.register_blueprint(full_kundali_modern_bp)
+app.register_blueprint(routes_free_consult)
 
 
 
