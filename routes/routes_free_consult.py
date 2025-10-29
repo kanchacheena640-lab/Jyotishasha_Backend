@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from services.full_kundali_service import calculate_full_kundali
-from transit_engine import calculate_transits   # adjust import to your file name
+from transit_engine import get_current_positions  # ✅ correct import
 
 routes_free_consult = Blueprint("routes_free_consult", __name__)
 
@@ -22,16 +22,16 @@ def free_consult():
         float(birth["lat"]), float(birth["lng"]), float(birth["tz"])
     )
 
-    # 3️⃣ Transit calculation (30-day window)
+    # 3️⃣ Transit snapshot (current planetary positions)
     try:
-        transit_data = calculate_transits(days=30, lat=birth["lat"], lng=birth["lng"])
+        transit_data = get_current_positions()
     except Exception as e:
         transit_data = {"error": str(e)}
 
-    # 4️⃣ Dasha summary (already inside kundali_data usually)
+    # 4️⃣ Dasha summary (from kundali_data)
     dasha_summary = kundali_data.get("dasha_summary", "No dasha info")
 
-    # 5️⃣ Prompt preparation (GPT call will be Step 3)
+    # 5️⃣ Prompt preparation (GPT call in next step)
     prompt = f"""
     User Question: {question}
     Birth Chart Summary: {kundali_data.get('summary', '')}
@@ -48,5 +48,5 @@ def free_consult():
         "kundali_preview": kundali_data.get("ascendant", {}),
         "dasha_preview": dasha_summary,
         "transit_preview": transit_data,
-        "prompt_preview": prompt[:500] + "..."   # shorten for safety
+        "prompt_preview": prompt[:500] + "..."
     }), 200
