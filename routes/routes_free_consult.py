@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from full_kundali_service import generate_full_kundali_payload
+from services.full_kundali_service import generate_full_kundali_payload   # ✅ Correct path
 from transit_engine import get_current_positions
 
 routes_free_consult = Blueprint("routes_free_consult", __name__)
@@ -10,11 +10,13 @@ def free_consult():
     birth = data.get("birth", {})
     question = data.get("question", "").strip()
 
+    # 1️⃣ Basic validation
     required = ["name", "dob", "tob", "pob", "lat", "lng", "tz"]
     missing = [k for k in required if not birth.get(k)]
     if missing or not question:
         return jsonify({"error": f"Missing fields: {', '.join(missing)} or question"}), 400
 
+    # 2️⃣ Kundali generation
     try:
         kundali_data = generate_full_kundali_payload({
             "name": birth["name"],
@@ -29,24 +31,30 @@ def free_consult():
     except Exception as e:
         return jsonify({"error": f"Kundali generation failed: {e}"}), 500
 
+    # 3️⃣ Transit snapshot
     try:
         transit_data = get_current_positions()
     except Exception as e:
         transit_data = {"error": str(e)}
 
+    # 4️⃣ Dasha summary
     dasha_summary = kundali_data.get("dasha_summary", {})
 
+    # 5️⃣ GPT prompt preview
     prompt = f"""
     User Question: {question}
+
     Birth Chart Summary: {kundali_data.get('lagna_sign', '')} ascendant.
     Dasha Summary: {dasha_summary}
     Transit Summary: {transit_data}
+
     Rules:
     - Provide astrological possibilities only.
     - No health or legal advice.
     - Add disclaimer: 'This answer is for astrological guidance only.'
     """
 
+    # 6️⃣ Response JSON
     return jsonify({
         "status": "ok",
         "kundali_preview": kundali_data.get("chart_data", {}).get("ascendant"),
