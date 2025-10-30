@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from factory import create_app
 from extensions import db
+from routes.routes_user import routes_user
 from modules.auth.models import User
 from full_kundali_api import calculate_full_kundali
 from services.zodiac_service import get_zodiac_traits
@@ -53,6 +54,7 @@ register_subscription(app)
 app.register_blueprint(profile_bp, url_prefix="/api/profile")
 app.register_blueprint(full_kundali_modern_bp)
 app.register_blueprint(routes_free_consult)
+app.register_blueprint(routes_user)
 
 
 
