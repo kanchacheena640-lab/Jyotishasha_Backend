@@ -33,6 +33,12 @@ TITHI_NAMES = [
     "Navami","Dashami","Ekadashi","Dvadashi","Trayodashi","Chaturdashi","Amavasya"
 ]
 
+HINDU_MONTHS = [
+    "Chaitra", "Vaishakha", "Jyeshtha", "Ashadha",
+    "Shravana", "Bhadrapada", "Ashwin", "Kartik",
+    "Margashirsha", "Pausha", "Magha", "Phalguna"
+]
+
 RAHU_INDEX_OF_DAY = [2, 7, 5, 6, 4, 3, 1]  # Monday..Sunday
 
 # --- Swiss Ephemeris setup ---
@@ -75,6 +81,14 @@ def _karan_from_tithi(tithi_num):
     if slot < 57:
         return KARANS_REPEATING[slot % 7], slot
     return KARANS_FIXED[min(slot - 57, 3)], slot
+
+def _approx_hindu_month(date):
+    """Approximate lunar month name based on Sun's sidereal longitude (for accuracy use solar transition)."""
+    jd_ut = swe.julday(date.year, date.month, date.day, 12)
+    sun_long = swe.calc_ut(jd_ut, swe.SUN, FLAGS)[0][0] % 360
+    # Each month covers 30 degrees of Sun's motion starting from Mesha (Aries)
+    idx = int((sun_long // 30) % 12)
+    return HINDU_MONTHS[idx]
 
 # ✅ --- Use imported sunrise/sunset instead of formula ---
 def _rahu_kaal(date, sunrise, sunset):
@@ -141,10 +155,14 @@ def calculate_panchang(date, lat, lon):
     # ✅ Panchak detection logic
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     is_panchak = n_name in PANCHAK_NAKSHATRAS
+    
+    month_name = _approx_hindu_month(date)
 
     return {
         "date": date.strftime("%Y-%m-%d"),
         "weekday": date.strftime("%A"),
+        "month_name": month_name,
+        
         "tithi": {
             "number": t_num,
             "name": t_name,
@@ -166,6 +184,7 @@ def calculate_panchang(date, lat, lon):
         "rahu_kaal": {"start": rahu_s.strftime("%H:%M"), "end": rahu_e.strftime("%H:%M")},
         "abhijit_muhurta": {"start": abhi_s.strftime("%H:%M"), "end": abhi_e.strftime("%H:%M")},
         "ayanamsa": "Lahiri"
+        
     }
 
 
