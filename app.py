@@ -96,7 +96,6 @@ def zodiac_traits():
     return jsonify(data)
 
 # ------------------- WEBHOOK ------------------- #
-# ------------------- WEBHOOK ------------------- #
 @app.route("/webhook", methods=["POST"])
 def webhook():
     from app_config import USE_CELERY  # 🔁 toggle flag
