@@ -9,6 +9,24 @@ from services.daily_horoscope_generator import generate_daily_horoscope
 
 personalized_daily = Blueprint("personalized_daily", __name__)
 
+# ------------------------------------------------
+# LAGNA NORMALIZATION MAP
+# ------------------------------------------------
+LAGNA_MAP = {
+    "aries": "Aries", "mesh": "Aries",
+    "taurus": "Taurus", "vrishabh": "Taurus",
+    "gemini": "Gemini", "mithun": "Gemini",
+    "cancer": "Cancer", "kark": "Cancer",
+    "leo": "Leo", "singh": "Leo",
+    "virgo": "Virgo", "kanya": "Virgo",
+    "libra": "Libra", "tula": "Libra",
+    "scorpio": "Scorpio", "vrishchik": "Scorpio",
+    "sagittarius": "Sagittarius", "dhanu": "Sagittarius",
+    "capricorn": "Capricorn", "makar": "Capricorn",
+    "aquarius": "Aquarius", "kumbh": "Aquarius",
+    "pisces": "Pisces", "meen": "Pisces"
+}
+
 
 # ====================================================
 #           TODAY PERSONALIZED HOROSCOPE
@@ -21,9 +39,11 @@ def personalized_daily_today():
         # -----------------------------
         # Required Input
         # -----------------------------
-        lagna = body.get("lagna", "").strip().capitalize()
+        raw_lagna = body.get("lagna", "").strip().lower()
+        lagna = LAGNA_MAP.get(raw_lagna)
+
         if not lagna:
-            return jsonify({"error": "Missing or invalid lagna"}), 400
+            return jsonify({"error": "Invalid or missing lagna"}), 400
 
         # -----------------------------
         # Optional Location
@@ -73,9 +93,11 @@ def personalized_daily_tomorrow():
     try:
         body = request.get_json() or {}
 
-        lagna = body.get("lagna", "").strip().capitalize()
+        raw_lagna = body.get("lagna", "").strip().lower()
+        lagna = LAGNA_MAP.get(raw_lagna)
+
         if not lagna:
-            return jsonify({"error": "Missing or invalid lagna"}), 400
+            return jsonify({"error": "Invalid or missing lagna"}), 400
 
         lat = float(body.get("lat", 28.6))
         lon = float(body.get("lon", 77.2))
