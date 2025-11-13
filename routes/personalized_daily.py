@@ -5,7 +5,7 @@
 # ---------------------------------------------------------
 
 from flask import Blueprint, request, jsonify
-from ..services.daily_horoscope_generator import generate_daily_horoscope
+from services.daily_horoscope_generator import generate_daily_horoscope
 
 personal_daily_bp = Blueprint("personal_daily_bp", __name__)
 
