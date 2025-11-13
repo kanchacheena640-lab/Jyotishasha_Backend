@@ -12,9 +12,8 @@ from transit_engine import (
 
 personalized_daily = Blueprint("personalized_daily", __name__)
 
-
 # -----------------------------------------------------------
-#  Nakshatra Calculator (Do NOT modify transit_engine)
+#  Nakshatra Calculator (Name Only)
 # -----------------------------------------------------------
 NAKSHATRAS = [
     "Ashwini","Bharani","Krittika","Rohini","Mrigashira",
@@ -27,12 +26,11 @@ NAKSHATRAS = [
 ]
 
 def get_nakshatra_from_longitude(sidereal_lon):
-    # Each nakshatra = 13°20' = 13.333333 degrees
     return NAKSHATRAS[int(sidereal_lon // (360/27))]
 
 
 # -----------------------------------------------------------
-# Build full transit for ANY IST date (Tomorrow)
+# Build Transit for ANY IST date (Tomorrow)
 # -----------------------------------------------------------
 def build_transit_for_date(dt_ist):
     jd = _to_julday_utc(dt_ist)
@@ -43,6 +41,7 @@ def build_transit_for_date(dt_ist):
         res, _ = swe.calc_ut(jd, pid)
         lon = res[0]
         speed = res[3] if len(res) > 3 else 0.0
+
         sid_lon = (lon - ay) % 360
 
         out[name] = {
@@ -74,7 +73,7 @@ def build_transit_for_date(dt_ist):
 
 
 # -----------------------------------------------------------
-# House-map logic (Same as Kundali)
+#  House Map (Same Logic as your Kundali)
 # -----------------------------------------------------------
 def build_house_map(moon_rashi):
     rashis = [
@@ -90,9 +89,8 @@ def build_house_map(moon_rashi):
     return mapping
 
 
-
 # -----------------------------------------------------------
-# TODAY HOROSCOPE
+#  TODAY HOROSCOPE
 # -----------------------------------------------------------
 @personalized_daily.route("/api/personalized/daily", methods=["POST"])
 def get_daily():
@@ -103,36 +101,42 @@ def get_daily():
 
         lagna = data["lagna"].lower()
 
-        # 1) Today transit (already fully working engine)
-        today = get_current_positions()["positions"]
-        moon = today["Moon"]
+        # 1) Get today's transit
+        today_raw = get_current_positions()
+        moon_raw = today_raw["positions"]["Moon"]
 
-        # 2) Compute Nakshatra from longitude
-        moon_nakshatra = get_nakshatra_from_longitude(moon["sidereal_longitude"])
+        # Compute sidereal longitude (transit_engine did not return it)
+        lon = moon_raw["degree"]
+        rashi_index = {
+            "aries":0,"taurus":1,"gemini":2,"cancer":3,"leo":4,"virgo":5,
+            "libra":6,"scorpio":7,"sagittarius":8,"capricorn":9,"aquarius":10,"pisces":11
+        }[moon_raw["rashi"].lower()]
+        sidereal = (rashi_index * 30) + lon
 
-        # 3) Compute House number
-        house_map = build_house_map(moon["rashi"])
+        # 2) Get Nakshatra
+        moon_nakshatra = get_nakshatra_from_longitude(sidereal)
+
+        # 3) House
+        house_map = build_house_map(moon_raw["rashi"])
 
         profile = {
-            "moon_rashi": moon["rashi"],
+            "moon_rashi": moon_raw["rashi"],
             "nakshatra": moon_nakshatra,
             "moon_house": house_map[lagna],
-            "fast_planet": today.get("fast_planet"),
-            "paksha": today.get("paksha", "Shukla"),
+            "fast_planet": None,       # transit_engine does NOT supply this
+            "paksha": "Shukla",        # default (later link with Panchang)
         }
 
         result = generate_daily_horoscope(profile)
         result["day"] = "today"
-
         return jsonify(result), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-
 # -----------------------------------------------------------
-# TOMORROW HOROSCOPE
+#  TOMORROW HOROSCOPE
 # -----------------------------------------------------------
 @personalized_daily.route("/api/personalized/tomorrow", methods=["POST"])
 def get_tomorrow():
@@ -143,32 +147,26 @@ def get_tomorrow():
 
         lagna = data["lagna"].lower()
 
-        # 1) Tomorrow in IST
         tomo_ist = datetime.datetime.now(
             pytz.timezone("Asia/Kolkata")
         ) + datetime.timedelta(days=1)
 
-        # 2) Build transit for tomorrow
         tomo = build_transit_for_date(tomo_ist)
         moon = tomo["Moon"]
 
-        # 3) Compute Nakshatra
         moon_nakshatra = get_nakshatra_from_longitude(moon["sidereal_longitude"])
-
-        # 4) Compute House number
         house_map = build_house_map(moon["rashi"])
 
         profile = {
             "moon_rashi": moon["rashi"],
             "nakshatra": moon_nakshatra,
             "moon_house": house_map[lagna],
-            "fast_planet": tomo.get("fast_planet"),
-            "paksha": tomo.get("paksha", "Shukla"),
+            "fast_planet": None,
+            "paksha": "Shukla",
         }
 
         result = generate_daily_horoscope(profile)
         result["day"] = "tomorrow"
-
         return jsonify(result), 200
 
     except Exception as e:
