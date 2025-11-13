@@ -1,0 +1,121 @@
+{
+  "mood": {
+    "1": {
+      "hi": "आज मन संवेदनशील रहेगा।",
+      "en": "You feel emotionally sensitive today."
+    },
+    "2": {
+      "hi": "परिवार और खर्च की भावनाएँ सक्रिय रहेंगी।",
+      "en": "Family and money feelings stay active."
+    },
+    "3": {
+      "hi": "आप बातों और संवाद को गहराई से महसूस करेंगे।",
+      "en": "You feel conversations more deeply today."
+    },
+    "4": {
+      "hi": "आपको सुकून और घर-जैसी ऊर्जा की ज़रूरत होगी।",
+      "en": "You seek comfort and a calm space."
+    },
+    "5": {
+      "hi": "दिल हल्का और अभिव्यक्तिपूर्ण रहेगा।",
+      "en": "Your heart feels expressive and light."
+    },
+    "6": {
+      "hi": "छोटी चिंताएँ मन को प्रभावित कर सकती हैं।",
+      "en": "Small worries may affect your mood."
+    },
+    "7": {
+      "hi": "रिश्तों की भावनाएँ उभरेंगी।",
+      "en": "Relationship emotions rise today."
+    },
+    "8": {
+      "hi": "पुरानी भावनाएँ या डर ऊपर आ सकते हैं।",
+      "en": "Old emotions or fears may surface."
+    },
+    "9": {
+      "hi": "नई सोच और प्रेरणा मन में आएगी।",
+      "en": "You feel inspired and open-minded today."
+    },
+    "10": {
+      "hi": "कर्तव्य और ज़िम्मेदारियाँ मन पर रहेंगी।",
+      "en": "Duty and responsibility feel stronger today."
+    },
+    "11": {
+      "hi": "दोस्तों और उम्मीदों की तरफ मन जाएगा।",
+      "en": "Your mind shifts toward hopes and friendships."
+    },
+    "12": {
+      "hi": "मन अकेलापन या थकान महसूस कर सकता है।",
+      "en": "You may feel tired or withdrawn."
+    }
+  },
+
+  "energy": {
+    "1": { "hi": "आप चीज़ों को खुद से जोड़कर देखेंगे।", "en": "You view things through self-focus." },
+    "2": { "hi": "आप भावनाओं को सूक्ष्मता से समझेंगे।", "en": "You notice subtle emotional shifts." },
+    "3": { "hi": "आप बातचीत को ध्यान से देखेंगे।", "en": "You observe conversations closely." },
+    "4": { "hi": "आप माहौल की ऊर्जा को महसूस करेंगे।", "en": "You absorb the environment's energy." },
+    "5": { "hi": "आप दिल और रचनात्मकता से देखेंगे।", "en": "You see the day with creativity." },
+    "6": { "hi": "आप हर चीज़ में पैटर्न खोजेंगे।", "en": "You notice patterns and details." },
+    "7": { "hi": "आप दूसरों की बातों को ध्यान से देखेंगे।", "en": "You see things through relationships." },
+    "8": { "hi": "आप गहरी भावनाओं से चीज़ों को समझेंगे।", "en": "You view things with inner depth." },
+    "9": { "hi": "आप व्यापक दृष्टिकोण से देखेंगे।", "en": "You see things with a wide view." },
+    "10": { "hi": "आप व्यावहारिक नजरिए से देखेंगे।", "en": "You view things practically." },
+    "11": { "hi": "आप उम्मीद और लक्ष्यों से देखेंगे।", "en": "You look through hopes and goals." },
+    "12": { "hi": "आप भीतर की भावनाओं से चीज़ों को देखेंगे।", "en": "You observe things inwardly." }
+  },
+
+  "alert_categories": {
+    "health": {
+      "hi": "थकान या शारीरिक कमजोरी।",
+      "en": "Fatigue or physical dip."
+    },
+    "financial": {
+      "hi": "खर्च या पैसे का दबाव।",
+      "en": "Spending or money pressure."
+    },
+    "emotional_memory": {
+      "hi": "पुरानी भावनाओं का उभरना।",
+      "en": "Old memories resurfacing."
+    },
+    "conflict": {
+      "hi": "बहस या टकराव की सम्भावना।",
+      "en": "Possibility of small conflict."
+    },
+    "overthinking": {
+      "hi": "ज़्यादा सोच या दिमागी दबाव।",
+      "en": "Mental overload or looping thoughts."
+    },
+    "isolation": {
+      "hi": "अकेलापन महसूस होना।",
+      "en": "Feeling withdrawn or distant."
+    }
+  },
+
+  "tips": {
+    "health": {
+      "hi": "धीरे चलें और पानी पिएं।",
+      "en": "Slow down and hydrate."
+    },
+    "financial": {
+      "hi": "खर्च से पहले रुकें।",
+      "en": "Pause before spending."
+    },
+    "emotional_memory": {
+      "hi": "खुद को थोड़ी जगह दें।",
+      "en": "Give yourself space."
+    },
+    "conflict": {
+      "hi": "धीरे बोलें और प्रतिक्रिया न दें।",
+      "en": "Speak softly, avoid reacting."
+    },
+    "overthinking": {
+      "hi": "3 गहरी साँसें लें।",
+      "en": "Take three deep breaths."
+    },
+    "isolation": {
+      "hi": "शांत समय लेना ठीक है।",
+      "en": "Quiet time is okay."
+    }
+  }
+}
