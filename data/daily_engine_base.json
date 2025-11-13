@@ -117,5 +117,346 @@
       "hi": "शांत समय लेना ठीक है।",
       "en": "Quiet time is okay."
     }
-  }
+    
+  },
+    "planet_house_alert": {
+    "venus": {
+        "1":  { "category": "emotional_memory", "hi": "दिल में पुरानी भावनाएँ उभर सकती हैं।", "en": "Old emotions may rise in the heart." },
+        "2":  { "category": "financial", "hi": "खर्च या सौंदर्य पर पैसा लग सकता है।", "en": "You may spend on comfort or beauty." },
+        "3":  { "category": "emotional_memory", "hi": "पुरानी बातचीत या संदेश याद आ सकते हैं।", "en": "Old messages or conversations may return." },
+        "4":  { "category": "emotional_memory", "hi": "परिवार से जुड़ी पुरानी भावनाएँ जग सकती हैं।", "en": "Family-linked emotions may surface." },
+        "5":  { "category": "emotional_memory", "hi": "दिल romantic या यादों से भरा रहेगा।", "en": "Heart may feel romantic or nostalgic." },
+        "6":  { "category": "overthinking", "hi": "किसी रिश्ते को लेकर ज़्यादा सोचने लगेंगे।", "en": "You may overthink a relationship." },
+        "7":  { "category": "emotional_memory", "hi": "साझेदारी में पुरानी भावनाएँ जाग सकती हैं।", "en": "Old feelings in partnerships may revive." },
+        "8":  { "category": "emotional_memory", "hi": "गहरी छुपी भावनाएँ ऊपर आ सकती हैं।", "en": "Deep suppressed emotions may surface." },
+        "9":  { "category": "emotional_memory", "hi": "दूर के रिश्तों या यादों की ओर मन जाएगा।", "en": "Mind drifts toward distant bonds or old memories." },
+        "10": { "category": "financial", "hi": "काम या करियर में पैसों का दबाव लग सकता है।", "en": "Financial pressure at work may arise." },
+        "11": { "category": "emotional_memory", "hi": "दोस्तों की याद या किसी पुराने वादे की याद आ सकती है।", "en": "Friendship-related memories may surface." },
+        "12": { "category": "isolation", "hi": "दिल अकेलापन या withdrawal महसूस कर सकता है।", "en": "Heart may feel isolated or withdrawn." }
+        },
+    "mercury": {
+        "1":  { "category": "overthinking", "hi": "खुद को लेकर ज़रूरत से ज़्यादा सोचेंगे।", "en": "You may overthink about yourself." },
+        "2":  { "category": "financial", "hi": "खर्च या पैसों की गिनती दिमाग में घूमेगी।", "en": "Money calculations may occupy your mind." },
+        "3":  { "category": "overthinking", "hi": "बातों को बार-बार सोचेंगे।", "en": "You may replay conversations mentally." },
+        "4":  { "category": "overthinking", "hi": "घर से जुड़े मामलों पर दिमाग ज़्यादा चलेगा।", "en": "Home matters may keep your mind busy." },
+        "5":  { "category": "overthinking", "hi": "रचनात्मकता पर भी overthinking हो सकता है।", "en": "Overthinking may affect creativity too." },
+        "6":  { "category": "health", "hi": "छोटी स्वास्थ्य चिंताएँ दिमाग में रहेंगी।", "en": "Minor health concerns may distract you." },
+        "7":  { "category": "overthinking", "hi": "रिश्तों की बातों पर दिमाग चिपक सकता है।", "en": "You may overanalyze relationships." },
+        "8":  { "category": "confusion", "hi": "गहरी बातों या secrets में उलझन हो सकती है।", "en": "Confusion around deep matters may arise." },
+        "9":  { "category": "overthinking", "hi": "सीखने/यात्रा के निर्णयों पर ज़्यादा सोचेंगे।", "en": "You may overthink learning or travel decisions." },
+        "10": { "category": "financial", "hi": "काम और पैसों से जुड़े निर्णय भारी लगेंगे।", "en": "Work-money decisions may feel heavy." },
+        "11": { "category": "overthinking", "hi": "दोस्तों या goals पर दिमाग ज्यादा दौड़ेगा।", "en": "You may overthink goals or friendships." },
+        "12": { "category": "isolation", "hi": "दिमाग अकेलापन या दूरी चाहता है।", "en": "Mind may feel distant or isolated." }
+        },
+    "mars": {
+        "1": {
+            "category": "conflict",
+            "hi": "आज आपका स्वभाव थोड़ा तेज़ हो सकता है, छोटी बातों पर प्रतिक्रिया ना दें।",
+            "en": "Your reactions may be sharp today; avoid responding to small triggers."
+        },
+        "2": {
+            "category": "financial",
+            "hi": "पैसों या खर्च को लेकर अचानक तनाव महसूस हो सकता है।",
+            "en": "Sudden tension around money or spending may arise."
+        },
+        "3": {
+            "category": "conflict",
+            "hi": "बात करते समय आवाज़ ऊँची होने का खतरा है, धीरे बोलें।",
+            "en": "Your tone may rise during conversations; speak gently."
+        },
+        "4": {
+            "category": "conflict",
+            "hi": "घर या परिवार में बहस की स्थिति बन सकती है, शांत रहें।",
+            "en": "Possibility of arguments at home; stay calm."
+        },
+        "5": {
+            "category": "conflict",
+            "hi": "दिल थोड़ा परेशान या चंचल महसूस कर सकता है, जल्दबाज़ी से बचें।",
+            "en": "Your heart may feel restless; avoid acting in haste."
+        },
+        "6": {
+            "category": "health",
+            "hi": "थकान, सिरदर्द या चिड़चिड़ापन बढ़ सकता है, पानी पिएँ।",
+            "en": "Fatigue or irritability may rise; keep yourself hydrated."
+        },
+        "7": {
+            "category": "conflict",
+            "hi": "रिश्तों में अनचाही बहस की संभावना है, सांस लें और रुकें।",
+            "en": "Chance of unnecessary arguments in relationships; pause before reacting."
+        },
+        "8": {
+            "category": "conflict",
+            "hi": "भीतर जमा भावनाएँ अचानक बाहर आ सकती हैं।",
+            "en": "Suppressed emotions may burst out suddenly."
+        },
+        "9": {
+            "category": "conflict",
+            "hi": "विचारों में गर्माहट या बहस जैसा भाव आ सकता है।",
+            "en": "Thoughts may carry a fiery or argumentative tone."
+        },
+        "10": {
+            "category": "conflict",
+            "hi": "काम में दबाव बढ़ सकता है, गुस्सा नियंत्रित रखें।",
+            "en": "Work pressure may rise; keep your temper steady."
+        },
+        "11": {
+            "category": "conflict",
+            "hi": "दोस्तों या समूहों में मतभेद की स्थिति बन सकती है।",
+            "en": "Minor clashes with friends or groups may appear."
+        },
+        "12": {
+            "category": "isolation",
+            "hi": "मन अंदर ही अंदर गुस्सा या तनाव महसूस कर सकता है।",
+            "en": "You may feel internal frustration or emotional buildup."
+        }
+        },
+    "saturn": {
+        "1": {
+            "category": "health",
+            "hi": "ऊर्जा थोड़ी कम रह सकती है, शरीर भारी लग सकता है।",
+            "en": "Your energy may dip; the body may feel heavy."
+        },
+        "2": {
+            "category": "financial",
+            "hi": "खर्च या पैसों को लेकर दबाव महसूस हो सकता है, संयम रखें।",
+            "en": "Pressure around money or expenses may appear; stay cautious."
+        },
+        "3": {
+            "category": "health",
+            "hi": "गला, कंधे या हाथों में हल्की थकान महसूस हो सकती है।",
+            "en": "Mild fatigue in shoulders or throat may appear."
+        },
+        "4": {
+            "category": "emotional_memory",
+            "hi": "घर या परिवार से जुड़ी पुरानी भावनाएँ उभर सकती हैं।",
+            "en": "Old emotions linked to home or family may resurface."
+        },
+        "5": {
+            "category": "health",
+            "hi": "दिल पर हल्का भार या थकावट महसूस हो सकती है।",
+            "en": "You may feel slight heaviness around the heart."
+        },
+        "6": {
+            "category": "health",
+            "hi": "काम ज़्यादा थका सकता है, routine से बाहर न जाएं।",
+            "en": "Work may feel tiring; stick to a simple routine."
+        },
+        "7": {
+            "category": "conflict",
+            "hi": "रिश्तों में दूरी या misunderstanding बन सकती है।",
+            "en": "Distance or misunderstandings may arise in relationships."
+        },
+        "8": {
+            "category": "emotional_memory",
+            "hi": "गहरे डर या पुरानी चोटें मन में जाग सकती हैं।",
+            "en": "Deep fears or old emotional wounds may surface."
+        },
+        "9": {
+            "category": "overthinking",
+            "hi": "भाग्य, पढ़ाई या भविष्य को लेकर ज़्यादा सोचेंगे।",
+            "en": "You may overthink about future or learning matters."
+        },
+        "10": {
+            "category": "financial",
+            "hi": "काम का दबाव और आर्थिक ज़िम्मेदारी महसूस होगी।",
+            "en": "Career pressure and financial responsibility may rise."
+        },
+        "11": {
+            "category": "isolation",
+            "hi": "दोस्तों से दूरी या मन में अकेलापन महसूस होगा।",
+            "en": "You may feel distant from friends or emotionally isolated."
+        },
+        "12": {
+            "category": "health",
+            "hi": "नींद, तनाव या मानसिक थकावट असर कर सकती है।",
+            "en": "Sleep or mental fatigue may affect your energy."
+        }
+        },
+    "jupiter": {
+        "1": {
+            "category": "financial",
+            "hi": "स्वयं से जुड़े फैसलों में खर्च बढ़ सकता है, सोच-समझकर कदम लें।",
+            "en": "Self-related decisions may bring extra expenses; choose wisely."
+        },
+        "2": {
+            "category": "financial",
+            "hi": "घर-परिवार में धन से जुड़े मुद्दे active रह सकते हैं।",
+            "en": "Family or home-related financial matters may stay active."
+        },
+        "3": {
+            "category": "overthinking",
+            "hi": "किसी बात को तर्क से ज़्यादा सोचने की tendency बढ़ सकती है।",
+            "en": "You may overthink things logically or excessively."
+        },
+        "4": {
+            "category": "emotional_memory",
+            "hi": "परिवार से जुड़े पुराने अनुभव या सीख याद आएगी।",
+            "en": "Old family experiences or lessons may come back."
+        },
+        "5": {
+            "category": "financial",
+            "hi": "रचनात्मक कामों में पैसा या संसाधन खर्च हो सकते हैं।",
+            "en": "Creative pursuits may require money or resources."
+        },
+        "6": {
+            "category": "health",
+            "hi": "शरीर भारी लग सकता है, routine health पर ध्यान दें।",
+            "en": "Body may feel heavy; pay attention to basic health routines."
+        },
+        "7": {
+            "category": "financial",
+            "hi": "रिश्तों या साझेदारी में आर्थिक पक्ष महत्त्वपूर्ण रहेगा।",
+            "en": "Financial concerns may influence relationships or partnerships."
+        },
+        "8": {
+            "category": "emotional_memory",
+            "hi": "गहरी भावनाएँ या past trauma याद आ सकता है।",
+            "en": "Deep emotions or past trauma may resurface."
+        },
+        "9": {
+            "category": "financial",
+            "hi": "यात्रा, पढ़ाई या भाग्य संबंधी मामलों में खर्च संभव है।",
+            "en": "Expenses may arise in travel, studies, or luck matters."
+        },
+        "10": {
+            "category": "financial",
+            "hi": "काम में पैसों का दबाव या जिम्मेदारी बढ़ सकती है।",
+            "en": "Financial responsibility or pressure at work may increase."
+        },
+        "11": {
+            "category": "overthinking",
+            "hi": "दोस्तों या किसी बड़ी इच्छा को लेकर ज़्यादा सोचेंगे।",
+            "en": "You may overthink about goals or friendships."
+        },
+        "12": {
+            "category": "isolation",
+            "hi": "मन अकेलापन या आध्यात्मिक withdrawal महसूस कर सकता है।",
+            "en": "You may feel spiritually withdrawn or emotionally isolated."
+        }
+        },
+    "rahu": {
+        "1": {
+            "category": "confusion",
+            "hi": "खुद को लेकर हल्की उलझन रह सकती है, निर्णय तुरंत न लें।",
+            "en": "You may feel confused about yourself; avoid quick decisions."
+        },
+        "2": {
+            "category": "financial",
+            "hi": "पैसों या खर्च में अस्पष्टता रह सकती है, सावधानी रखें।",
+            "en": "Finances may feel unclear; stay cautious with spending."
+        },
+        "3": {
+            "category": "confusion",
+            "hi": "बातचीत में भ्रम या ग़लतफ़हमी हो सकती है।",
+            "en": "Confusion or misunderstandings may appear in communication."
+        },
+        "4": {
+            "category": "emotional_memory",
+            "hi": "गहरे या पुराने पारिवारिक मसले मन में उठ सकते हैं।",
+            "en": "Deep or old family matters may come up internally."
+        },
+        "5": {
+            "category": "confusion",
+            "hi": "दिल और मन अलग दिशा में चल सकते हैं।",
+            "en": "Heart and mind may move in different directions."
+        },
+        "6": {
+            "category": "health",
+            "hi": "छोटी स्वास्थ्य समस्याओं को लेकर मन परेशान हो सकता है।",
+            "en": "Minor health issues may cause mental unrest."
+        },
+        "7": {
+            "category": "confusion",
+            "hi": "रिश्तों को लेकर clarity की कमी रह सकती है।",
+            "en": "There may be lack of clarity in relationships."
+        },
+        "8": {
+            "category": "confusion",
+            "hi": "गहरी बातों या रहस्यों में उलझन बढ़ सकती है।",
+            "en": "Confusion around deeper matters or secrets may grow."
+        },
+        "9": {
+            "category": "confusion",
+            "hi": "यात्रा, विश्वास या सीख की दिशा में दिमाग भटक सकता है।",
+            "en": "Mind may wander regarding travel, beliefs or learning."
+        },
+        "10": {
+            "category": "financial",
+            "hi": "काम में पैसों या fame को लेकर अनिश्चितता रह सकती है।",
+            "en": "Uncertainty about money or recognition at work may arise."
+        },
+        "11": {
+            "category": "overthinking",
+            "hi": "दोस्तों या लक्ष्यों को लेकर दिमाग ज़रूरत से ज़्यादा सोचेगा।",
+            "en": "You may overthink about friends or long-term goals."
+        },
+        "12": {
+            "category": "isolation",
+            "hi": "मन अकेलापन या बाहर निकलने से डर महसूस कर सकता है।",
+            "en": "You may feel isolated or hesitant to step outward."
+        }
+        },
+    "ketu": {
+        "1": {
+            "category": "isolation",
+            "hi": "आज मन थोड़ा अलग-थलग रह सकता है, खुद को समय दें।",
+            "en": "You may feel a bit detached today; give yourself space."
+        },
+        "2": {
+            "category": "isolation",
+            "hi": "घर-परिवार के बीच भी मन दूर सा लग सकता है।",
+            "en": "Even around family, you may feel emotionally distant."
+        },
+        "3": {
+            "category": "isolation",
+            "hi": "किसी बातचीत में दिलचस्पी कम हो सकती है।",
+            "en": "You may feel less connected to conversations."
+        },
+        "4": {
+            "category": "emotional_memory",
+            "hi": "पुरानी यादें या भावनात्मक दूरी महसूस हो सकती है।",
+            "en": "Old memories or emotional distance may arise."
+        },
+        "5": {
+            "category": "isolation",
+            "hi": "दिल भावनाओं से थोड़ा कट सकता है, शांत रहें।",
+            "en": "Your heart may feel slightly disconnected; stay calm."
+        },
+        "6": {
+            "category": "health",
+            "hi": "थकान या ध्यान में कमी महसूस हो सकती है।",
+            "en": "Fatigue or reduced focus may affect your routine."
+        },
+        "7": {
+            "category": "isolation",
+            "hi": "रिश्तों में बयान न की गई दूरी महसूस हो सकती है।",
+            "en": "Unspoken distance may be felt in relationships."
+        },
+        "8": {
+            "category": "isolation",
+            "hi": "मन गहराई में उतरकर खुद को अलग कर सकता है।",
+            "en": "Mind may withdraw deep within itself."
+        },
+        "9": {
+            "category": "isolation",
+            "hi": "सीखने या विश्वास से संबंधित विषयों में interest कम होगा।",
+            "en": "Interest in learning or beliefs may reduce."
+        },
+        "10": {
+            "category": "financial",
+            "hi": "काम में पैसों या जिम्मेदारी से दूरी रखने की इच्छा हो सकती है।",
+            "en": "You may wish to detach from financial or work duties."
+        },
+        "11": {
+            "category": "overthinking",
+            "hi": "दोस्तों या लक्ष्यों को लेकर मन उलझ सकता है।",
+            "en": "Your mind may tangle around goals or friendships."
+        },
+        "12": {
+            "category": "isolation",
+            "hi": "आज गहरी अकेलेपन या आध्यात्मिक retreat की भावना रहेगी।",
+            "en": "You may feel deep solitude or a spiritual retreat within."
+        }
+        }
+    }
 }

@@ -15,22 +15,7 @@ base = load_base()
 
 
 # -----------------------------------------------------
-# PLANET → CATEGORY MAPPING (placeholder)
-# Will update in next step
-# -----------------------------------------------------
-PLANET_CATEGORY_MAP = {
-    "venus": "emotional_memory",
-    "mercury": "overthinking",
-    "mars": "conflict",
-    "saturn": "health",
-    "jupiter": "financial",      # placeholder
-    "rahu": "confusion",         # placeholder
-    "ketu": "isolation"          # placeholder
-}
-
-
-# -----------------------------------------------------
-# MAIN ENGINE FUNCTION
+# MAIN ENGINE FUNCTION (FINAL VERSION)
 # -----------------------------------------------------
 def generate_modern_daily(moon_house, aspects, lang="en"):
     """
@@ -39,38 +24,42 @@ def generate_modern_daily(moon_house, aspects, lang="en"):
     lang       : "en" or "hi"
     """
 
+    house = str(moon_house)
+
     # ---------------------------
     # 1) MOOD (always present)
     # ---------------------------
-    mood_line = base["mood"][str(moon_house)][lang]
+    mood_line = base["mood"][house][lang]
 
     # ---------------------------
-    # 2) ENERGY
+    # 2) ENERGY (always present)
     # ---------------------------
-    energy_line = base["energy"][str(moon_house)][lang]
+    energy_line = base["energy"][house][lang]
 
     # ---------------------------
-    # 3) SPECIFIC ALERT
+    # 3) SPECIFIC ALERT (planet + house)
     # ---------------------------
     if aspects:
-        planet = aspects[0].lower()     # highest priority aspect
-        category = PLANET_CATEGORY_MAP.get(planet, None)
-    else:
-        category = None
+        # Highest priority planet = first
+        planet = aspects[0].lower()
 
-    if category:
-        alert_line = base["alert_categories"][category][lang]
-    else:
-        alert_line = ""   # optional
-        
+        # Check if planet-house block exists
+        planet_data = base["planet_house_alert"].get(planet, {})
+        house_data = planet_data.get(house)
 
-    # ---------------------------
-    # 4) TIP based on category
-    # ---------------------------
-    if category:
-        tip_line = base["tips"][category][lang]
+        if house_data:
+            # Direct bilingual line from planet-house table
+            alert_line = house_data[lang]
+            tip_line = base["tips"][house_data["category"]][lang]
+        else:
+            # Fallback 1 → category from alert_categories
+            alert_line = ""
+            tip_line = base["tips"]["emotional_memory"][lang]
+
     else:
-        tip_line = base["tips"]["emotional_memory"][lang]  # safe fallback
+        # No aspects → no alert
+        alert_line = ""
+        tip_line = base["tips"]["emotional_memory"][lang]
 
     # ---------------------------
     # FINAL OUTPUT PACK
