@@ -1,18 +1,23 @@
 from flask import Blueprint, request, jsonify
-from services.daily_horoscope_generator import generate_daily_horoscope
-from transit_engine import (
-    get_current_positions,
-    _to_julday_utc,
-    _rashi_from_sidereal_lon,
-    PLANET_IDS,
-    swe,
-    pytz,
-    datetime,
-)
+import requests
+import datetime
+import pytz
 
+from services.daily_horoscope_generator import generate_daily_horoscope
+
+
+# -----------------------------------------------------
+# BLUEPRINT
+# -----------------------------------------------------
 personalized_daily = Blueprint("personalized_daily", __name__)
 
-# ------------------ NAKSHATRA LIST ---------------------
+TRANSIT_URL = "https://jyotishasha-backend.onrender.com/api/transits?days=1"
+PANCHANG_URL = "https://jyotishasha-backend.onrender.com/api/panchang"
+
+
+# -----------------------------------------------------
+# Nakshatra List (index = floor(longitude / 13.3333))
+# -----------------------------------------------------
 NAKSHATRAS = [
     "Ashwini","Bharani","Krittika","Rohini","Mrigashira",
     "Ardra","Punarvasu","Pushya","Ashlesha","Magha",
@@ -23,114 +28,167 @@ NAKSHATRAS = [
     "Revati"
 ]
 
-def get_nakshatra_from_longitude(sidereal_lon):
-    return NAKSHATRAS[int(sidereal_lon // (360/27))]
+def calc_nakshatra_from_degree(deg):
+    size = 360 / 27
+    index = int(deg // size)
+    return NAKSHATRAS[index]
 
 
-# ------------------ FIXED HOUSE CALCULATION ---------------------
-def compute_moon_house(lagna, moon_rashi):
+# -----------------------------------------------------
+# HOUSE MAP (lagna based)
+# -----------------------------------------------------
+def build_house_map(moon_rashi):
     rashis = [
         "aries","taurus","gemini","cancer","leo","virgo",
         "libra","scorpio","sagittarius","capricorn","aquarius","pisces"
     ]
+    base = rashis.index(moon_rashi.lower()) + 1
+    mapping = {}
 
-    moon_index = rashis.index(moon_rashi.lower()) + 1
-    lagna_index = rashis.index(lagna.lower()) + 1
+    for idx, r in enumerate(rashis):
+        mapping[r] = ((idx + 1) - base) % 12 + 1
 
-    # Correct house mapping
-    return ((moon_index - lagna_index) % 12) + 1
-
-
-# ------------------ Build Transit for ANY Date ------------------
-def build_transit_for_date(dt_ist):
-    jd = _to_julday_utc(dt_ist)
-    ay = swe.get_ayanamsa_ut(jd)
-
-    out = {}
-    for pid, name in PLANET_IDS.items():
-        res, _ = swe.calc_ut(jd, pid)
-        lon = res[0]
-        speed = res[3] if len(res) > 3 else 0.0
-        sid_lon = (lon - ay) % 360
-
-        out[name] = {
-            "rashi": _rashi_from_sidereal_lon(sid_lon),
-            "degree": sid_lon % 30,
-            "sidereal_longitude": sid_lon,
-            "motion": "Retrograde" if speed < 0 else "Direct",
-        }
-
-    rahu_sid = (swe.calc_ut(jd, swe.MEAN_NODE)[0][0] - ay) % 360
-    ketu_sid = (rahu_sid + 180) % 360
-
-    out["Rahu"] = {"rashi": _rashi_from_sidereal_lon(rahu_sid), "sidereal_longitude": rahu_sid}
-    out["Ketu"] = {"rashi": _rashi_from_sidereal_lon(ketu_sid), "sidereal_longitude": ketu_sid}
-
-    return out
+    return mapping
 
 
-# ------------------ TODAY ------------------
+# -----------------------------------------------------
+# Fast Planet Detection (only Mercury/Venus/Mars)
+# Using → position difference 3 houses or conjunction
+# -----------------------------------------------------
+def detect_fast_planet(moon_house, planet_house_map):
+    fast_list = ["mercury", "venus", "mars"]
+
+    for p in fast_list:
+        if p not in planet_house_map:
+            continue
+
+        ph = planet_house_map[p]
+
+        diff = abs(ph - moon_house)
+
+        # Conjunction (same house)
+        if diff == 0:
+            return p
+
+        # 7th aspect (180-degree)
+        if diff == 6:
+            return p
+
+        # Close influence
+        if diff == 1 or diff == 2:
+            return p
+
+    return None
+
+
+# -----------------------------------------------------
+# CALL TRANSIT API
+# -----------------------------------------------------
+def fetch_transit():
+    r = requests.get(TRANSIT_URL)
+    return r.json()["transits"][0]   # always first day (today)
+
+
+# -----------------------------------------------------
+# CALL PANCHANG API
+# -----------------------------------------------------
+def fetch_panchang():
+    r = requests.get(PANCHANG_URL)
+    data = r.json()
+    return data["selected_date"]["tithi"]["paksha"]
+
+
+# -----------------------------------------------------
+# PROCESS TRANSIT RESPONSE
+# -----------------------------------------------------
+def parse_transit(transit, lagna):
+    moon = transit["positions"]["Moon"]
+
+    moon_rashi = moon["rashi"]
+    moon_deg = moon["degree"]
+    nakshatra = calc_nakshatra_from_degree(moon_deg)
+
+    house_map = build_house_map(moon_rashi)
+    moon_house = house_map[lagna]
+
+    # Build planet house map
+    planet_house_map = {}
+    for planet, info in transit["positions"].items():
+        rashi = info["rashi"]
+        if rashi:
+            planet_house_map[planet.lower()] = house_map[rashi.lower()]
+
+    fast_planet = detect_fast_planet(moon_house, planet_house_map)
+
+    return {
+        "moon_rashi": moon_rashi,
+        "nakshatra": nakshatra,
+        "moon_house": moon_house,
+        "fast_planet": fast_planet
+    }
+
+
+# -----------------------------------------------------
+# TODAY HOROSCOPE
+# -----------------------------------------------------
 @personalized_daily.route("/api/personalized/daily", methods=["POST"])
-def get_daily():
+def get_today():
     try:
         data = request.get_json()
-        lagna = data.get("lagna", "").lower()
+        if not data or "lagna" not in data:
+            return jsonify({"error": "Missing lagna"}), 400
 
-        today_raw = get_current_positions()
-        moon_raw = today_raw["positions"]["Moon"]
+        lagna = data["lagna"].lower()
 
-        # Moon longitude (we reconstruct)
-        rashi_index = {
-            "aries":0,"taurus":1,"gemini":2,"cancer":3,"leo":4,"virgo":5,
-            "libra":6,"scorpio":7,"sagittarius":8,"capricorn":9,"aquarius":10,"pisces":11
-        }[moon_raw["rashi"].lower()]
+        transit = fetch_transit()
+        parsed = parse_transit(transit, lagna)
 
-        sidereal_lon = (rashi_index * 30) + moon_raw["degree"]
-        moon_nakshatra = get_nakshatra_from_longitude(sidereal_lon)
-
-        moon_house = compute_moon_house(lagna, moon_raw["rashi"])
+        paksha = fetch_panchang()
 
         profile = {
-            "moon_rashi": moon_raw["rashi"],
-            "nakshatra": moon_nakshatra,
-            "moon_house": moon_house,
-            "fast_planet": None,
-            "paksha": "Shukla",
+            **parsed,
+            "paksha": paksha
         }
 
-        out = generate_daily_horoscope(profile)
-        out["day"] = "today"
-        return jsonify(out), 200
+        result = generate_daily_horoscope(profile)
+        result["day"] = "today"
+
+        return jsonify(result), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# ------------------ TOMORROW ------------------
+
+# -----------------------------------------------------
+# TOMORROW HOROSCOPE
+# -----------------------------------------------------
 @personalized_daily.route("/api/personalized/tomorrow", methods=["POST"])
 def get_tomorrow():
     try:
         data = request.get_json()
-        lagna = data.get("lagna", "").lower()
+        if not data or "lagna" not in data:
+            return jsonify({"error": "Missing lagna"}), 400
 
-        tomo_ist = datetime.datetime.now(pytz.timezone("Asia/Kolkata")) + datetime.timedelta(days=1)
-        tomo = build_transit_for_date(tomo_ist)
-        moon = tomo["Moon"]
+        lagna = data["lagna"].lower()
 
-        moon_nakshatra = get_nakshatra_from_longitude(moon["sidereal_longitude"])
-        moon_house = compute_moon_house(lagna, moon["rashi"])
+        # Tomorrow = days=2
+        r = requests.get("https://jyotishasha-backend.onrender.com/api/transits?days=2")
+        transit = r.json()["transits"][1]
+
+        parsed = parse_transit(transit, lagna)
+
+        paksha = fetch_panchang()
 
         profile = {
-            "moon_rashi": moon["rashi"],
-            "nakshatra": moon_nakshatra,
-            "moon_house": moon_house,
-            "fast_planet": None,
-            "paksha": "Shukla",
+            **parsed,
+            "paksha": paksha
         }
 
-        out = generate_daily_horoscope(profile)
-        out["day"] = "tomorrow"
-        return jsonify(out), 200
+        result = generate_daily_horoscope(profile)
+        result["day"] = "tomorrow"
+
+        return jsonify(result), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
