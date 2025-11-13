@@ -138,7 +138,7 @@ def today():
             return jsonify({"error": "Missing lagna"}), 400
 
         # 1 → Get transit from API
-        r = requests.get(TRANSIT_API)
+        r = requests.get(TRANSIT_API, timeout=10)
         api = r.json()["positions"]
 
         moon = api["Moon"]
