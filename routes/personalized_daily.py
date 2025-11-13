@@ -4,7 +4,7 @@ from services.daily_horoscope_generator import generate_daily_horoscope
 
 personalized_daily = Blueprint("personalized_daily", __name__)
 
-TRANSIT_API = "https://jyotishasha.pythonanywhere.com/api/transits?days=1"
+TRANSIT_API = "https://jyotishasha-backend.onrender.com/api/transits?days=1"
 
 @personalized_daily.route("/api/personalized/daily", methods=["POST"])
 def get_personalized_daily():
@@ -15,24 +15,24 @@ def get_personalized_daily():
 
         lagna = body["lagna"].lower()
 
-        # 1) Get Today transit
+        # 1) Fetch today's transit from Render backend
         r = requests.get(TRANSIT_API)
         if r.status_code != 200:
             return jsonify({"error": "Transit fetch failed"}), 500
 
         transit = r.json()
-        today = transit["transits"][0]    # Day 0 = today
+        today = transit["transits"][0]
 
-        # 2) Build user profile auto
+        # 2) Build user profile dynamically
         profile = {
             "moon_rashi": today["moon"]["rashi"],
             "nakshatra": today["moon"]["nakshatra"],
             "moon_house": today["moon"]["house_map"][lagna],
-            "fast_planet": today.get("fast_planet"), 
+            "fast_planet": today.get("fast_planet"),
             "paksha": today.get("paksha", "Shukla")
         }
 
-        # 3) Generate final horoscope
+        # 3) Generate Horoscope
         result = generate_daily_horoscope(profile)
         return jsonify(result), 200
 
