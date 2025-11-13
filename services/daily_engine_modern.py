@@ -24,49 +24,36 @@ def generate_modern_daily(moon_house, aspects, lang="en"):
     lang       : "en" or "hi"
     """
 
-    house = str(moon_house)
+    # 1) MOOD
+    mood_line = base["mood"][str(moon_house)][lang]
 
-    # ---------------------------
-    # 1) MOOD (always present)
-    # ---------------------------
-    mood_line = base["mood"][house][lang]
+    # 2) ENERGY
+    energy_line = base["energy"][str(moon_house)][lang]
 
-    # ---------------------------
-    # 2) ENERGY (always present)
-    # ---------------------------
-    energy_line = base["energy"][house][lang]
+    # -------------------------------
+    # 3) ALERT + TIP (Planet–House)
+    # -------------------------------
+    alert_line = ""
+    tip_line = base["tips"]["emotional_memory"][lang]  # safe default
 
-    # ---------------------------
-    # 3) SPECIFIC ALERT (planet + house)
-    # ---------------------------
     if aspects:
-        # Highest priority planet = first
-        planet = aspects[0].lower()
+        planet = aspects[0].lower()   # pick highest priority planet
 
-        # Check if planet-house block exists
-        planet_data = base["planet_house_alert"].get(planet, {})
-        house_data = planet_data.get(house)
+        planet_block = base["planet_house_alert"].get(planet, {})
+        house_block = planet_block.get(str(moon_house))
 
-        if house_data:
-            # Direct bilingual line from planet-house table
-            alert_line = house_data[lang]
-            tip_line = base["tips"][house_data["category"]][lang]
-        else:
-            # Fallback 1 → category from alert_categories
-            alert_line = ""
-            tip_line = base["tips"]["emotional_memory"][lang]
+        if house_block:
+            category = house_block["category"]
+            alert_line = house_block[lang]  # custom bilingual text
+            tip_line = base["tips"][category][lang]
 
-    else:
-        # No aspects → no alert
-        alert_line = ""
-        tip_line = base["tips"]["emotional_memory"][lang]
-
-    # ---------------------------
-    # FINAL OUTPUT PACK
-    # ---------------------------
+    # -------------------------------
+    # FINAL OUTPUT
+    # -------------------------------
     return {
         "mood": mood_line,
         "energy": energy_line,
         "alert": alert_line,
         "tip": tip_line
     }
+
