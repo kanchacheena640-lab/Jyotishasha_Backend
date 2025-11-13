@@ -60,6 +60,7 @@ app.register_blueprint(personalized_daily)
 
 
 
+
 # ------------------- ROOT ------------------- #
 @app.route("/")
 def home():
