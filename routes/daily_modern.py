@@ -50,11 +50,45 @@ def modern_daily_today():
 
         moon_house = today["moon"]["house"]
 
-        # 4) Aspect planets list
+        # 4) UNIVERSAL ASPECT DETECTION (NEW UPDATED)
         aspects = []
+
         for pname, pdata in today["planets"].items():
-            if pdata.get("aspect_on_moon") or pdata.get("conjunction_with_moon"):
-                aspects.append(pname.lower())
+            pname = pname.lower()
+
+            # 1) Direct flags
+            if pdata.get("aspect_on_moon") is True:
+                aspects.append(pname)
+                continue
+
+            if pdata.get("conjunction_with_moon") is True:
+                aspects.append(pname)
+                continue
+
+            # 2) aspects list
+            if isinstance(pdata.get("aspects"), list):
+                if "moon" in [x.lower() for x in pdata["aspects"]]:
+                    aspects.append(pname)
+                    continue
+
+            # 3) drishti / aspect lists
+            if isinstance(pdata.get("drishti"), list):
+                if "moon" in [x.lower() for x in pdata["drishti"]]:
+                    aspects.append(pname)
+                    continue
+
+            if isinstance(pdata.get("aspect"), list):
+                if "moon" in [x.lower() for x in pdata["aspect"]]:
+                    aspects.append(pname)
+                    continue
+
+            # 4) Nested values (fail-safe)
+            if isinstance(pdata, dict):
+                for key, val in pdata.items():
+                    if isinstance(val, list):
+                        if "moon" in [str(v).lower() for v in val]:
+                            aspects.append(pname)
+                            break
 
         # 5) Language
         lang = body.get("lang", "en").lower()
