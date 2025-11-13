@@ -1,0 +1,1100 @@
+{
+  "base_blocks": [
+    {
+      "id": 1,
+      "moon_rashi": "Aries",
+      "nakshatra": "Ashwini",
+
+      "base": {
+        "en": "You feel quick and active today. You want to finish tasks fast and take charge. Avoid rushing decisions.",
+        "hi": "आज आप तेज और एक्टिव महसूस करेंगे। काम जल्दी निपटाने और कंट्रोल लेने की इच्छा होगी। फैसलों में जल्दबाज़ी से बचें।"
+      },
+
+      "planet": {
+        "mercury_en": "Think once before speaking.",
+        "mercury_hi": "बोलने से पहले एक बार सोचें।",
+
+        "venus_en": "Your tone stays warm and polite.",
+        "venus_hi": "आपकी बोली आज नरम और अपनापन भरी रहेगी।",
+
+        "mars_en": "High energy—avoid instant reactions.",
+        "mars_hi": "ऊर्जा ज़्यादा—तुरंत रिएक्शन से बचें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Good day to start small tasks.",
+        "shukla_hi": "छोटे काम शुरू करने का अच्छा दिन।",
+        "krishna_en": "Finish pending work calmly.",
+        "krishna_hi": "पुराने काम शांत होकर पूरा करें।"
+      }
+    },
+
+    {
+      "id": 2,
+      "moon_rashi": "Aries",
+      "nakshatra": "Bharani",
+
+      "base": {
+        "en": "You may feel strong emotions today. You want control and may get irritated if things slow down. Keep your pace steady.",
+        "hi": "आज भावनाएँ थोड़ी तेज हो सकती हैं। चीज़ों पर कंट्रोल चाहेंगे और धीमी गति से चिढ़ सकते हैं। अपनी रफ्तार संतुलित रखें।"
+      },
+
+      "planet": {
+        "mercury_en": "Speak clearly to avoid confusion.",
+        "mercury_hi": "गलतफ़हमी से बचने के लिए साफ बोलें।",
+
+        "venus_en": "Keep your tone soft in relationships.",
+        "venus_hi": "रिश्तों में बात करते समय नरमी रखें।",
+
+        "mars_en": "Avoid forceful reactions.",
+        "mars_hi": "जोरदार प्रतिक्रिया देने से बचें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Take steady steps today.",
+        "shukla_hi": "धीरे-धीरे आगे बढ़ें।",
+        "krishna_en": "Pause and realign your plan.",
+        "krishna_hi": "रुककर प्लान दोबारा सोचें।"
+      }
+    },
+
+    {
+      "id": 3,
+      "moon_rashi": "Aries",
+      "nakshatra": "Krittika_1_4",
+
+      "base": {
+        "en": "Your focus stays sharp today. You want clarity and quick results. Avoid sounding too blunt with people.",
+        "hi": "आज फोकस बहुत तेज रहेगा। आप साफ और जल्दी परिणाम चाहेंगे। लोगों से बात करते समय बहुत सीधे न बनें।"
+      },
+
+      "planet": {
+        "mercury_en": "Your mind stays alert.",
+        "mercury_hi": "दिमाग आज बहुत तेज रहेगा।",
+
+        "venus_en": "Soft speech helps you today.",
+        "venus_hi": "नरम बोलना आज फायदेमंद रहेगा।",
+
+        "mars_en": "Avoid irritation over small things.",
+        "mars_hi": "छोटी बातों पर चिड़चिड़ाने से बचें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Good day for small progress.",
+        "shukla_hi": "छोटी प्रगति के लिए अच्छा दिन।",
+        "krishna_en": "Keep things simple today.",
+        "krishna_hi": "आज चीज़ें हल्की रखें।"
+      }
+    },
+
+    {
+      "id": 4,
+      "moon_rashi": "Taurus",
+      "nakshatra": "Krittika_3_4",
+
+      "base": {
+        "en": "You prefer stability and calm today. Noise or mess may bother you. Stay close to familiar people.",
+        "hi": "आज स्थिरता और शांति की ज़रूरत लगेगी। शोर या अव्यवस्था परेशान कर सकती है। परिचित लोगों के पास रहना अच्छा लगेगा।"
+      },
+
+      "planet": {
+        "mercury_en": "Speak thoughtfully today.",
+        "mercury_hi": "सोच-समझकर बोलें।",
+
+        "venus_en": "Comfort feels important.",
+        "venus_hi": "आराम और अपनापन ज़्यादा ज़रूरी लगेगा।",
+
+        "mars_en": "Avoid reacting to small issues.",
+        "mars_hi": "छोटी बातों पर रिएक्ट न करें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Plan peacefully today.",
+        "shukla_hi": "शांति से प्लान बनाएं।",
+        "krishna_en": "Slow down and rest more.",
+        "krishna_hi": "धीमे चलें और थोड़ा आराम करें।"
+      }
+    },
+
+    {
+      "id": 5,
+      "moon_rashi": "Taurus",
+      "nakshatra": "Rohini",
+
+      "base": {
+        "en": "You seek comfort and emotional security today. Familiar food, people and routines feel good.",
+        "hi": "आज मन आराम और सुरक्षा चाहता है। परिचित खाना, लोग और रूटीन अच्छा लगेगा।"
+      },
+
+      "planet": {
+        "mercury_en": "Your words sound gentle.",
+        "mercury_hi": "आपकी बोली आज मधुर रहेगी।",
+
+        "venus_en": "Warmth in relationships grows.",
+        "venus_hi": "रिश्तों में अपनापन बढ़ेगा।",
+
+        "mars_en": "Avoid emotional decisions.",
+        "mars_hi": "भावनाओं में आकर फ़ैसला न लें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Express feelings openly.",
+        "shukla_hi": "भावनाएँ व्यक्त करने का अच्छा समय।",
+        "krishna_en": "Stay calm and restful.",
+        "krishna_hi": "शांत और रिलैक्स रहें।"
+      }
+    },
+
+    {
+      "id": 6,
+      "moon_rashi": "Taurus",
+      "nakshatra": "Mrigashira_1_2",
+
+      "base": {
+        "en": "You feel curious and observant today. You may question things or search for clarity. Keep decisions practical.",
+        "hi": "आज मन जिज्ञासु और देखने-समझने वाला रहेगा। आप चीज़ों को समझने की कोशिश करेंगे। फैसले प्रैक्टिकल रखें।"
+      },
+
+      "planet": {
+        "mercury_en": "You think before spending or speaking.",
+        "mercury_hi": "खर्च या बोलने से पहले सोचेंगे।",
+
+        "venus_en": "Conversations feel pleasant.",
+        "venus_hi": "बातचीत आज सुखद रहेगी।",
+
+        "mars_en": "Avoid impulsive spending.",
+        "mars_hi": "जोश में आकर खर्च न करें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Good day for small planning.",
+        "shukla_hi": "छोटे प्लान के लिए अच्छा दिन।",
+        "krishna_en": "Review your choices calmly.",
+        "krishna_hi": "शांत होकर विकल्पों की समीक्षा करें।"
+      }
+    },
+
+    {
+      "id": 7,
+      "moon_rashi": "Gemini",
+      "nakshatra": "Mrigashira_3_4",
+
+      "base": {
+        "en": "Your mind stays active and talkative today. Many ideas come but may scatter. Keep tasks simple.",
+        "hi": "आज दिमाग एक्टिव और बातूनी रहेगा। बहुत से विचार आएंगे पर बिखर भी सकते हैं। काम आसान रखें।"
+      },
+
+      "planet": {
+        "mercury_en": "You reply quickly and clearly.",
+        "mercury_hi": "आप तेज और साफ जवाब देंगे।",
+
+        "venus_en": "Your tone becomes pleasant.",
+        "venus_hi": "आपकी बोली आज सुखद लगेगी।",
+
+        "mars_en": "Avoid sharp words.",
+        "mars_hi": "कड़वे शब्दों से बचें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Good for quick tasks.",
+        "shukla_hi": "छोटे-छोटे कामों के लिए अच्छा दिन।",
+        "krishna_en": "Slow your pace a bit.",
+        "krishna_hi": "रफ्तार थोड़ी धीमी रखें।"
+      }
+    },
+
+    {
+      "id": 8,
+      "moon_rashi": "Gemini",
+      "nakshatra": "Ardra",
+
+      "base": {
+        "en": "Emotions may fluctuate today. You may feel intense or sensitive at times. Stay patient with yourself.",
+        "hi": "आज भावनाएँ बदलती रह सकती हैं। कभी-कभी तीव्र या संवेदनशील महसूस होगा। अपने साथ धैर्य रखें।"
+      },
+
+      "planet": {
+        "mercury_en": "Speak only what is needed.",
+        "mercury_hi": "जितनी जरूरत हो उतना ही बोलें।",
+
+        "venus_en": "Softness helps you today.",
+        "venus_hi": "नरमी आज आपके लिए फायदेमंद रहेगी।",
+
+        "mars_en": "Avoid harsh reactions.",
+        "mars_hi": "कठोर प्रतिक्रिया देने से बचें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Channel emotions into work.",
+        "shukla_hi": "भावनाओं को काम में लगाएं।",
+        "krishna_en": "Take things slowly.",
+        "krishna_hi": "धीरे-धीरे काम करें।"
+      }
+    },
+
+    {
+      "id": 9,
+      "moon_rashi": "Gemini",
+      "nakshatra": "Punarvasu_3_4",
+
+      "base": {
+        "en": "You feel hopeful and calm today. A sense of clarity returns and routines feel easier.",
+        "hi": "आज मन शांत और उम्मीद से भरा रहेगा। स्पष्टता वापस आएगी और रुटीन आसान लगेंगे।"
+      },
+
+      "planet": {
+        "mercury_en": "Writing or planning helps.",
+        "mercury_hi": "लिखने या प्लानिंग से मदद मिलेगी।",
+
+        "venus_en": "Tone stays sweet today.",
+        "venus_hi": "बोलने में मिठास रहेगी।",
+
+        "mars_en": "Avoid rushing tasks.",
+        "mars_hi": "कामों में जल्दबाज़ी न करें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Good for new routines.",
+        "shukla_hi": "नए रूटीन शुरू करने के लिए अच्छा दिन।",
+        "krishna_en": "Good for reflection.",
+        "krishna_hi": "सोच-विचार के लिए सही दिन।"
+      }
+    },
+
+    {
+      "id": 10,
+      "moon_rashi": "Cancer",
+      "nakshatra": "Punarvasu_1_4",
+
+      "base": {
+        "en": "You prefer emotional peace and homely comfort today. Family thoughts rise and calm conversations help.",
+        "hi": "आज मन भावनात्मक शांति और घर जैसा आराम चाहेगा। परिवार से जुड़े विचार बढ़ेंगे और हल्की बातचीत मदद करेगी।"
+      },
+
+      "planet": {
+        "mercury_en": "Family talks stay clear.",
+        "mercury_hi": "परिवार से बातचीत साफ रहेगी।",
+
+        "venus_en": "Care and affection grow.",
+        "venus_hi": "देखभाल और अपनापन बढ़ेगा।",
+
+        "mars_en": "Avoid reacting quickly at home.",
+        "mars_hi": "घर में तुरंत रिएक्ट न करें।"
+      },
+
+      "paksha": {
+        "shukla_en": "Good day to organize your space.",
+        "shukla_hi": "घर में थोड़ा व्यवस्थित करने का अच्छा दिन।",
+        "krishna_en": "Relax and refresh quietly.",
+        "krishna_hi": "शांत रहकर आराम करें।"
+      }
+    },
+
+    {
+    "id": 11,
+    "moon_rashi": "Cancer",
+    "nakshatra": "Pushya",
+
+    "base": {
+        "en": "You feel nurturing and caring today. Home energy feels comforting and you may prefer staying close to familiar people.",
+        "hi": "आज आपका मन देखभाल और अपनापन महसूस करेगा। घर का माहौल अच्छा लगेगा और परिचित लोगों के पास रहना पसंद आएगा।"
+    },
+
+    "planet": {
+        "mercury_en": "Helpful for calm conversations.",
+        "mercury_hi": "शांत बातचीत के लिए सही दिन।",
+
+        "venus_en": "Warmth in relationships increases.",
+        "venus_hi": "रिश्तों में गर्माहट बढ़ेगी।",
+
+        "mars_en": "Avoid being overprotective.",
+        "mars_hi": "ज़्यादा सुरक्षात्मक बनने से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good day for emotional bonding.",
+        "shukla_hi": "भावनात्मक रूप से जुड़ने का अच्छा दिन।",
+        "krishna_en": "Rest and stay grounded.",
+        "krishna_hi": "आराम करें और खुद को स्थिर रखें।"
+    }
+    },
+
+    {
+    "id": 12,
+    "moon_rashi": "Cancer",
+    "nakshatra": "Ashlesha",
+
+    "base": {
+        "en": "Your emotions go deeper today. You may sense things more intuitively. Keep your reactions balanced.",
+        "hi": "आज आपकी भावनाएँ गहरी हो सकती हैं। आप चीज़ों को सहज रूप से महसूस करेंगे। प्रतिक्रियाओं को संतुलित रखें।"
+    },
+
+    "planet": {
+        "mercury_en": "Think before sharing feelings.",
+        "mercury_hi": "भावनाएँ साझा करने से पहले सोचें।",
+
+        "venus_en": "Softness keeps relationships smooth.",
+        "venus_hi": "नरमी रिश्तों को सहज बनाए रखेगी।",
+
+        "mars_en": "Avoid emotional overreaction.",
+        "mars_hi": "भावनात्मक अधिकता से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good for emotional clarity.",
+        "shukla_hi": "भावनात्मक स्पष्टता के लिए अच्छा समय।",
+        "krishna_en": "Take things slowly.",
+        "krishna_hi": "धीरे-धीरे चीज़ें करें।"
+    }
+    },
+
+    {
+    "id": 13,
+    "moon_rashi": "Leo",
+    "nakshatra": "Magha",
+
+    "base": {
+        "en": "You feel expressive and confident today. You may want recognition or appreciation for your efforts.",
+        "hi": "आज आप अभिव्यक्तिपूर्ण और आत्मविश्वासी महसूस करेंगे। अपने प्रयासों की सराहना चाह सकते हैं।"
+    },
+
+    "planet": {
+        "mercury_en": "Words carry influence today.",
+        "mercury_hi": "आज आपके शब्द प्रभाव डालेंगे।",
+
+        "venus_en": "Charm supports your interactions.",
+        "venus_hi": "आपकी आकर्षकता बातचीत में मदद करेगी।",
+
+        "mars_en": "Avoid ego-driven reactions.",
+        "mars_hi": "अहंकार से प्रेरित प्रतिक्रिया से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good day for creativity.",
+        "shukla_hi": "क्रिएटिविटी के लिए अच्छा दिन।",
+        "krishna_en": "Focus on simplicity.",
+        "krishna_hi": "सरलता पर ध्यान दें।"
+    }
+    },
+
+    {
+    "id": 14,
+    "moon_rashi": "Leo",
+    "nakshatra": "Purva_Phalguni",
+
+    "base": {
+        "en": "You feel warm, romantic or playful today. You may want fun, laughter and light moments.",
+        "hi": "आज मन रोमांटिक, खिलंदड़ा या हल्का-फुल्का रहेगा। हंसी-मज़ाक और हल्के पल अच्छे लगेंगे।"
+    },
+
+    "planet": {
+        "mercury_en": "Speak kindly for harmony.",
+        "mercury_hi": "सौम्य बोलें—संतुलन बना रहेगा।",
+
+        "venus_en": "Love and comfort rise.",
+        "venus_hi": "प्यार और आरामदायक भावनाएँ बढ़ेंगी।",
+
+        "mars_en": "Avoid jealousy or possessiveness.",
+        "mars_hi": "जलन या अधिकार जताने से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Great day for joy and bonding.",
+        "shukla_hi": "खुशियों और जुड़ाव का बेहतरीन दिन।",
+        "krishna_en": "Relax and avoid overthinking.",
+        "krishna_hi": "आराम करें और ज़्यादा मत सोचें।"
+    }
+    },
+
+    {
+    "id": 15,
+    "moon_rashi": "Leo",
+    "nakshatra": "Uttara_Phalguni_1_4",
+
+    "base": {
+        "en": "You feel generous and expressive today. You may want to support someone or share your thoughts openly.",
+        "hi": "आज आप उदार और अभिव्यक्तिपूर्ण रहेंगे। किसी की मदद करना या खुलकर बात करना अच्छा लगेगा।"
+    },
+
+    "planet": {
+        "mercury_en": "Good for teaching or guiding.",
+        "mercury_hi": "सिखाने या मार्गदर्शन के लिए अच्छा दिन।",
+
+        "venus_en": "Graceful interactions support you.",
+        "venus_hi": "सौम्य बातचीत आपके पक्ष में रहेगी।",
+
+        "mars_en": "Avoid pushing opinions strongly.",
+        "mars_hi": "अपनी राय ज़ोर से थोपने से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good day for positive sharing.",
+        "shukla_hi": "सकारात्मक बातें साझा करने का अच्छा समय।",
+        "krishna_en": "Reflect before expressing.",
+        "krishna_hi": "बात कहने से पहले सोचें।"
+    }
+    },
+
+    {
+    "id": 16,
+    "moon_rashi": "Virgo",
+    "nakshatra": "Uttara_Phalguni_3_4",
+
+    "base": {
+        "en": "You feel practical and observant today. You may want order and clarity in your work or surroundings.",
+        "hi": "आज आप व्यावहारिक और देखने-समझने वाले रहेंगे। काम और माहौल में स्पष्टता और व्यवस्था चाहेंगे।"
+    },
+
+    "planet": {
+        "mercury_en": "Focus improves your tasks.",
+        "mercury_hi": "फोकस से आपके काम बेहतर होंगे।",
+
+        "venus_en": "Softness reduces stress.",
+        "venus_hi": "नरमी तनाव कम करेगी।",
+
+        "mars_en": "Avoid overworking.",
+        "mars_hi": "ज़रूरत से ज़्यादा मेहनत से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good for productivity.",
+        "shukla_hi": "उत्पादकता के लिए अच्छा समय।",
+        "krishna_en": "Organize and reset.",
+        "krishna_hi": "चीज़ें व्यवस्थित करें और रीसेट करें।"
+    }
+    },
+
+    {
+    "id": 17,
+    "moon_rashi": "Virgo",
+    "nakshatra": "Hasta",
+
+    "base": {
+        "en": "You feel organized and helpful today. You prefer clean work, clear plans and practical actions.",
+        "hi": "आज आप व्यवस्थित और मददगार महसूस करेंगे। साफ काम, स्पष्ट प्लान और प्रैक्टिकल कदम पसंद आएंगे।"
+    },
+
+    "planet": {
+        "mercury_en": "Perfect for productive tasks.",
+        "mercury_hi": "उत्पादक कामों के लिए बेहतरीन।",
+
+        "venus_en": "Attention to beauty increases.",
+        "venus_hi": "सौंदर्य और सजावट पर ध्यान बढ़ेगा।",
+
+        "mars_en": "Avoid perfection pressure.",
+        "mars_hi": "परफेक्शन के दबाव से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good for planning.",
+        "shukla_hi": "प्लानिंग के लिए अच्छा दिन।",
+        "krishna_en": "Complete leftover tasks.",
+        "krishna_hi": "अधूरे काम पूरे करें।"
+    }
+    },
+
+    {
+    "id": 18,
+    "moon_rashi": "Virgo",
+    "nakshatra": "Chitra_1_2",
+
+    "base": {
+        "en": "You feel analytical and sharp today. You may want structure and precision in what you do.",
+        "hi": "आज आपका मन विश्लेषणात्मक और तेज रहेगा। अपने काम में ढांचा और सटीकता चाहेंगे।"
+    },
+
+    "planet": {
+        "mercury_en": "Planning works smoothly.",
+        "mercury_hi": "प्लानिंग आसानी से होगी।",
+
+        "venus_en": "Elegance reflects in your work.",
+        "venus_hi": "काम में सौंदर्य झलकेगा।",
+
+        "mars_en": "Avoid unnecessary pressure.",
+        "mars_hi": "अनावश्यक दबाव से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good for structured tasks.",
+        "shukla_hi": "संगठित कामों के लिए अच्छा समय।",
+        "krishna_en": "Slow down and refine.",
+        "krishna_hi": "धीरे चलें और सुधार करें।"
+    }
+    },
+
+    {
+    "id": 19,
+    "moon_rashi": "Libra",
+    "nakshatra": "Chitra_3_4",
+
+    "base": {
+        "en": "You feel balanced yet expressive today. Your artistic or relationship side becomes more active.",
+        "hi": "आज आप संतुलित लेकिन अभिव्यक्तिपूर्ण महसूस करेंगे। कलात्मक या रिलेशनशिप से जुड़ी भावनाएँ बढ़ेंगी।"
+    },
+
+    "planet": {
+        "mercury_en": "Good for negotiation and clarity.",
+        "mercury_hi": "स्पष्ट बातचीत और बातचीत-सुलह के लिए अच्छा दिन।",
+
+        "venus_en": "Harmony stays strong.",
+        "venus_hi": "रिश्तों में सामंजस्य मजबूत रहेगा।",
+
+        "mars_en": "Avoid unnecessary debates.",
+        "mars_hi": "अनावश्यक बहस से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good for partnerships.",
+        "shukla_hi": "साझेदारी के लिए अच्छा दिन।",
+        "krishna_en": "Avoid emotional clutter.",
+        "krishna_hi": "भावनात्मक अव्यवस्था से बचें।"
+    }
+    },
+
+    {
+    "id": 20,
+    "moon_rashi": "Libra",
+    "nakshatra": "Swati",
+
+    "base": {
+        "en": "You feel flexible and independent today. You may want space to think and breathe freely.",
+        "hi": "आज आप लचीला और स्वतंत्र महसूस करेंगे। सोचने और खुलकर सांस लेने के लिए निजी जगह चाहिए होगी।"
+    },
+
+    "planet": {
+        "mercury_en": "Negotiation works well.",
+        "mercury_hi": "बातचीत और नेगोशिएशन सफल रहेंगे।",
+
+        "venus_en": "Charm supports relationships.",
+        "venus_hi": "आपकी आकर्षकता रिश्तों को मजबूत बनाएगी।",
+
+        "mars_en": "Avoid reacting impulsively.",
+        "mars_hi": "आवेग में प्रतिक्रिया देने से बचें।"
+    },
+
+    "paksha": {
+        "shukla_en": "Good for social activities.",
+        "shukla_hi": "सोशल गतिविधियों के लिए अच्छा दिन।",
+        "krishna_en": "Slow down and go inward.",
+        "krishna_hi": "धीरे चलें और भीतर की ओर ध्यान दें।"
+    }
+    },
+    {
+  "id": 21,
+  "moon_rashi": "Libra",
+  "nakshatra": "Vishakha_3_4",
+
+  "base": {
+    "en": "You feel cooperative yet driven today. You want progress in relationships or shared goals. Balance effort and patience.",
+    "hi": "आज आप सहयोगी लेकिन लक्ष्य-केन्द्रित रहेंगे। रिश्तों या साझा कामों में प्रगति चाहेंगे। प्रयास और धैर्य का संतुलन रखें।"
+  },
+
+  "planet": {
+    "mercury_en": "Talks feel focused and purposeful.",
+    "mercury_hi": "बातचीत उद्देश्यपूर्ण और केंद्रित रहेगी।",
+
+    "venus_en": "Bonding becomes easier today.",
+    "venus_hi": "आज जुड़ाव आसान रहेगा।",
+
+    "mars_en": "Avoid pushing your point too strongly.",
+    "mars_hi": "अपनी बात ज़ोर देकर मनवाने से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good day for teamwork.",
+    "shukla_hi": "टीमवर्क के लिए अच्छा दिन।",
+    "krishna_en": "Go slow and understand others.",
+    "krishna_hi": "धीरे चलें और दूसरों को समझें।"
+  }
+},
+
+{
+  "id": 22,
+  "moon_rashi": "Scorpio",
+  "nakshatra": "Vishakha_1_4",
+
+  "base": {
+    "en": "You feel intense and thoughtful today. You may keep emotions private while trying to understand deeper meanings.",
+    "hi": "आज आप गहरे और विचारशील महसूस करेंगे। भावनाएँ भीतर रखकर चीज़ों को गहराई से समझने की कोशिश करेंगे।"
+  },
+
+  "planet": {
+    "mercury_en": "Introspection increases.",
+    "mercury_hi": "आत्मचिंतन बढ़ेगा।",
+
+    "venus_en": "Affection feels deep and selective.",
+    "venus_hi": "प्यार की भावना गहरी और चुनिंदा रहेगी।",
+
+    "mars_en": "Avoid emotional intensity turning into stress.",
+    "mars_hi": "भावनात्मक तीव्रता को तनाव न बनने दें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for inner clarity.",
+    "shukla_hi": "आंतरिक स्पष्टता के लिए अच्छा दिन।",
+    "krishna_en": "Release heavy thoughts.",
+    "krishna_hi": "भारी विचारों को छोड़ें।"
+  }
+},
+
+{
+  "id": 23,
+  "moon_rashi": "Scorpio",
+  "nakshatra": "Anuradha",
+
+  "base": {
+    "en": "You feel loyal and emotionally deep today. Trust and bonding become important themes.",
+    "hi": "आज आप वफादार और भावनात्मक रूप से गहरे महसूस करेंगे। भरोसा और जुड़ाव मुख्य विषय बनेंगे।"
+  },
+
+  "planet": {
+    "mercury_en": "Good for heartfelt conversations.",
+    "mercury_hi": "दिल से बातचीत के लिए अच्छा दिन।",
+
+    "venus_en": "Passion and warmth rise.",
+    "venus_hi": "गरमाहट और जुनून बढ़ेगा।",
+
+    "mars_en": "Avoid emotional overreaction.",
+    "mars_hi": "भावनात्मक अधिकता से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for trusting someone.",
+    "shukla_hi": "किसी पर भरोसा करने के लिए अच्छा दिन।",
+    "krishna_en": "Go slow emotionally.",
+    "krishna_hi": "भावनाओं में धीरे चलें।"
+  }
+},
+
+{
+  "id": 24,
+  "moon_rashi": "Scorpio",
+  "nakshatra": "Jyeshtha",
+
+  "base": {
+    "en": "You feel protective and alert today. You may want control or may sense hidden details more sharply.",
+    "hi": "आज आप सुरक्षात्मक और चौकस महसूस करेंगे। चीज़ों पर नियंत्रण चाहेंगे और छिपी बातों को तेज़ी से समझेंगे।"
+  },
+
+  "planet": {
+    "mercury_en": "Good for strategic thinking.",
+    "mercury_hi": "रणनीतिक सोच के लिए अच्छा दिन।",
+
+    "venus_en": "Softness helps avoid tension.",
+    "venus_hi": "नरमी तनाव को कम करेगी।",
+
+    "mars_en": "Avoid suspicion or dominance.",
+    "mars_hi": "शक या हावी होने से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for tackling challenges.",
+    "shukla_hi": "चुनौतियों को सँभालने के लिए अच्छा दिन।",
+    "krishna_en": "Let go of pressure.",
+    "krishna_hi": "दबाव छोड़ें।"
+  }
+},
+
+{
+  "id": 25,
+  "moon_rashi": "Sagittarius",
+  "nakshatra": "Mula",
+
+  "base": {
+    "en": "You feel curious and detached today. You may seek truth or want to understand things from the root.",
+    "hi": "आज मन जिज्ञासु और थोड़ा अलग-सा रहेगा। चीज़ों को जड़ से समझने की इच्छा होगी।"
+  },
+
+  "planet": {
+    "mercury_en": "Good day for learning.",
+    "mercury_hi": "सीखने के लिए अच्छा दिन।",
+
+    "venus_en": "Compassion rises softly.",
+    "venus_hi": "करुणा हल्के रूप में बढ़ेगी।",
+
+    "mars_en": "Avoid blunt statements.",
+    "mars_hi": "बहुत सीधे बोलने से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for exploring ideas.",
+    "shukla_hi": "नई बातों को समझने का अच्छा दिन।",
+    "krishna_en": "Reflect rather than act.",
+    "krishna_hi": "काम करने से ज्यादा सोचें।"
+  }
+},
+
+{
+  "id": 26,
+  "moon_rashi": "Sagittarius",
+  "nakshatra": "Purva_Ashadha",
+
+  "base": {
+    "en": "You feel hopeful and expanding today. Future goals and enthusiasm rise strongly.",
+    "hi": "आज आप उम्मीद और विस्तार महसूस करेंगे। भविष्य के लक्ष्य और उत्साह बढ़ेगा।"
+  },
+
+  "planet": {
+    "mercury_en": "Ideas feel inspiring.",
+    "mercury_hi": "विचार प्रेरित करने वाले होंगे।",
+
+    "venus_en": "Optimism supports connections.",
+    "venus_hi": "आशावाद रिश्तों को मजबूत बनाएगा।",
+
+    "mars_en": "Avoid overconfidence.",
+    "mars_hi": "अतिआत्मविश्वास से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Great for planning growth.",
+    "shukla_hi": "विकास की योजना बनाने के लिए बढ़िया दिन।",
+    "krishna_en": "Focus on clarity.",
+    "krishna_hi": "स्पष्टता पर ध्यान दें।"
+  }
+},
+
+{
+  "id": 27,
+  "moon_rashi": "Sagittarius",
+  "nakshatra": "Uttara_Ashadha_1_4",
+
+  "base": {
+    "en": "You feel ambitious and steady today. Purposeful actions and disciplined thinking come naturally.",
+    "hi": "आज आप महत्वाकांक्षी और स्थिर महसूस करेंगे। उद्देश्यपूर्ण काम और अनुशासित सोच सहज रूप से आएगी।"
+  },
+
+  "planet": {
+    "mercury_en": "Strategic thinking helps.",
+    "mercury_hi": "रणनीतिक सोच मदद करेगी।",
+
+    "venus_en": "Softness balances ambition.",
+    "venus_hi": "नरमी महत्वाकांक्षा को संतुलित रखेगी।",
+
+    "mars_en": "Avoid pushing too hard.",
+    "mars_hi": "बहुत ज़ोर लगाने से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for career steps.",
+    "shukla_hi": "कैरियर के कदम आगे बढ़ाने का सही समय।",
+    "krishna_en": "Review your long goals.",
+    "krishna_hi": "लंबे लक्ष्यों की समीक्षा करें।"
+  }
+},
+
+{
+  "id": 28,
+  "moon_rashi": "Capricorn",
+  "nakshatra": "Uttara_Ashadha_3_4",
+
+  "base": {
+    "en": "You feel responsible and focused today. Work, duty and long-term tasks get priority.",
+    "hi": "आज आप जिम्मेदार और केंद्रित महसूस करेंगे। काम, कर्तव्य और दीर्घकालिक कार्य प्राथमिकता बनेंगे।"
+  },
+
+  "planet": {
+    "mercury_en": "Planning becomes stronger.",
+    "mercury_hi": "प्लानिंग बेहतर होगी।",
+
+    "venus_en": "Diplomacy helps today.",
+    "venus_hi": "कूटनीति आज मदद करेगी।",
+
+    "mars_en": "Avoid strictness with others.",
+    "mars_hi": "दूसरों से सख्ती न करें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for progress.",
+    "shukla_hi": "प्रगति के लिए अच्छा दिन।",
+    "krishna_en": "Work quietly and patiently.",
+    "krishna_hi": "शांत और धैर्य से काम करें।"
+  }
+},
+
+{
+  "id": 29,
+  "moon_rashi": "Capricorn",
+  "nakshatra": "Shravana",
+
+  "base": {
+    "en": "You feel patient, wise and observant today. You may understand things without speaking much.",
+    "hi": "आज आप धैर्यवान, समझदार और देखने-समझने वाले रहेंगे। बिना ज़्यादा बोले चीज़ें समझ जाएंगे।"
+  },
+
+  "planet": {
+    "mercury_en": "Listening improves clarity.",
+    "mercury_hi": "सुनने से स्पष्टता बढ़ेगी।",
+
+    "venus_en": "Harmony develops subtly.",
+    "venus_hi": "सामंजस्य हल्के रूप में बढ़ेगा।",
+
+    "mars_en": "Avoid controlling behaviour.",
+    "mars_hi": "कंट्रोलिंग व्यवहार से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for mentorship.",
+    "shukla_hi": "मार्गदर्शन देने के लिए अच्छा दिन।",
+    "krishna_en": "Reflect more, speak less.",
+    "krishna_hi": "ज़्यादा सोचें, कम बोलें।"
+  }
+},
+
+{
+  "id": 30,
+  "moon_rashi": "Capricorn",
+  "nakshatra": "Dhanishta_1_2",
+
+  "base": {
+    "en": "You feel active and practical today. You may want to take action on pending tasks or long-term goals.",
+    "hi": "आज आप सक्रिय और व्यावहारिक रहेंगे। अधूरे कामों या लंबी योजनाओं पर कार्रवाई करना चाहेंगे।"
+  },
+
+  "planet": {
+    "mercury_en": "Planning feels smooth.",
+    "mercury_hi": "प्लानिंग में आसानी रहेगी।",
+
+    "venus_en": "Cooperation grows.",
+    "venus_hi": "सहयोग बढ़ेगा।",
+
+    "mars_en": "Avoid rushing work.",
+    "mars_hi": "काम में जल्दबाज़ी से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Great for taking initiative.",
+    "shukla_hi": "पहलकदमी करने का अच्छा दिन।",
+    "krishna_en": "Keep tasks simple.",
+    "krishna_hi": "काम सरल रखें।"
+  }
+},
+{
+  "id": 31,
+  "moon_rashi": "Aquarius",
+  "nakshatra": "Dhanishta_3_4",
+
+  "base": {
+    "en": "You feel social and forward-thinking today. You may want to connect with people or plan something meaningful for the future.",
+    "hi": "आज आप सामाजिक और आगे सोचने वाले महसूस करेंगे। लोगों से जुड़ने या भविष्य के लिए कुछ सार्थक प्लान करने का मन होगा।"
+  },
+
+  "planet": {
+    "mercury_en": "Good for coordinating ideas.",
+    "mercury_hi": "विचारों को समन्वित करने के लिए अच्छा समय।",
+
+    "venus_en": "Friendly interactions increase.",
+    "venus_hi": "दोस्ताना बातचीत बढ़ेगी।",
+
+    "mars_en": "Avoid reacting quickly in groups.",
+    "mars_hi": "समूह में तुरंत प्रतिक्रिया देने से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Great for networking.",
+    "shukla_hi": "नेटवर्किंग के लिए बढ़िया दिन।",
+    "krishna_en": "Stay calm and observe.",
+    "krishna_hi": "शांत रहें और ध्यान से देखें।"
+  }
+},
+
+{
+  "id": 32,
+  "moon_rashi": "Aquarius",
+  "nakshatra": "Shatabhisha",
+
+  "base": {
+    "en": "You feel detached yet observant today. Logic becomes stronger and you prefer clarity over emotions.",
+    "hi": "आज आप थोड़े अलग-थलग लेकिन देखने-समझने वाले रहेंगे। भावनाओं से ज़्यादा स्पष्टता और लॉजिक चाहेंगे।"
+  },
+
+  "planet": {
+    "mercury_en": "Good for analytical thinking.",
+    "mercury_hi": "विश्लेषणात्मक सोच के लिए अच्छा दिन।",
+
+    "venus_en": "Support comes from friends.",
+    "venus_hi": "दोस्तों से हल्का सहयोग मिलेगा।",
+
+    "mars_en": "Avoid being too blunt.",
+    "mars_hi": "बहुत सीधे बोलने से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for planning future tasks.",
+    "shukla_hi": "भविष्य के कार्यों की योजना बनाने के लिए अच्छा दिन।",
+    "krishna_en": "Maintain emotional balance.",
+    "krishna_hi": "भावनात्मक संतुलन बनाए रखें।"
+  }
+},
+
+{
+  "id": 33,
+  "moon_rashi": "Aquarius",
+  "nakshatra": "Purva_Bhadrapada_3_4",
+
+  "base": {
+    "en": "You feel thoughtful and imaginative today. Group interactions or shared ideas may take interesting directions.",
+    "hi": "आज आप विचारशील और कल्पनाशील महसूस करेंगे। समूह में बातचीत या साझा विचार रोचक दिशा ले सकते हैं।"
+  },
+
+  "planet": {
+    "mercury_en": "Good flow of ideas.",
+    "mercury_hi": "विचारों का अच्छा प्रवाह रहेगा।",
+
+    "venus_en": "Understanding grows in relationships.",
+    "venus_hi": "रिश्तों में समझ बढ़ेगी।",
+
+    "mars_en": "Avoid getting lost in overthinking.",
+    "mars_hi": "ज़्यादा सोच में खोने से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for teamwork.",
+    "shukla_hi": "टीमवर्क के लिए अच्छा दिन।",
+    "krishna_en": "Move slowly and observe.",
+    "krishna_hi": "धीरे चलें और परिस्थितियों को देखें।"
+  }
+},
+
+{
+  "id": 34,
+  "moon_rashi": "Pisces",
+  "nakshatra": "Purva_Bhadrapada_1_4",
+
+  "base": {
+    "en": "You feel dreamy and introspective today. You may prefer silence, creativity or emotional space.",
+    "hi": "आज आप स्वप्निल और भीतर झांकने वाले महसूस करेंगे। शांति, क्रिएटिविटी या भावनात्मक जगह पसंद आएगी।"
+  },
+
+  "planet": {
+    "mercury_en": "Journaling helps clarity.",
+    "mercury_hi": "लिखने से स्पष्टता मिलेगी।",
+
+    "venus_en": "Soft feelings rise.",
+    "venus_hi": "नरम भावनाएँ बढ़ेंगी।",
+
+    "mars_en": "Avoid emotional confusion.",
+    "mars_hi": "भावनात्मक उलझन से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for spiritual activities.",
+    "shukla_hi": "आध्यात्मिक कार्यों के लिए अच्छा समय।",
+    "krishna_en": "Rest deeply.",
+    "krishna_hi": "गहरा आराम करें।"
+  }
+},
+
+{
+  "id": 35,
+  "moon_rashi": "Pisces",
+  "nakshatra": "Uttara_Bhadrapada",
+
+  "base": {
+    "en": "You feel calm and emotionally deep today. You may want solitude or inner reflection more than usual.",
+    "hi": "आज आप शांत और भावनात्मक रूप से गहरे महसूस करेंगे। सामान्य से अधिक एकांत या आत्ममंथन पसंद आएगा।"
+  },
+
+  "planet": {
+    "mercury_en": "Writing or slow planning helps.",
+    "mercury_hi": "लिखना या धीरे-धीरे प्लानिंग करना मदद करेगा।",
+
+    "venus_en": "Imagination becomes stronger.",
+    "venus_hi": "कल्पनाशक्ति बढ़ेगी।",
+
+    "mars_en": "Avoid draining talks.",
+    "mars_hi": "ऊर्जा कम करने वाली बातचीत से बचें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Good for emotional healing.",
+    "shukla_hi": "भावनात्मक उपचार के लिए अच्छा समय।",
+    "krishna_en": "Calm down and recharge.",
+    "krishna_hi": "शांत रहें और ऊर्जा भरें।"
+  }
+},
+
+{
+  "id": 36,
+  "moon_rashi": "Pisces",
+  "nakshatra": "Revati",
+
+  "base": {
+    "en": "You feel kind, imaginative and gentle today. You may want closure or may enjoy peaceful activities.",
+    "hi": "आज आप दयालु, कल्पनाशील और सौम्य महसूस करेंगे। किसी चीज़ का समापन करना या शांत गतिविधियाँ करना अच्छा लगेगा।"
+  },
+
+  "planet": {
+    "mercury_en": "Avoid overthinking details.",
+    "mercury_hi": "बहुत ज़्यादा सोचने से बचें।",
+
+    "venus_en": "Soft emotional energy helps today.",
+    "venus_hi": "नरम भावनात्मक ऊर्जा आज मदद करेगी।",
+
+    "mars_en": "Avoid forcing tasks.",
+    "mars_hi": "कामों में ज़बरदस्ती न करें।"
+  },
+
+  "paksha": {
+    "shukla_en": "Great for emotional reset.",
+    "shukla_hi": "भावनात्मक रीसेट के लिए बढ़िया दिन।",
+    "krishna_en": "Good for ending pending tasks.",
+    "krishna_hi": "अधूरे कामों को समाप्त करने का अच्छा समय।"
+  }
+}
+
+  ],
+  
+  "house_effect": {
+  "1": {
+    "en": "You focus more on yourself today—mood, confidence and personal choices matter.",
+    "hi": "आज फोकस खुद पर रहेगा—मूड, आत्मविश्वास और व्यक्तिगत चुनाव महत्वपूर्ण रहेंगे।"
+  },
+  "2": {
+    "en": "Family, food or money-related thoughts rise today.",
+    "hi": "परिवार, खाने या पैसों से जुड़े विचार बढ़ेंगे।"
+  },
+  "3": {
+    "en": "Calls, messages and small tasks take attention.",
+    "hi": "कॉल, मैसेज और छोटे कामों पर ध्यान जाएगा।"
+  },
+  "4": {
+    "en": "You prefer comfort, homely calm and emotional balance.",
+    "hi": "आप घर जैसा आराम, सुकून और भावनात्मक संतुलन चाहेंगे।"
+  },
+  "5": {
+    "en": "Creative energy or romantic thoughts rise today.",
+    "hi": "क्रिएटिव ऊर्जा या रोमांटिक विचार बढ़ेंगे।"
+  },
+  "6": {
+    "en": "Routine, health or pending tasks become important.",
+    "hi": "रूटीन, सेहत या अधूरे काम महत्वपूर्ण बनेंगे।"
+  },
+  "7": {
+    "en": "Partners or close relationships influence your mood today.",
+    "hi": "पार्टनर या नज़दीकी रिश्ते आज आपके मूड को प्रभावित करेंगे।"
+  },
+  "8": {
+    "en": "Hidden emotions or deep thoughts surface today.",
+    "hi": "छुपी भावनाएँ या गहरे विचार आज उभरकर आएंगे।"
+  },
+  "9": {
+    "en": "Learning, belief systems or travel thoughts rise.",
+    "hi": "सीखने, विश्वास या यात्रा से जुड़े विचार बढ़ेंगे।"
+  },
+  "10": {
+    "en": "Career, goals or responsibilities take priority.",
+    "hi": "कैरियर, लक्ष्य और जिम्मेदारियाँ प्राथमिकता बनेंगी।"
+  },
+  "11": {
+    "en": "Friends, teamwork or gains get attention.",
+    "hi": "दोस्त, समूह और लाभ से जुड़े विचार आएंगे।"
+  },
+  "12": {
+    "en": "You may want silence, rest or emotional reset.",
+    "hi": "आपको शांति, आराम और भावनात्मक रीसेट की जरूरत महसूस होगी।"
+  }
+}
+
+}
+
+

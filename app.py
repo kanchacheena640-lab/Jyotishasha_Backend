@@ -31,11 +31,7 @@ from routes.full_kundali_route import full_kundali_modern_bp
 from routes.routes_free_consult import routes_free_consult
 from routes.routes_subscription import routes_subscription
 from routes.routes_asknow import routes_asknow
-
-
-
-
-
+from routes.personalized_daily import personalized_daily_bp
 
 
 
@@ -59,6 +55,7 @@ app.register_blueprint(routes_free_consult)
 app.register_blueprint(routes_user)
 app.register_blueprint(routes_subscription)
 app.register_blueprint(routes_asknow)
+app.register_blueprint(personalized_daily_bp)
 
 
 
