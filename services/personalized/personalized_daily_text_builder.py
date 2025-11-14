@@ -27,17 +27,21 @@ house_tips = load_json("house_based_tips.json")
 # ---------------------------------------------------------
 # 1) MAIN TRANSIT SENTENCE (LANGUAGE SAFE)
 # ---------------------------------------------------------
-def build_transit_sentence(today):
-    lang = today.get("lang", "en")  # en / hi
-
+def build_transit_sentence(today, lang="en"):
     nak = today["moon"]["nakshatra"]
     house = str(today["moon"]["house"])
 
-    # pick correct language keys
-    trait = moon_master[f"nakshatra_traits_{lang}"].get(nak, "")
-    action = random.choice(moon_master[f"action_words_{lang}"])
-    theme = moon_master[f"house_themes_{lang}"].get(house, "")
+    # pick correct keys according to language
+    trait_key = f"nakshatra_traits_{lang}"
+    action_key = f"action_words_{lang}"
+    theme_key = f"house_themes_{lang}"
 
+    # Fetch values
+    trait = moon_master.get(trait_key, {}).get(nak, "")
+    action = random.choice(moon_master.get(action_key, []))
+    theme = moon_master.get(theme_key, {}).get(house, "")
+
+    # Build final sentence
     return f"{trait} {action} {theme}.".strip()
 
 
