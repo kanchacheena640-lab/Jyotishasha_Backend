@@ -25,23 +25,27 @@ house_tips = load_json("house_based_tips.json")
 
 
 # ---------------------------------------------------------
-# 1) MAIN TRANSIT SENTENCE
+# 1) MAIN TRANSIT SENTENCE (LANGUAGE SAFE)
 # ---------------------------------------------------------
 def build_transit_sentence(today):
+    lang = today.get("lang", "en")  # en / hi
+
     nak = today["moon"]["nakshatra"]
     house = str(today["moon"]["house"])
 
-    trait = moon_master["nakshatra_traits"].get(nak, "")
-    action = random.choice(moon_master["action_words"])
-    theme = moon_master["house_themes"].get(house, "")
+    # pick correct language keys
+    trait = moon_master[f"nakshatra_traits_{lang}"].get(nak, "")
+    action = random.choice(moon_master[f"action_words_{lang}"])
+    theme = moon_master[f"house_themes_{lang}"].get(house, "")
 
     return f"{trait} {action} {theme}.".strip()
 
 
 # ---------------------------------------------------------
-# 2) ASPECT SENTENCE
+# 2) ASPECT SENTENCE (LANGUAGE SAFE)
 # ---------------------------------------------------------
 def build_aspect_sentence(today):
+    lang = today.get("lang", "en")  # en / hi
     aspecting = []
 
     for name, pdata in today["planets"].items():
@@ -52,7 +56,7 @@ def build_aspect_sentence(today):
         return ""
 
     planet = random.choice(aspecting)
-    key = f"{planet}_aspect_lines_en"
+    key = f"{planet}_aspect_lines_{lang}"
 
     if key not in aspect_master:
         return ""
@@ -62,11 +66,13 @@ def build_aspect_sentence(today):
 
 
 # ---------------------------------------------------------
-# 3) REMEDY / TIP LINE
+# 3) REMEDY / TIP LINE (LANGUAGE SAFE)
 # ---------------------------------------------------------
 def build_remedy_sentence(today):
+    lang = today.get("lang", "en")  # en / hi
+
     house = str(today["moon"]["house"])
-    tips = house_tips.get(house, [])
+    tips = house_tips[f"house_based_tips_{lang}"].get(house, [])
 
     if not tips:
         return ""

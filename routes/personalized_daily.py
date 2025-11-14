@@ -47,11 +47,19 @@ def personalized_daily_today():
         lat = float(body.get("lat", 28.6))
         lon = float(body.get("lon", 77.2))
 
-        # 3) Transit data
+        # 3) Language
+        lang = body.get("lang", "en").lower()
+        if lang not in ["en", "hi"]:
+            lang = "en"
+
+        # 4) Build transit data
         profile = build_personalized_daily_profile(lagna, lat=lat, lon=lon)
         today = profile["today"]
 
-        # 4) Build text
+        # inject language for builder
+        today["lang"] = lang
+
+        # 5) Build text
         main_line = build_transit_sentence(today) or ""
         aspect_line = build_aspect_sentence(today) or ""
         remedy_line = build_remedy_sentence(today) or ""
@@ -63,6 +71,7 @@ def personalized_daily_today():
             "day": "today",
             "lagna": lagna,
             "moon": today["moon"],
+            "lang": lang,
             "result": {
                 "main_line": main_line,
                 "aspect_line": aspect_line,
@@ -91,8 +100,17 @@ def personalized_daily_tomorrow():
         lat = float(body.get("lat", 28.6))
         lon = float(body.get("lon", 77.2))
 
+        # language
+        lang = body.get("lang", "en").lower()
+        if lang not in ["en", "hi"]:
+            lang = "en"
+
+        # Build full transit
         profile = build_personalized_daily_profile(lagna, lat=lat, lon=lon)
         tomorrow = profile["tomorrow"]
+
+        # inject language for builder
+        tomorrow["lang"] = lang
 
         main_line = build_transit_sentence(tomorrow) or ""
         aspect_line = build_aspect_sentence(tomorrow) or ""
@@ -105,6 +123,7 @@ def personalized_daily_tomorrow():
             "day": "tomorrow",
             "lagna": lagna,
             "moon": tomorrow["moon"],
+            "lang": lang,
             "result": {
                 "main_line": main_line,
                 "aspect_line": aspect_line,
