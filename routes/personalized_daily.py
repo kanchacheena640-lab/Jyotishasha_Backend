@@ -1,11 +1,13 @@
 # personalized_daily.py
-# FINAL PRODUCTION VERSION (NO API CALLS)
+# FINAL PERSONALIZED DAILY HOROSCOPE (3-LINE VERSION)
 
 from flask import Blueprint, request, jsonify
-from services.personalized.personalized_daily_engine import (
-    build_personalized_daily_profile
+from services.personalized.personalized_daily_engine import build_personalized_daily_profile
+from services.personalized.personalized_daily_text_builder import (
+    build_transit_sentence,
+    build_aspect_sentence,
+    build_remedy_sentence
 )
-from services.daily_horoscope_generator import generate_daily_horoscope
 
 personalized_daily = Blueprint("personalized_daily", __name__)
 
@@ -27,66 +29,54 @@ LAGNA_MAP = {
     "pisces": "Pisces", "meen": "Pisces"
 }
 
-
 # ====================================================
-#           TODAY PERSONALIZED HOROSCOPE
+#               TODAY — PERSONALIZED
 # ====================================================
 @personalized_daily.route("/api/personalized/daily", methods=["POST"])
 def personalized_daily_today():
     try:
         body = request.get_json() or {}
 
-        # -----------------------------
-        # Required Input
-        # -----------------------------
+        # 1) Lagna
         raw_lagna = body.get("lagna", "").strip().lower()
         lagna = LAGNA_MAP.get(raw_lagna)
-
         if not lagna:
             return jsonify({"error": "Invalid or missing lagna"}), 400
 
-        # -----------------------------
-        # Optional Location
-        # -----------------------------
-        lat = float(body.get("lat", 28.6))     # Default: Delhi
+        # 2) Optional location
+        lat = float(body.get("lat", 28.6))
         lon = float(body.get("lon", 77.2))
 
-        # -----------------------------
-        # Build full transit profile
-        # -----------------------------
+        # 3) Transit data
         profile = build_personalized_daily_profile(lagna, lat=lat, lon=lon)
-
         today = profile["today"]
 
-        # -----------------------------
-        # Map to horoscope generator input
-        # -----------------------------
-        generator_input = {
-            "moon_rashi": today["moon"]["rashi"],
-            "nakshatra": today["moon"]["nakshatra"],
-            "moon_house": today["moon"]["house"],
-            "fast_planet": today["fast_planet"],
-            "paksha": today["paksha"]
-        }
+        # 4) Build text
+        main_line = build_transit_sentence(today) or ""
+        aspect_line = build_aspect_sentence(today) or ""
+        remedy_line = build_remedy_sentence(today) or ""
 
-        # -----------------------------
-        # Generate horoscope text
-        # -----------------------------
-        final_text = generate_daily_horoscope(generator_input)
+        combined = "\n".join([main_line, aspect_line, remedy_line]).strip()
 
         return jsonify({
+            "status": "success",
             "day": "today",
-            "input_used": generator_input,
-            "horoscope": final_text
+            "lagna": lagna,
+            "moon": today["moon"],
+            "result": {
+                "main_line": main_line,
+                "aspect_line": aspect_line,
+                "remedy_line": remedy_line,
+                "combined_text": combined
+            }
         }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-
 # ====================================================
-#           TOMORROW PERSONALIZED HOROSCOPE
+#               TOMORROW — PERSONALIZED
 # ====================================================
 @personalized_daily.route("/api/personalized/tomorrow", methods=["POST"])
 def personalized_daily_tomorrow():
@@ -95,33 +85,32 @@ def personalized_daily_tomorrow():
 
         raw_lagna = body.get("lagna", "").strip().lower()
         lagna = LAGNA_MAP.get(raw_lagna)
-
         if not lagna:
             return jsonify({"error": "Invalid or missing lagna"}), 400
 
         lat = float(body.get("lat", 28.6))
         lon = float(body.get("lon", 77.2))
 
-        # Build full transit (today + tomorrow)
         profile = build_personalized_daily_profile(lagna, lat=lat, lon=lon)
-
         tomorrow = profile["tomorrow"]
 
-        # Generator Input
-        generator_input = {
-            "moon_rashi": tomorrow["moon"]["rashi"],
-            "nakshatra": tomorrow["moon"]["nakshatra"],
-            "moon_house": tomorrow["moon"]["house"],
-            "fast_planet": tomorrow["fast_planet"],
-            "paksha": tomorrow["paksha"]
-        }
+        main_line = build_transit_sentence(tomorrow) or ""
+        aspect_line = build_aspect_sentence(tomorrow) or ""
+        remedy_line = build_remedy_sentence(tomorrow) or ""
 
-        final_text = generate_daily_horoscope(generator_input)
+        combined = "\n".join([main_line, aspect_line, remedy_line]).strip()
 
         return jsonify({
+            "status": "success",
             "day": "tomorrow",
-            "input_used": generator_input,
-            "horoscope": final_text
+            "lagna": lagna,
+            "moon": tomorrow["moon"],
+            "result": {
+                "main_line": main_line,
+                "aspect_line": aspect_line,
+                "remedy_line": remedy_line,
+                "combined_text": combined
+            }
         }), 200
 
     except Exception as e:

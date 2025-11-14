@@ -1,0 +1,211 @@
+{
+  "saturn_aspect_lines_en": {
+    "1": "Saturn is watching you today, so you may slow down and take things more seriously.",
+    "2": "Saturn is watching you today, so you'll speak carefully and avoid unnecessary expenses.",
+    "3": "Saturn is watching you today, so you may talk less and think twice before responding.",
+    "4": "Saturn is watching you today, so you may prefer quiet space and stay away from emotional drama.",
+    "5": "Saturn is watching you today, so you may hold back feelings and act more responsibly in love or creativity.",
+    "6": "Saturn is watching you today, so you'll work with discipline and avoid shortcuts.",
+    "7": "Saturn is watching you today, so you may react slowly and avoid unnecessary conflict in relationships.",
+    "8": "Saturn is watching you today, so you may withdraw a little and open up only after deep thought.",
+    "9": "Saturn is watching you today, so you might question your beliefs and avoid taking random steps.",
+    "10": "Saturn is watching you today, so you'll take your responsibilities seriously and avoid mistakes.",
+    "11": "Saturn is watching you today, so you may limit social interactions and choose your company wisely.",
+    "12": "Saturn is watching you today, so you may seek silence, rest, and mental space."
+  },
+
+  "saturn_aspect_lines_hi": {
+    "1": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आप हर काम आराम से और पूरी गंभीरता से करेंगे।",
+    "2": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आपकी बातें संयमित होंगी और खर्चों में भी सावधानी रहेगी।",
+    "3": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आप कम बोलेंगे और जवाब देने से पहले ठहरकर सोचेंगे।",
+    "4": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आप शांति पसंद करेंगे और भावनात्मक हलचल से दूर रहेंगे।",
+    "5": "आज आप शनिदेव के प्रभाव में हैं, इसलिए भावनाएँ नियंत्रित रहेंगी और रिश्तों में आप जिम्मेदार बनकर चलेंगे।",
+    "6": "आज आप शनिदेव के प्रभाव में हैं, इसलिए काम में अनुशासन रहेगा और आप किसी भी शॉर्टकट से बचेंगे।",
+    "7": "आज आप शनिदेव के प्रभाव में हैं, इसलिए प्रतिक्रियाएँ धीमी रहेंगी और आप बहस से दूरी रखेंगे।",
+    "8": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आप भीतर की बातें खुद तक रखेंगे और गहरी बात सोच-समझकर ही साझा करेंगे।",
+    "9": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आप हर विश्वास और निर्णय पर शांत होकर पुनर्विचार करेंगे।",
+    "10": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आप जिम्मेदारियों को गंभीरता से निभाएंगे और गलतियों से बचेंगे।",
+    "11": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आप सामाजिक संपर्क सीमित रखेंगे और सही लोगों का चुनाव करेंगे।",
+    "12": "आज आप शनिदेव के प्रभाव में हैं, इसलिए आपको एकांत, आराम और मानसिक शांति की जरूरत महसूस होगी।"
+  },
+
+  "mars_aspect_lines_en": {
+    "1": "Mars is watching you today, so you may act quickly and should control sudden reactions.",
+    "2": "Mars is watching you today, so be mindful of spending and avoid sharp words with family.",
+    "3": "Mars is watching you today, so your communication may become firm—choose your words wisely.",
+    "4": "Mars is watching you today, so avoid emotional impulsiveness and keep home energy calm.",
+    "5": "Mars is watching you today, so passion may rise—keep romance balanced and avoid overreaction.",
+    "6": "Mars is watching you today, so you may feel competitive—focus your energy on productive work.",
+    "7": "Mars is watching you today, so control anger to avoid unnecessary arguments in relationships.",
+    "8": "Mars is watching you today, so intense emotions may surface—stay grounded before reacting.",
+    "9": "Mars is watching you today, so avoid heated debates and think carefully before taking any big step.",
+    "10": "Mars is watching you today, so you may push hard at work—stay balanced to avoid friction.",
+    "11": "Mars is watching you today, so be careful of quick reactions in groups or friend circles.",
+    "12": "Mars is watching you today, so avoid bottled-up anger and give your mind space to cool down."
+  },
+
+  "mars_aspect_lines_hi": {
+    "1": "आज आप मंगल देव के प्रभाव में हैं, इसलिए आप तेज़ी से काम करेंगे—अचानक प्रतिक्रिया देने से बचना आपके लिए बेहतर रहेगा।",
+    "2": "आज आप मंगल देव के प्रभाव में हैं, इसलिए खर्च और बोलचाल दोनों में संयम रखेंगे तो घर का माहौल शांत रहेगा।",
+    "3": "आज आप मंगल देव के प्रभाव में हैं, इसलिए आपकी बातें मजबूत होंगी—सही शब्दों का चुनाव करना जरूरी होगा।",
+    "4": "आज आप मंगल देव के प्रभाव में हैं, इसलिए भावनात्मक आवेश से बचें और घर में संतुलित ऊर्जा बनाए रखें।",
+    "5": "आज आप मंगल देव के प्रभाव में हैं, इसलिए रोमांस और रचनात्मकता में जोश बढ़ेगा—अति प्रतिक्रिया से बचना जरूरी है।",
+    "6": "आज आप मंगल देव के प्रभाव में हैं, इसलिए प्रतिस्पर्धा की भावना बढ़ेगी—ऊर्जा को सही दिशा में लगाना उपयोगी रहेगा।",
+    "7": "आज आप मंगल देव के प्रभाव में हैं, इसलिए रिश्तों में गुस्से पर नियंत्रण रखना जरूरी होगा ताकि अनावश्यक बहस न हो।",
+    "8": "आज आप मंगल देव के प्रभाव में हैं, इसलिए गहरी और तीव्र भावनाएँ उभर सकती हैं—प्रतिक्रिया देने से पहले स्थिर रहें।",
+    "9": "आज आप मंगल देव के प्रभाव में हैं, इसलिए बड़े विचारों या विश्वासों पर बहस से बचें—सोचकर कदम बढ़ाएँ।",
+    "10": "आज आप मंगल देव के प्रभाव में हैं, इसलिए काम में आप पूरी ताकत लगाएंगे—टकराव और तनाव से बचने के लिए संतुलन जरूरी है।",
+    "11": "आज आप मंगल देव के प्रभाव में हैं, इसलिए दोस्तों या समूह में तेज़ प्रतिक्रियाओं से बचें—शांत रहना फायदेमंद रहेगा।",
+    "12": "आज आप मंगल देव के प्रभाव में हैं, इसलिए भीतर जमा ऊर्जा को शांत करने की जरूरत होगी—मन को ठंडक देना सबसे अच्छा रहेगा।"
+  },
+
+  "venus_aspect_lines_en": {
+    "1": "Venus is watching you today, so you may feel softer and more pleasant in your approach.",
+    "2": "Venus is watching you today, so your words may sound gentle and money matters may feel smoother.",
+    "3": "Venus is watching you today, so your communication will carry warmth and charm.",
+    "4": "Venus is watching you today, so home energy may feel peaceful and emotionally comforting.",
+    "5": "Venus is watching you today, so romance and creativity may feel sweeter and more expressive.",
+    "6": "Venus is watching you today, so you may handle work with ease and keep your mood balanced.",
+    "7": "Venus is watching you today, so relationships may feel pleasant, supportive, and loving.",
+    "8": "Venus is watching you today, so emotional intensity may soften and clarity may come with calmness.",
+    "9": "Venus is watching you today, so your thoughts and beliefs may take a positive and hopeful turn.",
+    "10": "Venus is watching you today, so career interactions may feel smooth and cooperative.",
+    "11": "Venus is watching you today, so friendships and social moments may feel warm and enjoyable.",
+    "12": "Venus is watching you today, so you may crave peace, rest, and gentle emotional space."
+  },
+
+  "venus_aspect_lines_hi": {
+    "1": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए आपका स्वभाव नरम रहेगा और आप हर काम को सौम्यता से करेंगे।",
+    "2": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए आपकी बातें मीठी लगेंगी और पैसों से जुड़े मामले सहज महसूस होंगे।",
+    "3": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए आपकी बातचीत में गर्माहट और आकर्षण दोनों दिखेंगे।",
+    "4": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए घर का माहौल शांत, सुखद और भावनात्मक रूप से आरामदायक रहेगा।",
+    "5": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए रोमांस और रचनात्मकता में मिठास और अभिव्यक्ति दोनों बढ़ेंगी।",
+    "6": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए काम आसानी से होगा और आपका मूड संतुलित रहेगा।",
+    "7": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए रिश्ते प्यार, समर्थन और आराम से भरे रहेंगे।",
+    "8": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए गहरी भावनाएँ नरम होंगी और मन में शांत स्पष्टता आएगी।",
+    "9": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए विचार और विश्वास सकारात्मक दिशा में आगे बढ़ेंगे।",
+    "10": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए करियर में बातचीत सहज रहेगी और सहयोग महसूस होगा।",
+    "11": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए दोस्तों से मुलाकात या बातचीत आनंददायक लगेगी।",
+    "12": "आज आप शुक्र देव के प्रभाव में हैं, इसलिए आपको शांति, आराम और कोमल भावनात्मक जगह की आवश्यकता महसूस होगी।"
+  },
+
+  "jupiter_aspect_lines_en": {
+    "1": "Jupiter is watching you today, so you may feel more hopeful and confident about yourself.",
+    "2": "Jupiter is watching you today, so your words may be wise and financial decisions may feel supported.",
+    "3": "Jupiter is watching you today, so conversations may flow smoothly with guidance and clarity.",
+    "4": "Jupiter is watching you today, so home energy may feel peaceful and emotionally uplifting.",
+    "5": "Jupiter is watching you today, so romance, creativity, or children-related matters may feel positive and inspiring.",
+    "6": "Jupiter is watching you today, so you may handle work or health matters with optimism and good judgement.",
+    "7": "Jupiter is watching you today, so partnerships may feel supportive and aligned.",
+    "8": "Jupiter is watching you today, so deep emotions may feel calmer and more meaningful.",
+    "9": "Jupiter is watching you today, so you may gain clarity in beliefs, learning, or long-term direction.",
+    "10": "Jupiter is watching you today, so career decisions may feel guided and opportunities may open up.",
+    "11": "Jupiter is watching you today, so social circles or gains may bring positivity and encouragement.",
+    "12": "Jupiter is watching you today, so your inner thoughts may become calmer and spiritually clearer."
+  },
+
+  "jupiter_aspect_lines_hi": {
+  "1": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए आपके भीतर उम्मीद और आत्मविश्वास दोनों बढ़ेंगे।",
+  "2": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए आपकी बातें समझदारी से भरी होंगी और आर्थिक फैसलों में समर्थन महसूस होगा।",
+  "3": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए बातचीत सहज, मार्गदर्शक और स्पष्टता से भरी रहेगी।",
+  "4": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए घर का माहौल शांत, सकारात्मक और uplifting रहेगा।",
+  "5": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए प्रेम, रचनात्मकता या बच्चों से जुड़े मामलों में प्रेरणा और खुशी महसूस होगी।",
+  "6": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए काम या सेहत से जुड़े फैसले आशावाद और अच्छी समझ के साथ होंगे।",
+  "7": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए रिश्ते समर्थक, संतुलित और सकारात्मक महसूस होंगे।",
+  "8": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए गहरी भावनाएँ शांत होकर अधिक अर्थपूर्ण लगेंगी।",
+  "9": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए आपके विश्वास, सीख और दिशा में स्पष्टता आएगी।",
+  "10": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए करियर में सही मार्गदर्शन और अवसर दोनों मिल सकते हैं।",
+  "11": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए सामाजिक दायरों या लाभ में सकारात्मकता और समर्थन मिलेगा।",
+  "12": "आज आप बृहस्पति देव के प्रभाव में हैं, इसलिए मन अधिक शांत, स्थिर और आध्यात्मिक महसूस करेगा।"
+},
+
+  "mercury_aspect_lines_en": {
+    "1": "Mercury is watching you today, so your thoughts may feel clearer and decisions sharper.",
+    "2": "Mercury is watching you today, so your speech may become calm, logical, and well-balanced.",
+    "3": "Mercury is watching you today, so communication may feel smooth, smart, and expressive.",
+    "4": "Mercury is watching you today, so you may think practically about home or emotional matters.",
+    "5": "Mercury is watching you today, so creativity or romance may involve thoughtful and meaningful conversations.",
+    "6": "Mercury is watching you today, so you may organize work smartly and manage tasks with clarity.",
+    "7": "Mercury is watching you today, so relationship communication may become clearer and more logical.",
+    "8": "Mercury is watching you today, so deep emotions may turn into clearer thoughts or realizations.",
+    "9": "Mercury is watching you today, so learning, planning, or guidance may flow intellectually.",
+    "10": "Mercury is watching you today, so your career decisions may feel sharper and more strategic.",
+    "11": "Mercury is watching you today, so social connections may feel conversational and mentally engaging.",
+    "12": "Mercury is watching you today, so inner thoughts may become clearer and mentally organized."
+  },
+
+  "mercury_aspect_lines_hi": {
+    "1": "आज आप बुध देव के प्रभाव में हैं, इसलिए आपकी सोच साफ़ होगी और निर्णय तेज़ और सटीक रहेंगे।",
+    "2": "आज आप बुध देव के प्रभाव में हैं, इसलिए आपकी बातें तार्किक, शांत और संतुलित रहेंगी।",
+    "3": "आज आप बुध देव के प्रभाव में हैं, इसलिए संचार बुद्धिमानी और सहज अभिव्यक्ति से भरा रहेगा।",
+    "4": "आज आप बुध देव के प्रभाव में हैं, इसलिए घर या भावनाओं से जुड़े मामलों पर आप व्यावहारिक रूप से सोचेंगे।",
+    "5": "आज आप बुध देव के प्रभाव में हैं, इसलिए प्रेम या रचनात्मकता में सार्थक और समझदार बातचीत होगी।",
+    "6": "आज आप बुध देव के प्रभाव में हैं, इसलिए काम को आप स्मार्ट तरीके से व्यवस्थित करेंगे और हर कार्य में स्पष्टता रहेगी।",
+    "7": "आज आप बुध देव के प्रभाव में हैं, इसलिए रिश्तों में संवाद स्पष्ट, तार्किक और संतुलित महसूस होगा।",
+    "8": "आज आप बुध देव के प्रभाव में हैं, इसलिए गहरी भावनाएँ स्पष्ट विचारों में बदल सकती हैं और समझ बढ़ेगी।",
+    "9": "आज आप बुध देव के प्रभाव में हैं, इसलिए सीखने, योजना बनाने और सलाह देने का प्रवाह बहुत बुद्धिमानी भरा रहेगा।",
+    "10": "आज आप बुध देव के प्रभाव में हैं, इसलिए करियर से जुड़े निर्णय रणनीतिक और सूझबूझ से भरे होंगे।",
+    "11": "आज आप बुध देव के प्रभाव में हैं, इसलिए सामाजिक बातचीत engaging और मानसिक रूप से प्रेरित करने वाली होगी।",
+    "12": "आज आप बुध देव के प्रभाव में हैं, इसलिए भीतर की सोच व्यवस्थित होगी और मन अधिक स्पष्ट महसूस करेगा।"
+  },
+
+  "rahu_aspect_lines_en": {
+    "1": "Rahu is watching you today, so your thoughts may wander and you may act differently than usual.",
+    "2": "Rahu is watching you today, so be mindful of sudden spending or unexpected emotional reactions with family.",
+    "3": "Rahu is watching you today, so communication may feel unpredictable—think before you speak.",
+    "4": "Rahu is watching you today, so your emotions at home may fluctuate or feel slightly restless.",
+    "5": "Rahu is watching you today, so romance or creativity may bring unusual reactions or sudden attraction.",
+    "6": "Rahu is watching you today, so avoid overthinking at work and stay focused on practical tasks.",
+    "7": "Rahu is watching you today, so relationships may feel unpredictable—stay calm in conversations.",
+    "8": "Rahu is watching you today, so deep feelings may rise suddenly—avoid reacting instantly.",
+    "9": "Rahu is watching you today, so beliefs or travel-related thoughts may shift unexpectedly.",
+    "10": "Rahu is watching you today, so career decisions may feel confusing—avoid quick moves.",
+    "11": "Rahu is watching you today, so social interactions may feel unusual—keep your boundaries clear.",
+    "12": "Rahu is watching you today, so inner thoughts may scatter—take a pause before deciding anything."
+  },
+
+  "rahu_aspect_lines_hi": {
+  "1": "आज आप राहु के प्रभाव में हैं, इसलिए विचार भटक सकते हैं—हर काम थोड़ी सोच के साथ करें।",
+  "2": "आज आप राहु के प्रभाव में हैं, इसलिए अचानक खर्च या पारिवारिक भावनाओं में उतार-चढ़ाव से सावधान रहें।",
+  "3": "आज आप राहु के प्रभाव में हैं, इसलिए बातचीत अनिश्चित हो सकती है—बोलने से पहले रुककर सोचना आपके लिए अच्छा रहेगा।",
+  "4": "आज आप राहु के प्रभाव में हैं, इसलिए घर में भावनाएँ बदलती हुई महसूस होंगी—थोड़ी बेचैनी भी हो सकती है।",
+  "5": "आज आप राहु के प्रभाव में हैं, इसलिए प्रेम या रचनात्मकता में अचानक आकर्षण या असामान्य प्रतिक्रिया दिखाई दे सकती है।",
+  "6": "आज आप राहु के प्रभाव में हैं, इसलिए काम में अधिक सोच से बचें और सिर्फ ज़रूरी चीज़ों पर ध्यान दें।",
+  "7": "आज आप राहु के प्रभाव में हैं, इसलिए रिश्तों में उतार-चढ़ाव या unpredictability महसूस हो सकती है—शांत रहना सबसे अच्छा रहेगा।",
+  "8": "आज आप राहु के प्रभाव में हैं, इसलिए गहरी भावनाएँ अचानक उभर सकती हैं—तुरंत प्रतिक्रिया देने से बचें।",
+  "9": "आज आप राहु के प्रभाव में हैं, इसलिए विश्वास, सीख या यात्रा से जुड़े विचार अचानक बदल सकते हैं।",
+  "10": "आज आप राहु के प्रभाव में हैं, इसलिए करियर से जुड़े फैसले थोड़े उलझन भरे लग सकते हैं—जल्दबाज़ी न करें।",
+  "11": "आज आप राहु के प्रभाव में हैं, इसलिए सामाजिक स्थिति असामान्य लग सकती है—सीमाएँ स्पष्ट रखना जरूरी होगा।",
+  "12": "आज आप राहु के प्रभाव में हैं, इसलिए मन भटक सकता है—किसी निर्णय से पहले थोड़ी देर रुकना फायदेमंद रहेगा।"
+},
+
+  "ketu_aspect_lines_en": {
+    "1": "Ketu is watching you today, so you may feel detached and prefer moving quietly.",
+    "2": "Ketu is watching you today, so you may speak less and stay away from unnecessary family discussions.",
+    "3": "Ketu is watching you today, so communication may feel minimal—only important things will matter.",
+    "4": "Ketu is watching you today, so you may seek peace and emotional distance at home.",
+    "5": "Ketu is watching you today, so you may express feelings subtly and avoid drama in romance or creativity.",
+    "6": "Ketu is watching you today, so you may focus only on essential work and ignore distractions.",
+    "7": "Ketu is watching you today, so relationships may feel quiet—simple conversations will feel enough.",
+    "8": "Ketu is watching you today, so deep emotions may settle down, bringing quiet inner clarity.",
+    "9": "Ketu is watching you today, so beliefs and long-term thoughts may simplify—unnecessary ideas drop.",
+    "10": "Ketu is watching you today, so you may work silently and avoid unnecessary attention.",
+    "11": "Ketu is watching you today, so social interest may dip—you may prefer selective interactions.",
+    "12": "Ketu is watching you today, so solitude may feel healing and mentally refreshing."
+  },
+
+  "ketu_aspect_lines_hi": {
+    "1": "आज आप केतु के प्रभाव में हैं, इसलिए आप थोड़ा अलग-थलग महसूस करेंगे और शांत रहकर आगे बढ़ना पसंद करेंगे।",
+    "2": "आज आप केतु के प्रभाव में हैं, इसलिए बोलचाल कम होगी और आप अनावश्यक पारिवारिक चर्चाओं से दूर रहेंगे।",
+    "3": "आज आप केतु के प्रभाव में हैं, इसलिए बातचीत न्यूनतम रहेगी—सिर्फ ज़रूरी बातें ही आपके लिए महत्व रखेंगी।",
+    "4": "आज आप केतु के प्रभाव में हैं, इसलिए घर में शांति और भावनात्मक दूरी की तलाश करेंगे।",
+    "5": "आज आप केतु के प्रभाव में हैं, इसलिए भावनाएँ सूक्ष्म रहेंगी और आप प्रेम या रचनात्मकता में किसी भी ड्रामा से बचेंगे।",
+    "6": "आज आप केतु के प्रभाव में हैं, इसलिए आप केवल ज़रूरी कामों पर ध्यान देंगे और बाकी सभी ध्यान भटकाने वाली चीज़ों को नज़रअंदाज करेंगे।",
+    "7": "आज आप केतु के प्रभाव में हैं, इसलिए रिश्तों में सादगी और शांत बातचीत पर्याप्त लगेगी।",
+    "8": "आज आप केतु के प्रभाव में हैं, इसलिए गहरी भावनाएँ settle होकर एक हल्की, शांत स्पष्टता देंगी।",
+    "9": "आज आप केतु के प्रभाव में हैं, इसलिए विचार, विश्वास और long-term सोच सरल और हल्की महसूस होगी—अनावश्यक बातें खुद ही हट जाएँगी।",
+    "10": "आज आप केतु के प्रभाव में हैं, इसलिए आप काम शांतिपूर्वक करेंगे और अतिरिक्त ध्यान या दिखावे से दूर रहेंगे।",
+    "11": "आज आप केतु के प्रभाव में हैं, इसलिए सामाजिक रुचि कम लगेगी—आप चुनिंदा और सीमित बातचीत पसंद करेंगे।",
+    "12": "आज आप केतु के प्रभाव में हैं, इसलिए एकांत आपको बेहद healing, शांत और मानसिक रूप से आरामदायक महसूस होगा।"
+  }
+}

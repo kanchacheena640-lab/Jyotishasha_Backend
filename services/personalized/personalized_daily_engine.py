@@ -1,10 +1,9 @@
 # personalized_daily_engine.py
-# (Helper for Personalized Daily Horoscope)
+# (Transit Engine for Personalized Daily Horoscope)
 
 from smart_transit_engine import get_planet_position_on
 from services.panchang_engine import calculate_panchang
 import datetime
-import pytz
 
 # ---------------------------------------
 # Constants
@@ -23,12 +22,19 @@ NAKSHATRAS = [
     "Shatabhisha","Purva_Bhadrapada","Uttara_Bhadrapada","Revati"
 ]
 
+PLANETS_FOR_ASPECT = ["Sun","Mercury","Venus","Mars","Jupiter","Saturn","Rahu","Ketu"]
+
 
 # ---------------------------------------
-# Nakshatra from sidereal longitude
+# Nakshatra finder using 0–360 degree logic
 # ---------------------------------------
-def get_nakshatra(sid_lon: float):
-    idx = int(sid_lon // (360 / 27))
+def get_nakshatra(rashi_idx, degree_in_sign):
+    """
+    rashi_idx = 0–11
+    degree_in_sign = 0–30
+    """
+    sidereal_lon = (rashi_idx * 30) + degree_in_sign
+    idx = int(sidereal_lon // (360 / 27))
     return NAKSHATRAS[idx]
 
 
@@ -36,21 +42,9 @@ def get_nakshatra(sid_lon: float):
 # House calculation
 # ---------------------------------------
 def get_house(lagna: str, planet_rashi: str):
-    lagna = lagna.capitalize()
-    planet_rashi = planet_rashi.capitalize()
-
-    base = RASHIS.index(lagna)
-    target = RASHIS.index(planet_rashi)
-
-    house = (target - base) % 12 + 1
-    return house
-
-
-# ---------------------------------------
-# Aspect check (Venus, Mercury, Mars)
-# ---------------------------------------
-def has_aspect(h1, h2):
-    return (abs(h1 - h2) % 12) == 6    # 7th house distance
+    base = RASHIS.index(lagna.capitalize())
+    target = RASHIS.index(planet_rashi.capitalize())
+    return (target - base) % 12 + 1
 
 
 # ---------------------------------------
@@ -61,79 +55,92 @@ def has_conjunction(r1, r2):
 
 
 # ---------------------------------------
-# FAST PLANET PICKER (aspect > conjunction)
+# Full Vedic Aspect Logic
 # ---------------------------------------
-def pick_fast_planet(planets):
-    if planets["mercury"]["aspect_on_moon"] or planets["mercury"]["conjunction_with_moon"]:
-        return "mercury"
-    if planets["venus"]["aspect_on_moon"] or planets["venus"]["conjunction_with_moon"]:
-        return "venus"
-    if planets["mars"]["aspect_on_moon"] or planets["mars"]["conjunction_with_moon"]:
-        return "mars"
-    return None
+def planet_aspects_moon(planet_name, planet_house, moon_house):
+
+    delta = (moon_house - planet_house) % 12
+
+    if delta == 0:
+        return False  # conjunction not aspect
+
+    name = planet_name.lower()
+
+    # sab planets → 7th aspect
+    aspect_offsets = {6}
+
+    # special aspects
+    if name == "mars":
+        aspect_offsets.update({3, 7})
+    elif name == "jupiter":
+        aspect_offsets.update({4, 8})
+    elif name == "saturn":
+        aspect_offsets.update({2, 9})
+    elif name in ("rahu","ketu"):
+        aspect_offsets.update({4, 8})
+
+    return delta in aspect_offsets
 
 
 # ---------------------------------------
-# Build Today Data
+# Build Today Positions
 # ---------------------------------------
 def get_today_positions(date_str, lagna, lat, lon):
     out = {}
 
     # -------------------------
-    # Moon today
+    # MOON
     # -------------------------
     moon = get_planet_position_on(date_str, "Moon")
     moon_rashi = moon["rashi"]
+    moon_deg = moon["degree"]
     moon_house = get_house(lagna, moon_rashi)
 
-    # Nakshatra from Moon degree
-    deg = moon["degree"]
-    sid_lon = deg + (RASHIS.index(moon_rashi) * 30)
-    nak = get_nakshatra(sid_lon)
+    rashi_idx = RASHIS.index(moon_rashi)
+    nak = get_nakshatra(rashi_idx, moon_deg)
 
     out["moon"] = {
         "rashi": moon_rashi,
-        "degree": moon["degree"],
+        "degree": moon_deg,
         "nakshatra": nak,
         "motion": moon["motion"],
         "house": moon_house
     }
 
     # -------------------------
-    # Mercury, Venus, Mars
+    # ALL OTHER PLANETS
     # -------------------------
-    others = {}
-    for p in ["Mercury", "Venus", "Mars"]:
+    planets_out = {}
+
+    for p in PLANETS_FOR_ASPECT:
         pos = get_planet_position_on(date_str, p)
+
         r = pos["rashi"]
         h = get_house(lagna, r)
 
-        others[p.lower()] = {
+        planets_out[p.lower()] = {
             "rashi": r,
             "degree": pos["degree"],
             "motion": pos["motion"],
             "house": h,
             "conjunction_with_moon": has_conjunction(r, moon_rashi),
-            "aspect_on_moon": has_aspect(h, moon_house)
+            "aspect_on_moon": planet_aspects_moon(p, h, moon_house)
         }
 
-    out["planets"] = others
+    out["planets"] = planets_out
 
     # -------------------------
-    # Paksha from Panchang Engine
+    # PANCHANG PAKSHA
     # -------------------------
     date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
     panchang = calculate_panchang(date_obj, lat, lon)
     out["paksha"] = panchang["tithi"]["paksha"]
 
-    # Fast planet final
-    out["fast_planet"] = pick_fast_planet(others)
-
     return out
 
 
 # ---------------------------------------
-# Build Tomorrow Data
+# Tomorrow
 # ---------------------------------------
 def get_tomorrow_positions(lagna, lat, lon):
     tomorrow = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
@@ -141,18 +148,12 @@ def get_tomorrow_positions(lagna, lat, lon):
 
 
 # ---------------------------------------
-# MASTER FUNCTION (FINAL)
+# MASTER ENGINE
 # ---------------------------------------
 def build_personalized_daily_profile(lagna, lat=28.6, lon=77.2):
-    """
-    lat & lon → default Delhi (if user location not provided)
-    """
-
     today = datetime.datetime.now().strftime("%Y-%m-%d")
 
-    profile = {
+    return {
         "today": get_today_positions(today, lagna, lat, lon),
         "tomorrow": get_tomorrow_positions(lagna, lat, lon)
     }
-
-    return profile

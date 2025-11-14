@@ -32,7 +32,6 @@ from routes.routes_free_consult import routes_free_consult
 from routes.routes_subscription import routes_subscription
 from routes.routes_asknow import routes_asknow
 from routes.personalized_daily import personalized_daily
-from routes.daily_modern import daily_modern_bp
 
 
 
@@ -57,7 +56,6 @@ app.register_blueprint(routes_user)
 app.register_blueprint(routes_subscription)
 app.register_blueprint(routes_asknow)
 app.register_blueprint(personalized_daily)
-app.register_blueprint(daily_modern_bp)
 
 
 
