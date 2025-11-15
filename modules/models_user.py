@@ -2,40 +2,38 @@
 modules/models_user.py
 -----------------------
 Defines the AppUser model used for Jyotishasha App.
-
-This model stores user profile data for personalized features
-(AskNow chat, Horoscope, Muhurth etc.) and is separate from the
-authentication User model inside modules/auth.
-
-Phase-1 Scope:
-- Fixed timezone (+05:30)
-- Subscription and AskNow tokens tracking
-- No auth / JWT linkage yet
 """
 
 from datetime import datetime
 from extensions import db
 
 class AppUser(db.Model):
-    __tablename__ = "app_users"  # separate from auth.users
+    __tablename__ = "app_users"
 
     id = db.Column(db.Integer, primary_key=True)
 
     # Basic
     name = db.Column(db.String(120), nullable=True)
-    email = db.Column(db.String(120), nullable=True)   # not unique here (auth handles identity)
+    email = db.Column(db.String(120), nullable=True)
     phone = db.Column(db.String(20), nullable=True)
 
     # Birth details
-    dob = db.Column(db.String(20), nullable=True)      # "YYYY-MM-DD"
-    tob = db.Column(db.String(10), nullable=True)      # "HH:MM"
+    dob = db.Column(db.String(20), nullable=True)
+    tob = db.Column(db.String(10), nullable=True)
     pob = db.Column(db.String(200), nullable=True)
     lat = db.Column(db.Float, nullable=True)
     lng = db.Column(db.Float, nullable=True)
 
+    # -------------------------
+    # ⭐ NEW Personalized Fields
+    # -------------------------
+    lagna = db.Column(db.String(50))
+    moon_sign = db.Column(db.String(50))
+    nakshatra = db.Column(db.String(50))
+
     # App prefs/state
-    tz = db.Column(db.String(10), nullable=False, default="+05:30")  # IST locked in Phase-1
-    subscription = db.Column(db.String(50), nullable=False, default="free")  # free/monthly/yearly/pro
+    tz = db.Column(db.String(10), nullable=False, default="+05:30")
+    subscription = db.Column(db.String(50), nullable=False, default="free")
     asknow_tokens = db.Column(db.Integer, nullable=False, default=0)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -51,6 +49,12 @@ class AppUser(db.Model):
             "pob": self.pob,
             "lat": self.lat,
             "lng": self.lng,
+
+            # new fields
+            "lagna": self.lagna,
+            "moon_sign": self.moon_sign,
+            "nakshatra": self.nakshatra,
+
             "tz": self.tz,
             "subscription": self.subscription,
             "asknow_tokens": self.asknow_tokens,

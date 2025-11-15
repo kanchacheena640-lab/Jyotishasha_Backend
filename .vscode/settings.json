@@ -1,0 +1,20 @@
+{
+    "sqltools.connections": [
+        {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": true
+                }
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "dpg-d2urtgp5pdvs73aqi7vg-a.singapore-postgres.render.com",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "username": "jyotishasha_user",
+            "database": "jyotishasha",
+            "name": "Jyotishasha DB",
+            "password": "gKcv99Cf0tZQiy5cJSHVKpGRWORlmSKc"
+        }
+    ]
+}
