@@ -14,15 +14,20 @@ routes_panchang = Blueprint("routes_panchang", __name__)
 def api_panchang():
     try:
         data = request.get_json() or {}
-        print(">> Panchang Payload Received:", data)  # ✅ Debug print
+        print(">> Panchang Payload Received:", data)
 
         lat = float(data.get("latitude", 28.61))
         lon = float(data.get("longitude", 77.23))
         date_str = data.get("date")
 
+        # ⭐ LANGUAGE PICK (MAIN FIX)
+        language = (data.get("language") or data.get("lang") or "en").lower()
+        if language not in ["en", "hi"]:
+            language = "en"
+
         if not date_str:
-            print(">> Returning today & tomorrow")  # ✅ Debug print
-            return jsonify(today_and_tomorrow(lat, lon))
+            print(">> Returning today & tomorrow")
+            return jsonify(today_and_tomorrow(lat, lon, language))
 
         try:
             custom_date = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -31,19 +36,18 @@ def api_panchang():
 
         next_day = custom_date + timedelta(days=1)
 
-        print(">> Selected Date:", custom_date, "| Next:", next_day)  # ✅ Debug print
+        print(">> Selected Date:", custom_date, "| Next:", next_day)
 
         result = {
-            "selected_date": calculate_panchang(custom_date, lat, lon),
-            "next_date": calculate_panchang(next_day, lat, lon)
+            "selected_date": calculate_panchang(custom_date, lat, lon, language),
+            "next_date": calculate_panchang(next_day, lat, lon, language)
         }
 
         return jsonify(result)
 
     except Exception as e:
-        print(">> Panchang Error:", e)  # ✅ Print actual error
+        print(">> Panchang Error:", e)
         return jsonify({"error": str(e)}), 500
-
 
 # ------------------- MUHURTH TOOL (30-day scan) ------------------- #
 @routes_panchang.route("/api/muhurth/list", methods=["POST"])
