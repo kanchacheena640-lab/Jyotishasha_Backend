@@ -5,100 +5,124 @@ from services.panchang_engine import calculate_panchang
 
 RULES_DIR = os.path.join(os.path.dirname(__file__), "..", "rules")
 
+# -------------------- FIXED EN→HI MAPPINGS --------------------
+TITHI_HI = {
+    "Pratipada": "प्रतिपदा", "Dvitiya": "द्वितीया", "Tritiya": "तृतीया",
+    "Chaturthi": "चतुर्थी", "Panchami": "पंचमी", "Shashthi": "षष्ठी",
+    "Saptami": "सप्तमी", "Ashtami": "अष्टमी", "Navami": "नवमी",
+    "Dashami": "दशमी", "Ekadashi": "एकादशी", "Dwadashi": "द्वादशी",
+    "Trayodashi": "त्रयोदशी", "Chaturdashi": "चतुर्दशी",
+    "Purnima": "पूर्णिमा", "Amavasya": "अमावस्या"
+}
 
+WEEKDAY_HI = {
+    "Monday": "सोमवार", "Tuesday": "मंगलवार", "Wednesday": "बुधवार",
+    "Thursday": "गुरुवार", "Friday": "शुक्रवार", "Saturday": "शनिवार",
+    "Sunday": "रविवार"
+}
+
+NAKSHATRA_HI = {
+    "Ashwini": "अश्विनी", "Bharani": "भरणी", "Krittika": "कृत्तिका",
+    "Rohini": "रोहिणी", "Mrigashira": "मृगशिरा", "Ardra": "आर्द्रा",
+    "Punarvasu": "पुनर्वसु", "Pushya": "पुष्य", "Ashlesha": "अश्लेषा",
+    "Magha": "मघा", "Purva Phalguni": "पूर्वा फाल्गुनी",
+    "Uttara Phalguni": "उत्तर फाल्गुनी", "Hasta": "हस्त",
+    "Chitra": "चित्रा", "Swati": "स्वाती", "Vishakha": "विशाखा",
+    "Anuradha": "अनुराधा", "Jyeshtha": "ज्येष्ठा", "Mula": "मूला",
+    "Purva Ashadha": "पूर्वाषाढ़ा", "Uttara Ashadha": "उत्तराषाढ़ा",
+    "Shravana": "श्रवण", "Dhanishta": "धनिष्ठा",
+    "Shatabhisha": "शतभिषा", "Purva Bhadrapada": "पूर्व भाद्रपद",
+    "Uttara Bhadrapada": "उत्तर भाद्रपद", "Revati": "रेवती"
+}
+
+# -------------------- REASON TRANSLATION --------------------
+def translate_reason(text):
+    return (
+        text.replace("Tithi", "तिथि")
+            .replace("Weekday", "वार")
+            .replace("Nakshatra", "नक्षत्र")
+            .replace("Yoga", "योग")
+            .replace("Karan", "करण")
+            .replace("allowed", "शुभ")
+            .replace("avoided", "अशुभ")
+            .replace("neutral", "सामान्य")
+    )
+
+# -------------------- FULL ITEM TRANSLATION --------------------
+def translate_item_to_hindi(item):
+    return {
+        **item,
+        "weekday": WEEKDAY_HI.get(item["weekday"], item["weekday"]),
+        "tithi": TITHI_HI.get(item["tithi"], item["tithi"]),
+        "nakshatra": NAKSHATRA_HI.get(item["nakshatra"], item["nakshatra"]),
+        "reasons": [translate_reason(r) for r in item["reasons"]],
+    }
+
+# -------------------- LOAD RULES --------------------
 def _load_rules(activity):
     safe_name = activity.replace("-", "_").replace(" ", "_")
     file_path = os.path.join(RULES_DIR, f"{safe_name}.json")
     with open(file_path, encoding="utf-8") as f:
         return json.load(f), file_path
 
-
-# ⭐ MULTILINGUAL REASONS (CLEAN + CRASH PROOF)
-def _score_and_reasons(p, rules, language="en"):
+# -------------------- SCORING ENGINE (ENGLISH ONLY) --------------------
+def _score_and_reasons(p, rules):
     score, reasons = 0, []
 
-    # ---------------- LANGUAGE PACK ----------------
-    if language == "hi":
-        word_allowed = "शुभ"
-        word_avoid = "अशुभ"
-        word_neutral = "सामान्य"
-
-        prefix_tithi = "तिथि"
-        prefix_weekday = "वार"
-        prefix_nakshatra = "नक्षत्र"
-        prefix_yoga = "योग"
-        prefix_karan = "करण"
-
-    else:
-        word_allowed = "allowed"
-        word_avoid = "avoided"
-        word_neutral = "neutral"
-
-        prefix_tithi = "Tithi"
-        prefix_weekday = "Weekday"
-        prefix_nakshatra = "Nakshatra"
-        prefix_yoga = "Yoga"
-        prefix_karan = "Karan"
-
-    # ---------------- TITHI ----------------
     t_name = p["tithi"]["name"]
     t_num = p["tithi"]["number"]
+    w = p["weekday"]
+    nk = p["nakshatra"]["name"]
+    yoga = p["yoga"]["name"]
+    karan = p["karan"]["name"]
 
+    # ---- TITHI ----
     if t_num in rules.get("allowed_tithis", []):
         score += 2
-        reasons.append(f"{prefix_tithi} {t_name} {word_allowed}")
+        reasons.append(f"Tithi {t_name} allowed")
     elif t_num in rules.get("avoid_tithis", []):
         score -= 3
-        reasons.append(f"{prefix_tithi} {t_name} {word_avoid}")
+        reasons.append(f"Tithi {t_name} avoided")
     else:
-        reasons.append(f"{prefix_tithi} {t_name} {word_neutral}")
+        reasons.append(f"Tithi {t_name} neutral")
 
-    # ---------------- WEEKDAY ----------------
-    w = p["weekday"]
-
+    # ---- WEEKDAY ----
     if w in rules.get("allowed_weekdays", []):
         score += 2
-        reasons.append(f"{prefix_weekday} {w} {word_allowed}")
+        reasons.append(f"Weekday {w} allowed")
     elif w in rules.get("avoid_weekdays", []):
         score -= 2
-        reasons.append(f"{prefix_weekday} {w} {word_avoid}")
+        reasons.append(f"Weekday {w} avoided")
     else:
-        reasons.append(f"{prefix_weekday} {w} {word_neutral}")
+        reasons.append(f"Weekday {w} neutral")
 
-    # ---------------- NAKSHATRA ----------------
-    nk = p["nakshatra"]["name"]
-
+    # ---- NAKSHATRA ----
     if nk in rules.get("avoid_nakshatras", []):
         score -= 5
-        reasons.append(f"{prefix_nakshatra} {nk} {word_avoid}")
+        reasons.append(f"Nakshatra {nk} avoided")
     elif nk in rules.get("allowed_nakshatras", []):
         score += 3
-        reasons.append(f"{prefix_nakshatra} {nk} {word_allowed}")
+        reasons.append(f"Nakshatra {nk} allowed")
     else:
-        reasons.append(f"{prefix_nakshatra} {nk} {word_neutral}")
+        reasons.append(f"Nakshatra {nk} neutral")
 
-    # ---------------- YOGA ----------------
-    yoga = p["yoga"]["name"]
+    # ---- YOGA ----
     if yoga in rules.get("avoid_yogas", []):
         score -= 2
-        reasons.append(f"{prefix_yoga} {yoga} {word_avoid}")
+        reasons.append(f"Yoga {yoga} avoided")
 
-    # ---------------- KARAN ----------------
-    karan = p["karan"]["name"]
+    # ---- KARAN ----
     if karan in rules.get("avoid_karans", []):
         score -= 3
-        reasons.append(f"{prefix_karan} {karan} {word_avoid}")
+        reasons.append(f"Karan {karan} avoided")
 
     return score, reasons
 
-
-# ⭐ MAIN FUNCTION (SAFE LANGUAGE + CLEAN OUTPUT)
+# -------------------- MAIN ENGINE --------------------
 def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
-
-    # Clean language input
-    language = (language or "en").lower()
-    if language != "hi":
-        language = "en"
+    # Force English scoring
+    is_hindi = (language or "en").lower() == "hi"
+    language = "en"
 
     rules, file_path = _load_rules(activity)
     today = datetime.now().date()
@@ -108,21 +132,28 @@ def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
     for i in range(days):
         d = today + timedelta(days=i)
 
-        # Panchang engine bilingual
-        p = calculate_panchang(d, lat, lon, language)
+        # Panchang always in ENGLISH
+        p = calculate_panchang(d, lat, lon, "en")
 
-        score, reasons = _score_and_reasons(p, rules, language)
+        score, reasons = _score_and_reasons(p, rules)
 
-        out.append({
+        item = {
             "date": p["date"],
             "weekday": p["weekday"],
             "nakshatra": p["nakshatra"]["name"],
             "tithi": p["tithi"]["name"],
             "score": score,
             "reasons": reasons,
-            "language": language,
+            "language": "en",
             "rules_file": file_path
-        })
+        }
+
+        # Hindi output requested → translate final item
+        if is_hindi:
+            item = translate_item_to_hindi(item)
+            item["language"] = "hi"
+
+        out.append(item)
 
     out.sort(key=lambda x: x["score"], reverse=True)
     return out[:top_k]
