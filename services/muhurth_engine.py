@@ -13,11 +13,11 @@ def _load_rules(activity):
         return json.load(f), file_path
 
 
-# ⭐ SCORE ENGINE (reads English values always)
+# ⭐ MULTILINGUAL + SAFE SCORING (English names only)
 def _score_and_reasons(p, rules, language="en"):
     score, reasons = 0, []
 
-    # UI text
+    # ---------------- LANGUAGE PACK ----------------
     if language == "hi":
         word_allowed = "शुभ"
         word_avoid = "अशुभ"
@@ -28,14 +28,6 @@ def _score_and_reasons(p, rules, language="en"):
         prefix_nakshatra = "नक्षत्र"
         prefix_yoga = "योग"
         prefix_karan = "करण"
-
-        # Display values from Hindi version
-        t_display = p["tithi"]["name_hi"]
-        w_display = p["weekday_hi"]
-        nk_display = p["nakshatra"]["name_hi"]
-        yoga_display = p["yoga"]["name_hi"]
-        karan_display = p["karan"]["name_hi"]
-
     else:
         word_allowed = "allowed"
         word_avoid = "avoided"
@@ -47,68 +39,66 @@ def _score_and_reasons(p, rules, language="en"):
         prefix_yoga = "Yoga"
         prefix_karan = "Karan"
 
-        # Display values from English
-        t_display = p["tithi"]["name_en"]
-        w_display = p["weekday_en"]
-        nk_display = p["nakshatra"]["name_en"]
-        yoga_display = p["yoga"]["name_en"]
-        karan_display = p["karan"]["name_en"]
-
-    # RAW English values for scoring
+    # ⭐ ALWAYS USE ENGLISH FOR SCORING
+    t_name = p["tithi"].get("name_en") or p["tithi"]["name"]
     t_num = p["tithi"]["number"]
-    w = p["weekday_en"]
-    nk = p["nakshatra"]["name_en"]
-    yoga = p["yoga"]["name_en"]
-    karan = p["karan"]["name_en"]
+
+    w = p.get("weekday_en") or p["weekday"]
+
+    nk = p["nakshatra"].get("name_en") or p["nakshatra"]["name"]
+
+    yoga = p["yoga"].get("name_en") or p["yoga"]["name"]
+    karan = p["karan"].get("name_en") or p["karan"]["name"]
 
     # ---------------- TITHI ----------------
     if t_num in rules.get("allowed_tithis", []):
         score += 2
-        reasons.append(f"{prefix_tithi} {t_display} {word_allowed}")
+        reasons.append(f"{prefix_tithi} {t_name} {word_allowed}")
     elif t_num in rules.get("avoid_tithis", []):
         score -= 3
-        reasons.append(f"{prefix_tithi} {t_display} {word_avoid}")
+        reasons.append(f"{prefix_tithi} {t_name} {word_avoid}")
     else:
-        reasons.append(f"{prefix_tithi} {t_display} {word_neutral}")
+        reasons.append(f"{prefix_tithi} {t_name} {word_neutral}")
 
     # ---------------- WEEKDAY ----------------
     if w in rules.get("allowed_weekdays", []):
         score += 2
-        reasons.append(f"{prefix_weekday} {w_display} {word_allowed}")
+        reasons.append(f"{prefix_weekday} {w} {word_allowed}")
     elif w in rules.get("avoid_weekdays", []):
         score -= 2
-        reasons.append(f"{prefix_weekday} {w_display} {word_avoid}")
+        reasons.append(f"{prefix_weekday} {w} {word_avoid}")
     else:
-        reasons.append(f"{prefix_weekday} {w_display} {word_neutral}")
+        reasons.append(f"{prefix_weekday} {w} {word_neutral}")
 
     # ---------------- NAKSHATRA ----------------
     if nk in rules.get("avoid_nakshatras", []):
         score -= 5
-        reasons.append(f"{prefix_nakshatra} {nk_display} {word_avoid}")
+        reasons.append(f"{prefix_nakshatra} {nk} {word_avoid}")
     elif nk in rules.get("allowed_nakshatras", []):
         score += 3
-        reasons.append(f"{prefix_nakshatra} {nk_display} {word_allowed}")
+        reasons.append(f"{prefix_nakshatra} {nk} {word_allowed}")
     else:
-        reasons.append(f"{prefix_nakshatra} {nk_display} {word_neutral}")
+        reasons.append(f"{prefix_nakshatra} {nk} {word_neutral}")
 
     # ---------------- YOGA ----------------
     if yoga in rules.get("avoid_yogas", []):
         score -= 2
-        reasons.append(f"{prefix_yoga} {yoga_display} {word_avoid}")
+        reasons.append(f"{prefix_yoga} {yoga} {word_avoid}")
 
     # ---------------- KARAN ----------------
     if karan in rules.get("avoid_karans", []):
         score -= 3
-        reasons.append(f"{prefix_karan} {karan_display} {word_avoid}")
+        reasons.append(f"{prefix_karan} {karan} {word_avoid}")
 
     return score, reasons
 
 
-# ⭐ MAIN
+# ⭐ MAIN FUNCTION (Display Hindi/English — Scoring always EN)
 def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
 
+    # Normalize input
     language = (language or "en").lower()
-    if language != "hi":
+    if language not in ["hi", "en"]:
         language = "en"
 
     rules, file_path = _load_rules(activity)
@@ -119,20 +109,37 @@ def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
     for i in range(days):
         d = today + timedelta(days=i)
 
-        # Panchang → must return EN + HI both
+        # Panchang engine bilingual output
         p = calculate_panchang(d, lat, lon, language)
 
+        # Score using EN names only
         score, reasons = _score_and_reasons(p, rules, language)
+
+        # Display based on selected language
+        nakshatra_display = (
+            p["nakshatra"].get("name_hi") if language == "hi"
+            else p["nakshatra"].get("name_en")
+        )
+
+        tithi_display = (
+            p["tithi"].get("name_hi") if language == "hi"
+            else p["tithi"].get("name_en")
+        )
+
+        weekday_display = (
+            p.get("weekday_hi") if language == "hi"
+            else p.get("weekday_en")
+        )
 
         out.append({
             "date": p["date"],
-            "weekday": p["weekday_hi"] if language == "hi" else p["weekday_en"],
-            "nakshatra": p["nakshatra"]["name_hi"] if language == "hi" else p["nakshatra"]["name_en"],
-            "tithi": p["tithi"]["name_hi"] if language == "hi" else p["tithi"]["name_en"],
+            "weekday": weekday_display,
+            "nakshatra": nakshatra_display,
+            "tithi": tithi_display,
             "score": score,
             "reasons": reasons,
             "language": language,
-            "rules_file": file_path
+            "rules_file": file_path,
         })
 
     out.sort(key=lambda x: x["score"], reverse=True)
