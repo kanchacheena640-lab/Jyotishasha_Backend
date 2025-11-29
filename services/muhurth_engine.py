@@ -35,9 +35,10 @@ NAKSHATRA_HI = {
     "Uttara Bhadrapada": "उत्तर भाद्रपद", "Revati": "रेवती"
 }
 
-# -------------------- REASON TRANSLATION --------------------
-def translate_reason(text):
-    return (
+# -------------------- REASON TRANSLATION (FULL Hindi) --------------------
+def translate_reason_full(text, tithi_en, weekday_en, nakshatra_en):
+    # Step-1: Replace structural words
+    text = (
         text.replace("Tithi", "तिथि")
             .replace("Weekday", "वार")
             .replace("Nakshatra", "नक्षत्र")
@@ -48,14 +49,31 @@ def translate_reason(text):
             .replace("neutral", "सामान्य")
     )
 
+    # Step-2: Replace middle English words → Hindi dictionary
+    text = text.replace(tithi_en, TITHI_HI.get(tithi_en, tithi_en))
+    text = text.replace(weekday_en, WEEKDAY_HI.get(weekday_en, weekday_en))
+    text = text.replace(nakshatra_en, NAKSHATRA_HI.get(nakshatra_en, nakshatra_en))
+
+    return text
+
+
 # -------------------- FULL ITEM TRANSLATION --------------------
 def translate_item_to_hindi(item):
+    t_en = item["tithi"]
+    w_en = item["weekday"]
+    n_en = item["nakshatra"]
+
     return {
         **item,
-        "weekday": WEEKDAY_HI.get(item["weekday"], item["weekday"]),
-        "tithi": TITHI_HI.get(item["tithi"], item["tithi"]),
-        "nakshatra": NAKSHATRA_HI.get(item["nakshatra"], item["nakshatra"]),
-        "reasons": [translate_reason(r) for r in item["reasons"]],
+        "tithi": TITHI_HI.get(t_en, t_en),
+        "weekday": WEEKDAY_HI.get(w_en, w_en),
+        "nakshatra": NAKSHATRA_HI.get(n_en, n_en),
+
+        # Translate each reason fully (prefix + dynamic keywords)
+        "reasons": [
+            translate_reason_full(r, t_en, w_en, n_en)
+            for r in item["reasons"]
+        ],
     }
 
 # -------------------- LOAD RULES --------------------
