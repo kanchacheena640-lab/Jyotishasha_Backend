@@ -11,6 +11,7 @@ def _load_rules(activity):
     with open(file_path, encoding="utf-8") as f:
         return json.load(f), file_path
 
+
 def _score_and_reasons(p, rules):
     score, reasons = 0, []
 
@@ -49,19 +50,33 @@ def _score_and_reasons(p, rules):
 
     return score, reasons
 
-def next_best_dates(activity, lat, lon, days=30, top_k=10):
+
+
+def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
     """
-    Return best dates in coming 'days' for given activity.
-    Each result includes file path of rules used.
+    Best dates for upcoming days based on rules.
+    DEFAULT = English
+    Hindi only when language == "hi".
+    Fallback: anything else → English.
     """
+
+    # ⭐ SAFE LANGUAGE HANDLING (crash-proof)
+    language = (language or "en").lower()
+    if language != "hi":
+        language = "en"
+
     rules, file_path = _load_rules(activity)
     today = datetime.now().date()
     out = []
 
     for i in range(days):
         d = today + timedelta(days=i)
-        p = calculate_panchang(d, lat, lon)
+
+        # ⭐ Panchang bilingual support
+        p = calculate_panchang(d, lat, lon, language)
+
         score, reasons = _score_and_reasons(p, rules)
+
         out.append({
             "date": p["date"],
             "weekday": p["weekday"],
@@ -69,9 +84,9 @@ def next_best_dates(activity, lat, lon, days=30, top_k=10):
             "tithi": p["tithi"]["name"],
             "score": score,
             "reasons": reasons,
-            "rules_file": file_path   # ✅ file path added
+            "language": language,
+            "rules_file": file_path
         })
 
-    # sort by score
     out.sort(key=lambda x: x["score"], reverse=True)
     return out[:top_k]

@@ -56,9 +56,11 @@ def api_muhurth_list():
     Muhurth Finder API
     - Required: activity, latitude, longitude
     - Optional: days (default 30), top_k (default 10)
+    - Optional: language ("hi" for Hindi, default English)
     """
     try:
         data = request.get_json() or {}
+        print(">> Muhurth Payload Received:", data)
 
         activity = data.get("activity")
         lat = float(data.get("latitude"))
@@ -69,15 +71,32 @@ def api_muhurth_list():
         if not activity:
             return jsonify({"error": "Missing 'activity' field"}), 400
 
-        results = next_best_dates(activity, lat, lon, days=days, top_k=top_k)
+        # ⭐ SAFE LANGUAGE HANDLING (Same rule as Panchang)
+        language = (data.get("language") or data.get("lang") or "en").lower()
+        if language != "hi":     # any value other than "hi" → English
+            language = "en"
+
+        print(">> Muhurth Language:", language)
+
+        # ⭐ Pass language to next_best_dates()
+        results = next_best_dates(
+            activity,
+            lat,
+            lon,
+            days=days,
+            top_k=top_k,
+            language=language
+        )
 
         return jsonify({
             "activity": activity,
             "window_days": days,
+            "language": language,
             "results": results
         })
 
     except Exception as e:
+        print(">> Muhurth Error:", e)
         return jsonify({"error": str(e)}), 500
 
 
