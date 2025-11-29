@@ -13,11 +13,11 @@ def _load_rules(activity):
         return json.load(f), file_path
 
 
-# ⭐ UPDATED: multilingual reasons
+# ⭐ MULTILINGUAL REASONS (CLEAN + CRASH PROOF)
 def _score_and_reasons(p, rules, language="en"):
     score, reasons = 0, []
 
-    # ---------------- HINDI WORD SET ----------------
+    # ---------------- LANGUAGE PACK ----------------
     if language == "hi":
         word_allowed = "शुभ"
         word_avoid = "अशुभ"
@@ -26,9 +26,10 @@ def _score_and_reasons(p, rules, language="en"):
         prefix_tithi = "तिथि"
         prefix_weekday = "वार"
         prefix_nakshatra = "नक्षत्र"
+        prefix_yoga = "योग"
+        prefix_karan = "करण"
 
     else:
-        # Default English
         word_allowed = "allowed"
         word_avoid = "avoided"
         word_neutral = "neutral"
@@ -36,31 +37,33 @@ def _score_and_reasons(p, rules, language="en"):
         prefix_tithi = "Tithi"
         prefix_weekday = "Weekday"
         prefix_nakshatra = "Nakshatra"
+        prefix_yoga = "Yoga"
+        prefix_karan = "Karan"
 
     # ---------------- TITHI ----------------
-    tithi_name = p["tithi"]["name"]
-    tnum = p["tithi"]["number"]
+    t_name = p["tithi"]["name"]
+    t_num = p["tithi"]["number"]
 
-    if tnum in rules.get("allowed_tithis", []):
+    if t_num in rules.get("allowed_tithis", []):
         score += 2
-        reasons.append(f"{prefix_tithi} {tithi_name} {word_allowed}")
-    elif tnum in rules.get("avoid_tithis", []):
+        reasons.append(f"{prefix_tithi} {t_name} {word_allowed}")
+    elif t_num in rules.get("avoid_tithis", []):
         score -= 3
-        reasons.append(f"{prefix_tithi} {tithi_name} {word_avoid}")
+        reasons.append(f"{prefix_tithi} {t_name} {word_avoid}")
     else:
-        reasons.append(f"{prefix_tithi} {tithi_name} {word_neutral}")
+        reasons.append(f"{prefix_tithi} {t_name} {word_neutral}")
 
     # ---------------- WEEKDAY ----------------
-    weekday = p["weekday"]
+    w = p["weekday"]
 
-    if weekday in rules.get("allowed_weekdays", []):
+    if w in rules.get("allowed_weekdays", []):
         score += 2
-        reasons.append(f"{prefix_weekday} {weekday} {word_allowed}")
-    elif weekday in rules.get("avoid_weekdays", []):
+        reasons.append(f"{prefix_weekday} {w} {word_allowed}")
+    elif w in rules.get("avoid_weekdays", []):
         score -= 2
-        reasons.append(f"{prefix_weekday} {weekday} {word_avoid}")
+        reasons.append(f"{prefix_weekday} {w} {word_avoid}")
     else:
-        reasons.append(f"{prefix_weekday} {weekday} {word_neutral}")
+        reasons.append(f"{prefix_weekday} {w} {word_neutral}")
 
     # ---------------- NAKSHATRA ----------------
     nk = p["nakshatra"]["name"]
@@ -68,7 +71,7 @@ def _score_and_reasons(p, rules, language="en"):
     if nk in rules.get("avoid_nakshatras", []):
         score -= 5
         reasons.append(f"{prefix_nakshatra} {nk} {word_avoid}")
-    elif "allowed_nakshatras" in rules and nk in rules["allowed_nakshatras"]:
+    elif nk in rules.get("allowed_nakshatras", []):
         score += 3
         reasons.append(f"{prefix_nakshatra} {nk} {word_allowed}")
     else:
@@ -78,41 +81,34 @@ def _score_and_reasons(p, rules, language="en"):
     yoga = p["yoga"]["name"]
     if yoga in rules.get("avoid_yogas", []):
         score -= 2
-        # Yoga not translated — stays same
-        if language == "hi":
-            reasons.append(f"योग {yoga} {word_avoid}")
-        else:
-            reasons.append(f"Yoga {yoga} {word_avoid}")
+        reasons.append(f"{prefix_yoga} {yoga} {word_avoid}")
 
     # ---------------- KARAN ----------------
     karan = p["karan"]["name"]
     if karan in rules.get("avoid_karans", []):
         score -= 3
-        if language == "hi":
-            reasons.append(f"करण {karan} {word_avoid}")
-        else:
-            reasons.append(f"Karan {karan} {word_avoid}")
+        reasons.append(f"{prefix_karan} {karan} {word_avoid}")
 
     return score, reasons
 
 
-
-# ⭐ main function with language support
+# ⭐ MAIN FUNCTION (SAFE LANGUAGE + CLEAN OUTPUT)
 def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
 
-    # Safe language
+    # Clean language input
     language = (language or "en").lower()
     if language != "hi":
         language = "en"
 
     rules, file_path = _load_rules(activity)
     today = datetime.now().date()
+
     out = []
 
     for i in range(days):
         d = today + timedelta(days=i)
 
-        # Panchang is already bilingual
+        # Panchang engine bilingual
         p = calculate_panchang(d, lat, lon, language)
 
         score, reasons = _score_and_reasons(p, rules, language)
