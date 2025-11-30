@@ -155,3 +155,37 @@ def free_status():
 
     status = get_free_quota_status(user_id)
     return jsonify(status), 200
+
+# ----------------------------------------------------------
+# 7) REQUIREMENT EXTRACTOR (GPT-based)
+# ----------------------------------------------------------
+@routes_chat.route("/api/chat/requirements", methods=["POST"])
+def chat_requirements():
+    from modules.services.chat_requirement_engine import get_required_data
+
+    data = request.get_json() or {}
+    question = data.get("question", "").strip()
+
+    if not question:
+        return jsonify({
+            "success": False,
+            "error": "Missing 'question'"
+        }), 400
+
+    try:
+        requirements = get_required_data(question)
+
+        print("\n🔥 REQUIREMENT ENGINE OUTPUT:")
+        print(requirements)
+        print("================================\n")
+
+        return jsonify({
+            "success": True,
+            "requirements": requirements
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500

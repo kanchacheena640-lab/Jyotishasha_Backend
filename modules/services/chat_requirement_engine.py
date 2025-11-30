@@ -2,6 +2,7 @@
 
 import os
 import json
+import re
 from openai import OpenAI
 
 print("🔥 chat_requirement_engine imported")   # DEBUG PRINT
@@ -35,6 +36,31 @@ STRICT RULES:
 """
 
 
+def clean_json(raw: str):
+    """
+    Fix common GPT JSON issues:
+    - smart quotes → normal quotes
+    - remove trailing commas
+    - extract only {...} block
+    """
+    if not raw:
+        return raw
+
+    # 1) Smart quotes → normal
+    raw = raw.replace("“", '"').replace("”", '"').replace("‘", "'").replace("’", "'")
+
+    # 2) Extract JSON block
+    match = re.search(r"\{[\s\S]*\}", raw)
+    if match:
+        raw = match.group(0)
+
+    # 3) Remove trailing commas
+    raw = re.sub(r",\s*}", "}", raw)
+    raw = re.sub(r",\s*]", "]", raw)
+
+    return raw
+
+
 def get_required_data(question: str):
     prompt = REQUIREMENT_PROMPT.format(question=question)
 
@@ -54,10 +80,16 @@ def get_required_data(question: str):
     print(raw)
     print("======================================\n\n")
 
+    cleaned = clean_json(raw)
+
     # Try parsing GPT output directly
     try:
-        parsed = json.loads(raw)
+        parsed = json.loads(cleaned)
         return parsed
-    except Exception:
-        # Return raw so route can see exact invalid response
-        return raw
+    except Exception as e:
+        print("⚠️ JSON PARSE FAILED:", str(e))
+        return {
+            "error": "invalid_json_from_gpt",
+            "raw": raw,
+            "cleaned": cleaned
+        }
