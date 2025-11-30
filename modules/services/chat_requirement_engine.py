@@ -1,7 +1,6 @@
 # modules/services/chat_requirement_engine.py
 
 import os
-import re
 import json
 from openai import OpenAI
 
@@ -13,31 +12,25 @@ You are an expert Vedic astrologer.
 User question: "{question}"
 
 Your ONLY job:
-Extract the exact astrological data points needed to answer this question.
+List EXACT astrological data needed to answer this question.
 
 STRICT RULES:
-- Return ONLY pure JSON.
-- NO explanation.
-- NO text before or after.
-- NO sentences in the array.
-- Use only machine-friendly keys.
-- ALWAYS follow this format:
+- Return ONLY pure JSON
+- No explanation
+- No text before or after
+- JSON must match EXACTLY this structure:
 
 {
   "required_data": [
-      "some_data_key",
-      "another_key"
+      "data_key_1",
+      "data_key_2"
   ]
 }
+
+- Do NOT wrap JSON in quotes.
+- Do NOT escape characters.
+- Do NOT use markdown.
 """
-
-def extract_json_block(text: str):
-    """Extract only the JSON object from GPT output."""
-    match = re.search(r"\{[\s\S]*\}", text)
-    if match:
-        return match.group(0)
-    return text  # fallback
-
 
 def get_required_data(question: str):
     prompt = REQUIREMENT_PROMPT.format(question=question)
@@ -45,16 +38,17 @@ def get_required_data(question: str):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Return ONLY JSON."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": "Return ONLY valid JSON. Never return text outside JSON."},
+            {"role": "user",  "content": prompt}
         ],
         temperature=0
     )
 
     raw = response.choices[0].message.content.strip()
 
-    # Clean JSON block for safety
-    cleaned_json = extract_json_block(raw)
-
-    # Return raw + cleaned version so route can decide
-    return cleaned_json
+    # 🔥 Direct JSON parse — no regex needed
+    try:
+        parsed = json.loads(raw)
+        return parsed   # ALWAYS Python dict
+    except json.JSONDecodeError:
+        raise Exception("GPT did not return valid JSON → " + raw)
