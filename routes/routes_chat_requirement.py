@@ -1,36 +1,58 @@
-# routes/routes_chat_requirement.py
+# modules/services/chat_requirement_engine.py
 
-from flask import Blueprint, request, jsonify
-from modules.services.chat_requirement_engine import get_required_data
+import os
+import json
+from openai import OpenAI
 
-routes_chat_requirement = Blueprint("routes_chat_requirement", __name__)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-@routes_chat_requirement.route("/api/chat/requirements", methods=["POST"])
-def get_requirements():
-    data = request.get_json() or {}
-    question = data.get("question", "").strip()
+REQUIREMENT_PROMPT = """
+You are an expert Vedic astrologer.
 
-    if not question:
-        return jsonify({
-            "success": False,
-            "error": "Missing 'question'"
-        }), 400
+User question: "{question}"
+
+Your ONLY job:
+List EXACT astrological data needed to answer this question.
+
+STRICT RULES:
+- Return ONLY pure JSON
+- No explanation
+- No text before or after
+- JSON must match EXACTLY this structure:
+
+{
+  "required_data": [
+      "data_key_1",
+      "data_key_2"
+  ]
+}
+
+- Do NOT wrap JSON in quotes.
+- Do NOT escape characters.
+- Do NOT use markdown.
+"""
+
+def get_required_data(question: str):
+    prompt = REQUIREMENT_PROMPT.format(question=question)
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "Return ONLY JSON."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0
+    )
+
+    raw = response.choices[0].message.content.strip()
+
+    # 🔥 DEBUG PRINT (critical)
+    print("\n\n===== GPT RAW REQUIREMENT OUTPUT =====")
+    print(raw)
+    print("======================================\n\n")
 
     try:
-        # 🔥 engine already returns dict
-        parsed = get_required_data(question)
+        return json.loads(raw)
+    except:
+        return raw   # return as string so we can see it in API response
 
-        print("===== PARSED FROM ENGINE =====")
-        print(parsed)
-        print("==============================")
-
-        return jsonify({
-            "success": True,
-            "requirements": parsed
-        }), 200
-
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500

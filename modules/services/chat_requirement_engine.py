@@ -4,6 +4,8 @@ import os
 import json
 from openai import OpenAI
 
+print("🔥 chat_requirement_engine imported")   # DEBUG PRINT
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 REQUIREMENT_PROMPT = """
@@ -18,7 +20,7 @@ STRICT RULES:
 - Return ONLY pure JSON
 - No explanation
 - No text before or after
-- JSON must match EXACTLY this structure:
+- JSON must match EXACT structure:
 
 {
   "required_data": [
@@ -29,8 +31,9 @@ STRICT RULES:
 
 - Do NOT wrap JSON in quotes.
 - Do NOT escape characters.
-- Do NOT use markdown.
+- Do NOT add markdown.
 """
+
 
 def get_required_data(question: str):
     prompt = REQUIREMENT_PROMPT.format(question=question)
@@ -46,13 +49,15 @@ def get_required_data(question: str):
 
     raw = response.choices[0].message.content.strip()
 
-    # 🔥 DEBUG PRINT (critical)
+    # 🔥 CRITICAL DEBUG PRINT FOR RENDER LOGS
     print("\n\n===== GPT RAW REQUIREMENT OUTPUT =====")
     print(raw)
     print("======================================\n\n")
 
+    # Try parsing GPT output directly
     try:
-        return json.loads(raw)
-    except:
-        return raw   # return as string so we can see it in API response
-
+        parsed = json.loads(raw)
+        return parsed
+    except Exception:
+        # Return raw so route can see exact invalid response
+        return raw
