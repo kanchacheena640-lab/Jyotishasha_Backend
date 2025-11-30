@@ -34,7 +34,6 @@ from routes.routes_asknow import routes_asknow
 from routes.personalized_daily import personalized_daily
 from routes.routes_profile_bootstrap import routes_profile_bootstrap
 from routes.routes_chat import routes_chat
-from routes.routes_chat_requirement import routes_chat_requirement
 
 
 
@@ -63,7 +62,6 @@ app.register_blueprint(routes_asknow)
 app.register_blueprint(personalized_daily)
 app.register_blueprint(routes_profile_bootstrap)
 app.register_blueprint(routes_chat)
-app.register_blueprint(routes_chat_requirement)
 
 
 
