@@ -1,3 +1,23 @@
+"""
+DEPRECATED FILE — DO NOT USE
+
+This 'routes_free_consult.py' was originally created to handle the old 
+Free Consultation flow (full kundali → transit → GPT answer).
+
+This logic is now REPLACED by the new unified chat system:
+
+✓ 1 Free Question Per Day
+✓ ₹51 Chat Pack (8 Questions)
+✓ Single Unified Endpoint in: routes/routes_chat.py
+✓ Shared engine in: services/chat_engine.py
+✓ Daily quota tracking in: models_free_daily.py
+✓ Paid pack tracking in: models_chat_pack.py
+
+This file is kept ONLY to preserve old code reference and avoid accidental 
+errors. Do NOT register or import this route in the current production app.
+"""
+
+
 from flask import Blueprint, request, jsonify
 from services.full_kundali_service import generate_full_kundali_payload  # ✅ correct path (no api)
 from transit_engine import get_current_positions

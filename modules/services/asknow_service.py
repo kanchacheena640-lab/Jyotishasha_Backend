@@ -1,10 +1,18 @@
 """
-modules/services/asknow_service.py
-----------------------------------
-Handles ₹99 AskNow token pack:
-- Creates Razorpay order
-- Verifies payment
-- Adds 10 tokens to AppUser
+DEPRECATED SERVICE — DO NOT USE
+
+This file belonged to the OLD AskNow ₹99 token model (10 tokens per order).
+The entire AskNow token system has been permanently discontinued.
+
+🔥 New final chat model uses:
+- 1 Free Question Per Day
+- ₹51 Chat Pack (8 Questions)
+- Unified chat engine → services/chat_engine.py
+- Free quota tracking → modules/models_free_daily.py
+- Paid pack tracking → modules/models_chat_pack.py
+
+❗ This file is kept ONLY for reference and should NOT be imported or used
+anywhere in the new production system.
 """
 
 from datetime import datetime

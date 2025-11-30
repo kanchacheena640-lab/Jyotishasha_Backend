@@ -1,7 +1,20 @@
 """
-routes/routes_asknow.py
------------------------
-Endpoints for ₹99 AskNow Token Pack.
+DEPRECATED MODULE — DO NOT USE
+
+This AskNowOrder model belongs to the OLD ₹99 token system 
+(10 tokens per order). The entire AskNow token feature has been 
+OFFICIALLY DISCONTINUED and replaced with the final model:
+
+✓ 1 Free Question Per Day
+✓ ₹51 Chat Pack (8 Questions)
+
+This file is kept ONLY for backward compatibility, historical reference, 
+and to avoid accidental database migration errors. Do NOT integrate it 
+with the new chat system. New chat logic uses:
+
+- modules/models_chat_pack.py      → ₹51 / 8 questions pack
+- modules/models_free_daily.py     → free daily question tracking
+- services/chat_engine.py          → unified astrology chat engine
 """
 
 from flask import Blueprint, request, jsonify
