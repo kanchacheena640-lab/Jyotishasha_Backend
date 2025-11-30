@@ -10,37 +10,53 @@ routes_chat_requirement = Blueprint("routes_chat_requirement", __name__)
 
 def extract_json(text: str):
     """
-    Extracts the { ... } JSON block from GPT output.
-    Works even if GPT adds text before/after or escape characters.
+    Extract JSON even if GPT returns:
+    - pure JSON
+    - JSON wrapped in a string
+    - escaped JSON
+    - extra text before/after
     """
     if not text:
         return None
 
-    # Try direct JSON first
+    # 1️⃣ Try direct JSON
     try:
         return json.loads(text)
     except:
         pass
 
-    # Extract JSON block using regex
+    # 2️⃣ Extract JSON block {...}
     match = re.search(r"\{[\s\S]*\}", text)
     if not match:
         return None
 
     block = match.group(0)
 
-    # Try load again
+    # 3️⃣ Try load again
     try:
         return json.loads(block)
     except:
         pass
 
-    # Try unescaping escaped JSON
+    # 4️⃣ Fix escaped JSON → unescape
     try:
         unescaped = block.encode().decode("unicode_escape")
         return json.loads(unescaped)
     except:
-        return None
+        pass
+
+    # 5️⃣ Last fix → Some models wrap JSON inside a string literal
+    # Example: "\"{ \\\"required_data\\\": [ ... ] }\""
+    try:
+        # remove surrounding quotes
+        if block.startswith('"') and block.endswith('"'):
+            block2 = block[1:-1]
+            unescaped2 = block2.encode().decode("unicode_escape")
+            return json.loads(unescaped2)
+    except:
+        pass
+
+    return None
 
 
 @routes_chat_requirement.route("/api/chat/requirements", methods=["POST"])
