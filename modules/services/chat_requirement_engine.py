@@ -38,17 +38,21 @@ def get_required_data(question: str):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Return ONLY valid JSON. Never return text outside JSON."},
-            {"role": "user",  "content": prompt}
+            {"role": "system", "content": "Return ONLY JSON."},
+            {"role": "user", "content": prompt}
         ],
         temperature=0
     )
 
     raw = response.choices[0].message.content.strip()
 
-    # 🔥 Direct JSON parse — no regex needed
+    # 🔥 DEBUG PRINT (critical)
+    print("\n\n===== GPT RAW REQUIREMENT OUTPUT =====")
+    print(raw)
+    print("======================================\n\n")
+
     try:
-        parsed = json.loads(raw)
-        return parsed   # ALWAYS Python dict
-    except json.JSONDecodeError:
-        raise Exception("GPT did not return valid JSON → " + raw)
+        return json.loads(raw)
+    except:
+        return raw   # return as string so we can see it in API response
+

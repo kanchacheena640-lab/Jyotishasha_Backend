@@ -20,6 +20,10 @@ def get_requirements():
         # 🔥 engine already returns dict
         parsed = get_required_data(question)
 
+        print("===== PARSED FROM ENGINE =====")
+        print(parsed)
+        print("==============================")
+
         return jsonify({
             "success": True,
             "requirements": parsed
