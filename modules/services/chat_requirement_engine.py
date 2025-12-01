@@ -2,10 +2,9 @@
 
 import os
 import json
-import re
 from openai import OpenAI
 
-print("🔥 chat_requirement_engine imported")   # DEBUG PRINT
+print("🔥 chat_requirement_engine imported")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -15,51 +14,19 @@ You are an expert Vedic astrologer.
 User question: "{question}"
 
 Your ONLY job:
-List EXACT astrological data needed to answer this question.
+Return the list of EXACT astrological data required to answer this question.
 
 STRICT RULES:
-- Return ONLY pure JSON
-- No explanation
-- No text before or after
-- JSON must match EXACT structure:
+- Output MUST be ONLY valid JSON.
+- No explanation.
+- No markdown.
+- No text before or after JSON.
+- Format MUST match:
 
 {
-  "required_data": [
-      "data_key_1",
-      "data_key_2"
-  ]
+  "required_data": ["data_key_1", "data_key_2"]
 }
-
-- Do NOT wrap JSON in quotes.
-- Do NOT escape characters.
-- Do NOT add markdown.
 """
-
-
-def clean_json(raw: str):
-    """
-    Fix common GPT JSON issues:
-    - smart quotes → normal quotes
-    - remove trailing commas
-    - extract only {...} block
-    """
-    if not raw:
-        return raw
-
-    # 1) Smart quotes → normal
-    raw = raw.replace("“", '"').replace("”", '"').replace("‘", "'").replace("’", "'")
-
-    # 2) Extract JSON block
-    match = re.search(r"\{[\s\S]*\}", raw)
-    if match:
-        raw = match.group(0)
-
-    # 3) Remove trailing commas
-    raw = re.sub(r",\s*}", "}", raw)
-    raw = re.sub(r",\s*]", "]", raw)
-
-    return raw
-
 
 def get_required_data(question: str):
     prompt = REQUIREMENT_PROMPT.format(question=question)
@@ -67,29 +34,42 @@ def get_required_data(question: str):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Return ONLY JSON."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": (
+                    "You must output ONLY valid JSON which can be parsed by json.loads. "
+                    "Do not add newlines before keys. Do not add comments. Do not indent excessively."
+                ),
+            },
+            {"role": "user", "content": prompt},
         ],
         temperature=0
     )
 
     raw = response.choices[0].message.content.strip()
 
-    # 🔥 CRITICAL DEBUG PRINT FOR RENDER LOGS
-    print("\n\n===== GPT RAW REQUIREMENT OUTPUT =====")
+    print("\n===== GPT RAW REQUIREMENT OUTPUT =====")
     print(raw)
-    print("======================================\n\n")
+    print("======================================\n")
 
-    cleaned = clean_json(raw)
-
-    # Try parsing GPT output directly
+    # FIRST: try native JSON parse
     try:
-        parsed = json.loads(cleaned)
-        return parsed
+        return json.loads(raw)
+    except:
+        pass
+
+    # SECOND: auto-fix common issues
+    fixed = raw.replace("\n", " ").replace("\r", " ").strip()
+    fixed = fixed.replace("“", '"').replace("”", '"')
+
+    try:
+        return json.loads(fixed)
     except Exception as e:
-        print("⚠️ JSON PARSE FAILED:", str(e))
+        print("⚠️ JSON PARSE FAILED:", e)
+
         return {
             "error": "invalid_json_from_gpt",
             "raw": raw,
-            "cleaned": cleaned
+            "cleaned": fixed,
         }
+
