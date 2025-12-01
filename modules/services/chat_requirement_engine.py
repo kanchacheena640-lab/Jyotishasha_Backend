@@ -10,16 +10,32 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def get_required_data(question: str):
+    """
+    Extract ONLY birth-chart / dasha / transit based requirements.
+    Never ask for DOB/TOB/POB because kundali is generated internally.
+    JSON schema ensures output is ALWAYS valid.
+    """
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {
                 "role": "system",
-                "content": "Extract EXACT astrological data required for the user's question."
+                "content": (
+                    "You are a Vedic astrologer. "
+                    "Your task is to list which ASTROLOGICAL DETAILS "
+                    "from the birth chart, dasha or transit are needed "
+                    "to answer the user's question. "
+                    "Do NOT ask for DOB, TOB or POB. "
+                    "Only provide astrological parameters like lagna, moon_sign, "
+                    "planet_positions, house_strength, aspects, yogas, "
+                    "dasha_summary, transit_planets, current_transit etc. "
+                    "Keep list relevant and short."
+                )
             },
             {
                 "role": "user",
-                "content": question
+                "content": f"User question: \"{question}\"\n\nList the required astrological combinations only."
             }
         ],
         response_format={
@@ -42,6 +58,6 @@ def get_required_data(question: str):
         temperature=0
     )
 
-    # Here output is ALWAYS VALID JSON (100% guaranteed)
+    # Schema ensures ALWAYS VALID JSON
     raw = response.choices[0].message.content
     return json.loads(raw)
