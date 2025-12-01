@@ -11,34 +11,44 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_required_data(question: str):
     """
-    Extract ONLY birth-chart / dasha / transit based requirements.
-    Never ask for DOB/TOB/POB because kundali is generated internally.
-    JSON schema ensures output is ALWAYS valid.
+    Extract ASTROLOGICAL requirements (house, lord, yogas, dasha, transit)
+    based on the user's specific question.
     """
+
+    SYSTEM_PROMPT = (
+        "You are a senior Vedic astrologer with decades of experience. "
+        "Your job is to read the user’s question carefully and identify EXACTLY which "
+        "planetary factors, house analysis, yogas, dasha elements, and transit influences "
+        "you would examine in a real birth chart to answer that specific question accurately.\n\n"
+
+        "Guidelines:\n"
+        "- Think like a real astrologer, not a generic AI.\n"
+        "- Consider the intention behind the question (marriage, love, breakup, reconciliation, "
+        "career, job timing, finance, health, childbirth, travel, emotions, spiritual progress, etc.)\n"
+        "- Identify the specific birth-chart details needed for THIS question only.\n"
+        "- Identify necessary Mahadasha/Antardasha factors.\n"
+        "- Identify relevant transit checks.\n"
+        "- Identify important yogas, strengths, aspects, house lords.\n"
+        "- DO NOT ask for DOB/TOB/POB — we already generate the chart.\n"
+        "- Only list what YOU (as an astrologer) would check.\n"
+        "- Keep the list concise, relevant, and question-specific.\n\n"
+
+        "Output must strictly follow:\n"
+        "{\n"
+        "  \"required_data\": [\"detail_1\", \"detail_2\", \"detail_3\"]\n"
+        "}\n"
+    )
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {
                 "role": "system",
-                "content": (
-                    "You are a senior Vedic astrologer. "
-                    "Your job is to identify EXACT birth-chart, house-specific and planet-specific "
-                    "factors needed to answer the user's question. "
-                    "NEVER ask for DOB, TOB, or POB — we already generate the Kundali. "
-                    "ONLY list astrological combinations relevant to the query type. "
-                    "Marriage → 7th house, 7th lord, Venus, Jupiter aspects, marriage yogas, dasha & transit of 7th lord/Venus. "
-                    "Career → 10th house, 10th lord, Sun, Saturn, 2nd/6th/11th, career yogas, dasha & transit on 10th. "
-                    "Childbirth → 5th house, 5th lord, Jupiter, Moon, putra yogas, dasha & transit on 5th. "
-                    "Finance → 2nd/11th house, their lords, Jupiter/Rahu effects, dhan yogas. "
-                    "Health → 1st/6th/8th/12th houses, their lords, Mars/Saturn influence. "
-                    "Output must be SPECIFIC astro factors — NOT generic items like lagna or moon sign unless needed. "
-                    "Return concise, event-focused astro parameters only."
-                )
+                "content": SYSTEM_PROMPT
             },
             {
                 "role": "user",
-                "content": f"User question: \"{question}\"\n\nList the required astrological combinations only."
+                "content": f"User question: \"{question}\". List the required astrological combinations only."
             }
         ],
         response_format={
@@ -61,6 +71,5 @@ def get_required_data(question: str):
         temperature=0
     )
 
-    # Schema ensures ALWAYS VALID JSON
     raw = response.choices[0].message.content
     return json.loads(raw)
