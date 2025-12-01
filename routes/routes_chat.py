@@ -159,7 +159,7 @@ def free_status():
 # ----------------------------------------------------------
 # 7) REQUIREMENT EXTRACTOR (GPT-based)
 # ----------------------------------------------------------
-@routes_chat.route("/api/chat/requirements", methods=["POST"])
+@routes_chat.route("/requirements", methods=["POST"])
 def chat_requirements():
     from modules.services.chat_requirement_engine import get_required_data
 
