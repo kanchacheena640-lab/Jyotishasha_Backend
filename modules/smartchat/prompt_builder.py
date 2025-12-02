@@ -58,8 +58,8 @@ def build_chat_prompt(question: str, house_number: int, chart: dict):
     if house_number == 0:
         return f"""
 You are a Senior Vedic Astrologer.
-Give a short, sharp 4–6 line practical answer.
-No long theory.
+Give a clear, meaningful 5–8 line astrological answer.
+Avoid long theory, but give proper reasoning.
 
 User Question:
 "{question}"
@@ -96,8 +96,8 @@ Do NOT repeat input lines. Only conclusion.
 
     return f"""
 You are a Senior Vedic Astrologer.
-Give a short, clear 2–4 line answer only.
-Avoid theory. Only conclusion.
+Give a clear, meaningful 5–8 line astrological answer.
+Avoid long theory, but give proper reasoning.
 
 User Question:
 "{question}"
@@ -111,6 +111,6 @@ Dasha:
 Transit Influence:
 {transit}
 
-Give the result ONLY based on this paragraph.
-Do NOT repeat the lines. Only final astrological conclusion.
+Give the result ONLY based given prompt.
+Do NOT repeat the lines. Give the final astrological conclusion in 5–8 lines.
 """

@@ -200,6 +200,17 @@ def _dasha_line(kundali):
 def _transit_line(kundali):
     return kundali.get("transit_summary") or "General transit phase active."
 
+def _get_dignity_from_overview(kundali, planet_name):
+    overview = kundali.get("planet_overview") or []
+    for block in overview:
+        if block.get("planet") == planet_name:
+            summary = block.get("summary", "")
+            # Example: "• Dignity: Exalted"
+            for line in summary.split("\n"):
+                if "Dignity:" in line:
+                    return line.replace("•", "").replace("Dignity:", "").strip()
+    return ""
+
 # -------------------------------------------------------------------
 # MAIN — build_chart_preview
 # -------------------------------------------------------------------
@@ -227,20 +238,20 @@ def build_chart_preview(kundali, detected_house=None, question_topic=None):
 
     # OLD SUMMARY FIELDS ARE UNTOUCHED
     chart_preview = {
-        "asc": asc,
+        "lagna_sign": asc,
         "lagna_lord": lagna_lord,
 
         # NEW required block for your paragraph
         "lagna_lord_house": lagna_lord_details.get("house"),
         "lagna_lord_sign": lagna_lord_details.get("sign"),
         "lagna_lord_degree": lagna_lord_details.get("degree"),
-        "lagna_lord_dignity": lagna_lord_details.get("dignity"),
+        "lagna_lord_dignity": _get_dignity_from_overview(kundali, lagna_lord),
 
         "house_lord": house_lord,
         "house_lord_house": house_lord_details.get("house"),
         "house_lord_sign": house_lord_details.get("sign"),
         "house_lord_degree": house_lord_details.get("degree"),
-        "house_lord_dignity": house_lord_details.get("dignity"),
+        "house_lord_dignity": _get_dignity_from_overview(kundali, house_lord),
 
         "house_planet_list": house_planet_list,
         "aspect_planet_list": aspect_planet_list,
