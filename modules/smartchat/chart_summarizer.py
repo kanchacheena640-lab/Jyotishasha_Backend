@@ -2,6 +2,19 @@
 
 from typing import Any, Dict, List, Optional
 
+RASHIS = [
+    "Aries","Taurus","Gemini","Cancer","Leo","Virgo",
+    "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"
+]
+
+def _rashi_to_house(asc_rashi, planet_rashi):
+    try:
+        asc_index = RASHIS.index(asc_rashi)
+        p_index = RASHIS.index(planet_rashi)
+        return (p_index - asc_index) % 12 + 1
+    except:
+        return None
+
 # -------------------------------------------------------------------
 # Small safe helpers
 # -------------------------------------------------------------------
@@ -211,10 +224,7 @@ def _get_dignity_from_overview(kundali, planet_name):
                     return line.replace("•", "").replace("Dignity:", "").strip()
     return ""
 
-def _real_transit_line(transit):
-    """
-    Build a simple but ALWAYS non-empty transit snapshot.
-    """
+def _real_transit_line(transit, asc_rashi):
     if not transit:
         return ""
 
@@ -223,18 +233,18 @@ def _real_transit_line(transit):
         return ""
 
     parts = []
-
     for planet, info in pos.items():
-        sign = info.get("sign")
-        house = info.get("house")
+        sign = info.get("rashi") or info.get("sign")
+        if not sign:
+            continue
 
-        # allow sign OR house — not mandatory both
-        if sign and house:
+        # map transit sign → user’s house
+        house = _rashi_to_house(asc_rashi, sign)
+
+        if house:
             parts.append(f"{planet} in {sign} ({house}th house)")
-        elif sign:
+        else:
             parts.append(f"{planet} in {sign}")
-        elif house:
-            parts.append(f"{planet} in {house}th house")
 
     return " | ".join(parts)
 
@@ -288,7 +298,7 @@ def build_chart_preview(kundali, detected_house=None, question_topic=None, trans
         # OLD FIELDS (kept exactly same)
         "lagna_line": f"Ascendant (Lagna) is {asc}, ruled by {lagna_lord}.",
         "dasha_line": _dasha_line(kundali),
-        "transit_line": _real_transit_line(transit) or _transit_line(kundali),
+        "transit_line": _real_transit_line(transit, asc) or _transit_line(kundali),
         "detected_house": detected_house,
     }
 
