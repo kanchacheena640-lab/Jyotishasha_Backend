@@ -2,31 +2,23 @@
 SmartChat Prompt Builder (FINAL — Stable + Paragraph Mode)
 ---------------------------------------------------------
 
-Case A) If house_number = 0 → fallback mode (your existing working prompt)
-Case B) If 1–12 → NEW paragraph-based prompt
+Case A) If house_number = 0 → fallback mode
+Case B) If 1–12 → paragraph-based short prediction prompt
 """
 
 
 def build_chat_prompt(question: str, house_number: int, chart: dict):
     """
     chart fields expected:
-        asc
-        lagna_sign
-        lagna_lord
-        lagna_lord_house
-        lagna_lord_sign
-        lagna_lord_degree
-        lagna_lord_dignity
+        lagna_sign, lagna_lord, lagna_lord_house, lagna_lord_sign,
+        lagna_lord_degree, lagna_lord_dignity
 
-        house_lord
-        house_lord_house
-        house_lord_sign
-        house_lord_degree
-        house_lord_dignity
+        house_lord, house_lord_house, house_lord_sign,
+        house_lord_degree, house_lord_dignity
 
-        house_planet_list
-        aspect_planet_list
-        relevant_transit_planets
+        house_planet_list, aspect_planet_list, relevant_transit_planets
+
+        dasha_line, transit_line
     """
 
     # ----------- FETCH ALL FIELDS SAFELY -----------
@@ -50,7 +42,7 @@ def build_chat_prompt(question: str, house_number: int, chart: dict):
     relevant_transit_planets = chart.get("relevant_transit_planets", "None")
 
     dasha = chart.get("dasha_line", "")
-    transit = chart.get("transit_line", "")
+    current_transit_snapshot = chart.get("transit_line", "")  # FULL today's transit snapshot
 
     # ======================================================
     # 1) FALLBACK MODE (NO HOUSE DETECTED)
@@ -58,11 +50,11 @@ def build_chat_prompt(question: str, house_number: int, chart: dict):
     if house_number == 0:
         return f"""
 You are a Senior Vedic Astrologer.
-Give a clear, meaningful 5–8 line astrological answer.
-Avoid long theory, but give proper reasoning.
+Give a meaningful 5–8 line astrological answer.
+Avoid long theory; give direct conclusion.
 
 User Question:
-"{question}"
+\"{question}\"
 
 Birth Chart:
 - Ascendant: {asc}
@@ -72,35 +64,35 @@ Birth Chart:
 Dasha:
 {dasha}
 
-Transit:
-{transit}
+Current Transit (Today):
+{current_transit_snapshot}
 
-Give the final answer ONLY based on these planetary placements.
-Do NOT repeat input lines. Only conclusion.
+Give the final answer ONLY based on these placements.
+Do NOT repeat input lines.
 """
 
     # ======================================================
-    # 2) HOUSE-FOCUSED MODE → NEW FULL PARAGRAPH PROMPT
+    # 2) HOUSE-FOCUSED PARAGRAPH MODE
     # ======================================================
 
     paragraph = (
         f"Your Ascendant is {lagna_sign}, ruled by {lagna_lord}, currently placed in the "
-        f"{lagna_lord_house} house in {lagna_lord_sign} at {lagna_lord_degree}°, "
-        f"showing {lagna_lord_dignity} strength. "
-        f"The lord of the {house_number} house is {house_lord}, placed in the {house_lord_house} house "
-        f"in {house_lord_sign} at {house_lord_degree}°, showing {house_lord_dignity} dignity. "
-        f"The {house_number} house contains {house_planet_list}. "
-        f"The {house_number} house is aspected by {aspect_planet_list}. "
-        f"Current relevant transits affecting this house involve {relevant_transit_planets}."
+        f"{lagna_lord_house} house in {lagna_lord_sign} at {lagna_lord_degree}°, showing "
+        f"{lagna_lord_dignity} strength. "
+        f"The lord of the {house_number} house is {house_lord}, positioned in the {house_lord_house} house "
+        f"in {house_lord_sign} at {house_lord_degree}°, indicating {house_lord_dignity} dignity. "
+        f"The {house_number} house contains {house_planet_list}, and receives aspects from "
+        f"{aspect_planet_list}. "
+        f"Current transits activating this house include: {relevant_transit_planets}."
     )
 
     return f"""
 You are a Senior Vedic Astrologer.
-Give a clear, meaningful 5–8 line astrological answer.
-Avoid long theory, but give proper reasoning.
+Give a meaningful 5–8 line astrological answer with proper reasoning.
+Avoid long theory; give direct conclusions.
 
 User Question:
-"{question}"
+\"{question}\"
 
 Astrological Summary:
 {paragraph}
@@ -108,9 +100,15 @@ Astrological Summary:
 Dasha:
 {dasha}
 
-Transit Influence (Today):
-{chart.get("relevant_transit_planets", "")}
+Current Transit (Today):
+{current_transit_snapshot}
 
-Give the result ONLY based given prompt. Use the current transit influence ONLY to understand the present timeline, activation of events, short-term mood shifts, and how strongly the situation is getting triggered right now. The core judgement must always come from the birth chart placements, and transit should be treated as an activator or amplifier.
-Do NOT repeat the lines. Give the final astrological conclusion in 5–8 lines.
+RULE FOR TRANSIT:
+Use the current transit influence ONLY to understand the present timeline,
+short-term activation, mood shifts, and how strongly the issue is triggered right now.
+Birth chart decides the actual outcome; transit only amplifies or activates.
+(Do NOT mention this rule in the answer.)
+
+Give the final conclusion in 5–8 lines.
+Do NOT repeat any input lines.
 """

@@ -1,5 +1,3 @@
-# modules/services/smart_chat/smartchat_engine.py
-
 """
 SmartChat Engine (FINAL)
 ------------------------
@@ -11,10 +9,6 @@ FULL FLOW:
 4) build house-wise astrology summary
 5) build GPT prompt
 6) get final 5–8 line answer
-
-USED BY:
-- routes_chat.py
-- ChatPack (8 questions)
 """
 
 import os
@@ -28,7 +22,7 @@ from transit_engine import get_current_positions
 
 
 # ----------------------------------------------------------
-# Initialize OpenAI client (singleton)
+# Initialize OpenAI client
 # ----------------------------------------------------------
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -36,28 +30,21 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def run_smartchat(birth: dict, question: str) -> dict:
     """
     INPUT:
-        birth = {
-            "name": "",
-            "dob": "",
-            "tob": "",
-            "pob": "",
-            "lat": float,
-            "lng": float,
-            "tz": "+05:30"
-        }
+        birth = {...}
         question = raw user text
-    
+
     OUTPUT:
         {
             "answer": "...",
             "detected_house": int,
-            "debug_prompt": "...",   # optional for debugging
-            "chart_preview": {...}
+            "chart_preview": {...},
+            "transit_preview": {...},
+            "debug_prompt": "..."
         }
     """
 
     # ---------------------------------------------------------------------
-    # 1) Detect house via keywords
+    # 1) Detect house via keyword map
     # ---------------------------------------------------------------------
     house_number = detect_house(question)  # 1–12 or 0 fallback
 
@@ -76,15 +63,18 @@ def run_smartchat(birth: dict, question: str) -> dict:
     })
 
     # ---------------------------------------------------------------------
-    # 3) Transit snapshot
+    # 3) Transit snapshot (safe)
     # ---------------------------------------------------------------------
     try:
         transit = get_current_positions()
     except Exception as e:
-        transit = {"error": str(e)}
+        transit = {
+            "positions": {},
+            "error": str(e)
+        }
 
     # ---------------------------------------------------------------------
-    # 4) Summarize chart (house-wise + fallback)
+    # 4) Summarize chart with proper transit snapshot
     # ---------------------------------------------------------------------
     chart_summary = summarize_chart(
         kundali=kundali,
@@ -93,7 +83,7 @@ def run_smartchat(birth: dict, question: str) -> dict:
     )
 
     # ---------------------------------------------------------------------
-    # 5) Build prompt
+    # 5) Build GPT prompt
     # ---------------------------------------------------------------------
     gpt_prompt = build_chat_prompt(
         question=question,
@@ -102,7 +92,7 @@ def run_smartchat(birth: dict, question: str) -> dict:
     )
 
     # ---------------------------------------------------------------------
-    # 6) Call GPT
+    # 6) GPT Call
     # ---------------------------------------------------------------------
     try:
         response = client.chat.completions.create(
@@ -114,6 +104,7 @@ def run_smartchat(birth: dict, question: str) -> dict:
             temperature=0.55,
         )
         answer = response.choices[0].message.content.strip()
+
     except Exception as e:
         answer = f"AI temporarily unavailable. Error: {e}"
 
@@ -123,9 +114,9 @@ def run_smartchat(birth: dict, question: str) -> dict:
     return {
         "answer": answer,
         "detected_house": house_number,
-        "chart_preview": chart_summary,      # optional for frontend debug
+        "chart_preview": chart_summary,
         "kundali_preview": kundali.get("chart_data", {}),
         "transit_preview": transit,
         "dasha_preview": kundali.get("dasha_summary", {}),
-        "debug_prompt": gpt_prompt,          # show only for internal testing
+        "debug_prompt": gpt_prompt,
     }
