@@ -10,7 +10,7 @@ FULL FLOW:
 3) get transit snapshot
 4) build house-wise astrology summary
 5) build GPT prompt
-6) get final 2–4 line answer
+6) get final 5–8 line answer
 
 USED BY:
 - routes_chat.py
