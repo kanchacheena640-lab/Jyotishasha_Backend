@@ -211,11 +211,36 @@ def _get_dignity_from_overview(kundali, planet_name):
                     return line.replace("•", "").replace("Dignity:", "").strip()
     return ""
 
+def _real_transit_line(transit):
+    """
+    transit = {
+        "positions": {
+            "Sun": {"sign": "Scorpio", "house": 2},
+            "Moon": {"sign": "Libra", "house": 1},
+            ...
+        }
+    }
+    """
+    if not transit:
+        return ""
+
+    pos = transit.get("positions") or {}
+    parts = []
+
+    for planet, info in pos.items():
+        sign = info.get("sign")
+        house = info.get("house")
+        if sign and house:
+            parts.append(f"{planet} in {sign} ({house}th house)")
+
+    return " | ".join(parts)
+
+
 # -------------------------------------------------------------------
 # MAIN — build_chart_preview
 # -------------------------------------------------------------------
 
-def build_chart_preview(kundali, detected_house=None, question_topic=None):
+def build_chart_preview(kundali, detected_house=None, question_topic=None, transit=None):
 
     asc = kundali.get("lagna_sign") or "Unknown"
     lagna_lord = _get_lagna_lord(kundali)
@@ -260,7 +285,7 @@ def build_chart_preview(kundali, detected_house=None, question_topic=None):
         # OLD FIELDS (kept exactly same)
         "lagna_line": f"Ascendant (Lagna) is {asc}, ruled by {lagna_lord}.",
         "dasha_line": _dasha_line(kundali),
-        "transit_line": _transit_line(kundali),
+        "transit_line": _real_transit_line(transit) or _transit_line(kundali),
         "detected_house": detected_house,
     }
 
@@ -269,4 +294,9 @@ def build_chart_preview(kundali, detected_house=None, question_topic=None):
 
 def summarize_chart(kundali, detected_house=None, house_number=None, transit=None, question_topic=None):
     house = house_number if house_number is not None else detected_house
-    return build_chart_preview(kundali, detected_house=house, question_topic=question_topic)
+    return build_chart_preview(
+        kundali,
+        detected_house=house,
+        question_topic=question_topic,
+        transit=transit
+    )
