@@ -108,7 +108,12 @@ Current Transit (Today):
 ANSWER STRUCTURE (mandatory, do NOT mention this in answer):
 1) Begin with birth chart interpretation (3–4 lines)
 2) Add Mahadasha–Antardasha influence (1–2 lines)
-3) Finish with current transit activation (2–3 lines)
+3) When shifting to the transit part, begin with a natural cue like:
+   “In the current planetary sequence…”, “At present, the ongoing transits indicate…”,
+   or “Right now, the planetary movement shows…”.
+   Use only one cue phrase smoothly.
+4) Explain how today’s transit is activating this area (2–3 lines)
+
 Birth chart decides destiny; transit only triggers or amplifies.
 
 Give the final conclusion in 5–8 lines.
