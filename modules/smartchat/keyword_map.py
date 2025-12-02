@@ -1,3 +1,15 @@
+"""
+Keyword → House Detector (FINAL)
+---------------------------------
+Returns: house 1–12 or 0 (fallback/general)
+Handles:
+- English
+- Hinglish
+- Hindi
+- Mixed phrases
+"""
+
+
 HOUSE_KEYWORDS = {
     1: [
         # -------------------------
@@ -469,3 +481,17 @@ HOUSE_KEYWORDS = {
     ],
 
 }
+
+def detect_house(question: str) -> int:
+    """Return house number based on matched keyword, else 0."""
+    if not question:
+        return 0
+
+    q = question.lower()
+
+    for house, words in HOUSE_KEYWORDS.items():
+        for w in words:
+            if w.lower() in q:
+                return house
+
+    return 0
