@@ -213,25 +213,28 @@ def _get_dignity_from_overview(kundali, planet_name):
 
 def _real_transit_line(transit):
     """
-    transit = {
-        "positions": {
-            "Sun": {"sign": "Scorpio", "house": 2},
-            "Moon": {"sign": "Libra", "house": 1},
-            ...
-        }
-    }
+    Build a simple but ALWAYS non-empty transit snapshot.
     """
     if not transit:
         return ""
 
     pos = transit.get("positions") or {}
+    if not pos:
+        return ""
+
     parts = []
 
     for planet, info in pos.items():
         sign = info.get("sign")
         house = info.get("house")
+
+        # allow sign OR house — not mandatory both
         if sign and house:
             parts.append(f"{planet} in {sign} ({house}th house)")
+        elif sign:
+            parts.append(f"{planet} in {sign}")
+        elif house:
+            parts.append(f"{planet} in {house}th house")
 
     return " | ".join(parts)
 
