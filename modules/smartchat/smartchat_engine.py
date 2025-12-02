@@ -88,8 +88,7 @@ def run_smartchat(birth: dict, question: str) -> dict:
     # ---------------------------------------------------------------------
     chart_summary = summarize_chart(
         kundali=kundali,
-        house_number=house_number,
-        transit=transit
+        detected_house=house_number
     )
 
     # ---------------------------------------------------------------------
