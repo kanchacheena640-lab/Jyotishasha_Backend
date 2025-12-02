@@ -21,7 +21,7 @@ def build_chat_prompt(question: str, house_number: int, chart: dict):
         dasha_line, transit_line
     """
 
-    # ----------- FETCH ALL FIELDS SAFELY -----------
+    # ----------- FETCH FIELDS SAFELY -----------
     asc = chart.get("asc", "")
 
     lagna_sign = chart.get("lagna_sign", "")
@@ -42,7 +42,7 @@ def build_chat_prompt(question: str, house_number: int, chart: dict):
     relevant_transit_planets = chart.get("relevant_transit_planets", "None")
 
     dasha = chart.get("dasha_line", "")
-    current_transit_snapshot = chart.get("transit_line", "")  # FULL today's transit snapshot
+    current_transit_snapshot = chart.get("transit_line", "")
 
     # ======================================================
     # 1) FALLBACK MODE (NO HOUSE DETECTED)
@@ -59,7 +59,6 @@ User Question:
 Birth Chart:
 - Ascendant: {asc}
 - {chart.get("lagna_line", "")}
-- {chart.get("aspects_on_house_line", "")}
 
 Dasha:
 {dasha}
@@ -67,7 +66,10 @@ Dasha:
 Current Transit (Today):
 {current_transit_snapshot}
 
-Give the final answer ONLY based on these placements.
+Follow this structure strictly:
+1) Start with birth chart interpretation (3–4 lines)
+2) Add Mahadasha–Antardasha influence (1–2 lines)
+3) End with current transit activation (2–3 lines)
 Do NOT repeat input lines.
 """
 
@@ -83,7 +85,7 @@ Do NOT repeat input lines.
         f"in {house_lord_sign} at {house_lord_degree}°, indicating {house_lord_dignity} dignity. "
         f"The {house_number} house contains {house_planet_list}, and receives aspects from "
         f"{aspect_planet_list}. "
-        f"Current transits activating this house include: {relevant_transit_planets}."
+        f"Current transits activating this house include {relevant_transit_planets}."
     )
 
     return f"""
@@ -103,11 +105,11 @@ Dasha:
 Current Transit (Today):
 {current_transit_snapshot}
 
-RULE FOR TRANSIT:
-Use the current transit influence ONLY to understand the present timeline,
-short-term activation, mood shifts, and how strongly the issue is triggered right now.
-Birth chart decides the actual outcome; transit only amplifies or activates.
-(Do NOT mention this rule in the answer.)
+ANSWER STRUCTURE (mandatory, do NOT mention this in answer):
+1) Begin with birth chart interpretation (3–4 lines)
+2) Add Mahadasha–Antardasha influence (1–2 lines)
+3) Finish with current transit activation (2–3 lines)
+Birth chart decides destiny; transit only triggers or amplifies.
 
 Give the final conclusion in 5–8 lines.
 Do NOT repeat any input lines.
