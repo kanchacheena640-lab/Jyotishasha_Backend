@@ -108,9 +108,9 @@ Astrological Summary:
 Dasha:
 {dasha}
 
-Transit Influence:
-{transit}
+Transit Influence (Today):
+{chart.get("relevant_transit_planets", "")}
 
-Give the result ONLY based given prompt.
+Give the result ONLY based given prompt. Use the current transit influence ONLY to understand the present timeline, activation of events, short-term mood shifts, and how strongly the situation is getting triggered right now. The core judgement must always come from the birth chart placements, and transit should be treated as an activator or amplifier.
 Do NOT repeat the lines. Give the final astrological conclusion in 5–8 lines.
 """
