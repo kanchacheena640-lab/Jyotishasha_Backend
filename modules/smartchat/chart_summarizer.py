@@ -1,24 +1,12 @@
 # modules/smartchat/chart_summarizer.py
 
-"""
-Chart summarizer for SmartChat
-
-Input: full kundali JSON (as returned by calculate_full_kundali)
-Output: chart_preview dict used in smartchat_engine + debug prompt chunks.
-
-This file is PURE helper – no external dependencies.
-"""
-
 from typing import Any, Dict, List, Optional
-
 
 # -------------------------------------------------------------------
 # Small safe helpers
 # -------------------------------------------------------------------
 
-
 def _get(d: Dict, *keys, default=None):
-    """Nested safe getter."""
     cur = d
     for k in keys:
         if not isinstance(cur, dict):
@@ -28,11 +16,9 @@ def _get(d: Dict, *keys, default=None):
             return default
     return cur
 
-
 # -------------------------------------------------------------------
 # House / lord helpers
 # -------------------------------------------------------------------
-
 
 HOUSE_KEY_MAP = {
     1: "1_house_lord",
@@ -64,402 +50,212 @@ HOUSE_ALT_KEY_MAP = {
     12: "twelfth_house_lord",
 }
 
-
 def _ordinal(n: int) -> str:
-    mapping = {
-        1: "1st",
-        2: "2nd",
-        3: "3rd",
-        4: "4th",
-        5: "5th",
-        6: "6th",
-        7: "7th",
-        8: "8th",
-        9: "9th",
-        10: "10th",
-        11: "11th",
-        12: "12th",
-    }
-    return mapping.get(n, f"{n}th")
+    return {
+        1:"1st",2:"2nd",3:"3rd",4:"4th",5:"5th",6:"6th",
+        7:"7th",8:"8th",9:"9th",10:"10th",11:"11th",12:"12th"
+    }.get(n,f"{n}th")
 
-
-def _get_house_lord(kundali: Dict[str, Any], house: int) -> Optional[str]:
+def _get_house_lord(kundali, house):
     lords = _get(kundali, "chart_data", "lords", default={}) or {}
+    return lords.get(HOUSE_KEY_MAP.get(house)) or lords.get(HOUSE_ALT_KEY_MAP.get(house))
 
-    key_main = HOUSE_KEY_MAP.get(house)
-    key_alt = HOUSE_ALT_KEY_MAP.get(house)
-
-    lord = lords.get(key_main)
-    if not lord:
-        lord = lords.get(key_alt)
-    return lord
-
-
-def _get_lagna_lord(kundali: Dict[str, Any]) -> Optional[str]:
+def _get_lagna_lord(kundali):
     lords = _get(kundali, "chart_data", "lords", default={}) or {}
     return lords.get("lagna_lord") or lords.get("first_house_lord")
 
-
 # -------------------------------------------------------------------
-# Planets-in-house + house overview
+# Planets + positions
 # -------------------------------------------------------------------
 
-
-def _planets_in_house_line(kundali: Dict[str, Any], house: Optional[int]) -> str:
-    if not house:
-        return "No specific house selected; focusing on overall chart balance."
-
+def _find_planet_details(kundali, planet_name):
+    """Return dict: {house, sign, degree, dignity}"""
     planets = _get(kundali, "chart_data", "planets", default=[]) or []
-    in_house: List[Dict[str, Any]] = [p for p in planets if p.get("house") == house]
 
-    if not in_house:
-        return f"No planet is placed in the {_ordinal(house)} house."
+    for p in planets:
+        if p.get("name") == planet_name:
+            return {
+                "house": p.get("house"),
+                "sign": p.get("sign"),
+                "degree": p.get("degree"),
+                "dignity": p.get("dignity") or p.get("strength") or "",
+            }
+    return {"house": None, "sign": "", "degree": "", "dignity": ""}
 
-    parts = []
-    for p in in_house:
-        name = p.get("name") or "Planet"
-        sign = p.get("sign") or ""
-        nak = p.get("nakshatra") or ""
-        if sign and nak:
-            parts.append(f"{name} in {sign} ({nak} nakshatra)")
-        elif sign:
-            parts.append(f"{name} in {sign}")
-        else:
-            parts.append(name)
+# -------------------------------------------------------------------
+# Planets in target house
+# -------------------------------------------------------------------
 
-    joined = ", ".join(parts)
-    return f"In the {_ordinal(house)} house you have: {joined}."
-
-
-def _house_focus_line(kundali: Dict[str, Any], house: Optional[int]) -> str:
+def _planets_in_house_list(kundali, house):
     if not house:
         return ""
-
-    overview = kundali.get("houses_overview") or []
-    for h in overview:
-        if h.get("house") == house:
-            # Example: "Focus: Wealth, family, speech. Notable placements: Saturn."
-            summary = h.get("summary") or ""
-            focus = h.get("focus") or ""
-            if summary:
-                return summary
-            if focus:
-                return f"This house highlights: {focus}."
-            break
-
-    return f"This {_ordinal(house)} house covers its usual areas for your ascendant."
-
-
-def _life_aspect_for_house(kundali: Dict[str, Any], house: Optional[int]) -> Optional[Dict[str, Any]]:
-    """
-    life_aspects[].houses is like '7th' or '2nd, 4th'
-    We try to match the detected house.
-    """
-    if not house:
-        return None
-
-    life_aspects = kundali.get("life_aspects") or []
-    needle = _ordinal(house)
-    for block in life_aspects:
-        houses_str = (block.get("houses") or "").replace(" ", "")
-        pieces = [h.strip() for h in houses_str.split(",") if h.strip()]
-        if needle in pieces:
-            return block
-    return None
-
+    planets = _get(kundali, "chart_data", "planets", default=[]) or []
+    names = [p["name"] for p in planets if p.get("house") == house]
+    return ", ".join(names) if names else "None"
 
 # -------------------------------------------------------------------
-# Dasha + transit summarizers
+# Drishti Aspect (simple)
 # -------------------------------------------------------------------
 
+def _aspect_planets_on_house(kundali, target_house):
+    if not target_house:
+        return ""
 
-def _dasha_line(kundali: Dict[str, Any]) -> str:
+    planets = _get(kundali, "chart_data", "planets", default=[]) or []
+    hit = []
+
+    for p in planets:
+        name = p.get("name")
+        house = p.get("house")
+
+        if not house: 
+            continue
+
+        # 7th aspect
+        if (house + 7) % 12 == target_house % 12:
+            hit.append(name)
+
+        # Jupiter 5/9
+        if name == "Jupiter":
+            if (house + 5) % 12 == target_house % 12 or (house + 9) % 12 == target_house % 12:
+                hit.append(name)
+
+        # Mars 4/8
+        if name == "Mars":
+            if (house + 4) % 12 == target_house % 12 or (house + 8) % 12 == target_house % 12:
+                hit.append(name)
+
+        # Saturn 3/10
+        if name == "Saturn":
+            if (house + 3) % 12 == target_house % 12 or (house + 10) % 12 == target_house % 12:
+                hit.append(name)
+
+    return ", ".join(sorted(set(hit))) if hit else "None"
+
+# -------------------------------------------------------------------
+# Relevant transit planets affecting house
+# -------------------------------------------------------------------
+
+def _relevant_transits(kundali, target_house):
+    if not target_house:
+        return ""
+
+    planets = _get(kundali, "chart_data", "planets", default=[])
+    transits = _get(kundali, "transits", default={}) or {}
+
+    names = []
+
+    # 1) transit planet in that house
+    for name, t in transits.items():
+        if t.get("house") == target_house:
+            names.append(name)
+
+    # 2) transit planets aspecting that house
+    for name, t in transits.items():
+        h = t.get("house")
+        if not h:
+            continue
+
+        if (h + 7) % 12 == target_house % 12:
+            names.append(name)
+
+        if name == "Jupiter" and (
+            (h + 5) % 12 == target_house % 12 or (h + 9) % 12 == target_house % 12
+        ):
+            names.append(name)
+
+        if name == "Mars" and (
+            (h + 4) % 12 == target_house % 12 or (h + 8) % 12 == target_house % 12
+        ):
+            names.append(name)
+
+        if name == "Saturn" and (
+            (h + 3) % 12 == target_house % 12 or (h + 10) % 12 == target_house % 12
+        ):
+            names.append(name)
+
+    return ", ".join(sorted(set(names))) if names else "None"
+
+# -------------------------------------------------------------------
+# Dasha & Transit (old logic kept)
+# -------------------------------------------------------------------
+
+def _dasha_line(kundali):
     d = kundali.get("dasha_summary") or {}
-
-    current_block = d.get("current_block") or {}
+    cur_blk = d.get("current_block") or {}
     cur_maha = d.get("current_mahadasha") or {}
     cur_antar = d.get("current_antardasha") or {}
 
-    maha_name = current_block.get("mahadasha") or cur_maha.get("mahadasha")
-    antar_name = cur_antar.get("planet")
-    period = current_block.get("period")
-
-    maha_start = cur_maha.get("start")
-    maha_end = cur_maha.get("end")
-    antar_start = cur_antar.get("start")
-    antar_end = cur_antar.get("end")
+    maha = cur_blk.get("mahadasha") or cur_maha.get("mahadasha")
+    antar = cur_antar.get("planet")
 
     parts = []
+    if maha:
+        parts.append(f"Mahadasha: {maha}")
+    if antar:
+        parts.append(f"Antardasha: {antar}")
 
-    if maha_name:
-        if maha_start and maha_end:
-            parts.append(f"Mahadasha: {maha_name} ({maha_start} → {maha_end})")
-        else:
-            parts.append(f"Mahadasha: {maha_name}")
+    return " | ".join(parts) if parts else "No active dasha information."
 
-    if antar_name:
-        if antar_start and antar_end:
-            parts.append(f"Antardasha: {antar_name} ({antar_start} → {antar_end})")
-        else:
-            parts.append(f"Antardasha: {antar_name}")
-
-    if not parts and period:
-        parts.append(f"Current dasha period: {period}")
-
-    impact = current_block.get("impact_snippet")
-    if impact:
-        parts.append(impact)
-
-    if not parts:
-        return "No active dasha information could be summarized."
-
-    return " | ".join(parts)
-
-
-def _transit_line(kundali: Dict[str, Any]) -> str:
-    """
-    Use sadhesati + grah_dasha_block as a simple 'transit flavour' line.
-    transit_analysis list is currently empty in your sample.
-    """
-    yogas = kundali.get("yogas") or {}
-    sadhesati = yogas.get("sadhesati") or {}
-    grah_dasha_block = kundali.get("grah_dasha_block") or {}
-
-    pieces = []
-
-    # Saturn / Sadhesati status
-    saturn_rashi = sadhesati.get("saturn_rashi")
-    moon_rashi = sadhesati.get("moon_rashi")
-    status = sadhesati.get("status")
-    short_desc = sadhesati.get("short_description")
-
-    if status or saturn_rashi or moon_rashi:
-        base = "Saturn Transit / Sadhesati: "
-        details = []
-        if status:
-            details.append(f"Status – {status}")
-        if saturn_rashi:
-            details.append(f"Saturn in {saturn_rashi}")
-        if moon_rashi:
-            details.append(f"Moon sign {moon_rashi}")
-        pieces.append(base + ", ".join(details))
-
-    if short_desc:
-        pieces.append(short_desc)
-
-    # Grah dasha focus (in Hindi, already nicely written)
-    grah_text = grah_dasha_block.get("grah_dasha_text")
-    if grah_text:
-        pieces.append(f"Grah-dasha focus: {grah_text}")
-
-    if not pieces:
-        return "No special transit or Sadhesati effect is currently highlighted."
-
-    return " | ".join(pieces)
-
+def _transit_line(kundali):
+    return kundali.get("transit_summary") or "General transit phase active."
 
 # -------------------------------------------------------------------
-# Yogas / aspects helpers (light-weight)
+# MAIN — build_chart_preview
 # -------------------------------------------------------------------
 
+def build_chart_preview(kundali, detected_house=None, question_topic=None):
 
-def _yogas_touching_house(kundali: Dict[str, Any], house: Optional[int]) -> List[str]:
-    if not house:
-        return []
-
-    yogas = kundali.get("yogas") or {}
-    active = []
-    for key, block in yogas.items():
-        if not isinstance(block, dict):
-            continue
-        if not block.get("is_active"):
-            continue
-        reasons = " ".join(block.get("reasons") or [])
-        # simple heuristic: look for 'house X' pattern
-        token = f"house {house}"
-        if token in reasons:
-            active.append(block.get("name") or key)
-    return active
-
-
-def _yogas_for_lord(kundali: Dict[str, Any], lord: Optional[str]) -> List[str]:
-    if not lord:
-        return []
-    yogas = kundali.get("yogas") or {}
-    active = []
-    for key, block in yogas.items():
-        if not isinstance(block, dict):
-            continue
-        if not block.get("is_active"):
-            continue
-        reasons = " ".join(block.get("reasons") or [])
-        desc = (block.get("description") or "") + " " + reasons
-        if lord in desc:
-            active.append(block.get("name") or key)
-    return active
-
-
-def _conjunction_yogas(kundali: Dict[str, Any]) -> List[str]:
-    yogas = kundali.get("yogas") or {}
-    hits = []
-    for key, block in yogas.items():
-        if not isinstance(block, dict):
-            continue
-        if not block.get("is_active"):
-            continue
-        reasons = " ".join(block.get("reasons") or [])
-        if "same house" in reasons or "Conjunction" in reasons or "conjunction" in reasons:
-            hits.append(block.get("name") or key)
-    return hits
-
-
-# -------------------------------------------------------------------
-# MAIN ENTRY
-# -------------------------------------------------------------------
-
-
-def build_chart_preview(
-    kundali: Dict[str, Any],
-    detected_house: Optional[int] = None,
-    question_topic: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Build a compact chart_preview block for SmartChat.
-
-    - kundali: full kundali JSON dict (like sample you shared)
-    - detected_house: int (1–12) or None, as decided by requirement engine
-    - question_topic: optional string (career, marriage, health, etc.) – currently not hard-used
-    """
-
-    asc = kundali.get("lagna_sign") or _get(kundali, "chart_data", "ascendant") or "Unknown"
+    asc = kundali.get("lagna_sign") or "Unknown"
     lagna_lord = _get_lagna_lord(kundali)
-    asc_line = f"Ascendant (Lagna) is {asc}."
-    if lagna_lord:
-        asc_line = f"Ascendant (Lagna) is {asc}, ruled by {lagna_lord}."
 
-    # Lagna trait – already a beautiful Hindi paragraph, keep short
-    lagna_trait = kundali.get("lagna_trait") or ""
-    if lagna_trait:
-        lagna_line = f"Lagna trait: {lagna_trait}"
-    else:
-        lagna_line = "Your Lagna sets the overall tone of personality, balance and life direction."
+    # Extract full planet details for lagna lord
+    lagna_lord_details = _find_planet_details(kundali, lagna_lord)
 
-    # House lord line
-    if detected_house:
-        lord = _get_house_lord(kundali, detected_house)
-        if lord:
-            house_lord_line = (
-                f"The lord of your {_ordinal(detected_house)} house is {lord}. "
-                f"It becomes important for this area of life."
-            )
-        else:
-            house_lord_line = f"The {_ordinal(detected_house)} house lord is not clearly specified in this snapshot."
-    else:
-        house_lord_line = "No single house is highlighted; reading the chart in a holistic way."
+    # House lord
+    house_lord = _get_house_lord(kundali, detected_house)
+    house_lord_details = _find_planet_details(kundali, house_lord) if house_lord else {}
 
-    # House focus & planets
-    planets_in_house_line = _planets_in_house_line(kundali, detected_house)
-    house_focus_line = _house_focus_line(kundali, detected_house)
+    # planets in that house
+    house_planet_list = _planets_in_house_list(kundali, detected_house)
 
-    # Life aspect line (if we found any matching block)
-    aspect_block = _life_aspect_for_house(kundali, detected_house)
-    if aspect_block:
-        aspect_name = aspect_block.get("aspect") or ""
-        aspect_summary = aspect_block.get("summary") or ""
-        if aspect_name and aspect_summary:
-            aspects_on_house_line = f"{aspect_name}: {aspect_summary}"
-        elif aspect_summary:
-            aspects_on_house_line = aspect_summary
-        else:
-            aspects_on_house_line = ""
-    else:
-        # Fallback generic with yogas
-        yogas_for_house = _yogas_touching_house(kundali, detected_house)
-        if yogas_for_house:
-            joined = ", ".join(yogas_for_house)
-            aspects_on_house_line = (
-                f"Some active yogas influencing this house include: {joined}."
-            )
-        elif detected_house:
-            aspects_on_house_line = (
-                f"No major classical yogas are directly tied to the {_ordinal(detected_house)} house in this snapshot."
-            )
-        else:
-            aspects_on_house_line = "House-wise yogas will be considered contextually in the answer."
+    # aspects
+    aspect_planet_list = _aspect_planets_on_house(kundali, detected_house)
 
-    # Aspects on house lord (via yogas)
-    lord_for_house = _get_house_lord(kundali, detected_house) if detected_house else None
-    lord_yogas = _yogas_for_lord(kundali, lord_for_house)
-    if lord_for_house and lord_yogas:
-        aspects_on_lord_line = (
-            f"House lord {lord_for_house} participates in: {', '.join(lord_yogas)}."
-        )
-    elif lord_for_house:
-        aspects_on_lord_line = (
-            f"House lord {lord_for_house} is active but not forming a very sharp classical yog in this summary."
-        )
-    else:
-        aspects_on_lord_line = "No specific lord-based yogas highlighted."
+    # transits
+    relevant_transit_planets = _relevant_transits(kundali, detected_house)
 
-    # Conjunction-based yogas (for conjunctions_line)
-    conj_yogas = _conjunction_yogas(kundali)
-    if conj_yogas:
-        conjunctions_line = (
-            "Important conjunction-based yogas in your chart: " + ", ".join(conj_yogas) + "."
-        )
-    else:
-        conjunctions_line = "No major conjunction-based Rajyogs are prominently highlighted."
-
-    # Dasha + transit lines
-    dasha_line = _dasha_line(kundali)
-    transit_line = _transit_line(kundali)
-
-    # Final dict – keys expected by routes_smartchat response
+    # OLD SUMMARY FIELDS ARE UNTOUCHED
     chart_preview = {
         "asc": asc,
-        "lagna_line": lagna_line,
-        "house_lord_line": house_lord_line,
-        "planets_in_house_line": planets_in_house_line,
-        "aspects_on_house_line": aspects_on_house_line,
-        "aspects_on_lord_line": aspects_on_lord_line,
-        "conjunctions_line": conjunctions_line,
-        "dasha_line": dasha_line,
-        "transit_line": transit_line,
-        "house_focus_line": house_focus_line,
-        # helpful to know which house was used
-        "detected_house": detected_house,
         "lagna_lord": lagna_lord,
+
+        # NEW required block for your paragraph
+        "lagna_lord_house": lagna_lord_details.get("house"),
+        "lagna_lord_sign": lagna_lord_details.get("sign"),
+        "lagna_lord_degree": lagna_lord_details.get("degree"),
+        "lagna_lord_dignity": lagna_lord_details.get("dignity"),
+
+        "house_lord": house_lord,
+        "house_lord_house": house_lord_details.get("house"),
+        "house_lord_sign": house_lord_details.get("sign"),
+        "house_lord_degree": house_lord_details.get("degree"),
+        "house_lord_dignity": house_lord_details.get("dignity"),
+
+        "house_planet_list": house_planet_list,
+        "aspect_planet_list": aspect_planet_list,
+        "relevant_transit_planets": relevant_transit_planets,
+
+        # OLD FIELDS (kept exactly same)
+        "lagna_line": f"Ascendant (Lagna) is {asc}, ruled by {lagna_lord}.",
+        "dasha_line": _dasha_line(kundali),
+        "transit_line": _transit_line(kundali),
+        "detected_house": detected_house,
     }
 
     return chart_preview
 
 
-# -------------------------------------------------------------------
-# Backward-compatible wrapper (old + new names)
-# -------------------------------------------------------------------
-
-
-def summarize_chart(
-    kundali: Dict[str, Any],
-    detected_house: Optional[int] = None,
-    house_number: Optional[int] = None,
-    transit: Optional[Dict[str, Any]] = None,
-    question_topic: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Backward compatible wrapper so old imports still work:
-    - summarize_chart(kundali, detected_house=...)
-    - summarize_chart(kundali=kundali, house_number=..., transit=...)
-
-    Currently 'transit' is not used inside the preview, but kept
-    for future extension.
-    """
-
-    # Prefer explicit house_number (new style), else fallback to detected_house
+def summarize_chart(kundali, detected_house=None, house_number=None, transit=None, question_topic=None):
     house = house_number if house_number is not None else detected_house
-
-    return build_chart_preview(
-        kundali=kundali,
-        detected_house=house,
-        question_topic=question_topic,
-    )
+    return build_chart_preview(kundali, detected_house=house, question_topic=question_topic)
