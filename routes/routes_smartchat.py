@@ -24,12 +24,12 @@ def smartchat_api():
         return jsonify({
             "success": True,
             "answer": result["answer"],
-            "detected_house": result["detected_house"],
-            "chart_preview": result["chart_preview"],
-            "kundali_preview": result["kundali_preview"],
-            "transit_preview": result["transit_preview"],
-            "dasha_preview": result["dasha_preview"],
-            "debug_prompt": result["debug_prompt"]  # remove in production if needed
+            #"detected_house": result["detected_house"],
+            #"chart_preview": result["chart_preview"],
+            #"kundali_preview": result["kundali_preview"],
+            #"transit_preview": result["transit_preview"],
+            #"dasha_preview": result["dasha_preview"],
+            #"debug_prompt": result["debug_prompt"]  # remove in production if needed
         }), 200
 
     except Exception as e:
