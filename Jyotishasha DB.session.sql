@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN firebase_uid VARCHAR(200);

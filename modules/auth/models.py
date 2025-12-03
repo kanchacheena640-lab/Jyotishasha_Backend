@@ -12,6 +12,9 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, index=True, nullable=False)
     provider = db.Column(db.String(20), default="password")  # 'password' | 'google'
 
+    # ✅ NEW: Firebase UID link
+    firebase_uid = db.Column(db.String(200), unique=True, index=True, nullable=True)
+
     # Optional contact
     phone = db.Column(db.String(20), nullable=True)
 
