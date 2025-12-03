@@ -222,40 +222,70 @@ def chat_status():
 # ----------------------------------------------------------
 # 8) DEBUG: RESET PACK QUESTIONS FOR A USER
 # ----------------------------------------------------------
-@routes_chat.route("/api/chat/debug/reset-pack", methods=["POST"])
-def debug_reset_pack():
+@routes_chat.route("/api/chat/debug/pack", methods=["POST"])
+def debug_add_or_reset_pack():
     from extensions import db
     from modules.models_chat_pack import ChatPack
+    from datetime import datetime
 
     data = request.get_json() or {}
     user_id = data.get("user_id")
+    action = data.get("action", "").strip().lower()
 
+    # Validate
     if not user_id:
         return jsonify({"success": False, "error": "user_id missing"}), 400
+    if action not in ("add", "reset"):
+        return jsonify({"success": False, "error": "action must be 'add' or 'reset'"}), 400
 
     try:
         uid = int(user_id)
     except ValueError:
         return jsonify({"success": False, "error": "user_id must be int"}), 400
 
-    packs = ChatPack.query.filter_by(user_id=uid, status="success").all()
+    # -------------------------------------
+    # 🔵 RESET PACKS
+    # -------------------------------------
+    if action == "reset":
+        packs = ChatPack.query.filter_by(user_id=uid, status="success").all()
+        if not packs:
+            return jsonify({
+                "success": True,
+                "message": "No active packs found to reset.",
+                "reset_count": 0,
+            }), 200
 
-    if not packs:
+        for p in packs:
+            p.questions_used = 0  # reset to full
+        db.session.commit()
+
         return jsonify({
             "success": True,
-            "message": "No success packs found for this user.",
-            "reset_count": 0,
+            "message": "All packs reset successfully.",
+            "reset_count": len(packs),
         }), 200
 
-    for p in packs:
-        # ✅ SAARE success packs ke questions_used = 0
-        p.questions_used = 0
+    # -------------------------------------
+    # 🔵 ADD PACK (new 8 Questions pack)
+    # -------------------------------------
+    if action == "add":
+        pack = ChatPack(
+            user_id=uid,
+            amount=51,
+            questions_total=8,
+            questions_used=0,
+            status="success",
+            razorpay_order_id="ADMIN_ADD",
+            razorpay_payment_id="ADMIN_ADD",
+            verified_at=datetime.utcnow(),
+        )
+        db.session.add(pack)
+        db.session.commit()
 
-    db.session.commit()
+        return jsonify({
+            "success": True,
+            "message": "New ChatPack (8 Q) added successfully.",
+            "pack_id": pack.id,
+        }), 200
 
-    return jsonify({
-        "success": True,
-        "message": "All success packs reset for this user.",
-        "reset_count": len(packs),
-    }), 200
 
