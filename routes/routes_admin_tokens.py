@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from extensions import db
-from models import AppUser
+from modules.models_user import AppUser   
 
 routes_admin_tokens = Blueprint("routes_admin_tokens", __name__)
 
