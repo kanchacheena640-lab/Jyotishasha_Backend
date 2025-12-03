@@ -113,10 +113,10 @@ def run_smartchat(birth: dict, question: str) -> dict:
     # ---------------------------------------------------------------------
     return {
         "answer": answer,
-        "detected_house": house_number,
-        "chart_preview": chart_summary,
-        "kundali_preview": kundali.get("chart_data", {}),
-        "transit_preview": transit,
-        "dasha_preview": kundali.get("dasha_summary", {}),
-        "debug_prompt": gpt_prompt,
+        #"detected_house": house_number,
+        #"chart_preview": chart_summary,
+       # "kundali_preview": kundali.get("chart_data", {}),
+        #"transit_preview": transit,
+        #"dasha_preview": kundali.get("dasha_summary", {}),
+        #"debug_prompt": gpt_prompt,
     }
