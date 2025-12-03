@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from extensions import db
-from modules.models_user import User   # ⭐ CORRECT IMPORT (your actual file)
+from modules.auth.models import User
 
 routes_auth = Blueprint("routes_auth", __name__)
 
