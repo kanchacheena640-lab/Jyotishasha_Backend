@@ -190,25 +190,28 @@ def chat_requirements():
             "error": str(e)
         }), 500
     
-@routes_chat.route("/api/chat/status", methods=["POST"])
+# ----------------------------------------------------------
+# 7) COMBINED CHAT STATUS  (FREE + PAID)
+# ----------------------------------------------------------
+@routes_chat.route("/api/chat/status", methods=["GET"])
 def chat_status():
-    data = request.get_json() or {}
-    user_id = data.get("user_id")
+    user_id = request.args.get("user_id")
 
     if not user_id:
         return {"success": False, "error": "user_id missing"}, 400
 
-    # ✅ Correct import
-    from modules.models_user import AppUser
+    from modules.services.free_quota_service import get_free_quota_status
+    from modules.services.chat_pack_service import get_pack_status
 
-    user = AppUser.query.get(user_id)
-    if not user:
-        return {"success": False, "error": "user not found"}, 404
+    # ⭐ Correct free status
+    free_status = get_free_quota_status(int(user_id))
 
-    # Correct fields from AppUser
+    # ⭐ Correct paid pack status
+    pack_status = get_pack_status(int(user_id))
+
     return {
         "success": True,
-        "free_used_today": getattr(user, "free_used_today", False),
-        "remaining_tokens": user.asknow_tokens or 0
+        "free_available": (free_status["used_today"] == False),
+        "remaining_tokens": pack_status.get("remaining", 0)
     }, 200
 
