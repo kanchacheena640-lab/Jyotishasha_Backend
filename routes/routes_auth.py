@@ -53,3 +53,5 @@ def register_user():
         "user_id": new_user.id,   # new backend_user_id
         "new": True
     }), 200
+
+

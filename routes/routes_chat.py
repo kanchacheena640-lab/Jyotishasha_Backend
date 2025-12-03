@@ -189,3 +189,24 @@ def chat_requirements():
             "success": False,
             "error": str(e)
         }), 500
+    
+@routes_chat.route("/api/chat/status", methods=["POST"])
+def chat_status():
+    data = request.get_json() or {}
+    user_id = data.get("user_id")
+
+    if not user_id:
+        return {"success": False, "error": "user_id missing"}, 400
+
+    from modules.models_user import User
+    
+    user = User.query.get(user_id)
+    if not user:
+        return {"success": False, "error": "user not found"}, 404
+
+    return {
+        "success": True,
+        "free_used_today": user.free_used_today,   # boolean
+        "remaining_tokens": user.tokens_left or 0
+    }, 200
+
