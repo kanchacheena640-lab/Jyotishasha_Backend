@@ -198,15 +198,17 @@ def chat_status():
     if not user_id:
         return {"success": False, "error": "user_id missing"}, 400
 
-    from modules.models_user import User
-    
-    user = User.query.get(user_id)
+    # ✅ Correct import
+    from modules.models_user import AppUser
+
+    user = AppUser.query.get(user_id)
     if not user:
         return {"success": False, "error": "user not found"}, 404
 
+    # Correct fields from AppUser
     return {
         "success": True,
-        "free_used_today": user.free_used_today,   # boolean
-        "remaining_tokens": user.tokens_left or 0
+        "free_used_today": getattr(user, "free_used_today", False),
+        "remaining_tokens": user.asknow_tokens or 0
     }, 200
 
