@@ -219,4 +219,43 @@ def chat_status():
         "remaining_tokens": pack_status.get("remaining", 0)
     }, 200
 
+# ----------------------------------------------------------
+# 8) DEBUG: RESET PACK QUESTIONS FOR A USER
+# ----------------------------------------------------------
+@routes_chat.route("/api/chat/debug/reset-pack", methods=["POST"])
+def debug_reset_pack():
+    from extensions import db
+    from modules.models_chat_pack import ChatPack
+
+    data = request.get_json() or {}
+    user_id = data.get("user_id")
+
+    if not user_id:
+        return jsonify({"success": False, "error": "user_id missing"}), 400
+
+    try:
+        uid = int(user_id)
+    except ValueError:
+        return jsonify({"success": False, "error": "user_id must be int"}), 400
+
+    packs = ChatPack.query.filter_by(user_id=uid, status="success").all()
+
+    if not packs:
+        return jsonify({
+            "success": True,
+            "message": "No success packs found for this user.",
+            "reset_count": 0,
+        }), 200
+
+    for p in packs:
+        # ✅ SAARE success packs ke questions_used = 0
+        p.questions_used = 0
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "All success packs reset for this user.",
+        "reset_count": len(packs),
+    }), 200
 
