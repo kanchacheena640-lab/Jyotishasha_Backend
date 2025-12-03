@@ -1,14 +1,8 @@
 """
-SmartChat Engine (FINAL)
-------------------------
-
-FULL FLOW:
-1) detect house using keyword_map
-2) generate kundali
-3) get transit snapshot
-4) build house-wise astrology summary
-5) build GPT prompt
-6) get final 5–8 line answer
+SmartChat Engine (FINAL CLEAN OUTPUT)
+-------------------------------------
+GPT ko poora data milta rahega, 
+BUT frontend ko sirf clean answer milega.
 """
 
 import os
@@ -27,30 +21,49 @@ from transit_engine import get_current_positions
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
+# ----------------------------------------------------------
+# CLEAN ONLY ANSWER
+# ----------------------------------------------------------
+def clean_answer(text: str) -> str:
+    """
+    Removes preview/debug/dasha/chart lines and keeps only GPT’s
+    final astrology answer.
+    """
+    banned_keywords = [
+        "Ascendant", "Lagna",
+        "Dasha", "Mahadasha", "Antardasha",
+        "Transit", "Chart", "Preview",
+        "house", "detected", "debug", "{", "}"
+    ]
+
+    cleaned = []
+    for line in text.split("\n"):
+        s = line.strip()
+        if not s:
+            continue
+
+        # skip unwanted info lines
+        if any(s.startswith(b) for b in banned_keywords):
+            continue
+
+        cleaned.append(s)
+
+    return "\n".join(cleaned)
+
+
+# ----------------------------------------------------------
+# MAIN ENGINE
+# ----------------------------------------------------------
 def run_smartchat(birth: dict, question: str) -> dict:
     """
-    INPUT:
-        birth = {...}
-        question = raw user text
-
-    OUTPUT:
-        {
-            "answer": "...",
-            "detected_house": int,
-            "chart_preview": {...},
-            "transit_preview": {...},
-            "debug_prompt": "..."
-        }
+    Returns ONLY the final astrology answer.
+    Backend still uses full kundali + transit for GPT.
     """
 
-    # ---------------------------------------------------------------------
-    # 1) Detect house via keyword map
-    # ---------------------------------------------------------------------
-    house_number = detect_house(question)  # 1–12 or 0 fallback
+    # 1) Detect house
+    house_number = detect_house(question)
 
-    # ---------------------------------------------------------------------
-    # 2) Generate full kundali
-    # ---------------------------------------------------------------------
+    # 2) Generate kundali
     kundali = generate_full_kundali_payload({
         "name": birth.get("name", ""),
         "dob": birth["dob"],
@@ -62,38 +75,27 @@ def run_smartchat(birth: dict, question: str) -> dict:
         "language": "en",
     })
 
-    # ---------------------------------------------------------------------
-    # 3) Transit snapshot (safe)
-    # ---------------------------------------------------------------------
+    # 3) Transit
     try:
         transit = get_current_positions()
     except Exception as e:
-        transit = {
-            "positions": {},
-            "error": str(e)
-        }
+        transit = {"positions": {}, "error": str(e)}
 
-    # ---------------------------------------------------------------------
-    # 4) Summarize chart with proper transit snapshot
-    # ---------------------------------------------------------------------
+    # 4) Chart summarizer
     chart_summary = summarize_chart(
         kundali=kundali,
         detected_house=house_number,
         transit=transit
     )
 
-    # ---------------------------------------------------------------------
-    # 5) Build GPT prompt
-    # ---------------------------------------------------------------------
+    # 5) GPT Prompt
     gpt_prompt = build_chat_prompt(
         question=question,
         house_number=house_number,
         chart=chart_summary
     )
 
-    # ---------------------------------------------------------------------
     # 6) GPT Call
-    # ---------------------------------------------------------------------
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -103,20 +105,14 @@ def run_smartchat(birth: dict, question: str) -> dict:
             ],
             temperature=0.55,
         )
-        answer = response.choices[0].message.content.strip()
+
+        raw_answer = response.choices[0].message.content.strip()
+        answer = clean_answer(raw_answer)
 
     except Exception as e:
         answer = f"AI temporarily unavailable. Error: {e}"
 
-    # ---------------------------------------------------------------------
-    # 7) Final structured output
-    # ---------------------------------------------------------------------
+    # 7) Return ONLY answer
     return {
-        "answer": answer,
-        #"detected_house": house_number,
-        #"chart_preview": chart_summary,
-       # "kundali_preview": kundali.get("chart_data", {}),
-        #"transit_preview": transit,
-        #"dasha_preview": kundali.get("dasha_summary", {}),
-        #"debug_prompt": gpt_prompt,
+        "answer": answer
     }
