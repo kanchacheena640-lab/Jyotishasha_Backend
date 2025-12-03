@@ -35,6 +35,8 @@ from routes.personalized_daily import personalized_daily
 from routes.routes_profile_bootstrap import routes_profile_bootstrap
 from routes.routes_chat import routes_chat
 from routes.routes_smartchat import routes_smartchat
+from routes.routes_auth import routes_auth
+
 
 
 
@@ -65,6 +67,7 @@ app.register_blueprint(personalized_daily)
 app.register_blueprint(routes_profile_bootstrap)
 app.register_blueprint(routes_chat)
 app.register_blueprint(routes_smartchat)
+app.register_blueprint(routes_auth)
 
 
 
