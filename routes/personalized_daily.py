@@ -9,7 +9,6 @@ from services.personalized.personalized_daily_text_builder import (
     build_remedy_sentence
 )
 
-# NEW IMPORTS (for caching)
 from modules.models_daily_cache import DailyPersonalizedCache
 from extensions import db
 from datetime import date
@@ -34,7 +33,6 @@ LAGNA_MAP = {
     "pisces": "Pisces", "meen": "Pisces"
 }
 
-# Fallback aspect text
 FALLBACK_ASPECT = {
     "en": "Your emotions flow freely today, even without strong planetary pressure.",
     "hi": "आज आपकी भावनाएँ सहज रूप से चलती रहेंगी, भले ही कोई ग्रह विशेष दबाव न डाल रहा हो।"
@@ -45,9 +43,7 @@ FALLBACK_REMEDY = {
     "hi": "शांत रहें और दिन को बिना दबाव के स्वाभाविक रूप से आगे बढ़ने दें।"
 }
 
-# ====================================================
-#               TODAY — PERSONALIZED
-# ====================================================
+
 @personalized_daily.route("/api/personalized/daily", methods=["POST"])
 def personalized_daily_today():
     try:
@@ -68,9 +64,20 @@ def personalized_daily_today():
         if lang not in ["en", "hi"]:
             lang = "en"
 
-        # 4) User + Profile ID
-        user_id = body.get("backend_user_id")
-        profile_id = body.get("backendProfileId")
+        # ----------------------------------------------------
+        # 4) FIX: Normalize backend IDs (all naming supported)
+        # ----------------------------------------------------
+        user_id = (
+            body.get("backend_user_id")
+            or body.get("backendUserId")
+            or body.get("backendUserID")
+        )
+
+        profile_id = (
+            body.get("backend_profile_id")
+            or body.get("backendProfileId")
+            or body.get("backendProfileID")
+        )
 
         # 5) Build transit data
         profile = build_personalized_daily_profile(lagna, lat=lat, lon=lon)
@@ -78,47 +85,43 @@ def personalized_daily_today():
         today["lang"] = lang
 
         # ------------------------------------------------------------
-        #     CACHE CHECK — SAME USER, SAME PROFILE, SAME DAY
+        # 6) CACHE CHECK — SAME PROFILE, SAME DAY
+        # (user_id optional)
         # ------------------------------------------------------------
-        if user_id and profile_id:
+        cache = None
+        if profile_id:
             cache = DailyPersonalizedCache.query.filter_by(
-                user_id=user_id,
                 profile_id=profile_id,
                 date=date.today()
             ).first()
 
-            if cache:
-                aspect = cache.aspect_line_en if lang == "en" else cache.aspect_line_hi
-                remedy = cache.remedy_en if lang == "en" else cache.remedy_hi
+        if cache:
+            aspect = cache.aspect_line_en if lang == "en" else cache.aspect_line_hi
+            remedy = cache.remedy_en if lang == "en" else cache.remedy_hi
+            combined = (aspect + "\n" + remedy).strip()
 
-                combined = (aspect + "\n" + remedy).strip()
-
-                return jsonify({
-                    "status": "success",
-                    "day": "today",
-                    "lagna": lagna,
-                    "moon": today["moon"],
-                    "lang": lang,
-                    "result": {
-                        "main_line": "",
-                        "aspect_line": aspect,
-                        "remedy_line": remedy,
-                        "combined_text": combined
-                    }
-                }), 200
+            return jsonify({
+                "status": "success",
+                "day": "today",
+                "lagna": lagna,
+                "moon": today["moon"],
+                "lang": lang,
+                "result": {
+                    "main_line": "",
+                    "aspect_line": aspect,
+                    "remedy_line": remedy,
+                    "combined_text": combined
+                }
+            }), 200
 
         # ------------------------------------------------------------
-        #       NO CACHE → GENERATE NEW OUTPUT
+        # 7) NO CACHE → GENERATE NEW OUTPUT
         # ------------------------------------------------------------
         main_line = build_transit_sentence(today) or ""
         aspect_line = build_aspect_sentence(today) or ""
         remedy_line = build_remedy_sentence(today) or ""
 
-        # ------------------------------------------------------------
-        #      FALLBACK — NO ASPECT PRESENT
-        # ------------------------------------------------------------
         used_fallback = False
-
         if aspect_line.strip() == "":
             used_fallback = True
             aspect_line = FALLBACK_ASPECT[lang]
@@ -127,9 +130,9 @@ def personalized_daily_today():
         combined = "\n".join([main_line, aspect_line, remedy_line]).strip()
 
         # ------------------------------------------------------------
-        #       SAVE CACHE → ONLY IF REAL ASPECT, NOT FALLBACK
+        # 8) SAVE CACHE → ONLY IF REAL ASPECT
         # ------------------------------------------------------------
-        if user_id and profile_id and not used_fallback:
+        if profile_id and not used_fallback:
 
             aspect_en = build_aspect_sentence({**today, "lang": "en"}) or ""
             aspect_hi = build_aspect_sentence({**today, "lang": "hi"}) or ""
@@ -137,8 +140,8 @@ def personalized_daily_today():
             remedy_en = build_remedy_sentence({**today, "lang": "en"}) or ""
             remedy_hi = build_remedy_sentence({**today, "lang": "hi"}) or ""
 
-            if aspect_en.strip() != "" and aspect_hi.strip() != "":
-                cache = DailyPersonalizedCache(
+            if aspect_en.strip() and aspect_hi.strip():
+                entry = DailyPersonalizedCache(
                     user_id=user_id,
                     profile_id=profile_id,
                     date=date.today(),
@@ -147,11 +150,10 @@ def personalized_daily_today():
                     remedy_en=remedy_en,
                     remedy_hi=remedy_hi
                 )
-                db.session.add(cache)
+                db.session.add(entry)
                 db.session.commit()
 
         # ------------------------------------------------------------
-
         return jsonify({
             "status": "success",
             "day": "today",
