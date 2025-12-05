@@ -1,5 +1,5 @@
 # personalized_daily.py
-# FINAL PERSONALIZED DAILY HOROSCOPE (with per-user daily caching)
+# FINAL PERSONALIZED DAILY HOROSCOPE (with per-user daily caching + fallback)
 
 from flask import Blueprint, request, jsonify
 from services.personalized.personalized_daily_engine import build_personalized_daily_profile
@@ -34,6 +34,16 @@ LAGNA_MAP = {
     "pisces": "Pisces", "meen": "Pisces"
 }
 
+# Fallback aspect text
+FALLBACK_ASPECT = {
+    "en": "Your emotions flow freely today, even without strong planetary pressure.",
+    "hi": "आज आपकी भावनाएँ सहज रूप से चलती रहेंगी, भले ही कोई ग्रह विशेष दबाव न डाल रहा हो।"
+}
+
+FALLBACK_REMEDY = {
+    "en": "Stay relaxed and let the day unfold without forcing outcomes.",
+    "hi": "शांत रहें और दिन को बिना दबाव के स्वाभाविक रूप से आगे बढ़ने दें।"
+}
 
 # ====================================================
 #               TODAY — PERSONALIZED
@@ -58,7 +68,7 @@ def personalized_daily_today():
         if lang not in ["en", "hi"]:
             lang = "en"
 
-        # 4) User & Profile IDs
+        # 4) User + Profile ID
         user_id = body.get("backend_user_id")
         profile_id = body.get("backendProfileId")
 
@@ -68,7 +78,7 @@ def personalized_daily_today():
         today["lang"] = lang
 
         # ------------------------------------------------------------
-        #       CACHE CHECK — SAME USER, SAME PROFILE, SAME DAY
+        #     CACHE CHECK — SAME USER, SAME PROFILE, SAME DAY
         # ------------------------------------------------------------
         if user_id and profile_id:
             cache = DailyPersonalizedCache.query.filter_by(
@@ -78,7 +88,6 @@ def personalized_daily_today():
             ).first()
 
             if cache:
-                # return locked planet result
                 aspect = cache.aspect_line_en if lang == "en" else cache.aspect_line_hi
                 remedy = cache.remedy_en if lang == "en" else cache.remedy_hi
 
@@ -99,39 +108,47 @@ def personalized_daily_today():
                 }), 200
 
         # ------------------------------------------------------------
-        #     NO CACHE → GENERATE NEW RANDOM RESULT (Today's Planet)
+        #       NO CACHE → GENERATE NEW OUTPUT
         # ------------------------------------------------------------
         main_line = build_transit_sentence(today) or ""
         aspect_line = build_aspect_sentence(today) or ""
         remedy_line = build_remedy_sentence(today) or ""
 
+        # ------------------------------------------------------------
+        #      FALLBACK — NO ASPECT PRESENT
+        # ------------------------------------------------------------
+        used_fallback = False
+
+        if aspect_line.strip() == "":
+            used_fallback = True
+            aspect_line = FALLBACK_ASPECT[lang]
+            remedy_line = FALLBACK_REMEDY[lang]
+
         combined = "\n".join([main_line, aspect_line, remedy_line]).strip()
 
         # ------------------------------------------------------------
-        #      SAVE **BOTH LANGUAGES** FIXED OUTPUT TO CACHE
+        #       SAVE CACHE → ONLY IF REAL ASPECT, NOT FALLBACK
         # ------------------------------------------------------------
-        if user_id and profile_id:
-            # generate EN + HI versions with SAME planet
+        if user_id and profile_id and not used_fallback:
+
             aspect_en = build_aspect_sentence({**today, "lang": "en"}) or ""
             aspect_hi = build_aspect_sentence({**today, "lang": "hi"}) or ""
 
             remedy_en = build_remedy_sentence({**today, "lang": "en"}) or ""
             remedy_hi = build_remedy_sentence({**today, "lang": "hi"}) or ""
 
-            cache = DailyPersonalizedCache(
-                user_id=user_id,
-                profile_id=profile_id,
-                date=date.today(),
-
-                aspect_line_en=aspect_en,
-                aspect_line_hi=aspect_hi,
-
-                remedy_en=remedy_en,
-                remedy_hi=remedy_hi
-            )
-
-            db.session.add(cache)
-            db.session.commit()
+            if aspect_en.strip() != "" and aspect_hi.strip() != "":
+                cache = DailyPersonalizedCache(
+                    user_id=user_id,
+                    profile_id=profile_id,
+                    date=date.today(),
+                    aspect_line_en=aspect_en,
+                    aspect_line_hi=aspect_hi,
+                    remedy_en=remedy_en,
+                    remedy_hi=remedy_hi
+                )
+                db.session.add(cache)
+                db.session.commit()
 
         # ------------------------------------------------------------
 
@@ -140,55 +157,6 @@ def personalized_daily_today():
             "day": "today",
             "lagna": lagna,
             "moon": today["moon"],
-            "lang": lang,
-            "result": {
-                "main_line": main_line,
-                "aspect_line": aspect_line,
-                "remedy_line": remedy_line,
-                "combined_text": combined
-            }
-        }), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-
-# ====================================================
-#               TOMORROW — PERSONALIZED
-# ====================================================
-@personalized_daily.route("/api/personalized/tomorrow", methods=["POST"])
-def personalized_daily_tomorrow():
-    try:
-        body = request.get_json() or {}
-
-        raw_lagna = body.get("lagna", "").strip().lower()
-        lagna = LAGNA_MAP.get(raw_lagna)
-        if not lagna:
-            return jsonify({"error": "Invalid or missing lagna"}), 400
-
-        lat = float(body.get("lat", 28.6))
-        lon = float(body.get("lon", 77.2))
-
-        lang = body.get("lang", "en").lower()
-        if lang not in ["en", "hi"]:
-            lang = "en"
-
-        profile = build_personalized_daily_profile(lagna, lat=lat, lon=lon)
-        tomorrow = profile["tomorrow"]
-        tomorrow["lang"] = lang
-
-        main_line = build_transit_sentence(tomorrow) or ""
-        aspect_line = build_aspect_sentence(tomorrow) or ""
-        remedy_line = build_remedy_sentence(tomorrow) or ""
-
-        combined = "\n".join([main_line, aspect_line, remedy_line]).strip()
-
-        return jsonify({
-            "status": "success",
-            "day": "tomorrow",
-            "lagna": lagna,
-            "moon": tomorrow["moon"],
             "lang": lang,
             "result": {
                 "main_line": main_line,
