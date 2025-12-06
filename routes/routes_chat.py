@@ -288,4 +288,31 @@ def debug_add_or_reset_pack():
             "pack_id": pack.id,
         }), 200
 
+# ----------------------------------------------------------
+# 9) REWARD QUESTION — Watch Ads → +1 Question
+# ----------------------------------------------------------
+@routes_chat.route("/api/chat/reward", methods=["POST"])
+def chat_reward():
+    """
+    User watches 2 ads → we add 1 question.
 
+    Rules:
+    - If user has NO pack → create mini-pack (questions_total=1)
+    - If user HAS a pack → increment questions_total by +1
+      (questions_used remains SAME)
+    """
+    from modules.services.chat_pack_service import add_reward_question
+
+    data = request.get_json() or {}
+    user_id = data.get("user_id")
+
+    if not user_id:
+        return jsonify({"success": False, "error": "user_id missing"}), 400
+
+    try:
+        uid = int(user_id)
+    except:
+        return jsonify({"success": False, "error": "user_id must be int"}), 400
+
+    result = add_reward_question(uid)
+    return jsonify(result), 200

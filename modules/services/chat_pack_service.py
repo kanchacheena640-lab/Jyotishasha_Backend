@@ -152,3 +152,53 @@ def get_pack_status(user_id):
         "remaining": pack.remaining_questions(),
         "pack": pack.to_dict(),
     }
+
+# ----------------------------------------------------------
+# 6) REWARD QUESTION — Watch Ads → +1 Question
+# ----------------------------------------------------------
+def add_reward_question(user_id):
+    """
+    If user has NO pack → create mini pack (1 question)
+    If user HAS pack → increment questions_total by 1
+    (questions_used remains SAME)
+    """
+
+    # Check if user has any active pack
+    active_pack = get_active_pack(user_id)
+
+    # ------------------------------------------------------
+    # CASE A: No Active Pack → create mini-pack (1 Q)
+    # ------------------------------------------------------
+    if not active_pack:
+        mini_pack = ChatPack(
+            user_id=user_id,
+            amount=0,  # free reward pack
+            questions_total=1,
+            questions_used=0,
+            status="success",
+            razorpay_order_id="REWARD_AD",
+            razorpay_payment_id="REWARD_AD",
+            verified_at=datetime.utcnow()
+        )
+        db.session.add(mini_pack)
+        db.session.commit()
+
+        return {
+            "success": True,
+            "message": "Mini reward pack created (+1 question)",
+            "total_tokens": 1
+        }
+
+    # ------------------------------------------------------
+    # CASE B: Has Active Pack → increase total questions by +1
+    # ------------------------------------------------------
+    active_pack.questions_total += 1
+    db.session.commit()
+
+    remaining = active_pack.remaining_questions()
+
+    return {
+        "success": True,
+        "message": "Reward added to existing pack (+1 question)",
+        "total_tokens": remaining
+    }
