@@ -35,6 +35,11 @@ class NotificationJob(db.Model):
     # Display content
     title = db.Column(db.String(200), nullable=False)
     body = db.Column(db.String(500), nullable=False)
+
+    # ✅ NEW: Hindi content support
+    title_hi = db.Column(db.String(200), nullable=True)
+    body_hi = db.Column(db.String(500), nullable=True)
+
     type = db.Column(db.String(50), nullable=False)  # e.g. 'festival', 'blog', 'daily', 'custom'
 
     # Targeting info (who should receive)

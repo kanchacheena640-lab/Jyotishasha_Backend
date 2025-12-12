@@ -86,6 +86,7 @@ def run_daily_notifications():
         body=body,
         title_hi=title_hi,
         body_hi=body_hi,
+        type="daily",
         audience={"mode": "all"},
         scheduled_at=now,
         status="pending"
