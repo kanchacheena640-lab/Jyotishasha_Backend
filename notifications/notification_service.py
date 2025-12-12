@@ -71,28 +71,40 @@ def get_recipients(audience: dict):
 def send_job_now(job: NotificationJob, fcm_sender):
     """
     Process one notification job (send immediately).
-    fcm_sender: a function injected from notification_fcm.py
+    Hindi / English per-user supported.
+    Backward compatible with existing jobs.
     """
 
     recipients = get_recipients(job.audience)
-    tokens = [u.fcm_token for u in recipients if u.fcm_token]
 
     success = 0
     failed = 0
 
-    for token in tokens:
+    for u in recipients:
+        if not u.fcm_token:
+            continue
+
+        # 🔤 Language resolution (safe fallback)
+        if getattr(u, "language", None) == "hi":
+            title = getattr(job, "title_hi", None) or job.title
+            body  = getattr(job, "body_hi", None) or job.body
+        else:
+            title = job.title
+            body  = job.body
+
         ok = fcm_sender(
-            token=token,
-            title=job.title,
-            body=job.body,
+            token=u.fcm_token,
+            title=title,
+            body=body,
             data=job.payload
         )
+
         if ok:
             success += 1
         else:
             failed += 1
 
-    job.total_recipients = len(tokens)
+    job.total_recipients = success + failed
     job.mark_sent(success, failed)
 
     db.session.commit()
