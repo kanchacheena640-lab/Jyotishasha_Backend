@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from modules.auth.models import User
 from modules.subscription.utils import subscription_required
+from firebase_admin import auth as firebase_auth
 
 
 
@@ -92,22 +93,51 @@ def personalized_horoscope():
     return jsonify(horoscope), 200
 
 
+# ---------------------------------------------------------
+# 🔔 UPDATE FCM TOKEN (Firebase ID Token based auth)
+# ---------------------------------------------------------
 @profile_bp.route("/api/users/update-fcm", methods=["POST"])
-@jwt_required()
 def update_fcm_token():
-    uid = get_jwt_identity()
-    user = User.query.get(uid)
+    # 1️⃣ Authorization header nikalo
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Missing or invalid Authorization header"}), 401
 
-    if not user:
-        return jsonify({"error": "User not found"}), 404
+    id_token = auth_header.replace("Bearer ", "").strip()
 
-    data = request.get_json() or {}
-    fcm_token = data.get("fcm_token")
+    try:
+        # 2️⃣ Firebase ID token verify karo
+        decoded = firebase_auth.verify_id_token(id_token)
+        firebase_uid = decoded.get("uid")
 
-    if not fcm_token:
-        return jsonify({"error": "Missing fcm_token"}), 400
+        if not firebase_uid:
+            return jsonify({"error": "Invalid Firebase token"}), 401
 
-    user.fcm_token = fcm_token
-    db.session.commit()
+        # 3️⃣ User fetch karo (Firebase UID mapped)
+        user = User.query.filter_by(firebase_uid=firebase_uid).first()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-    return jsonify({"status": "success"}), 200
+        # 4️⃣ Payload
+        data = request.get_json() or {}
+        fcm_token = data.get("fcm_token")
+
+        if not fcm_token:
+            return jsonify({"error": "Missing fcm_token"}), 400
+
+        # 5️⃣ Save token
+        user.fcm_token = fcm_token
+        db.session.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "FCM token updated",
+            "user_id": user.id
+        }), 200
+
+    except firebase_auth.InvalidIdTokenError:
+        return jsonify({"error": "Invalid Firebase ID token"}), 401
+    except firebase_auth.ExpiredIdTokenError:
+        return jsonify({"error": "Expired Firebase ID token"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
