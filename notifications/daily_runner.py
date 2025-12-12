@@ -1,9 +1,15 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from datetime import datetime
 from extensions import db
 from notifications.notification_models import NotificationJob
 
-from services.daily_horoscope import get_daily_horoscope_summary
-from services.panchang_service import get_today_panchang
+# ✅ Correct imports (existing project structure)
+from services.personalized.personalized_daily_engine import generate_personalized_daily
+from services.personalized.personalized_daily_text_builder import build_daily_notification_text
+from services.panchang_engine import get_today_panchang
 
 
 DAY_DEVTA = {
@@ -21,11 +27,12 @@ def run_daily_notifications():
     now = datetime.utcnow()
 
     # =================================================
-    # 1️⃣ Daily Horoscope
+    # 1️⃣ Daily Horoscope (Personalized Engine)
     # =================================================
-    horo_en, horo_hi = get_daily_horoscope_summary()
+    daily_data = generate_personalized_daily()
+    horo_en, horo_hi = build_daily_notification_text(daily_data)
 
-    job1 = NotificationJob(
+    db.session.add(NotificationJob(
         title="🌙 Today's Horoscope",
         body=horo_en,
         title_hi="🌙 आज का राशिफल",
@@ -33,15 +40,14 @@ def run_daily_notifications():
         audience={"mode": "all"},
         scheduled_at=now,
         status="pending"
-    )
-    db.session.add(job1)
+    ))
 
     # =================================================
     # 2️⃣ Daily Panchang
     # =================================================
     p = get_today_panchang()
 
-    job2 = NotificationJob(
+    db.session.add(NotificationJob(
         title="📿 Today's Panchang",
         body=f"Tithi: {p['tithi']} | Nakshatra: {p['nakshatra']}",
         title_hi="📿 आज का पंचांग",
@@ -49,15 +55,14 @@ def run_daily_notifications():
         audience={"mode": "all"},
         scheduled_at=now,
         status="pending"
-    )
-    db.session.add(job2)
+    ))
 
     # =================================================
     # 3️⃣ Daily Darshan
     # =================================================
     devta_hi, mantra = DAY_DEVTA[now.weekday()]
 
-    job3 = NotificationJob(
+    db.session.add(NotificationJob(
         title="🕉️ Today's Darshan",
         body=f"{devta_hi} — {mantra}",
         title_hi="🕉️ आज के देवता का दर्शन",
@@ -65,7 +70,6 @@ def run_daily_notifications():
         audience={"mode": "all"},
         scheduled_at=now,
         status="pending"
-    )
-    db.session.add(job3)
+    ))
 
     db.session.commit()
