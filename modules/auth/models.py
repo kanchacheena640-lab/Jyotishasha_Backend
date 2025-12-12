@@ -18,6 +18,8 @@ class User(db.Model):
     # Optional contact
     phone = db.Column(db.String(20), nullable=True)
 
+    fcm_token = db.Column(db.String(500), nullable=True)
+
     # Profile (birth details)
     name = db.Column(db.String(120), nullable=True)
     dob = db.Column(db.String(20), nullable=True)  # "YYYY-MM-DD"
@@ -59,6 +61,7 @@ class User(db.Model):
             "dob": self.dob,
             "tob": self.tob,
             "pob": self.pob,
+            "fcm_token": self.fcm_token,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
