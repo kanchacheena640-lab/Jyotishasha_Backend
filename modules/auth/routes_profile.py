@@ -98,34 +98,30 @@ def personalized_horoscope():
 # ---------------------------------------------------------
 @profile_bp.route("/api/users/update-fcm", methods=["POST"])
 def update_fcm_token():
-    # 1️⃣ Authorization header nikalo
     auth_header = request.headers.get("Authorization", "")
+
     if not auth_header.startswith("Bearer "):
         return jsonify({"error": "Missing or invalid Authorization header"}), 401
 
     id_token = auth_header.replace("Bearer ", "").strip()
 
     try:
-        # 2️⃣ Firebase ID token verify karo
         decoded = firebase_auth.verify_id_token(id_token)
         firebase_uid = decoded.get("uid")
 
         if not firebase_uid:
             return jsonify({"error": "Invalid Firebase token"}), 401
 
-        # 3️⃣ User fetch karo (Firebase UID mapped)
         user = User.query.filter_by(firebase_uid=firebase_uid).first()
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        # 4️⃣ Payload
         data = request.get_json() or {}
         fcm_token = data.get("fcm_token")
 
         if not fcm_token:
             return jsonify({"error": "Missing fcm_token"}), 400
 
-        # 5️⃣ Save token
         user.fcm_token = fcm_token
         db.session.commit()
 
@@ -135,9 +131,5 @@ def update_fcm_token():
             "user_id": user.id
         }), 200
 
-    except firebase_auth.InvalidIdTokenError:
-        return jsonify({"error": "Invalid Firebase ID token"}), 401
-    except firebase_auth.ExpiredIdTokenError:
-        return jsonify({"error": "Expired Firebase ID token"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
