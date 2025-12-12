@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from extensions import db
-from modules.auth.models import User
 from notifications.notification_models import NotificationJob
 from sqlalchemy import and_
 
@@ -11,6 +10,7 @@ from sqlalchemy import and_
 # 1) USER FILTERING LOGIC
 # ================================================================
 def get_recipients(audience: dict):
+    from modules.auth.models import User
     """
     Converts audience filters into SQL queries.
     Returns list of User objects (with fcm_token).
