@@ -213,8 +213,18 @@ def _approx_hindu_month(date):
     idx = int((sun_long // 30) % 12)
     return HINDU_MONTHS[idx]
 
+# -------------------------------
+# DAY WINDOW NORMALIZER (ADD THIS)
+# -------------------------------
+def _normalize_day_window(sunrise, sunset):
+    if sunset <= sunrise:
+        sunset = sunset + timedelta(days=1)
+    return sunrise, sunset
+
 # ✅ --- Use imported sunrise/sunset instead of formula ---
 def _rahu_kaal(date, sunrise, sunset):
+    sunrise, sunset = _normalize_day_window(sunrise, sunset)
+
     day_len = (sunset - sunrise).total_seconds()
     slot = day_len / 8.0
     idx = RAHU_INDEX_OF_DAY[sunrise.weekday()]
@@ -223,6 +233,8 @@ def _rahu_kaal(date, sunrise, sunset):
     return start, start + timedelta(seconds=slot)
 
 def _abhijit(sunrise, sunset):
+    sunrise, sunset = _normalize_day_window(sunrise, sunset)
+
     mid = sunrise + (sunset - sunrise) / 2
     return mid - timedelta(minutes=24), mid + timedelta(minutes=24)
 
