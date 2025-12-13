@@ -217,7 +217,8 @@ def _approx_hindu_month(date):
 def _rahu_kaal(date, sunrise, sunset):
     day_len = (sunset - sunrise).total_seconds()
     slot = day_len / 8.0
-    idx = RAHU_INDEX_OF_DAY[date.weekday()]
+    idx = RAHU_INDEX_OF_DAY[sunrise.weekday()]
+
     start = sunrise + timedelta(seconds=slot * idx)
     return start, start + timedelta(seconds=slot)
 
