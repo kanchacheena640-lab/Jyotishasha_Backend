@@ -15,7 +15,7 @@ Uses:
 - free_quota_service.py
 - chat_pack_service.py
 """
-
+from modules.services.chatpack_google_verify import verify_google_chatpack
 from flask import Blueprint, request, jsonify
 
 # Services
@@ -316,3 +316,32 @@ def chat_reward():
 
     result = add_reward_question(uid)
     return jsonify(result), 200
+
+
+@routes_chat.route("/api/chat/pack/google/verify", methods=["POST"])
+def chatpack_google_verify():
+    data = request.get_json() or {}
+
+    user_id = data.get("user_id")
+    product_id = data.get("product_id")
+    purchase_token = data.get("purchase_token")
+
+    if not user_id or not product_id or not purchase_token:
+        return jsonify({
+            "success": False,
+            "error": "Missing required fields"
+        }), 400
+
+    try:
+        result = verify_google_chatpack(
+            user_id=int(user_id),
+            product_id=product_id,
+            purchase_token=purchase_token
+        )
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
