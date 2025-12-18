@@ -345,3 +345,27 @@ def chatpack_google_verify():
             "success": False,
             "error": str(e)
         }), 500
+    
+
+
+# 🔁 BACKWARD COMPAT ALIAS (temporary safety net)
+@routes_chat.route("/api/chatpack/verify", methods=["POST"])
+def chatpack_verify_alias():
+    data = request.get_json() or {}
+
+    user_id = data.get("user_id")
+    product_id = data.get("product_id")
+    purchase_token = data.get("purchase_token")
+
+    if not user_id or not product_id or not purchase_token:
+        return jsonify({
+            "success": False,
+            "error": "Missing required fields"
+        }), 400
+
+    result = verify_google_chatpack(
+        user_id=int(user_id),
+        product_id=product_id,
+        purchase_token=purchase_token
+    )
+    return jsonify(result), 200
