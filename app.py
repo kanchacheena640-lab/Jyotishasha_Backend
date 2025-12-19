@@ -118,12 +118,15 @@ def zodiac_traits():
 # ------------------- WEBHOOK ------------------- #
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    from app_config import USE_CELERY  # 🔁 toggle flag
-    from tasks import generate_and_send_report  # local import (avoid circular)
+    from app_config import USE_CELERY
+    from tasks import generate_and_send_report
 
     data = request.get_json()
 
-    # ✅ Case A: Razorpay webhook (event = payment.captured)
+    # 🔍 DEBUG — ADD HERE
+    print("WEBHOOK PAYLOAD =>", data)
+
+    # ✅ Case A: Razorpay webhook
     if "event" in data and data.get("event") == "payment.captured":
         print("[Webhook] Razorpay payment.captured webhook received. Ignored for now.")
         return jsonify({"status": "Webhook received (ignored)"}), 200
@@ -137,6 +140,9 @@ def webhook():
     tob = data.get("tob")
     pob = data.get("pob")
     language = data.get("language", "en")
+
+    # 🔍 DEBUG — ADD HERE
+    print("name:", name, "email:", email, "product:", product)
 
     if not all([name, email, product]):
         return jsonify({"error": "Missing required fields"}), 400
