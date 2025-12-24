@@ -122,7 +122,7 @@ def run_love_compatibility(
             groom_moon=boy_moon,
         )
 
-        fallback = compute_vedic_fallback(user_kundali)
+        fallback = compute_vedic_fallback(user_kundali, safe_mode=True)
 
         result["labels"]["analysis"] = "Partial Analysis (Moon-based + Vedic fallback)"
         result["ashtakoot"] = ashtakoot
