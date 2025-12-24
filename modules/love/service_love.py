@@ -120,7 +120,6 @@ def run_love_compatibility(
         ashtakoot = compute_ashtakoot(
             bride_moon=girl_moon,
             groom_moon=boy_moon,
-            partial_partner=True,
         )
 
         fallback = compute_vedic_fallback(user_kundali)
