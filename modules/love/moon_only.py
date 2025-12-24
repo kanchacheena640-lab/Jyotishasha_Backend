@@ -1,37 +1,49 @@
 # Path: modules/love/moon_only.py
 from __future__ import annotations
+from typing import Dict
+from datetime import datetime, timedelta
+import swisseph as swe
 
-from typing import Dict, Any
-from datetime import date
 
-
-def derive_partner_moon_from_dob(dob: str) -> Dict[str, Any]:
+def derive_moon_from_dob(dob: str) -> Dict[str, str]:
     """
-    Input: dob = YYYY-MM-DD
-    Output: { rashi, nakshatra, degree }
+    DOB-only Moon derivation (Lahiri)
+    Time assumed: 12:00 noon IST to reduce edge errors
     """
 
-    year, month, day = _parse_dob(dob)
-    moon = _calculate_moon_noon_ist(year, month, day)
+    year, month, day = map(int, dob.split("-"))
+    local_dt = datetime(year, month, day, 12, 0)
+    utc_dt = local_dt - timedelta(hours=5, minutes=30)
+
+    jd_ut = swe.julday(
+        utc_dt.year, utc_dt.month, utc_dt.day,
+        utc_dt.hour + utc_dt.minute / 60
+    )
+
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+
+    moon_long = swe.calc_ut(jd_ut, swe.MOON)[0][0]
+    ayanamsa = swe.get_ayanamsa_ut(jd_ut)
+    sid_long = (moon_long - ayanamsa) % 360
+
+    rashi_index = int(sid_long // 30)
+    rashis = [
+        "Aries","Taurus","Gemini","Cancer","Leo","Virgo",
+        "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"
+    ]
+
+    nak_size = 13 + 1/3
+    nak_index = int(sid_long // nak_size)
+    nakshatras = [
+        "Ashwini","Bharani","Krittika","Rohini","Mrigashira","Ardra",
+        "Punarvasu","Pushya","Ashlesha","Magha","Purva Phalguni","Uttara Phalguni",
+        "Hasta","Chitra","Swati","Vishakha","Anuradha","Jyeshtha",
+        "Mula","Purva Ashadha","Uttara Ashadha","Shravana","Dhanishta","Shatabhisha",
+        "Purva Bhadrapada","Uttara Bhadrapada","Revati"
+    ]
 
     return {
-        "rashi": moon["rashi"],
-        "nakshatra": moon["nakshatra"],
-        "degree": moon.get("degree"),
+        "rashi": rashis[rashi_index],
+        "nakshatra": nakshatras[nak_index],
+        "degree": round(sid_long % 30, 2),
     }
-
-
-def _parse_dob(dob: str) -> tuple[int, int, int]:
-    try:
-        d = date.fromisoformat(dob)
-        return d.year, d.month, d.day
-    except Exception:
-        raise ValueError("Invalid DOB format. Expected YYYY-MM-DD")
-
-
-def _calculate_moon_noon_ist(year: int, month: int, day: int) -> Dict[str, Any]:
-    """
-    Noon IST Moon calculation.
-    Replace internals with real engine.
-    """
-    raise NotImplementedError("Moon-only engine not wired yet")
