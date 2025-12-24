@@ -98,15 +98,17 @@ def run_love_compatibility(
 
         result["labels"]["analysis"] = "Full Dual-Kundali Vedic"
         result["ashtakoot"] = ashtakoot
-        result["kundali"] = {
-            "user": user_kundali,
-            "partner": partner_kundali,
-        }
 
     else:
+        partner_moon = {
+            "rashi": partner.get("rashi"),
+            "nakshatra": partner.get("nakshatra"),
+            "degree": None,
+        }
+
         ashtakoot = compute_ashtakoot(
-            bride_moon=user_moon if boy_is_user else user_moon,
-            groom_moon=user_moon if not boy_is_user else user_moon,
+            bride_moon=user_moon if boy_is_user else partner_moon,
+            groom_moon=partner_moon if boy_is_user else user_moon,
             partial_partner=True,
         )
 
