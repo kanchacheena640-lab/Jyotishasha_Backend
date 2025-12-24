@@ -53,13 +53,12 @@ def run_love_compatibility(
     boy_is_user: bool = True,
 ) -> Dict[str, Any]:
 
-    # ---- Hard validation (LOCKED) ----
     _require(user, ("name", "dob", "tob", "lat", "lng"), "User")
     _require(partner, ("name", "dob"), "Partner")
 
     case = detect_case(partner)
 
-    # ---- User kundali (always full) ----
+    # -------- User kundali (always full) --------
     user_kundali = calculate_full_kundali(
         name=user["name"],
         dob=user["dob"],
@@ -78,13 +77,13 @@ def run_love_compatibility(
         "fallback": None,
         "notes": [],
         "meta": {
-            "user_name": user.get("name"),
-            "partner_name": partner.get("name"),
+            "user_name": user["name"],
+            "partner_name": partner["name"],
         },
     }
 
     # ======================================================
-    # CASE A: Partner full details → Full Dual Kundali
+    # CASE A — Full Dual Kundali
     # ======================================================
     if case == CASE_A_FULL_DUAL:
         partner_kundali = calculate_full_kundali(
@@ -98,24 +97,29 @@ def run_love_compatibility(
 
         partner_moon = _extract_moon(partner_kundali)
 
+        boy_moon = user_moon if boy_is_user else partner_moon
+        girl_moon = partner_moon if boy_is_user else user_moon
+
         ashtakoot = compute_ashtakoot(
-            bride_moon=user_moon if boy_is_user else partner_moon,
-            groom_moon=partner_moon if boy_is_user else user_moon,
+            bride_moon=girl_moon,
+            groom_moon=boy_moon,
         )
 
         result["labels"]["analysis"] = "Full Dual-Kundali Vedic"
         result["ashtakoot"] = ashtakoot
 
     # ======================================================
-    # CASE B: Partner only DOB → Moon-based + Vedic fallback
+    # CASE B — Partner DOB only
     # ======================================================
     else:
-        # 🔑 LOCKED RULE: Moon derived ONLY from DOB
         partner_moon = derive_moon_from_dob(partner["dob"])
 
+        boy_moon = user_moon if boy_is_user else partner_moon
+        girl_moon = partner_moon if boy_is_user else user_moon
+
         ashtakoot = compute_ashtakoot(
-            bride_moon=user_moon if boy_is_user else partner_moon,
-            groom_moon=partner_moon if boy_is_user else user_moon,
+            bride_moon=girl_moon,
+            groom_moon=boy_moon,
             partial_partner=True,
         )
 
@@ -126,7 +130,7 @@ def run_love_compatibility(
         result["fallback"] = fallback
         result["notes"].append(
             "Partner birth time/place not provided. Moon derived from DOB; "
-            "relationship traits inferred using classical Vedic fallback (5th house as lover lagna)."
+            "5th-house-based Vedic fallback applied."
         )
 
     return result
