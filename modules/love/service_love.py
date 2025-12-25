@@ -5,6 +5,7 @@ from full_kundali_api import calculate_full_kundali
 from modules.love.ashtakoot_love import compute_ashtakoot
 from modules.love.fallback_love import compute_vedic_fallback
 from modules.love.moon_only import derive_moon_from_dob
+from modules.love.love_report_compiler import compile_love_report
 
 
 CASE_A_FULL_DUAL = "A_FULL_DUAL"
@@ -131,5 +132,23 @@ def run_love_compatibility(
             "Partner birth time/place not provided. Moon derived from DOB; "
             "5th-house-based Vedic fallback applied."
         )
+
+    # ---------------- NORMALIZE ASHTAKOOT STATUS FOR REPORT ----------------
+    STATUS_MAP = {
+        "pass": "pass",
+        "mixed": "partial",
+        "enemy": "fail",
+        "sworn_enemy": "dosha",
+        "dosha": "dosha",
+        "fail": "fail",
+    }
+
+    if isinstance(result.get("ashtakoot"), dict):
+        kootas = result["ashtakoot"].get("kootas", {})
+        for _, v in kootas.items():
+            if not isinstance(v, dict):
+                continue
+            st = (v.get("status") or "").lower()
+            v["status"] = STATUS_MAP.get(st, "partial")
 
     return result
