@@ -271,8 +271,14 @@ def love_marriage_probability():
             "case": case,
             "user": user,
             "partner": partner,
-            "kundali_user": kundali_user,
-            "kundali_partner": kundali_partner,
+            "chart_data_user": (
+                kundali_user.get("chart_data")
+                if kundali_user else {}
+            ),
+            "chart_data_partner": (
+                kundali_partner.get("chart_data")
+                if kundali_partner else {}
+            ),
         }
 
         out = compile_love_marriage_probability(compiler_payload)

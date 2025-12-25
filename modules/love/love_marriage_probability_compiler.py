@@ -25,6 +25,12 @@ SIGN_LORD = {
     "Pisces": "Jupiter",
 }
 
+# 🔒 FIXED ZODIAC ORDER (VERY IMPORTANT)
+ZODIAC_ORDER = [
+    "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+    "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+]
+
 # -------------------------------------------------
 # UTILS
 # -------------------------------------------------
@@ -42,17 +48,19 @@ def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
 
 # -------------------------------------------------
-# CHART_DATA READERS (SOURCE OF TRUTH)
+# CHART DATA READERS (SOURCE OF TRUTH)
+# chart_data EXPECTED SHAPE:
+# {
+#   "ascendant": "Capricorn",
+#   "planets": [
+#       {"name": "Venus", "house": 7},
+#       {"name": "Mars", "house": 5},
+#       ...
+#   ]
+# }
 # -------------------------------------------------
 
 def _extract_house_planets(chart_data: Dict[str, Any]) -> Dict[int, List[str]]:
-    """
-    chart_data = {
-      ascendant: "Capricorn",
-      planets: [{name, house, sign, ...}]
-    }
-    Returns: {house_no: [planet_names]}
-    """
     out: Dict[int, List[str]] = {}
     for p in chart_data.get("planets", []):
         h = p.get("house")
@@ -62,10 +70,7 @@ def _extract_house_planets(chart_data: Dict[str, Any]) -> Dict[int, List[str]]:
     return out
 
 def _extract_planet_house_map(chart_data: Dict[str, Any]) -> Dict[str, int]:
-    """
-    Returns {planet_name: house_no}
-    """
-    out = {}
+    out: Dict[str, int] = {}
     for p in chart_data.get("planets", []):
         if isinstance(p.get("name"), str) and isinstance(p.get("house"), int):
             out[p["name"]] = p["house"]
@@ -73,20 +78,22 @@ def _extract_planet_house_map(chart_data: Dict[str, Any]) -> Dict[str, int]:
 
 def _get_house_sign(chart_data: Dict[str, Any], house_no: int) -> str | None:
     asc = chart_data.get("ascendant")
-    if asc not in SIGN_LORD:
+    if asc not in ZODIAC_ORDER:
         return None
 
-    SIGNS = list(SIGN_LORD.keys())
-    start = SIGNS.index(asc)
-    rotated = SIGNS[start:] + SIGNS[:start]
-    return rotated[house_no - 1] if 1 <= house_no <= 12 else None
+    start = ZODIAC_ORDER.index(asc)
+    rotated = ZODIAC_ORDER[start:] + ZODIAC_ORDER[:start]
+
+    if 1 <= house_no <= 12:
+        return rotated[house_no - 1]
+    return None
 
 def _get_house_lord(chart_data: Dict[str, Any], house_no: int) -> str | None:
     sign = _get_house_sign(chart_data, house_no)
     return SIGN_LORD.get(sign) if sign else None
 
 # -------------------------------------------------
-# CORE SCORING
+# CORE SCORING LOGIC
 # -------------------------------------------------
 
 def _compute_love_marriage_pct(
@@ -102,7 +109,7 @@ def _compute_love_marriage_pct(
     score = 50.0
     reasons: List[str] = []
 
-    # 1️⃣ 5th / 7th activation
+    # 1️⃣ 5th & 7th activation
     if 5 in hp:
         score += 10
         reasons.append(_t(lang, "5th house active (romance).", "5वां भाव सक्रिय (रोमांस)।"))
@@ -110,7 +117,7 @@ def _compute_love_marriage_pct(
         score += 10
         reasons.append(_t(lang, "7th house active (marriage).", "7वां भाव सक्रिय (विवाह)।"))
 
-    # 2️⃣ Lord linkage (MAIN RULE)
+    # 2️⃣ MAIN RULE: 5th–7th lord linkage
     lord5 = _get_house_lord(chart_data, 5)
     lord7 = _get_house_lord(chart_data, 7)
 
@@ -119,22 +126,30 @@ def _compute_love_marriage_pct(
 
     if h_lord5 == 7 or h_lord7 == 5:
         score += 20
-        reasons.append(_t(lang, "Strong 5th–7th lord exchange.", "5वां–7वां स्वामी परिवर्तन योग।"))
+        reasons.append(_t(
+            lang,
+            "Strong 5th–7th lord exchange (love marriage yoga).",
+            "5वां–7वां स्वामी परिवर्तन (लव मैरिज योग)।"
+        ))
     elif h_lord5 is not None and h_lord5 == h_lord7:
         score += 15
-        reasons.append(_t(lang, "5th and 7th lords conjunct.", "5वां और 7वां स्वामी युति।"))
+        reasons.append(_t(
+            lang,
+            "5th and 7th lords conjunct.",
+            "5वां और 7वां स्वामी युति।"
+        ))
 
-    # 3️⃣ Venus
+    # 3️⃣ Venus support
     if ph.get("Venus") in (5, 7):
         score += 10
         reasons.append(_t(lang, "Venus supports love marriage.", "शुक्र लव मैरिज को सपोर्ट करता है।"))
 
-    # 4️⃣ Rahu
+    # 4️⃣ Rahu (non-traditional)
     if ph.get("Rahu") in (5, 7):
         score += 5
         reasons.append(_t(lang, "Rahu shows unconventional path.", "राहु गैर-परंपरागत मार्ग दिखाता है।"))
 
-    # 5️⃣ Pressure
+    # 5️⃣ Pressure planets
     if ph.get("Saturn") in (5, 7):
         score -= 5
         reasons.append(_t(lang, "Saturn may delay marriage.", "शनि विवाह में देरी कर सकता है।"))
@@ -142,11 +157,12 @@ def _compute_love_marriage_pct(
         score -= 5
         reasons.append(_t(lang, "Mars needs control in relationships.", "मंगल में संयम जरूरी है।"))
 
+    # Fallback note
     if fallback_mode:
         reasons.append(_t(
             lang,
             "Fallback mode used (Moon + 5th house reference).",
-            "फॉलबैक मोड (चंद्र + 5वां भाव) उपयोग हुआ।",
+            "फॉलबैक मोड (चंद्र + 5वां भाव) उपयोग हुआ।"
         ))
 
     score = _clamp(score, 0, 100)
@@ -193,8 +209,10 @@ def compile_love_marriage_probability(payload: Dict[str, Any]) -> Dict[str, Any]
     overall_line = (
         _t(
             lang,
-            f"User: {user_out['pct']}% ({user_out['band']}), Partner: {partner_out['pct']}% ({partner_out['band']}).",
-            f"यूज़र: {user_out['pct']}% ({user_out['band']}), पार्टनर: {partner_out['pct']}% ({partner_out['band']})।",
+            f"User: {user_out['pct']}% ({user_out['band']}), "
+            f"Partner: {partner_out['pct']}% ({partner_out['band']}).",
+            f"यूज़र: {user_out['pct']}% ({user_out['band']}), "
+            f"पार्टनर: {partner_out['pct']}% ({partner_out['band']})।",
         )
         if partner_out else
         _t(
