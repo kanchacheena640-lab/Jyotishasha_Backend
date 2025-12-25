@@ -326,11 +326,11 @@ class LoveReportCompiler:
             "tara": {
                 "strong": (
                     "Tara koota support shows favorable destiny flow and mutual growth.",
-                    "तारा कूट अनुकूल भाग्य प्रवाह और आपसी प्रगति दर्शाता है।",
+                    "तारा (नक्षत्र) कूट अनुकूल भाग्य प्रवाह और आपसी प्रगति दर्शाता है।",
                 ),
                 "weak": (
                     "Tara weakness may bring ups and downs affecting confidence or timing.",
-                    "तारा कमजोरी से आत्मविश्वास या समय से जुड़े उतार-चढ़ाव आ सकते हैं।",
+                    "तारा (नक्षत्र) कमजोरी से आत्मविश्वास या समय से जुड़े उतार-चढ़ाव आ सकते हैं।",
                 ),
             },
             "yoni": {
