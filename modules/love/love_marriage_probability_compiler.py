@@ -38,131 +38,71 @@ def _ensure_lang(lang: str) -> str:
 def _t(lang: str, en: str, hi: str) -> str:
     return hi if lang == "hi" else en
 
-def _non_empty_str(x: Any) -> bool:
-    return isinstance(x, str) and x.strip() != ""
-
 def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
 
 # -------------------------------------------------
-# SAFE KUNDALI READERS
+# CHART_DATA READERS (SOURCE OF TRUTH)
 # -------------------------------------------------
 
-def _extract_house_planets(kundali: Dict[str, Any]) -> Dict[int, List[Dict[str, Any]]]:
+def _extract_house_planets(chart_data: Dict[str, Any]) -> Dict[int, List[str]]:
     """
-    Returns {house: [planet_dicts]} for NON-EMPTY houses only.
+    chart_data = {
+      ascendant: "Capricorn",
+      planets: [{name, house, sign, ...}]
+    }
+    Returns: {house_no: [planet_names]}
     """
-    out: Dict[int, List[Dict[str, Any]]] = {}
-
-    hp = kundali.get("house_planets")
-    if isinstance(hp, dict):
-        for k, v in hp.items():
-            try:
-                hn = int(k)
-            except Exception:
-                continue
-            if isinstance(v, list) and v:
-                out[hn] = [p for p in v if isinstance(p, dict)]
-        return out
-
-    houses = kundali.get("houses")
-    if isinstance(houses, list):
-        for h in houses:
-            if not isinstance(h, dict):
-                continue
-            try:
-                hn = int(h.get("house") or h.get("number"))
-            except Exception:
-                continue
-            ps = h.get("planets")
-            if isinstance(ps, list) and ps:
-                out[hn] = [p for p in ps if isinstance(p, dict)]
-        return out
-
-    d1 = (((kundali.get("charts") or {}).get("D1") or {}).get("houses"))
-    if isinstance(d1, list):
-        for h in d1:
-            if not isinstance(h, dict):
-                continue
-            try:
-                hn = int(h.get("house") or h.get("number"))
-            except Exception:
-                continue
-            ps = h.get("planets")
-            if isinstance(ps, list) and ps:
-                out[hn] = [p for p in ps if isinstance(p, dict)]
-
+    out: Dict[int, List[str]] = {}
+    for p in chart_data.get("planets", []):
+        h = p.get("house")
+        name = p.get("name")
+        if isinstance(h, int) and isinstance(name, str):
+            out.setdefault(h, []).append(name)
     return out
 
-
-def _extract_planet_house_map(kundali: Dict[str, Any]) -> Dict[str, int]:
+def _extract_planet_house_map(chart_data: Dict[str, Any]) -> Dict[str, int]:
     """
-    Returns {planet_name: house_number}
+    Returns {planet_name: house_no}
     """
-    out: Dict[str, int] = {}
-
-    planets = kundali.get("planets")
-    if isinstance(planets, list):
-        for p in planets:
-            if not isinstance(p, dict):
-                continue
-            name = p.get("name")
-            house = p.get("house")
-            if _non_empty_str(name):
-                try:
-                    out[name] = int(house)
-                except Exception:
-                    pass
-
-    if not out:
-        hp = _extract_house_planets(kundali)
-        for hn, ps in hp.items():
-            for p in ps:
-                name = p.get("name")
-                if _non_empty_str(name):
-                    out[name] = hn
-
+    out = {}
+    for p in chart_data.get("planets", []):
+        if isinstance(p.get("name"), str) and isinstance(p.get("house"), int):
+            out[p["name"]] = p["house"]
     return out
 
+def _get_house_sign(chart_data: Dict[str, Any], house_no: int) -> str | None:
+    asc = chart_data.get("ascendant")
+    if asc not in SIGN_LORD:
+        return None
 
-def _get_house_sign(kundali: Dict[str, Any], house_no: int) -> str | None:
-    houses = kundali.get("houses")
-    if isinstance(houses, list):
-        for h in houses:
-            if int(h.get("house", -1)) == house_no:
-                return h.get("sign")
+    SIGNS = list(SIGN_LORD.keys())
+    start = SIGNS.index(asc)
+    rotated = SIGNS[start:] + SIGNS[:start]
+    return rotated[house_no - 1] if 1 <= house_no <= 12 else None
 
-    d1 = (kundali.get("charts", {}).get("D1", {}).get("houses"))
-    if isinstance(d1, list):
-        for h in d1:
-            if int(h.get("house", -1)) == house_no:
-                return h.get("sign")
-
-    return None
-
-
-def _get_house_lord(kundali: Dict[str, Any], house_no: int) -> str | None:
-    sign = _get_house_sign(kundali, house_no)
+def _get_house_lord(chart_data: Dict[str, Any], house_no: int) -> str | None:
+    sign = _get_house_sign(chart_data, house_no)
     return SIGN_LORD.get(sign) if sign else None
 
 # -------------------------------------------------
-# CORE SCORING LOGIC
+# CORE SCORING
 # -------------------------------------------------
 
 def _compute_love_marriage_pct(
     lang: str,
-    kundali: Dict[str, Any],
+    chart_data: Dict[str, Any],
     *,
     fallback_mode: bool,
 ) -> Dict[str, Any]:
 
-    hp = _extract_house_planets(kundali)
-    ph = _extract_planet_house_map(kundali)
+    hp = _extract_house_planets(chart_data)
+    ph = _extract_planet_house_map(chart_data)
 
     score = 50.0
     reasons: List[str] = []
 
-    # 1️⃣ Direct activation
+    # 1️⃣ 5th / 7th activation
     if 5 in hp:
         score += 10
         reasons.append(_t(lang, "5th house active (romance).", "5वां भाव सक्रिय (रोमांस)।"))
@@ -170,12 +110,12 @@ def _compute_love_marriage_pct(
         score += 10
         reasons.append(_t(lang, "7th house active (marriage).", "7वां भाव सक्रिय (विवाह)।"))
 
-    # 2️⃣ 5th–7th lord linkage
-    lord5 = _get_house_lord(kundali, 5)
-    lord7 = _get_house_lord(kundali, 7)
+    # 2️⃣ Lord linkage (MAIN RULE)
+    lord5 = _get_house_lord(chart_data, 5)
+    lord7 = _get_house_lord(chart_data, 7)
 
-    h_lord5 = ph.get(lord5) if lord5 else None
-    h_lord7 = ph.get(lord7) if lord7 else None
+    h_lord5 = ph.get(lord5)
+    h_lord7 = ph.get(lord7)
 
     if h_lord5 == 7 or h_lord7 == 5:
         score += 20
@@ -184,17 +124,17 @@ def _compute_love_marriage_pct(
         score += 15
         reasons.append(_t(lang, "5th and 7th lords conjunct.", "5वां और 7वां स्वामी युति।"))
 
-    # 3️⃣ Venus support
+    # 3️⃣ Venus
     if ph.get("Venus") in (5, 7):
         score += 10
         reasons.append(_t(lang, "Venus supports love marriage.", "शुक्र लव मैरिज को सपोर्ट करता है।"))
 
-    # 4️⃣ Rahu (mild)
+    # 4️⃣ Rahu
     if ph.get("Rahu") in (5, 7):
         score += 5
         reasons.append(_t(lang, "Rahu shows unconventional path.", "राहु गैर-परंपरागत मार्ग दिखाता है।"))
 
-    # 5️⃣ Pressure planets
+    # 5️⃣ Pressure
     if ph.get("Saturn") in (5, 7):
         score -= 5
         reasons.append(_t(lang, "Saturn may delay marriage.", "शनि विवाह में देरी कर सकता है।"))
@@ -210,11 +150,10 @@ def _compute_love_marriage_pct(
         ))
 
     score = _clamp(score, 0, 100)
-
     band = "High" if score >= 70 else "Medium" if score >= 50 else "Low"
 
     return {
-        "pct": round(score, 0),
+        "pct": int(score),
         "band": band,
         "reasons": reasons[:6],
         "meta": {
@@ -232,9 +171,6 @@ def _compute_love_marriage_pct(
 # -------------------------------------------------
 
 def compile_love_marriage_probability(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    FINAL compiler entrypoint
-    """
 
     lang = _ensure_lang(payload.get("language", "en"))
     case = payload.get("case", "UNKNOWN")
@@ -242,16 +178,16 @@ def compile_love_marriage_probability(payload: Dict[str, Any]) -> Dict[str, Any]
     user = payload.get("user") or {}
     partner = payload.get("partner") or {}
 
-    kundali_user = payload.get("kundali_user") or {}
-    kundali_partner = payload.get("kundali_partner") or {}
+    chart_user = payload.get("chart_data_user") or {}
+    chart_partner = payload.get("chart_data_partner") or {}
 
-    user_fallback = case != "A_FULL_DUAL" or not kundali_user
-    partner_fallback = case != "A_FULL_DUAL" or not kundali_partner
+    user_fallback = case != "A_FULL_DUAL" or not chart_user
+    partner_fallback = case != "A_FULL_DUAL" or not chart_partner
 
-    user_out = _compute_love_marriage_pct(lang, kundali_user, fallback_mode=user_fallback)
+    user_out = _compute_love_marriage_pct(lang, chart_user, fallback_mode=user_fallback)
     partner_out = (
-        _compute_love_marriage_pct(lang, kundali_partner, fallback_mode=partner_fallback)
-        if kundali_partner else None
+        _compute_love_marriage_pct(lang, chart_partner, fallback_mode=partner_fallback)
+        if chart_partner else None
     )
 
     overall_line = (
