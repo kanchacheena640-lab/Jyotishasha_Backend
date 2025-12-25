@@ -222,25 +222,17 @@ def love_marriage_probability():
     partner = payload.get("partner") or {}
 
     if _is_blank(user.get("name")) or _is_blank(user.get("dob")):
-        return jsonify({
-            "ok": False,
-            "error": "USER_DOB_REQUIRED",
-            "message": "User name and date of birth are required."
-        }), 400
+        return jsonify({"ok": False, "error": "USER_DOB_REQUIRED"}), 400
 
     if _is_blank(partner.get("name")) or _is_blank(partner.get("dob")):
-        return jsonify({
-            "ok": False,
-            "error": "PARTNER_DOB_REQUIRED",
-            "message": "Partner name and date of birth are required."
-        }), 400
+        return jsonify({"ok": False, "error": "PARTNER_DOB_REQUIRED"}), 400
 
     try:
-        # Build kundalis only when full details exist
         lang = payload.get("language", "en")
 
-        # USER kundali (full only)
         kundali_user = {}
+        kundali_partner = {}
+
         if user.get("tob") and user.get("lat") is not None and user.get("lng") is not None:
             kundali_user = calculate_full_kundali(
                 name=user["name"],
@@ -251,8 +243,6 @@ def love_marriage_probability():
                 language=lang,
             )
 
-        # PARTNER kundali (full only)
-        kundali_partner = {}
         if partner.get("tob") and partner.get("lat") is not None and partner.get("lng") is not None:
             kundali_partner = calculate_full_kundali(
                 name=partner["name"],
@@ -263,32 +253,41 @@ def love_marriage_probability():
                 language=lang,
             )
 
-        # Case
         case = "A_FULL_DUAL" if (kundali_user and kundali_partner) else "B_DOB_ONLY_HYBRID"
+
+        # ✅ BUILD chart_data HERE (IMPORTANT)
+        def build_chart_data(k):
+            return {
+                "ascendant": k.get("lagna_sign"),
+                "planets": [
+                    {
+                        "name": p.get("name"),
+                        "house": p.get("house"),
+                        "sign": p.get("sign"),
+                    }
+                    for p in k.get("planets", [])
+                    if isinstance(p.get("house"), int)
+                ],
+            }
 
         compiler_payload = {
             "language": lang,
             "case": case,
             "user": user,
             "partner": partner,
-            "chart_data_user": (
-                kundali_user.get("chart_data")
-                if kundali_user else {}
-            ),
-            "chart_data_partner": (
-                kundali_partner.get("chart_data")
-                if kundali_partner else {}
-            ),
+            "chart_data_user": build_chart_data(kundali_user) if kundali_user else {},
+            "chart_data_partner": build_chart_data(kundali_partner) if kundali_partner else {},
         }
 
-        out = compile_love_marriage_probability(compiler_payload)
+        # 🔍 DEBUG (temporary)
+        print("DEBUG case →", case)
+        print("DEBUG user asc →", compiler_payload["chart_data_user"].get("ascendant"))
+        print("DEBUG user planets →", len(compiler_payload["chart_data_user"].get("planets", [])))
 
+        out = compile_love_marriage_probability(compiler_payload)
         return jsonify({"ok": True, "data": out}), 200
 
-    except Exception:
-        return jsonify({
-            "ok": False,
-            "error": "INTERNAL_ERROR",
-            "message": "Internal server error",
-        }), 500
+    except Exception as e:
+        print("LOVE-MARRIAGE ERROR:", e)
+        return jsonify({"ok": False, "error": "INTERNAL_ERROR"}), 500
 
