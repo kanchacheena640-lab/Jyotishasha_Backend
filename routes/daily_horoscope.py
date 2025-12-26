@@ -11,7 +11,7 @@ ZODIACS = [
     "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"
 ]
 
-@daily_bp.route("/api/daily-horoscope")
+@daily_bp.route("/api/daily-horoscope", methods=["GET"])
 def get_daily_horoscope():
     sign = request.args.get("sign", "").lower()
 
@@ -27,4 +27,13 @@ def get_daily_horoscope():
     if sign not in data:
         return jsonify({"error": "Horoscope not found for given sign."}), 404
 
-    return jsonify(data[sign]), 200
+    result = data[sign]
+
+    # 🔁 Replace placeholders
+    sign_title = sign.capitalize()
+    if isinstance(result, dict):
+        for key, value in result.items():
+            if isinstance(value, str):
+                result[key] = value.replace("{SIGN}", sign_title)
+
+    return jsonify(result), 200
