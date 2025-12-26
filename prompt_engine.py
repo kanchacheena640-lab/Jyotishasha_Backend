@@ -67,3 +67,4 @@ def build_transit_summary_text(transit_data: dict) -> str:
         summary_lines.append(line)
 
     return "\n".join(summary_lines)
+
