@@ -1,47 +1,59 @@
 import json
 import os
-from flask import Blueprint, request, jsonify
+from datetime import datetime
 
-daily_bp = Blueprint("daily_bp", __name__)
+# =========================
+# BASE PATH (FIXED)
+# =========================
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-# Paths
-POOL_PATH = "C:/jyotishasha_backend/data/daily_pool.json"
-OUTPUT_PATH = "C:/jyotishasha_backend/data/daily_fixed.json"
-COUNTER_PATH = "C:/jyotishasha_backend/data/daily_counter.txt"
+POOL_PATH = os.path.join(BASE_DIR, "data", "daily_pool.json")
+OUTPUT_PATH = os.path.join(BASE_DIR, "data", "daily_fixed.json")
+COUNTER_PATH = os.path.join(BASE_DIR, "data", "daily_counter.txt")
 
-# Zodiac order
 ZODIACS = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
     "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"
 ]
 
-# Load content pool
-with open(POOL_PATH, "r", encoding="utf-8") as f:
-    pool_data = json.load(f)
+ROTATION_STEP = 12
 
-# Load current offset (or default to 0)
-if os.path.exists(COUNTER_PATH):
-    with open(COUNTER_PATH, "r") as f:
-        start_index = int(f.read().strip())
-else:
+
+def run_daily_rotation():
+    if not os.path.exists(POOL_PATH):
+        raise FileNotFoundError(f"daily_pool.json not found at {POOL_PATH}")
+
+    with open(POOL_PATH, "r", encoding="utf-8") as f:
+        pool_data = json.load(f)
+
+    if len(pool_data) < ROTATION_STEP:
+        raise ValueError("daily_pool.json must contain at least 12 entries")
+
     start_index = 0
+    if os.path.exists(COUNTER_PATH):
+        with open(COUNTER_PATH, "r") as f:
+            val = f.read().strip()
+            if val.isdigit():
+                start_index = int(val)
 
-# Rotation logic (+12 each day)
-entries_needed = len(ZODIACS)
-rotated_data = {}
-total_entries = len(pool_data)
+    rotated = {}
+    total = len(pool_data)
 
-for i, zodiac in enumerate(ZODIACS):
-    index = (start_index + i) % total_entries
-    rotated_data[zodiac] = pool_data[index]["daily_horoscope"]
+    for i, zodiac in enumerate(ZODIACS):
+        idx = (start_index + i) % total
+        rotated[zodiac] = pool_data[idx]["daily_horoscope"]
 
-# Save daily_fixed.json
-with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-    json.dump(rotated_data, f, ensure_ascii=False, indent=2)
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(rotated, f, ensure_ascii=False, indent=2)
 
-# Update rotation counter for next day
-new_start_index = (start_index + 12) % total_entries
-with open(COUNTER_PATH, "w") as f:
-    f.write(str(new_start_index))
+    new_index = (start_index + ROTATION_STEP) % total
+    with open(COUNTER_PATH, "w") as f:
+        f.write(str(new_index))
 
-print("✅ daily_fixed.json generated successfully.")
+    print("✅ daily_fixed.json updated successfully")
+    print("📁 Output:", OUTPUT_PATH)
+    print("🕒 Time:", datetime.now())
+
+
+if __name__ == "__main__":
+    run_daily_rotation()

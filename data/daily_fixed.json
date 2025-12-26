@@ -1,74 +1,86 @@
 {
   "aries": {
-    "career": "You will work on new plans with enthusiasm, and your seniors will openly appreciate your efforts.",
-    "love": "You will feel a new freshness in your relationships. Spending happy moments with your partner will deepen understanding and love. Good proposals may come for singles.",
-    "health": "Your health will be good today. Start your day with exercise and nutritious food to stay energetic throughout.",
-    "tips": "Begin your day with positive thinking and prayer, it will create a positive environment around you."
+    "intro": "Dear {SIGN}, today carries a soft and comforting energy that gently supports your emotions.",
+    "paragraph": "You may feel more connected to your inner world today, which helps you handle responsibilities with grace rather than pressure. Work-related matters move steadily when you avoid overthinking and trust your abilities. Emotional exchanges feel warmer, making it easier to express care and understanding. Taking small breaks keeps your energy balanced, and mindful choices help you manage money without stress. Overall, the day feels reassuring, like a quiet reminder that you are on the right path.",
+    "tips": "💡 Move at your own pace and stay present.",
+    "lucky_color": "Rose",
+    "lucky_number": "1"
   },
   "taurus": {
-    "career": "Some minor obstacles may arise at work, but with patience and a balanced approach, you will overcome them easily. Support from colleagues will be helpful.",
-    "love": "Small arguments may arise in relationships, but with patience and open conversation, the atmosphere will improve.",
-    "health": "Headache or fatigue may trouble you. Keep yourself hydrated and get enough sleep.",
-    "tips": "Include red or pink in your outfit today, it will boost your confidence."
+    "intro": "Dear {SIGN}, today encourages gentle confidence and emotional clarity.",
+    "paragraph": "You may notice that things fall into place more smoothly when you stop forcing outcomes. Your efforts at work feel lighter, and even small progress brings satisfaction. Emotional bonds grow stronger through simple honesty rather than big gestures. Paying attention to rest and hydration keeps you feeling calm and refreshed, while thoughtful spending choices protect your sense of security. The day rewards softness, patience, and trust in timing.",
+    "tips": "💡 Let go of urgency and breathe deeply.",
+    "lucky_color": "Peach",
+    "lucky_number": "7"
   },
   "gemini": {
-    "career": "There will be momentum in work and new opportunities will come your way. Your confidence and work style will impress others.",
-    "love": "Romantic bonds will grow stronger. Time spent with your partner or spouse will bring peace.",
-    "health": "Health will remain normal, but avoid careless eating. Stay away from spicy foods.",
-    "tips": "Light a lamp at a temple or your home shrine to make your day more auspicious."
+    "intro": "Dear {SIGN}, a warm and hopeful mood surrounds you today.",
+    "paragraph": "Your mindset feels brighter, helping you approach tasks with quiet determination instead of stress. Interactions feel more meaningful, and emotional understanding flows naturally when you listen from the heart. Physical comfort improves when you slow down and respect your limits. Financially, staying practical brings peace rather than excitement. The overall energy feels nurturing, encouraging you to be kind to yourself while staying focused.",
+    "tips": "💡 Appreciate progress, even if it feels small.",
+    "lucky_color": "Light Green",
+    "lucky_number": "3"
   },
   "cancer": {
-    "career": "You will get the chance to complete old projects, and your efforts will be recognized by seniors.",
-    "love": "Sweetness will remain in relationships. Your partner will understand your thoughts and support you completely.",
-    "health": "You may feel tired and weak, so focus on a balanced diet and sufficient sleep.",
-    "tips": "Begin any important work by remembering Lord Ganesha."
+    "intro": "Dear {SIGN}, today feels calm, steady, and emotionally grounding.",
+    "paragraph": "You may prefer simplicity over complexity, and that choice works in your favor. Work moves forward smoothly when you focus on what truly matters. Emotional connections deepen through gentle conversations and shared silence. Taking care of posture, breathing, and rest supports overall well-being. Financial stability improves when you resist unnecessary indulgence. The day feels like a quiet pause that restores balance.",
+    "tips": "💡 Choose calm responses over quick reactions.",
+    "lucky_color": "Ivory",
+    "lucky_number": "9"
   },
   "leo": {
-    "career": "Your confidence and hard work will lead to excellent performance at work. Colleagues will also support you.",
-    "love": "Love life will be joyful. Singles may find a compatible partner.",
-    "health": "Health will be stable. Light exercise and yoga will help you stay energetic.",
-    "tips": "Offer food to someone in need today, it will bring good fortune."
+    "intro": "Dear {SIGN}, today brings a sweet mix of clarity and emotional comfort.",
+    "paragraph": "You may find it easier to organize thoughts and move forward without self-doubt. Work-related efforts feel rewarding when you stay consistent rather than perfect. Emotional warmth grows through small gestures, making relationships feel safe and supportive. Light movement and proper meals keep your energy steady, while sensible financial habits prevent unnecessary worry. The day gently reminds you that balance is built through small, loving choices.",
+    "tips": "💡 Be gentle with yourself throughout the day.",
+    "lucky_color": "Sky Blue",
+    "lucky_number": "5"
   },
   "virgo": {
-    "career": "Sudden challenges may arise at work, so move forward with well-thought-out plans.",
-    "love": "Disagreements may occur with your life partner. Handle the situation with patience and gentleness.",
-    "health": "Stomach-related issues may trouble you. Eat light and easily digestible food.",
-    "tips": "Offer water to the Sun in the morning."
+    "intro": "Dear {SIGN}, today feels slow in a soothing way, allowing you to reconnect with yourself.",
+    "paragraph": "You may notice that when you stop rushing, things begin to align naturally. Work progresses through steady focus rather than pressure, and your calm presence leaves a positive impression. Emotional bonds feel safe and reassuring, especially when you express care through simple actions. Listening to your body helps you maintain comfort, while mindful financial choices keep your mind relaxed. The day feels like a gentle pause that restores inner balance.",
+    "tips": "💡 Give yourself permission to slow down.",
+    "lucky_color": "Lavender",
+    "lucky_number": "2"
   },
   "libra": {
-    "career": "Your creative thinking will bring success at work. Your new ideas will impress everyone.",
-    "love": "Trust and depth in relationships will grow. Spending time with your partner will be pleasant.",
-    "health": "Stress will reduce and energy will remain high. Meditation and breathing exercises will be beneficial.",
-    "tips": "Wearing white clothes will enhance positivity."
+    "intro": "Dear {SIGN}, today carries a warm and thoughtful energy.",
+    "paragraph": "You may feel more aware of your surroundings and emotions, which helps you act with maturity. Work matters improve when you focus on quality instead of speed, and emotional connections deepen through patience. Taking time to rest your mind prevents fatigue, while responsible spending brings a quiet sense of security. The day supports mindful choices and gentle confidence.",
+    "tips": "💡 Choose awareness over reaction.",
+    "lucky_color": "Soft Yellow",
+    "lucky_number": "1"
   },
   "scorpio": {
-    "career": "You may face challenges at work, but your experience and wisdom will help you find solutions.",
-    "love": "There may be misunderstandings in relationships. Handle the situation with patience and calmness.",
-    "health": "You may face issues like blood pressure or headaches, so rest is important.",
-    "tips": "Take blessings from an elder."
+    "intro": "Dear {SIGN}, today encourages emotional steadiness and inner reassurance.",
+    "paragraph": "You may find comfort in routine and familiarity, which helps you stay grounded. Professional efforts move forward smoothly when you trust the process rather than seeking immediate results. Emotional understanding grows through calm listening, and physical energy stays balanced when you respect your limits. Financial matters feel easier when you avoid unnecessary comparison. The day carries a nurturing and supportive tone.",
+    "tips": "💡 Stay grounded in the present moment.",
+    "lucky_color": "Mint Green",
+    "lucky_number": "8"
   },
   "sagittarius": {
-    "career": "Progress will be seen in both job and business. New opportunities will prove beneficial.",
-    "love": "Happiness in love life will increase. Appreciate your partner.",
-    "health": "You will feel energetic today. Maintain a balanced diet.",
-    "tips": "Donate clothes to someone in need."
+    "intro": "Dear {SIGN}, today brings quiet strength and emotional warmth.",
+    "paragraph": "You may handle responsibilities with more ease than expected, as confidence flows naturally. Work benefits from your steady approach, and emotional exchanges feel sincere and comforting. Gentle movement and proper rest support your well-being, while practical money habits keep things stable. The overall energy feels reassuring, reminding you that steady effort often brings the deepest peace.",
+    "tips": "💡 Trust the strength of consistency.",
+    "lucky_color": "Warm Beige",
+    "lucky_number": "5"
   },
   "capricorn": {
-    "career": "Your work will be appreciated in the office and you may receive a new project.",
-    "love": "This is a time of stability and trust in relationships. You will receive full support from your partner.",
-    "health": "Practice meditation and get enough sleep for mental peace.",
-    "tips": "Begin your day by offering water to the Tulsi plant."
+    "intro": "Dear {SIGN}, today feels emotionally soft and quietly motivating.",
+    "paragraph": "You may sense a clearer understanding of what truly matters, helping you release unnecessary worries. Work feels manageable when you focus on one thing at a time, and emotional connections grow through gentle honesty. Caring for your body through small mindful habits keeps energy steady, while financial discipline offers comfort rather than restriction. The day supports emotional balance and self-trust.",
+    "tips": "💡 Keep things simple and sincere.",
+    "lucky_color": "Powder Blue",
+    "lucky_number": "3"
   },
   "aquarius": {
-    "career": "Luck will be on your side and pending work will be completed.",
-    "love": "Marriage proposals may come for singles. Love life will also be good.",
-    "health": "You may face digestive issues. Eat light food.",
-    "tips": "Wearing yellow will bring good fortune."
+    "intro": "Dear {SIGN}, today gently invites you to slow down and reconnect with your inner calm.",
+    "paragraph": "You may notice that peace comes easily when you stop trying to control everything. Work flows better when you trust your rhythm instead of pushing yourself. Emotional connections feel safe and supportive, especially when you listen without judgment. Taking care of your body through rest and mindful movement keeps you balanced, while thoughtful financial choices protect your sense of security. The day feels like a soft reminder to move with ease.",
+    "tips": "💡 Let comfort guide your decisions today.",
+    "lucky_color": "Soft Peach",
+    "lucky_number": "7"
   },
   "pisces": {
-    "career": "You will receive support from colleagues and your hard work will pay off.",
-    "love": "Love and understanding will grow in relationships. Old misunderstandings will be resolved.",
-    "health": "Both physical and mental energy will be better.",
-    "tips": "Worship Lord Hanuman to gain strength."
+    "intro": "Dear {SIGN}, today carries a gentle confidence that helps you feel centered.",
+    "paragraph": "You may find it easier to focus on what truly matters, leaving distractions behind. Work feels less demanding when you approach it step by step, and emotional warmth grows through sincerity rather than effort. Staying hydrated and giving yourself short pauses helps maintain energy, while careful spending brings quiet reassurance. The day supports balance and emotional clarity.",
+    "tips": "💡 Trust your natural pace.",
+    "lucky_color": "Pale Yellow",
+    "lucky_number": "3"
   }
 }
