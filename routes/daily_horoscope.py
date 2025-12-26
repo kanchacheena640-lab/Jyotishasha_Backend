@@ -5,9 +5,10 @@ from datetime import datetime
 daily_bp = Blueprint("daily_bp", __name__)
 
 BASE_DIR = os.path.dirname(__file__)
+DATA_DIR = os.path.join(BASE_DIR, "..", "data")
 
-DAILY_FILE_EN = os.path.join(BASE_DIR, "..", "data", "daily_fixed.json")
-DAILY_FILE_HI = os.path.join(BASE_DIR, "..", "data", "daily_fixed_hi.json")
+DAILY_FILE_EN = os.path.join(DATA_DIR, "daily_fixed.json")
+DAILY_FILE_HI = os.path.join(DATA_DIR, "daily_fixed_hi.json")
 
 ZODIACS = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
@@ -40,7 +41,7 @@ def get_daily_horoscope():
     if sign not in data:
         return jsonify({"error": "Horoscope not found"}), 404
 
-    result = data[sign].copy()
+    result = dict(data[sign])  # safer than copy()
 
     today_date = datetime.now().strftime("%d %B %Y")
 
@@ -51,16 +52,20 @@ def get_daily_horoscope():
         sign_name = sign.capitalize()
         heading = f"Today's Daily Horoscope for {sign_name} – {today_date}"
 
-    result["heading"] = heading
-    result["sign"] = sign
-    result["date"] = today_date
-    result["lang"] = lang
+    result.update({
+        "heading": heading,
+        "sign": sign,
+        "date": today_date,
+        "lang": lang
+    })
 
-    # Replace placeholders safely
-    for key, value in result.items():
-        if isinstance(value, str):
-            value = value.replace("{SIGN}", sign_name)
-            value = value.replace("{DATE}", today_date)
-            result[key] = value
+    # Placeholder replacement
+    for k in ("intro", "paragraph", "tips"):
+        if k in result and isinstance(result[k], str):
+            result[k] = (
+                result[k]
+                .replace("{SIGN}", sign_name)
+                .replace("{DATE}", today_date)
+            )
 
     return jsonify(result), 200
