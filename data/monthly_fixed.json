@@ -1,74 +1,182 @@
 {
   "aries": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} brings a phase of conscious evaluation for {SIGN}. The month asks you to slow your pace just enough to understand what is truly effective and what needs correction. Planetary influences support introspection combined with practical execution. Rather than chasing outcomes, refining intent and method leads to meaningful advancement.",
+    "career_money": "Career matters require thoughtful engagement. You may revisit earlier commitments, restructure tasks, or take on responsibilities that demand maturity. Results build gradually, but your steady approach strengthens long-term prospects. Avoid reacting to pressure; consistency protects your position.\n\nFinancially, this is a month of rebalancing. Review spending patterns, streamline obligations, and set realistic targets. Conserving resources now creates security and flexibility later.",
+    "love_relationships": "Emotional exchanges favor sincerity and calm presence. You may feel inclined to express care through actions rather than words. Clear intentions reduce confusion and deepen trust.\n\nThose in committed relationships focus on reliability and shared understanding. Singles may step back to reassess expectations, preferring emotional clarity over excitement.",
+    "health_lifestyle": "Health remains steady when mental load is managed. Overcommitment or constant analysis can lead to fatigue if unchecked.\n\nSimple grounding practices, regular rest, and moderate activity help restore balance. Create space for mental quiet.",
+    "key_dates": [
+      "{MONTH} 1–3: Need for reflection and assessment",
+      "{MONTH} 7–10: Career responsibilities intensify",
+      "{MONTH} 14–17: Emotional steadiness and insight",
+      "{MONTH} 21–25: Financial organization and planning"
+    ],
+    "monthly_advice": "Refinement leads to progress. Improve the process, and results will follow.",
+    "cta": "Access precise Panchang timing, sign-wise guidance, and personalized insights — explore the Jyotishasha App."
   },
   "taurus": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} encourages {SIGN} to shift focus from urgency to accuracy. This month emphasizes thoughtful correction, inner steadiness, and disciplined pacing. Planetary energies favor awareness over action, helping you recognize where refinement is needed before moving ahead. Progress may feel subtle, but it is deeply stabilizing.",
+    "career_money": "Professional life demands careful handling of responsibilities. You may be required to fine-tune processes, correct inefficiencies, or mentor others through steady guidance. Recognition arrives through reliability and sound judgment rather than visibility.\n\nFinancially, this is a month for consolidation. Review commitments, control discretionary spending, and strengthen savings habits. Avoid decisions driven by pressure or comparison; stability comes from self-control and clarity.",
+    "love_relationships": "Relationships benefit from emotional steadiness and mindful expression. You may feel reserved, yet your presence offers reassurance. Honest, grounded conversations clear misunderstandings without conflict.\n\nCommitted individuals focus on long-term trust, while singles may withdraw slightly to gain emotional clarity. Depth matters more than intensity.",
+    "health_lifestyle": "Physical health stays balanced if mental strain is managed. Overthinking can manifest as fatigue or tension if rest is neglected.\n\nEstablishing predictable routines, gentle exercise, and digital breaks supports well-being. Avoid overstimulation.",
+    "key_dates": [
+      "{MONTH} 3–6: Need for careful adjustments",
+      "{MONTH} 8–11: Work-related refinement",
+      "{MONTH} 15–18: Emotional grounding",
+      "{MONTH} 22–26: Financial discipline and review"
+    ],
+    "monthly_advice": "Accuracy builds strength. Move forward only after clarity is restored.",
+    "cta": "Discover deeper sign-wise insights with Panchang timing and personal astrology guidance — available inside the Jyotishasha App."
   },
   "gemini": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} highlights a phase of steady inner alignment for {SIGN}. The month encourages you to strengthen foundations rather than chase surface-level change. Planetary influences support patience, responsibility, and thoughtful engagement with ongoing matters. What you build quietly now creates lasting stability.",
+    "career_money": "Career matters call for disciplined follow-through. You may be handling responsibilities that require consistency and mature judgment. While progress may seem slow, your reliability enhances long-term credibility. Focus on completing what is already in motion rather than initiating too many new tasks.\n\nFinancially, this period favors cautious management. Reviewing budgets, prioritizing essential expenses, and planning ahead bring control. Avoid impulsive financial decisions; stability improves through restraint.",
+    "love_relationships": "Emotional connections benefit from sincerity and dependability. You may express care through actions more than words, creating a sense of security. Honest discussions, even if practical, strengthen bonds.\n\nCommitted individuals focus on mutual support and shared responsibilities. Singles are drawn toward connections that feel grounded and emotionally safe.",
+    "health_lifestyle": "Health remains stable with proper pacing. Mental fatigue can arise if responsibilities overshadow personal time.\n\nMaintaining structured routines, adequate rest, and light physical movement supports overall balance. Avoid neglecting recovery time.",
+    "key_dates": [
+      "{MONTH} 2–4: Focus on priorities and foundations",
+      "{MONTH} 7–9: Increased work responsibility",
+      "{MONTH} 13–16: Emotional steadiness",
+      "{MONTH} 20–24: Financial review and planning"
+    ],
+    "monthly_advice": "Strengthen what already exists. Stability is your advantage this month.",
+    "cta": "Unlock sign-based Panchang insights, timing guidance, and personal astrology support — only inside the Jyotishasha App."
   },
   "cancer": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} marks a period of conscious stabilization for {SIGN}. This month encourages you to pause, assess direction, and reinforce what truly supports your long-term vision. Planetary influences favor realism, accountability, and mindful choices. Progress may not be loud, but it is dependable and lasting.",
+    "career_money": "Professional life requires structured thinking and responsible action. You may find yourself aligning with rules, systems, or senior guidance to move forward smoothly. Tasks completed with care yield steady recognition. Avoid reactive decisions; composure strengthens authority.\n\nFinancially, this is a month to protect balance. Streamline expenses, honor commitments, and plan cautiously. Gradual improvement comes from discipline rather than expansion. Focus on securing the base before aiming higher.",
+    "love_relationships": "Relationships develop through patience and emotional steadiness. You may feel inclined toward practical expressions of care rather than dramatic displays. Clear boundaries and sincere communication strengthen trust.\n\nCommitted relationships benefit from shared responsibility, while singles are likely to seek emotional safety and reliability over excitement.",
+    "health_lifestyle": "Health remains stable when routines are respected. Mental pressure can build if rest is delayed or ignored.\n\nPrioritize sleep, hydration, and short recovery breaks. A balanced pace keeps both body and mind resilient.",
+    "key_dates": [
+      "{MONTH} 1–3: Need for realistic planning",
+      "{MONTH} 6–9: Professional alignment and structure",
+      "{MONTH} 14–17: Emotional calm and clarity",
+      "{MONTH} 21–25: Financial discipline and consolidation"
+    ],
+    "monthly_advice": "Secure the foundation first. Stability precedes growth.",
+    "cta": "Get deeper sign-wise guidance with Panchang timing, personalized insights, and astrology support — inside the Jyotishasha App."
   },
   "leo": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} brings a tone of deliberate awareness for {SIGN}. The month emphasizes understanding consequences before action and choosing steady progress over instant reaction. Planetary influences guide you toward thoughtful restraint, helping you maintain direction without unnecessary effort. What appears slow now proves dependable later.",
+    "career_money": "Career responsibilities require careful prioritization. You may be drawn into planning, restructuring, or ensuring compliance with established systems. Progress depends on attention to detail and disciplined follow-through. Avoid rushing decisions under pressure.\n\nFinancially, this month favors caution and clarity. Reviewing accounts, organizing commitments, and setting realistic limits help maintain control. Avoid impulsive spending; financial peace comes from structure and foresight.",
+    "love_relationships": "Relationships thrive on emotional composure and sincerity. You may prefer meaningful, calm interactions rather than overt expression. Listening attentively resolves more than confrontation.\n\nCommitted individuals strengthen bonds through reliability, while singles gravitate toward emotionally stable connections that feel trustworthy and grounded.",
+    "health_lifestyle": "Physical health remains steady when mental balance is protected. Stress can surface through restlessness if boundaries are unclear.\n\nConsistent routines, mindful breathing, and adequate rest support well-being. Avoid mental clutter and overstimulation.",
+    "key_dates": [
+      "{MONTH} 2–4: Thoughtful planning and review",
+      "{MONTH} 8–10: Work-related structuring",
+      "{MONTH} 13–16: Emotional grounding",
+      "{MONTH} 20–23: Financial organization"
+    ],
+    "monthly_advice": "Pause, then proceed. Awareness strengthens every decision.",
+    "cta": "Access sign-wise Panchang guidance, precise timing, and personal astrology insights — available inside the Jyotishasha App."
   },
   "virgo": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} encourages {SIGN} to operate with deliberate patience and refined judgment. This month emphasizes understanding timing, respecting limitations, and making thoughtful adjustments. Planetary influences support slow but accurate movement, helping you align actions with long-term stability rather than short-lived outcomes.",
+    "career_money": "Professional efforts benefit from structure and precision. You may be asked to manage responsibilities that require accountability or to correct inefficiencies in existing systems. Progress may appear gradual, but consistency earns trust and reliability. Avoid unnecessary competition; focus on execution.\n\nFinancially, the focus is on containment and planning. Reviewing obligations, maintaining savings discipline, and avoiding high-risk decisions protect stability. Long-term security improves through measured choices.",
+    "love_relationships": "Emotional connections develop through steadiness and realistic expectations. You may value dependability and mutual respect more than intensity. Clear communication prevents emotional strain.\n\nCommitted individuals emphasize shared responsibility, while singles prefer emotionally safe and genuine interactions. Trust deepens with time.",
+    "health_lifestyle": "Health remains manageable with disciplined routines. Mental pressure may rise if responsibilities are not balanced with rest.\n\nRegular sleep, moderate exercise, and mindful pauses support resilience. Avoid ignoring early signs of fatigue.",
+    "key_dates": [
+      "{MONTH} 1–3: Timing awareness and reassessment",
+      "{MONTH} 7–9: Work accountability increases",
+      "{MONTH} 12–15: Emotional steadiness",
+      "{MONTH} 19–23: Financial caution and review"
+    ],
+    "monthly_advice": "Respect timing. Accuracy now prevents correction later.",
+    "cta": "Explore deeper sign-wise guidance with Panchang insights and personalized astrology — inside the Jyotishasha App."
   },
   "libra": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} brings a phase of quiet recalibration for {SIGN}. This month is less about external momentum and more about internal alignment. Planetary energies encourage you to recognize what is sustainable and release what drains effort without return. Thoughtful pacing and realistic expectations help you move forward with confidence.",
+    "career_money": "Career matters unfold through careful planning and responsible execution. You may focus on refining existing work, strengthening coordination, or ensuring accuracy in ongoing responsibilities. While progress may not be dramatic, it is dependable. Avoid overpromising; consistency builds respect.\n\nFinancially, this is a month to stay grounded. Reviewing spending habits, consolidating plans, and prioritizing essentials bring stability. Avoid emotional or pressure-driven financial decisions. Slow improvement is more valuable than quick gains.",
+    "love_relationships": "Relationships emphasize steadiness and emotional clarity. You may express care through reliability and presence rather than overt gestures. Calm discussions help resolve underlying concerns.\n\nCommitted individuals benefit from shared routines and trust-building actions. Singles may prefer to observe and understand before engaging deeply, valuing sincerity over novelty.",
+    "health_lifestyle": "Health remains stable when mental balance is protected. Excessive thinking or responsibility overload can affect energy levels.\n\nSimple grounding habits such as regular sleep, light movement, and mindful breaks restore equilibrium. Prioritize recovery alongside effort.",
+    "key_dates": [
+      "{MONTH} 3–5: Internal reassessment and clarity",
+      "{MONTH} 9–11: Career refinement and focus",
+      "{MONTH} 15–18: Emotional understanding deepens",
+      "{MONTH} 22–26: Financial stability and planning"
+    ],
+    "monthly_advice": "Release what drains you. Focus energy where it sustains growth.",
+    "cta": "Gain sign-wise Panchang insights, timing clarity, and personalized astrology support — exclusively inside the Jyotishasha App."
   },
   "scorpio": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} sets a tone of practical mindfulness for {SIGN}. This month emphasizes understanding cause and effect before taking action. Planetary influences guide you to act responsibly, refine priorities, and strengthen stability through informed choices. Progress may be gradual, but it is reliable and purposeful.",
+    "career_money": "Professional responsibilities require calm focus and measured execution. You may be involved in organizing workflows, correcting oversights, or supporting structured initiatives. Results come through discipline and follow-through rather than quick decisions.\n\nFinancially, clarity and restraint work in your favor. Reviewing expenses, planning budgets, and limiting unnecessary commitments bring security. Avoid speculation; consistency supports long-term financial health.",
+    "love_relationships": "Relationships grow through emotional balance and clear understanding. You may communicate more through actions than words, offering steadiness rather than intensity. Listening patiently resolves concerns.\n\nCommitted individuals deepen bonds through reliability. Singles are likely to seek emotionally stable, straightforward connections that promise trust.",
+    "health_lifestyle": "Health remains steady when mental and physical routines are aligned. Stress can manifest if boundaries are unclear or rest is compromised.\n\nStructured schedules, proper hydration, and calming practices help maintain vitality. Avoid overstimulation.",
+    "key_dates": [
+      "{MONTH} 1–3: Awareness of consequences",
+      "{MONTH} 6–9: Work-related organization",
+      "{MONTH} 13–16: Emotional grounding",
+      "{MONTH} 20–24: Financial discipline and review"
+    ],
+    "monthly_advice": "Think through every step. Responsibility creates stability.",
+    "cta": "Explore deeper sign-wise Panchang cues, timing support, and personalized astrology insights — inside the Jyotishasha App."
   },
   "sagittarius": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} highlights a month of steady recalibration for {SIGN}. The focus is on strengthening awareness, correcting course where needed, and committing to what truly supports long-term direction. Planetary energies favor patience, realistic planning, and mindful action. Subtle adjustments now prevent larger challenges later.",
+    "career_money": "Career development relies on discipline and thoughtful engagement. You may be asked to handle responsibilities that require precision or to revisit unfinished matters. While progress may seem understated, your approach builds reliability and trust. Avoid rushing decisions; clarity emerges with time.\n\nFinancially, this is a month for careful review. Streamlining expenses, managing obligations, and reinforcing savings habits help stabilize resources. Gradual improvement outweighs quick but uncertain gains.",
+    "love_relationships": "Relationships benefit from sincerity and emotional steadiness. You may prefer calm, honest exchanges over intense displays. Clear communication helps dissolve minor tensions.\n\nCommitted individuals strengthen bonds through mutual support and dependability. Singles are likely to value emotional clarity and security over excitement.",
+    "health_lifestyle": "Health remains balanced when routines are respected. Mental fatigue can arise if responsibilities dominate personal space.\n\nConsistent rest, gentle physical activity, and structured downtime support overall well-being. Avoid neglecting recovery.",
+    "key_dates": [
+      "{MONTH} 2–4: Course correction and planning",
+      "{MONTH} 7–10: Work precision and accountability",
+      "{MONTH} 14–17: Emotional balance",
+      "{MONTH} 21–25: Financial organization"
+    ],
+    "monthly_advice": "Adjust steadily. Small corrections lead to lasting strength.",
+    "cta": "Access sign-wise Panchang timing, refined guidance, and personalized astrology insights — inside the Jyotishasha App."
   },
   "capricorn": {
-    "paragraph1": "This month brings fresh energy and positivity into your life. Many pending tasks will finally be completed, and you’ll begin to see the rewards of your hard work. On the personal front, some pleasant news may arrive, and the support of family members will keep your spirits high.",
-    "paragraph2": "At work, circumstances will largely favor you, but avoid making hasty decisions. Finances will gradually strengthen, and if you’re considering a new investment or business venture, it’s wise to seek expert advice first. Students will need to maintain focus and consistency in their studies.",
-    "paragraph3": "In relationships, this period calls for harmony and understanding. Any ongoing disagreements can be resolved through calm conversations. Health-wise, don’t neglect your routine—balanced food and proper rest will keep you in good shape.",
-    "tip": "💡 Tip of the Month: Practice 5 minutes of morning meditation daily—it will boost your confidence and sharpen your decision-making skills."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} brings a month of grounded awareness for {SIGN}. The emphasis is on stabilizing momentum and understanding where effort truly pays off. Planetary energies encourage conscious decision-making, helping you differentiate between urgency and importance. Progress comes from staying attentive to details while keeping the larger vision intact.",
+    "career_money": "Career matters unfold through methodical effort and clear priorities. You may be required to strengthen coordination, correct earlier oversights, or take responsibility for long-term outcomes. Results may not be immediate, but your steady approach earns credibility and trust. Avoid reacting to temporary pressure.\n\nFinancially, this period supports sensible control. Reviewing financial habits, limiting unnecessary expenses, and planning ahead bring reassurance. Focus on maintaining balance rather than chasing expansion.",
+    "love_relationships": "Relationships develop through reliability and emotional clarity. You may express affection in practical ways, showing support through presence and consistency. Honest dialogue helps prevent misunderstandings.\n\nCommitted individuals find comfort in stability, while singles may take time to evaluate emotional compatibility before committing. Depth matters more than novelty.",
+    "health_lifestyle": "Health remains stable when routine and rest are prioritized. Mental fatigue may surface if responsibilities are carried without pause.\n\nBalanced meals, regular sleep, and simple grounding practices help sustain energy. Avoid neglecting mental relaxation.",
+    "key_dates": [
+      "{MONTH} 1–3: Priority setting and awareness",
+      "{MONTH} 6–8: Professional responsibility increases",
+      "{MONTH} 12–15: Emotional clarity and grounding",
+      "{MONTH} 19–23: Financial planning and review"
+    ],
+    "monthly_advice": "Stay grounded in reality. Stability grows through mindful effort.",
+    "cta": "Unlock precise Panchang guidance, sign-wise insights, and personalized astrology support — available inside the Jyotishasha App."
   },
   "aquarius": {
-    "paragraph1": "This month opens new doors of opportunity for you. Your enthusiasm and determination will help you overcome past challenges. Family gatherings or celebrations may bring joy and strengthen bonds.",
-    "paragraph2": "Career-wise, this is a promising period. Colleagues and seniors will recognize your efforts, but avoid unnecessary conflicts. Financially, you may find a new source of income. Students can expect success in exams with disciplined study.",
-    "paragraph3": "Love life looks stable, though patience will be needed in sensitive conversations. Health may require extra care, especially regarding diet and hydration. Don’t overwork yourself.",
-    "tip": "💡 Tip of the Month: Keep a gratitude journal—it will shift your mindset toward positivity and attract better opportunities."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} brings a phase of thoughtful consolidation for {SIGN}. This month encourages you to evaluate progress made so far and decide what deserves continued effort. Planetary influences support discernment, patience, and conscious restraint. Instead of expanding in multiple directions, focusing on what already works helps you gain stability and confidence. The energy favors refinement over initiation and depth over speed.",
+    "career_money": "Professional life benefits from careful prioritization. You may be required to streamline responsibilities, reduce inefficiencies, or take ownership of outcomes that demand consistency. While this may feel demanding, it strengthens your position and long-term reliability. Avoid overcommitting; clarity in roles and expectations prevents unnecessary pressure.\n\nFinancially, this month supports consolidation. Reviewing commitments, reorganizing budgets, and securing essentials bring a sense of control. Large risks are best avoided, but thoughtful investment in long-term skills or resources proves beneficial.",
+    "love_relationships": "Relationships grow through emotional presence and steady reassurance. You may prefer practical expressions of care rather than intense emotional displays. Calm conversations help address concerns that were previously unspoken.\n\nCommitted individuals find strength in shared routines and trust. Singles may take a cautious approach, choosing to understand emotional compatibility before deep involvement.",
+    "health_lifestyle": "Health remains stable when moderation is practiced. Mental fatigue may arise if responsibilities are taken on without pause.\n\nBalancing work with rest, maintaining regular sleep, and allowing mental downtime supports overall well-being. Gentle movement and grounding habits help sustain energy levels.",
+    "key_dates": [
+      "{MONTH} 2–4: Evaluation of priorities and workload",
+      "{MONTH} 8–11: Professional responsibility and follow-through",
+      "{MONTH} 15–18: Emotional reassurance and clarity",
+      "{MONTH} 22–26: Financial consolidation and planning"
+    ],
+    "monthly_advice": "Focus on what sustains progress. Stability grows when effort is intentional.",
+    "cta": "Deepen your astrology experience with Panchang insights, accurate Muhurth timings, and a free personalized consultation — available inside the Jyotishasha App."
   },
   "pisces": {
-    "paragraph1": "The month brings balance and clarity in many areas of life. You will be able to complete pending responsibilities with ease. Emotional support from loved ones will lift your confidence.",
-    "paragraph2": "Professionally, you might get recognition for past efforts. However, avoid impulsive decisions about switching jobs. Monetary gains are possible from unexpected sources. Learners should focus on consistent practice.",
-    "paragraph3": "Relationships may need nurturing—listening more than speaking will help. Prioritize your mental health by managing stress effectively.",
-    "tip": "💡 Tip of the Month: Spend some time in nature every week to refresh your energy and reduce stress."
+    "title": "{SIGN} Monthly Horoscope – {MONTH} {YEAR}",
+    "theme": "{MONTH} {YEAR} introduces a period of mindful responsibility for {SIGN}. This month encourages you to become more selective with commitments and more attentive to consequences. Planetary influences highlight accountability, self-discipline, and conscious decision-making. Progress is achieved not by doing more, but by doing what truly matters with consistency and care.",
+    "career_money": "Career matters demand maturity and follow-through. You may be entrusted with tasks that require precision, reliability, or long-term commitment. While the workload may feel heavier, it also enhances your professional standing. Avoid shortcuts and remain patient with slow-moving results.\n\nFinancially, this is a month for protective planning. Managing expenses, honoring obligations, and strengthening savings habits bring reassurance. Avoid speculative risks; stability improves through careful handling and realistic planning.",
+    "love_relationships": "Relationships evolve through emotional accountability and honest communication. You may feel inclined to set clearer boundaries or express expectations more directly. Calm dialogue helps resolve lingering uncertainties.\n\nCommitted individuals benefit from reliability and mutual respect. Singles may take time to evaluate emotional readiness before pursuing deeper connections.",
+    "health_lifestyle": "Health remains balanced when structure is maintained. Mental pressure may rise if rest and personal time are compromised.\n\nConsistent routines, adequate hydration, and gentle physical activity support well-being. Avoid ignoring signs of mental fatigue.",
+    "key_dates": [
+      "{MONTH} 1–3: Need for realistic commitment assessment",
+      "{MONTH} 7–9: Professional responsibility increases",
+      "{MONTH} 13–16: Emotional clarity and boundary setting",
+      "{MONTH} 21–25: Financial discipline and review"
+    ],
+    "monthly_advice": "Choose responsibility over impulse. Stability grows from conscious commitment.",
+    "cta": "Unlock deeper sign-wise insights with Panchang guidance, accurate timing, and personalized astrology support — inside the Jyotishasha App."
   }
 }
