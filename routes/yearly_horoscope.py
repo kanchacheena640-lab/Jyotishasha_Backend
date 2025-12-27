@@ -9,7 +9,7 @@ ZODIACS = [
     "libra","scorpio","sagittarius","capricorn","aquarius","pisces"
 ]
 
-BASE_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "yearly")
+BASE_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
 
 def read_json(path):
