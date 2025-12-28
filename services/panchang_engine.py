@@ -159,6 +159,33 @@ PANCHAK_MSG_HI = {
     False: "✅ आज पंचक नहीं है।",
 }
 
+# --- Chaughadiya constants ---
+CHAUGHADIYA_DAY = {
+    "Sunday":    ["Udveg", "Chal", "Labh", "Amrit", "Kaal", "Shubh", "Rog", "Udveg"],
+    "Monday":    ["Amrit", "Kaal", "Shubh", "Rog", "Udveg", "Chal", "Labh", "Amrit"],
+    "Tuesday":   ["Rog", "Udveg", "Chal", "Labh", "Amrit", "Kaal", "Shubh", "Rog"],
+    "Wednesday": ["Labh", "Amrit", "Kaal", "Shubh", "Rog", "Udveg", "Chal", "Labh"],
+    "Thursday":  ["Shubh", "Rog", "Udveg", "Chal", "Labh", "Amrit", "Kaal", "Shubh"],
+    "Friday":    ["Chal", "Labh", "Amrit", "Kaal", "Shubh", "Rog", "Udveg", "Chal"],
+    "Saturday":  ["Kaal", "Shubh", "Rog", "Udveg", "Chal", "Labh", "Amrit", "Kaal"],
+}
+SHUBH_CHAUGHADIYA = {"Amrit", "Shubh", "Labh"}
+
+# --- Chaughadiya Hindi mapping ---
+CHAUGHADIYA_HI = {
+    "Amrit": "अमृत",
+    "Shubh": "शुभ",
+    "Labh": "लाभ",
+    "Chal": "चल",
+    "Rog": "रोग",
+    "Kaal": "काल",
+    "Udveg": "उद्वेग",
+}
+CHAUGHADIYA_NATURE_HI = {
+    "shubh": "शुभ",
+    "ashubh": "अशुभ",
+}
+
 # --- Swiss Ephemeris setup ---
 swe.set_sid_mode(swe.SIDM_LAHIRI)
 FLAGS = swe.FLG_SIDEREAL | swe.FLG_SWIEPH
@@ -209,17 +236,55 @@ def _approx_hindu_month(date):
     """Approximate lunar month name based on Sun's sidereal longitude (for accuracy use solar transition)."""
     jd_ut = swe.julday(date.year, date.month, date.day, 12)
     sun_long = swe.calc_ut(jd_ut, swe.SUN, FLAGS)[0][0] % 360
-    # Each month covers 30 degrees of Sun's motion starting from Mesha (Aries)
     idx = int((sun_long // 30) % 12)
     return HINDU_MONTHS[idx]
 
 # -------------------------------
-# DAY WINDOW NORMALIZER (ADD THIS)
+# DAY WINDOW NORMALIZER (KEEP THIS)
 # -------------------------------
 def _normalize_day_window(sunrise, sunset):
     if sunset <= sunrise:
         sunset = sunset + timedelta(days=1)
     return sunrise, sunset
+
+# -------------------------------
+# CHAUGHADIYA (KEEP IN MIDDLE; DO NOT MOVE BELOW USE)
+# -------------------------------
+def _divide_into_8(start, end):
+    slot = (end - start) / 8
+    return [(start + i * slot, start + (i + 1) * slot) for i in range(8)]
+
+def _calculate_chaughadiya(date, sunrise, sunset, language="en"):
+    sunrise, sunset = _normalize_day_window(sunrise, sunset)
+    weekday = date.strftime("%A")
+
+    # Day
+    day_slots = _divide_into_8(sunrise, sunset)
+    day_names = CHAUGHADIYA_DAY[weekday]
+
+    # Night
+    next_sunrise = sunrise + timedelta(days=1)
+    night_slots = _divide_into_8(sunset, next_sunrise)
+    night_names = day_names[1:] + day_names[:1]
+
+    def pack(slots, names):
+        out = []
+        for (s, e), name in zip(slots, names):
+            nature = "shubh" if name in SHUBH_CHAUGHADIYA else "ashubh"
+            out.append({
+                "name": name if language == "en" else CHAUGHADIYA_HI.get(name, name),
+                "name_en": name,
+                "nature": nature if language == "en" else CHAUGHADIYA_NATURE_HI[nature],
+                "nature_en": nature,
+                "start": s.strftime("%H:%M"),
+                "end": e.strftime("%H:%M"),
+            })
+        return out
+
+    return {
+        "day": pack(day_slots, day_names),
+        "night": pack(night_slots, night_names),
+    }
 
 # ✅ --- Use imported sunrise/sunset instead of formula ---
 def _rahu_kaal(date, sunrise, sunset):
@@ -275,7 +340,6 @@ def _tithi_start_end_ist(date):
 
 # --- Final Public API ---
 def calculate_panchang(date, lat, lon, language="en"):
-    # Normalize & safe fallback
     language = (language or "en").lower()
     if language not in ("en", "hi"):
         language = "en"
@@ -289,47 +353,40 @@ def calculate_panchang(date, lat, lon, language="en"):
 
     # ✅ Sunrise/Sunset from external function
     sunrise, sunset = calculate_sunrise_sunset(date, lat, lon)
+
+    # ✅ Chaughadiya derived from sunrise/sunset + weekday
+    chaughadiya = _calculate_chaughadiya(date, sunrise, sunset, language)
+
     rahu_s, rahu_e = _rahu_kaal(date, sunrise, sunset)
     abhi_s, abhi_e = _abhijit(sunrise, sunset)
     t_start, t_end, _ = _tithi_start_end_ist(date)
 
-    # ✅ Panchak detection logic
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     is_panchak = n_name in PANCHAK_NAKSHATRAS
 
     month_name_en = _approx_hindu_month(date)
     weekday_en = date.strftime("%A")
 
-    # --- Language-specific values ---
     weekday_val = WEEKDAYS_HI.get(weekday_en, weekday_en) if language == "hi" else weekday_en
-    month_name_val = (
-        HINDU_MONTHS_HI.get(month_name_en, month_name_en)
-        if language == "hi"
-        else month_name_en
-    )
+    month_name_val = HINDU_MONTHS_HI.get(month_name_en, month_name_en) if language == "hi" else month_name_en
     tithi_name_val = t_name if language == "en" else TITHI_NAMES_HI[t_num - 1]
     paksha_val = paksha if language == "en" else PAKSHA_HI.get(paksha, paksha)
-    nakshatra_name_val = (
-        n_name if language == "en" else NAKSHATRAS_HI.get(n_name, n_name)
-    )
+    nakshatra_name_val = n_name if language == "en" else NAKSHATRAS_HI.get(n_name, n_name)
     yoga_name_val = y_name if language == "en" else YOGAS_HI.get(y_name, y_name)
     karan_name_val = k_name if language == "en" else KARAN_HI.get(k_name, k_name)
 
     if language == "hi":
         panchak_message_val = PANCHAK_MSG_HI[is_panchak]
-        panchak_nakshatra_val = (
-            NAKSHATRAS_HI.get(n_name, n_name) if is_panchak else None
-        )
+        panchak_nakshatra_val = NAKSHATRAS_HI.get(n_name, n_name) if is_panchak else None
     else:
         panchak_message_val = (
             "⚠️ Panchak Kaal in effect – avoid construction, travel, and cremation."
-            if is_panchak
-            else "✅ No Panchak today."
+            if is_panchak else "✅ No Panchak today."
         )
         panchak_nakshatra_val = n_name if is_panchak else None
 
     return {
-        "language": language,  # 🔑 helpful for frontend
+        "language": language,
         "date": date.strftime("%Y-%m-%d"),
         "weekday": weekday_val,
         "month_name": month_name_val,
@@ -364,11 +421,12 @@ def calculate_panchang(date, lat, lon, language="en"):
             "end": abhi_e.strftime("%H:%M"),
         },
         "ayanamsa": "Lahiri",
+
+        # ✅ New non-breaking field
+        "chaughadiya": chaughadiya,
     }
 
-
 def today_and_tomorrow(lat, lon, language="en"):
-    # language optional, defaults to English (backward compatible)
     language = (language or "en").lower()
     if language not in ("en", "hi"):
         language = "en"
@@ -380,7 +438,6 @@ def today_and_tomorrow(lat, lon, language="en"):
     }
 
 def panchang_range(start_date, end_date, lat, lon, language="en"):
-    # language optional, defaults to English
     language = (language or "en").lower()
     if language not in ("en", "hi"):
         language = "en"
