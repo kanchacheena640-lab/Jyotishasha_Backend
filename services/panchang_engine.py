@@ -303,6 +303,15 @@ def _abhijit(sunrise, sunset):
     mid = sunrise + (sunset - sunrise) / 2
     return mid - timedelta(minutes=24), mid + timedelta(minutes=24)
 
+def _brahma_muhurta(sunrise):
+    """
+    Brahma Muhurta:
+    Starts 1h 36m before sunrise, lasts 48 minutes
+    """
+    start = sunrise - timedelta(minutes=96)
+    end = start + timedelta(minutes=48)
+    return start, end
+
 # --- Tithi timing utilities ---
 def _tithi_number_at(dt_ist):
     s, m = _sidereal_longitudes(dt_ist)
@@ -359,6 +368,7 @@ def calculate_panchang(date, lat, lon, language="en"):
 
     rahu_s, rahu_e = _rahu_kaal(date, sunrise, sunset)
     abhi_s, abhi_e = _abhijit(sunrise, sunset)
+    brahma_s, brahma_e = _brahma_muhurta(sunrise)
     t_start, t_end, _ = _tithi_start_end_ist(date)
 
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
@@ -424,6 +434,11 @@ def calculate_panchang(date, lat, lon, language="en"):
 
         # ✅ New non-breaking field
         "chaughadiya": chaughadiya,
+
+        "brahma_muhurta": {
+            "start": brahma_s.strftime("%H:%M"),
+            "end": brahma_e.strftime("%H:%M"),
+        },
     }
 
 def today_and_tomorrow(lat, lon, language="en"):
