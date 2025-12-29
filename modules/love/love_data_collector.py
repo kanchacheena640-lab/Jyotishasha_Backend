@@ -6,19 +6,13 @@
 # - NO OpenAI here
 # - Output is strictly JSON/dict to be later converted into prompt blocks
 #
-# Inputs:
-# - order: dict (from get_order_details(order_id) OR already in task.py)
-# - user_kundali: dict (already calculated in task.py)
-# - language: "en" | "hi"
-#
-# Notes:
-# - Partner data must come from order payload (preferred) or fallback keys.
-# - Supports two cases:
-#   A) Full partner details (DOB+TOB+LAT+LNG) -> full dual-kundali Ashtakoot
-#   B) Partner DOB only -> Moon approximation + Vedic fallback (safe_mode)
+# Key Upgrade (Dec 2025):
+# - Adds astro_facts block for non-generic premium narration
+# - Ashtakoot logic untouched
+# - Backward compatible
 
 from __future__ import annotations
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from modules.love.service_love import run_love_compatibility, LoveServiceError
 from modules.love.love_report_compiler import compile_love_report
@@ -29,16 +23,10 @@ class LoveCollectorError(Exception):
 
 
 def _pick_partner(order: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Partner details source priority:
-    1) order["partner"] dict (recommended)
-    2) legacy flat fields if you stored them (partner_name, partner_dob, etc.)
-    """
     partner = order.get("partner")
     if isinstance(partner, dict) and partner:
         return partner
 
-    # Legacy flat fields fallback (optional)
     p = {
         "name": order.get("partner_name"),
         "dob": order.get("partner_dob"),
@@ -47,14 +35,10 @@ def _pick_partner(order: Dict[str, Any]) -> Dict[str, Any]:
         "lng": order.get("partner_lng"),
         "language": order.get("partner_language") or order.get("language") or "en",
     }
-    # Clean None keys
     return {k: v for k, v in p.items() if v is not None}
 
 
 def _pick_user(order: Dict[str, Any], language: str) -> Dict[str, Any]:
-    """
-    User is ALWAYS full details in your current system (dob+tob+lat+lng).
-    """
     return {
         "name": order.get("name"),
         "dob": order.get("dob"),
@@ -72,40 +56,26 @@ def collect_love_report_data(
     *,
     boy_is_user: bool = True,
 ) -> Dict[str, Any]:
-    """
-    Returns a structured dict that can be used in two ways:
-    1) To build OpenAI prompt blocks (premium narrative writing)
-    2) To generate direct JSON-only UI (if needed later)
 
-    Output keys (stable contract):
-    - product
-    - language
-    - client
-    - partner
-    - compatibility (raw output of run_love_compatibility)
-    - compiled_report (output of compile_love_report)
-    """
     if not isinstance(order, dict) or not order:
         raise LoveCollectorError("order payload missing/invalid")
     if not isinstance(user_kundali, dict) or not user_kundali:
         raise LoveCollectorError("user_kundali missing/invalid")
 
-    lang = (language or order.get("language") or "en").strip().lower()
+    lang = (language or order.get("language") or "en").lower()
     lang = "hi" if lang == "hi" else "en"
 
     user = _pick_user(order, lang)
     partner = _pick_partner(order)
 
-    # Hard requirements for this premium product
     if not user.get("name") or not user.get("dob") or not user.get("tob"):
-        raise LoveCollectorError("User basic details missing (name/dob/tob)")
+        raise LoveCollectorError("User basic details missing")
     if user.get("lat") is None or user.get("lng") is None:
         raise LoveCollectorError("User lat/lng missing")
-
     if not partner.get("name") or not partner.get("dob"):
-        raise LoveCollectorError("Partner details missing (name/dob)")
+        raise LoveCollectorError("Partner details missing")
 
-    # 1) Compatibility (Ashtakoot + optional fallback)
+    # ---------------- 1) Ashtakoot / Compatibility ----------------
     try:
         compat = run_love_compatibility(
             user=user,
@@ -115,7 +85,7 @@ def collect_love_report_data(
     except LoveServiceError as e:
         raise LoveCollectorError(str(e))
 
-    # 2) Compile structured paid report JSON (NOT the final narrative)
+    # ---------------- 2) Structured Compiler (existing) ----------------
     compiled = compile_love_report(
         {
             "language": lang,
@@ -125,22 +95,68 @@ def collect_love_report_data(
                 "tob": user.get("tob"),
                 "pob": order.get("pob"),
             },
-            # IMPORTANT: we pass user kundali already computed in task.py
             "kundali": user_kundali,
             "ashtakoot": compat.get("ashtakoot") or {},
-            # If CASE_B, compiler can use this later for disclaimers/logic if needed
             "fallback": compat.get("fallback"),
-            # Optional (only if available in your pipeline)
-            "dasha": user_kundali.get("dasha") if isinstance(user_kundali.get("dasha"), dict) else {},
-            "transits": user_kundali.get("transit_summary") if isinstance(user_kundali.get("transit_summary"), dict) else {},
+            "dasha": user_kundali.get("dasha") or {},
+            "transits": user_kundali.get("transit_summary") or {},
         }
     )
 
+    # ---------------- 3) NEW: Astro Facts for Premium Narration ----------------
+    houses = user_kundali.get("houses", {})
+    planets = user_kundali.get("planets", {})
+    aspects = user_kundali.get("aspects", {})
+    dasha = user_kundali.get("dasha", {})
+
+    lord_5 = houses.get("5", {}).get("lord")
+    lord_7 = houses.get("7", {}).get("lord")
+
+    astro_facts = {
+        "love_flow": {
+            "lord_5": lord_5,
+            "lord_7": lord_7,
+            "planets_in_5": houses.get("5", {}).get("planets", []),
+            "planets_in_7": houses.get("7", {}).get("planets", []),
+            "lord_5_position": planets.get(lord_5),
+            "lord_7_position": planets.get(lord_7),
+            "connection_5_7": aspects.get("5_7_relation"),
+            "current_dasha_related": dasha.get("current", {}).get("planet") in (lord_5, lord_7),
+        },
+
+        "love_vs_arranged": {
+            "rahu_in_5_or_7": "Rahu" in (
+                houses.get("5", {}).get("planets", []) +
+                houses.get("7", {}).get("planets", [])
+            ),
+            "venus_involved": "Venus" in planets,
+            "direct_5_7_link": bool(aspects.get("5_7_relation")),
+            "family_house_support": any(
+                houses.get(h) for h in ("2", "7", "11")
+            ),
+        },
+
+        "strength_risk": {
+            "benefic_support": aspects.get("benefic_support", []),
+            "malefic_affliction": aspects.get("malefic_affliction", []),
+            "manglik": user_kundali.get("manglik", False),
+            "verdict_level": compiled.get("verdict", {}).get("level"),
+        },
+
+        "remedies": {
+            "weak_house": compiled.get("signals", {}).get("weak_house"),
+            "weak_lord": compiled.get("signals", {}).get("weak_lord"),
+            "current_dasha": dasha.get("current"),
+        },
+    }
+
+    # ---------------- FINAL PAYLOAD ----------------
     return {
-        "product": "love-marriage-life",
+        "product": "relationship_future_report",
         "language": lang,
         "client": user,
         "partner": partner,
         "compatibility": compat,
         "compiled_report": compiled,
+        "astro_facts": astro_facts,   # 🔑 THIS FIXES GENERIC OUTPUT
     }

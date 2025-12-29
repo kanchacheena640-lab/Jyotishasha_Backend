@@ -128,7 +128,7 @@ def generate_love_premium_report(order_id: int):
                 gpt_response=report_text,
                 kundali_drawing=kundali_drawing,
                 used_placeholders=[],
-                product="love-marriage-life",
+                product="relationship_future_report",
             )
 
             del kundali_drawing
