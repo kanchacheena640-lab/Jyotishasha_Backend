@@ -95,11 +95,18 @@ def generate_love_premium_report(order_id: int):
             report_text = response.choices[0].message.content.strip()
 
             # ---------------- 7) Kundali Drawing ----------------
-            lagna_rashi = kundali.get("lagna_rashi") or kundali.get("lagna_sign")
+            RASHI_MAP = {
+                "Aries": 1, "Taurus": 2, "Gemini": 3, "Cancer": 4,
+                "Leo": 5, "Virgo": 6, "Libra": 7, "Scorpio": 8,
+                "Sagittarius": 9, "Capricorn": 10, "Aquarius": 11, "Pisces": 12
+            }
+
+            lagna = kundali.get("lagna_rashi") or kundali.get("lagna_sign")
+            lagna_number = RASHI_MAP.get(lagna, lagna)
 
             kundali_drawing = generate_kundali_drawing(
                 planets=kundali["planets"],
-                lagna_rashi=lagna_rashi,
+                lagna_rashi=lagna_number,   # ✅ ab numeric (1–12)
             )
 
             # ---------------- 8) PDF ----------------

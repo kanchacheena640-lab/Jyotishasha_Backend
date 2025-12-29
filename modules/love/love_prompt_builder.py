@@ -61,11 +61,10 @@ def build_love_premium_prompt(love_payload: Dict[str, Any]) -> str:
     body.append("=== OVERALL RELATIONSHIP VERDICT ===")
     body.append(
         f"Compatibility Level: {verdict.get('level')}\n"
-        f"Summary: {verdict.get('summary')}\n"
-        f"Marriage Outlook: {verdict.get('marriage_outlook')}"
+        f"Summary: {verdict.get('reason_line')}"
     )
 
-    # ---- Ashtakoot + Core Compatibility ----
+    # ---- Core Compatibility ----
     body.append("\n=== CORE COMPATIBILITY INSIGHTS ===")
     body.append(
         "Use the following compatibility data to judge emotional bond, "
