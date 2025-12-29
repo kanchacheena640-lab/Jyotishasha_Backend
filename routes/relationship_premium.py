@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 
-from services.love_service import run_love_compatibility, LoveServiceError
+from modules.love.service_love import run_love_compatibility, LoveServiceError
 
 relationship_premium_bp = Blueprint(
     "relationship_premium",
