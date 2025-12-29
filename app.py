@@ -40,7 +40,7 @@ from routes.routes_admin_tokens import routes_admin_tokens
 from notifications.notification_routes import notification_bp
 from modules.love.routes_love import love_bp
 from routes.yearly_horoscope import yearly_bp
-
+from routes.relationship_premium import relationship_premium_bp
 
 
 
@@ -75,7 +75,7 @@ app.register_blueprint(routes_admin_tokens)
 app.register_blueprint(notification_bp)
 app.register_blueprint(love_bp)
 app.register_blueprint(yearly_bp)
-
+app.register_blueprint(relationship_premium_bp)
 
 
 
