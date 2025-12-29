@@ -421,10 +421,11 @@ class LoveReportCompiler:
             if isinstance(sc, (int, float)) and isinstance(mx, (int, float)) and mx > 0:
                 pct = sc / mx
 
-            # Pick line
+            # Pick line (FINAL – NO KeyError, NO ambiguity)
             if cancelled and key in T and "cancelled" in T[key]:
                 en, hi = T[key]["cancelled"]
                 line = _title(lang, en, hi)
+
             elif status in ("dosha", "fail"):
                 # dosha-specific
                 if key in T and "dosha" in T[key]:
@@ -436,17 +437,34 @@ class LoveReportCompiler:
                         f"Dosha detected ({dosha}). This may create friction unless balanced.",
                         f"दोष पाया गया ({dosha})। संतुलन न हो तो मतभेद बढ़ सकते हैं।",
                     )
+
             elif status == "partial" or (pct is not None and pct < 0.8):
                 if key in T and "partial" in T[key]:
                     en, hi = T[key]["partial"]
                     line = _title(lang, en, hi)
-                else:
+                elif key in T and "weak" in T[key]:
                     en, hi = T[key]["weak"]
                     line = _title(lang, en, hi)
+                elif key in T and "dosha" in T[key]:
+                    en, hi = T[key]["dosha"]
+                    line = _title(lang, en, hi)
+                else:
+                    line = _title(
+                        lang,
+                        "This koota shows mixed results and needs conscious handling.",
+                        "यह कूट मिश्रित परिणाम दिखाता है और सचेत समझ की आवश्यकता है।",
+                    )
+
             else:
-                # strong/pass
-                en, hi = T[key]["strong"]
-                line = _title(lang, en, hi)
+                if key in T and "strong" in T[key]:
+                    en, hi = T[key]["strong"]
+                    line = _title(lang, en, hi)
+                else:
+                    line = _title(
+                        lang,
+                        "This koota is supportive overall.",
+                        "यह कूट समग्र रूप से सहायक है।",
+                    )
 
             notes.append({
                 "key": key,
@@ -457,9 +475,8 @@ class LoveReportCompiler:
                 "cancelled": cancelled,
                 "note": line,
             })
-
+            
         return notes
-
 
     # ------------------------- Verdict (Low/Medium/High) -------------------------
 
@@ -531,6 +548,8 @@ class LoveReportCompiler:
             "cancellations": cancellations,
             "reason_line": reason_line,
         }
+    
+
 
     # ------------------------- Signals (safe + controlled) -------------------------
 
