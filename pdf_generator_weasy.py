@@ -26,43 +26,80 @@ def _to_html(text: str | None) -> str:
 # ✅ NEW: Convert GPT plain numbered text to HTML-formatted headings + paragraphs
 def convert_headings(text: str) -> str:
     """
-    Safe GPT → HTML converter.
-    - **Heading** → <h2>
-    - Text → <p>
-    - Card structure never breaks (WeasyPrint safe)
+    GPT → HTML formatter (STRICT, PDF-safe)
+
+    Rules:
+    #  Heading      → H1
+    ## Heading      → H2
+    ### Heading     → H3
+    -**Text:** body → bold inline highlight
     """
     if not text:
         return ""
 
-    lines = [l.strip() for l in text.split("\n") if l.strip()]
-    html_parts = []
+    lines = [l.rstrip() for l in text.split("\n") if l.strip()]
+    html = []
     in_card = False
 
     def open_card():
         nonlocal in_card
         if not in_card:
-            html_parts.append("<div class='card hi'>")
+            html.append("<div class='card hi'>")
             in_card = True
 
     def close_card():
         nonlocal in_card
         if in_card:
-            html_parts.append("</div>")
+            html.append("</div>")
             in_card = False
 
     for line in lines:
-        # Heading line like **Title**
-        if line.startswith("**") and line.endswith("**"):
+
+        # ---------- H1 ----------
+        if line.startswith("# ") and not line.startswith("##"):
             close_card()
-            heading = line.strip("*").strip()
-            html_parts.append(f"<h2 class='section-heading'>{heading}</h2>")
+            html.append(
+                f"<h1 class='section-heading'>{line[2:].strip()}</h1>"
+            )
+            continue
+
+        # ---------- H2 ----------
+        if line.startswith("## ") and not line.startswith("###"):
+            close_card()
+            html.append(
+                f"<h2 class='section-heading'>{line[3:].strip()}</h2>"
+            )
             open_card()
-        else:
+            continue
+
+        # ---------- H3 ----------
+        if line.startswith("### "):
+            close_card()
+            html.append(
+                f"<h3 class='sub-heading'>{line[4:].strip()}</h3>"
+            )
             open_card()
-            html_parts.append(f"<p>{line}</p>")
+            continue
+
+        # ---------- Bold inline bullet ----------
+        # -**Varna (1/1):** text
+        if line.startswith("-**") and "**" in line:
+            open_card()
+            clean = line.lstrip("-").strip()
+            clean = re.sub(
+                r"\*\*(.+?)\*\*",
+                r"<strong>\1</strong>",
+                clean
+            )
+            html.append(f"<p>{clean}</p>")
+            continue
+
+        # ---------- Normal paragraph ----------
+        open_card()
+        html.append(f"<p>{line}</p>")
 
     close_card()
-    return "\n".join(html_parts)
+    return "\n".join(html)
 
 # ✅ Main function
 def generate_pdf_report_weasy(
