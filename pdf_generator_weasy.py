@@ -25,23 +25,44 @@ def _to_html(text: str | None) -> str:
 
 # ✅ NEW: Convert GPT plain numbered text to HTML-formatted headings + paragraphs
 def convert_headings(text: str) -> str:
-    text = _to_html(text)
-    # Replace **Heading** with end card, heading, then open new card
-    html = re.sub(
-        r"\*\*(.+?)\*\*",
-        r"</div><h2 class='section-heading'>\1</h2><div class='card hi'>",
-        text
-    )
-    # Ensure it's wrapped inside 1 <div class='card hi'>...</div>
-    return f"<div class='card hi'>{html}</div>"
+    """
+    Safe GPT → HTML converter.
+    - **Heading** → <h2>
+    - Text → <p>
+    - Card structure never breaks (WeasyPrint safe)
+    """
+    if not text:
+        return ""
 
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    html_parts = []
+    in_card = False
 
-    # Flush last section
-    if current_heading:
-        output += f"<h2 class='section-heading'>{current_heading}</h2>\n"
-        output += f"<p>{' '.join(current_para)}</p>\n"
+    def open_card():
+        nonlocal in_card
+        if not in_card:
+            html_parts.append("<div class='card hi'>")
+            in_card = True
 
-    return output
+    def close_card():
+        nonlocal in_card
+        if in_card:
+            html_parts.append("</div>")
+            in_card = False
+
+    for line in lines:
+        # Heading line like **Title**
+        if line.startswith("**") and line.endswith("**"):
+            close_card()
+            heading = line.strip("*").strip()
+            html_parts.append(f"<h2 class='section-heading'>{heading}</h2>")
+            open_card()
+        else:
+            open_card()
+            html_parts.append(f"<p>{line}</p>")
+
+    close_card()
+    return "\n".join(html_parts)
 
 # ✅ Main function
 def generate_pdf_report_weasy(
