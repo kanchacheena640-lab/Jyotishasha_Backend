@@ -94,6 +94,8 @@ def generate_love_premium_report(order_id: int):
 
             report_text = response.choices[0].message.content.strip()
 
+            report_text = report_text[:18000]
+
             # ---------------- 7) Kundali Drawing ----------------
             RASHI_MAP = {
                 "Aries": 1, "Taurus": 2, "Gemini": 3, "Cancer": 4,
@@ -129,6 +131,8 @@ def generate_love_premium_report(order_id: int):
                 product="love-marriage-life",
             )
 
+            del kundali_drawing
+
             # ---------------- 9) Save + Email ----------------
             order.pdf_url = output_path
             order.report_stage = "Ready"
@@ -140,6 +144,9 @@ def generate_love_premium_report(order_id: int):
                 f"Hello {order.name},\n\nYour Love & Relationship report is ready.",
                 output_path,
             )
+
+            import gc
+            gc.collect()
 
     except Exception as e:
         print("[LOVE PREMIUM TASK ERROR]", e)
