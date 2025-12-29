@@ -51,10 +51,9 @@ def _generate_and_send_report_core(order_id):
             
             # ⬇️ YAHAN ADD KARO
             product = order.get("product")
-            if product in ("relationship_future_report",):
+            if product == "relationship_future_report":
                 routed = route_report_generation(order_id, product)
-                if routed:
-                    return
+                return
             # ⬆️ YAHAN TAK
 
             language = order.get("language", "en")
