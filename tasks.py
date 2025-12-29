@@ -12,7 +12,6 @@ from transit_engine import get_current_positions
 from openai import OpenAI
 from kundali_chart_generator import generate_kundali_drawing
 from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
-from modules.love.love_report_router import route_report_generation
 
 
 # ------------------------------------------------------------
@@ -38,6 +37,8 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 🚀 Dual-Mode Task Definition
 # ------------------------------------------------------------
 def _generate_and_send_report_core(order_id):
+    from modules.love.love_report_router import route_report_generation
+
     """Shared report generation logic for both Celery and direct modes."""
     print(f"[Task] Starting report generation for Order ID: {order_id}")
 
