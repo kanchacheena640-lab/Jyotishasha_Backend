@@ -10,7 +10,7 @@ from modules.love.love_report_compiler import compile_love_report
 
 CASE_A_FULL_DUAL = "A_FULL_DUAL"
 CASE_B_DOB_ONLY_HYBRID = "B_DOB_ONLY_HYBRID"
-
+                                            
 
 class LoveServiceError(Exception):
     pass

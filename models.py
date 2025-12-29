@@ -18,3 +18,4 @@ class Order(db.Model):
     pdf_url = db.Column(db.String(255))  
     latitude = db.Column(db.String)
     longitude = db.Column(db.String)
+    partner_payload = db.Column(db.JSON, nullable=True)

@@ -140,6 +140,7 @@ def webhook():
     tob = data.get("tob")
     pob = data.get("pob")
     language = data.get("language", "en")
+    partner_payload = data.get("partner")
 
     # 🔍 DEBUG — ADD HERE
     print("name:", name, "email:", email, "product:", product)
@@ -159,7 +160,8 @@ def webhook():
         language=language,
         status="PAID",
         latitude=data.get("latitude"),
-        longitude=data.get("longitude")
+        longitude=data.get("longitude"),
+        partner_payload=partner_payload
     )
     db.session.add(order)
     db.session.commit()

@@ -1,2 +1,2 @@
-ALTER TABLE chat_packs
-ALTER COLUMN razorpay_payment_id TYPE TEXT;
+ALTER TABLE orders
+ADD COLUMN partner_payload JSONB;

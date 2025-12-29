@@ -25,5 +25,6 @@ PRODUCT_PRICES = {
     "saturn_transit_report": 51,
     "second_marriage_report": 51,
     "divorce_possibility_report": 51,
+    "relationship_future_report": 299,
     # Add more here...
 }

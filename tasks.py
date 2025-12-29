@@ -12,6 +12,8 @@ from transit_engine import get_current_positions
 from openai import OpenAI
 from kundali_chart_generator import generate_kundali_drawing
 from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
+from modules.love.love_report_router import route_report_generation
+
 
 # ------------------------------------------------------------
 # 🧩 Optional Celery/Redis setup — enabled only if USE_CELERY=True
@@ -46,6 +48,14 @@ def _generate_and_send_report_core(order_id):
             if not order:
                 print(f"[ERROR] Order {order_id} not found!")
                 return
+            
+            # ⬇️ YAHAN ADD KARO
+            product = order.get("product")
+            if product:
+                routed = route_report_generation(order_id, product)
+                if routed is not None:
+                    return
+            # ⬆️ YAHAN TAK
 
             language = order.get("language", "en")
             print(f"[DEBUG] Language for this order: {language}")
