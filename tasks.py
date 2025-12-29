@@ -37,9 +37,8 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 🚀 Dual-Mode Task Definition
 # ------------------------------------------------------------
 def _generate_and_send_report_core(order_id):
-    from modules.love.love_report_router import route_report_generation
-
     """Shared report generation logic for both Celery and direct modes."""
+    from modules.love.love_report_router import route_report_generation
     print(f"[Task] Starting report generation for Order ID: {order_id}")
 
     try:
@@ -52,9 +51,9 @@ def _generate_and_send_report_core(order_id):
             
             # ⬇️ YAHAN ADD KARO
             product = order.get("product")
-            if product:
+            if product in ("relationship_future_report",):
                 routed = route_report_generation(order_id, product)
-                if routed is not None:
+                if routed:
                     return
             # ⬆️ YAHAN TAK
 
