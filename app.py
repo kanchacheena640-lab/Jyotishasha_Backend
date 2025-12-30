@@ -11,6 +11,7 @@ from life_tools_report import life_tools_bp
 from routes.generate_report import generate_report_bp
 from openai import OpenAI
 import os
+import threading 
 from dotenv import load_dotenv
 load_dotenv()
 from config.razorpay_config import razorpay_client
@@ -181,7 +182,12 @@ def webhook():
     else:
         # ⚡ SYNC MODE (Direct execution, no Celery)
         print(f"[Webhook] Running report directly for Order {order.id}")
-        generate_and_send_report(order.id)
+        threading.Thread(
+            target=generate_and_send_report,
+            args=(order.id,),
+            daemon=True
+        ).start()
+        
         return jsonify({
             "message": "Webhook received — report generated successfully",
             "order_id": order.id
