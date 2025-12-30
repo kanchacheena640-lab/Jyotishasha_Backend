@@ -178,35 +178,49 @@ def collect_love_report_data(
     # aspects: keep flexible (some kundali don't have it)
     aspects = user_kundali.get("aspects") if isinstance(user_kundali.get("aspects"), dict) else {}
 
+    signals = {}
+    if isinstance(compiled, dict):
+        raw_signals = compiled.get("signals")
+        if isinstance(raw_signals, dict):
+            signals = raw_signals
+
+
     astro_facts = {
-        "love_flow": {
-            "lord_5": lord_5,
-            "lord_7": lord_7,
-            "planets_in_5": planets_in_5,
-            "planets_in_7": planets_in_7,
-            "lord_5_position": planets.get(str(lord_5)) if lord_5 else None,
-            "lord_7_position": planets.get(str(lord_7)) if lord_7 else None,
-            "connection_5_7": aspects.get("5_7_relation") or aspects.get("connection_5_7"),
-            "current_dasha_related": bool(current_dasha_planet and current_dasha_planet in {lord_5, lord_7}),
-        },
-        "love_vs_arranged": {
-            "rahu_in_5_or_7": ("Rahu" in planets_in_5) or ("Rahu" in planets_in_7),
-            "venus_involved": ("Venus" in planets) or ("Shukra" in planets),
-            "direct_5_7_link": bool(aspects.get("5_7_relation") or aspects.get("connection_5_7")),
-            "family_house_support": any(houses.get(h) for h in ("2", "11")),
-        },
-        "strength_risk": {
-            "benefic_support": aspects.get("benefic_support", []),
-            "malefic_affliction": aspects.get("malefic_affliction", []),
-            "manglik": user_kundali.get("manglik", False),
-            "verdict_level": (compiled.get("verdict") or {}).get("level") if isinstance(compiled, dict) else None,
-        },
-        "remedies": {
-            "weak_house": ((compiled.get("signals") or {}).get("weak_house")) if isinstance(compiled, dict) else None,
-            "weak_lord": ((compiled.get("signals") or {}).get("weak_lord")) if isinstance(compiled, dict) else None,
-            "current_dasha": dasha.get("current"),
-        },
-    }
+    "love_flow": {
+        "lord_5": lord_5,
+        "lord_7": lord_7,
+        "planets_in_5": planets_in_5,
+        "planets_in_7": planets_in_7,
+        "lord_5_position": planets.get(str(lord_5)) if lord_5 else None,
+        "lord_7_position": planets.get(str(lord_7)) if lord_7 else None,
+        "connection_5_7": aspects.get("5_7_relation") or aspects.get("connection_5_7"),
+        "current_dasha_related": bool(
+            current_dasha_planet and current_dasha_planet in {lord_5, lord_7}
+        ),
+    },
+
+    "love_vs_arranged": {
+        "rahu_in_5_or_7": ("Rahu" in planets_in_5) or ("Rahu" in planets_in_7),
+        "venus_involved": ("Venus" in planets) or ("Shukra" in planets),
+        "direct_5_7_link": bool(
+            aspects.get("5_7_relation") or aspects.get("connection_5_7")
+        ),
+        "family_house_support": any(houses.get(h) for h in ("2", "11")),
+    },
+
+    "strength_risk": {
+        "benefic_support": aspects.get("benefic_support", []),
+        "malefic_affliction": aspects.get("malefic_affliction", []),
+        "manglik": user_kundali.get("manglik", False),
+        "verdict_level": signals.get("level"),
+    },
+
+    "remedies": {
+        "weak_house": signals.get("weak_house"),
+        "weak_lord": signals.get("weak_lord"),
+        "current_dasha": dasha.get("current"),
+    },
+}
 
     return {
         "product": "relationship_future_report",
