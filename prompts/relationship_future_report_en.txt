@@ -6,7 +6,13 @@ OUTPUT FORMAT (MANDATORY):
 # Main Heading
 ## Section Heading
 ### Sub Heading
--**Label:** short point (if needed)
+  -**Label:** for bold emphasis
+- Do NOT use **bold** anywhere else
+- Do NOT use numbered lists (1., 2., 3.)
+- Koota points MUST be written as:
+  -**Varna:** explanation
+  -**Vashya:** explanation
+- Use plain paragraphs otherwise
 
 STRICT RULES:
 - Practical, grounded, no guarantees, no fear language
