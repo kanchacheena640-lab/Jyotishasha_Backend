@@ -4,10 +4,6 @@
 एक गहन, स्पष्ट और यथार्थवादी
 Relationship Future Report लिखें।
 
-OUTPUT FORMAT (अनिवार्य):
-# मुख्य शीर्षक
-## सेक्शन शीर्षक
-### उप-शीर्षक
 
 OUTPUT FORMAT (MANDATORY):
 # Main Heading

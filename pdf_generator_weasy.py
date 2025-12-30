@@ -81,7 +81,7 @@ def convert_headings(text: str) -> str:
             open_card()
             continue
 
-        # ---------- INLINE LABEL (STRICT, NO ** ) ----------
+        # ---------- INLINE LABEL ----------
         # @@Varna: explanation
         if line.startswith("@@"):
             open_card()
@@ -89,6 +89,18 @@ def convert_headings(text: str) -> str:
             html.append(
                 f"<p><strong>{label.strip()}:</strong> {rest.strip()}</p>"
             )
+            continue
+
+        # ---------- STAR BOLD FORMAT ----------
+        # **important text**
+        if "**" in line:
+            open_card()
+            clean = re.sub(
+                r"\*\*(.+?)\*\*",
+                r"<strong>\1</strong>",
+                line
+            )
+            html.append(f"<p>{clean}</p>")
             continue
 
         # ---------- Normal paragraph ----------
