@@ -6,22 +6,31 @@ OUTPUT FORMAT (MANDATORY):
 # Main Heading
 ## Section Heading
 ### Sub Heading
-  -**Label:** for bold emphasis
+
+INLINE EMPHASIS RULE (VERY IMPORTANT):
+- Use emphasis ONLY in this exact format:
+  -**Label:** explanation
 - Do NOT use **bold** anywhere else
+- Do NOT show ** symbols in final output
 - Do NOT use numbered lists (1., 2., 3.)
-- Koota points MUST be written as:
-  -**Varna:** explanation
-  -**Vashya:** explanation
 - Use plain paragraphs otherwise
 
-STRICT RULES:
-- Practical, grounded, no guarantees, no fear language
-- Do NOT show raw JSON or scores
-- Do NOT mention empty houses/missing planets
-- If data is limited, mention gently as guidance
-- Every conclusion must be tied to a provided fact (no generic counseling)
+Koota Formatting Rule (STRICT):
+- Koota points MUST be written ONLY as:
+  -**Varna:** explanation
+  -**Vashya:** explanation
+  -**Tara:** explanation
+- Do NOT use headings (#, ##) for individual Kootas
+- Do NOT include scores or numbers in Koota names
 
-Structured Data (USE INTERNALLY):
+STRICT CONTENT RULES:
+- Practical, grounded, no guarantees, no fear language
+- Do NOT show raw JSON or technical astrology terms
+- Do NOT mention empty houses or missing planets
+- If data is limited, mention it gently as guidance
+- Every conclusion must be tied to a provided fact
+
+Structured Data (USE INTERNALLY ONLY):
 
 === OVERALL VERDICT ===
 {verdict}
@@ -39,13 +48,22 @@ Structured Data (USE INTERNALLY):
 {disclaimers}
 
 Now write the report in this exact order:
+
 1. Relationship Future Report
 2. Overall Direction & Potential
 3. Emotional Bonding & Understanding
 4. Trust, Commitment & Stability
 5. Challenges & Sensitive Areas (with practical guidance)
 6. Love → Marriage Flow & Timing Sensitivity (no dates unless given)
-7. What Improves This Relationship Over Time
+
+7. Remedies & Practical Guidance for Love and Marriage
+   - Focus ONLY on weak planet(s) affecting love/marriage
+   - Remedies must be simple, day-to-day, and practical
+   - Examples: communication habits, routines, mindset shifts,
+     relationship behavior, timing awareness
+   - Avoid rituals, gemstones, donations, or superstition
+
 8. Clear Next-Step Guidance
 
-Use the ASTRO FACTS to justify each section in simple language (no technical jargon).
+Use ASTRO FACTS to justify each section in simple, human language.
+The report must feel premium, calm, and worth a ₹299 paid report.
