@@ -7,21 +7,14 @@ OUTPUT FORMAT (MANDATORY):
 ## Section Heading
 ### Sub Heading
 
-INLINE EMPHASIS RULE (VERY IMPORTANT):
-- Use emphasis ONLY in this exact format:
-  -**Label:** explanation
-- Do NOT use **bold** anywhere else
-- Do NOT show ** symbols in final output
-- Do NOT use numbered lists (1., 2., 3.)
-- Use plain paragraphs otherwise
-
-Koota Formatting Rule (STRICT):
-- Koota points MUST be written ONLY as:
-  -**Varna:** explanation
-  -**Vashya:** explanation
-  -**Tara:** explanation
-- Do NOT use headings (#, ##) for individual Kootas
-- Do NOT include scores or numbers in Koota names
+FORMAT RULES:
+- Use @@Label: explanation for inline emphasis
+- Do NOT use ** or markdown formatting
+- Do NOT use numbered lists
+- Koota points must be written ONLY as:
+  @@Varna: explanation
+  @@Vashya: explanation
+  @@Tara: explanation
 
 STRICT CONTENT RULES:
 - Practical, grounded, no guarantees, no fear language

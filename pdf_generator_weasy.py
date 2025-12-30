@@ -81,17 +81,14 @@ def convert_headings(text: str) -> str:
             open_card()
             continue
 
-        # ---------- Bold inline bullet ----------
-        # -**Varna (1/1):** text
-        if line.startswith("-**") and "**" in line:
+        # ---------- INLINE LABEL (STRICT, NO ** ) ----------
+        # @@Varna: explanation
+        if line.startswith("@@"):
             open_card()
-            clean = line.lstrip("-").strip()
-            clean = re.sub(
-                r"\*\*(.+?)\*\*",
-                r"<strong>\1</strong>",
-                clean
+            label, _, rest = line[2:].partition(":")
+            html.append(
+                f"<p><strong>{label.strip()}:</strong> {rest.strip()}</p>"
             )
-            html.append(f"<p>{clean}</p>")
             continue
 
         # ---------- Normal paragraph ----------

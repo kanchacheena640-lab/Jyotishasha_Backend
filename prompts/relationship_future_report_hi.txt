@@ -9,29 +9,26 @@ OUTPUT FORMAT (अनिवार्य):
 ## सेक्शन शीर्षक
 ### उप-शीर्षक
 
-INLINE ज़ोर (STRICT नियम):
-- ज़ोर (emphasis) केवल इसी फ़ॉर्मैट में करें:
-  -**लेबल:** विवरण
-- इसके अलावा कहीं भी bold या ** चिन्ह न दिखें
-- Numbering (1., 2., 3.) का उपयोग न करें
-- बाकी पूरा कंटेंट normal paragraph में लिखें
-- हर पैराग्राफ 2–3 पंक्तियों से अधिक न हो
+OUTPUT FORMAT (MANDATORY):
+# Main Heading
+## Section Heading
+### Sub Heading
 
-Koota लिखने का नियम (अनिवार्य):
-- Koota points केवल इसी रूप में हों:
-  -**Varna:** विवरण
-  -**Vashya:** विवरण
-  -**Tara:** विवरण
-- Koota के लिए अलग heading न दें
-- Koota में कोई score या संख्या न लिखें
+FORMAT RULES:
+- Use @@Label: explanation for inline emphasis
+- Do NOT use ** or markdown formatting
+- Do NOT use numbered lists
+- Koota points must be written ONLY as:
+  @@Varna: explanation
+  @@Vashya: explanation
+  @@Tara: explanation
 
-कड़े नियम:
-- रिपोर्ट यथार्थवादी हो, बढ़ा-चढ़ाकर नहीं
-- डराने या गारंटी देने वाली भाषा न हो
-- टोन परिपक्व, भरोसेमंद और प्रीमियम हो
-- ₹299 की पेड रिपोर्ट जैसी वैल्यू महसूस हो
-- हर निष्कर्ष किसी न किसी दिए गए तथ्य से जुड़ा हो
-- अनुमान या जनरल काउंसलिंग न करें
+STRICT CONTENT RULES:
+- Practical, grounded, no guarantees, no fear language
+- Do NOT show raw JSON or technical astrology terms
+- Do NOT mention empty houses or missing planets
+- If data is limited, mention it gently as guidance
+- Every conclusion must be tied to a provided fact
 
 रिपोर्ट में स्वाभाविक रूप से कवर करें:
 - रिश्ते की दीर्घकालिक दिशा और संभावना
