@@ -80,6 +80,10 @@ def generate_love_premium_report(order_id: int):
 
             # ---------------- 5) Prompt Build ----------------
             final_prompt = build_love_premium_prompt(love_payload)
+            
+            print("\n========== LOVE PREMIUM FINAL PROMPT START ==========\n")
+            print(final_prompt)
+            print("\n========== LOVE PREMIUM FINAL PROMPT END ==========\n")
 
             # Debug save (recommended)
             os.makedirs("debug_prompts", exist_ok=True)
