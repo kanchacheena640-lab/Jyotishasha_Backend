@@ -1,16 +1,4 @@
 # Path: modules/love/love_data_collector.py
-# Jyotishasha — Love Premium Report Data Collector (LOCKED)
-#
-# Purpose:
-# - Collect structured love intelligence for premium report generation
-# - NO OpenAI here
-# - Output is strictly JSON/dict to be later converted into prompt blocks
-#
-# Key Upgrade (Dec 2025):
-# - Adds astro_facts block for non-generic premium narration
-# - Ashtakoot logic untouched
-# - Backward compatible
-
 from __future__ import annotations
 from typing import Any, Dict
 
@@ -49,6 +37,72 @@ def _pick_user(order: Dict[str, Any], language: str) -> Dict[str, Any]:
     }
 
 
+def _normalize_houses(houses_raw: Any) -> Dict[str, Dict[str, Any]]:
+    """
+    Returns dict: {"1": {...}, "2": {...}, ...}
+    Supports:
+    - already dict (string keys)
+    - list of dicts (each may contain house number as house/house_no/number)
+    """
+    if isinstance(houses_raw, dict):
+        # ensure string keys
+        out: Dict[str, Dict[str, Any]] = {}
+        for k, v in houses_raw.items():
+            if isinstance(v, dict):
+                out[str(k)] = v
+        return out
+
+    if isinstance(houses_raw, list):
+        out: Dict[str, Dict[str, Any]] = {}
+        for item in houses_raw:
+            if not isinstance(item, dict):
+                continue
+            hn = item.get("house") or item.get("house_no") or item.get("number") or item.get("index")
+            if hn is None:
+                # if list is 12-length and has no house field, fallback not possible reliably
+                continue
+            out[str(hn)] = item
+        return out
+
+    return {}
+
+
+def _normalize_planets(planets_raw: Any) -> Dict[str, Dict[str, Any]]:
+    """
+    Returns dict: {"Sun": {...}, "Moon": {...}}
+    Supports:
+    - already dict
+    - list of dicts (each item has name/planet keys)
+    """
+    if isinstance(planets_raw, dict):
+        out: Dict[str, Dict[str, Any]] = {}
+        for k, v in planets_raw.items():
+            if isinstance(v, dict):
+                out[str(k)] = v
+        return out
+
+    if isinstance(planets_raw, list):
+        out: Dict[str, Dict[str, Any]] = {}
+        for item in planets_raw:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("name") or item.get("planet") or item.get("planet_name")
+            if not name:
+                continue
+            out[str(name)] = item
+        return out
+
+    return {}
+
+
+def _safe_list(val: Any) -> list:
+    if isinstance(val, list):
+        return val
+    if val is None:
+        return []
+    return [val]
+
+
 def collect_love_report_data(
     order: Dict[str, Any],
     user_kundali: Dict[str, Any],
@@ -75,7 +129,7 @@ def collect_love_report_data(
     if not partner.get("name") or not partner.get("dob"):
         raise LoveCollectorError("Partner details missing")
 
-    # ---------------- 1) Ashtakoot / Compatibility ----------------
+    # 1) Ashtakoot / Compatibility (untouched)
     try:
         compat = run_love_compatibility(
             user=user,
@@ -85,7 +139,7 @@ def collect_love_report_data(
     except LoveServiceError as e:
         raise LoveCollectorError(str(e))
 
-    # ---------------- 2) Structured Compiler (existing) ----------------
+    # 2) Compiler (untouched)
     compiled = compile_love_report(
         {
             "language": lang,
@@ -103,54 +157,57 @@ def collect_love_report_data(
         }
     )
 
-    # ---------------- 3) NEW: Astro Facts for Premium Narration ----------------
-    houses = user_kundali.get("houses", {})
-    planets = user_kundali.get("planets", {})
-    aspects = user_kundali.get("aspects", {})
-    dasha = user_kundali.get("dasha", {})
+    # 3) NEW: Astro Facts (now safe for list/dict kundali shapes)
+    houses = _normalize_houses(user_kundali.get("houses"))
+    planets = _normalize_planets(user_kundali.get("planets"))
 
-    lord_5 = houses.get("5", {}).get("lord")
-    lord_7 = houses.get("7", {}).get("lord")
+    h5 = houses.get("5", {}) if isinstance(houses.get("5", {}), dict) else {}
+    h7 = houses.get("7", {}) if isinstance(houses.get("7", {}), dict) else {}
+
+    lord_5 = h5.get("lord") or h5.get("house_lord")
+    lord_7 = h7.get("lord") or h7.get("house_lord")
+
+    planets_in_5 = _safe_list(h5.get("planets") or h5.get("planet_list"))
+    planets_in_7 = _safe_list(h7.get("planets") or h7.get("planet_list"))
+
+    dasha = user_kundali.get("dasha") if isinstance(user_kundali.get("dasha"), dict) else {}
+    current_dasha_planet = None
+    if isinstance(dasha.get("current"), dict):
+        current_dasha_planet = dasha["current"].get("planet") or dasha["current"].get("lord")
+
+    # aspects: keep flexible (some kundali don't have it)
+    aspects = user_kundali.get("aspects") if isinstance(user_kundali.get("aspects"), dict) else {}
 
     astro_facts = {
         "love_flow": {
             "lord_5": lord_5,
             "lord_7": lord_7,
-            "planets_in_5": houses.get("5", {}).get("planets", []),
-            "planets_in_7": houses.get("7", {}).get("planets", []),
-            "lord_5_position": planets.get(lord_5),
-            "lord_7_position": planets.get(lord_7),
-            "connection_5_7": aspects.get("5_7_relation"),
-            "current_dasha_related": dasha.get("current", {}).get("planet") in (lord_5, lord_7),
+            "planets_in_5": planets_in_5,
+            "planets_in_7": planets_in_7,
+            "lord_5_position": planets.get(str(lord_5)) if lord_5 else None,
+            "lord_7_position": planets.get(str(lord_7)) if lord_7 else None,
+            "connection_5_7": aspects.get("5_7_relation") or aspects.get("connection_5_7"),
+            "current_dasha_related": bool(current_dasha_planet and current_dasha_planet in {lord_5, lord_7}),
         },
-
         "love_vs_arranged": {
-            "rahu_in_5_or_7": "Rahu" in (
-                houses.get("5", {}).get("planets", []) +
-                houses.get("7", {}).get("planets", [])
-            ),
-            "venus_involved": "Venus" in planets,
-            "direct_5_7_link": bool(aspects.get("5_7_relation")),
-            "family_house_support": any(
-                houses.get(h) for h in ("2", "7", "11")
-            ),
+            "rahu_in_5_or_7": ("Rahu" in planets_in_5) or ("Rahu" in planets_in_7),
+            "venus_involved": ("Venus" in planets) or ("Shukra" in planets),
+            "direct_5_7_link": bool(aspects.get("5_7_relation") or aspects.get("connection_5_7")),
+            "family_house_support": any(houses.get(h) for h in ("2", "11")),
         },
-
         "strength_risk": {
             "benefic_support": aspects.get("benefic_support", []),
             "malefic_affliction": aspects.get("malefic_affliction", []),
             "manglik": user_kundali.get("manglik", False),
-            "verdict_level": compiled.get("verdict", {}).get("level"),
+            "verdict_level": (compiled.get("verdict") or {}).get("level") if isinstance(compiled, dict) else None,
         },
-
         "remedies": {
-            "weak_house": compiled.get("signals", {}).get("weak_house"),
-            "weak_lord": compiled.get("signals", {}).get("weak_lord"),
+            "weak_house": ((compiled.get("signals") or {}).get("weak_house")) if isinstance(compiled, dict) else None,
+            "weak_lord": ((compiled.get("signals") or {}).get("weak_lord")) if isinstance(compiled, dict) else None,
             "current_dasha": dasha.get("current"),
         },
     }
 
-    # ---------------- FINAL PAYLOAD ----------------
     return {
         "product": "relationship_future_report",
         "language": lang,
@@ -158,5 +215,5 @@ def collect_love_report_data(
         "partner": partner,
         "compatibility": compat,
         "compiled_report": compiled,
-        "astro_facts": astro_facts,   # 🔑 THIS FIXES GENERIC OUTPUT
+        "astro_facts": astro_facts,
     }
