@@ -159,18 +159,7 @@ class LoveReportCompiler:
         disclaimers = self.build_disclaimers(lang, client)
         signals = self.build_signals(lang, kundali, ashtakoot, dasha, transits, house_planets)
 
-        mangal_dosh = None
-
-        kundali_boy = payload.get("kundali_boy")
-        kundali_girl = payload.get("kundali_girl")
-
-        if isinstance(kundali_boy, dict) and isinstance(kundali_girl, dict):
-            mangal_dosh = compare_mangal_dosh(
-                kundali_boy=kundali_boy,
-                kundali_girl=kundali_girl,
-                language=lang
-            )
-
+        mangal_dosh = payload.get("mangal_dosh")
 
         koota_notes = self.build_koota_notes(lang, ashtakoot)
         verdict = self.build_verdict(lang, ashtakoot, koota_notes)
@@ -182,6 +171,7 @@ class LoveReportCompiler:
             self.section_love_to_marriage_flow(lang, signals),
             self.section_love_vs_arranged(lang, signals),
             self.section_strengths_risks(lang, signals),
+            self.section_mangal_dosh(lang, mangal_dosh),
             self.section_remedies(lang, signals),
             self.section_disclaimers(lang, disclaimers),
         ]
@@ -798,6 +788,33 @@ class LoveReportCompiler:
 
         data = {"strengths": strengths, "risks": risks, "stability_score": signals.get("stability_score")}
         return Section("strengths_risks", title, summary, bullets[:8], data)
+    
+    def section_mangal_dosh(self, lang: str, mangal_dosh: Dict[str, Any]) -> Section:
+        title = _title(lang, "Mangal Dosh Analysis", "मंगल दोष विश्लेषण")
+
+        if not mangal_dosh:
+            summary = _title(
+                lang,
+                "Mangal Dosh analysis could not be performed due to insufficient data.",
+                "पर्याप्त जानकारी न होने के कारण मंगल दोष विश्लेषण नहीं हो सका।",
+            )
+            return Section("mangal_dosh", title, summary, [], {})
+
+        signal = mangal_dosh.get("signal")
+        summary = mangal_dosh.get("summary", "")
+
+        bullets = [
+            _title(lang, f"Overall Signal: {signal}", f"कुल संकेत: {signal}")
+        ]
+
+        return Section(
+            "mangal_dosh",
+            title,
+            summary,
+            bullets,
+            mangal_dosh,
+        )
+
 
     def section_remedies(self, lang: str, signals: Dict[str, Any]) -> Section:
         title = _title(lang, "Remedies & Guidance", "उपाय और मार्गदर्शन")

@@ -7,6 +7,7 @@ from modules.love.love_report_compiler import compile_love_report
 from modules.love.truth_or_dare_compiler import compile_truth_or_dare
 from full_kundali_api import calculate_full_kundali
 from modules.love.love_marriage_probability_compiler import compile_love_marriage_probability
+from modules.love.mangal_dosh_comparator import compare_mangal_dosh
 
 
 
@@ -86,10 +87,59 @@ def love_report():
             boy_is_user=payload.get("boy_is_user", True),
         )
 
+        lang = payload.get("language", "en")
+
+        kundali_boy = {}
+        kundali_girl = {}
+
+        # build kundali ONLY if full birth details exist
+        if user.get("tob") and user.get("lat") is not None and user.get("lng") is not None:
+            kundali_user = calculate_full_kundali(
+                name=user["name"],
+                dob=user["dob"],
+                tob=user["tob"],
+                lat=user["lat"],
+                lon=user["lng"],
+                language=lang,
+            )
+        else:
+            kundali_user = {}
+
+        if partner.get("tob") and partner.get("lat") is not None and partner.get("lng") is not None:
+            kundali_partner = calculate_full_kundali(
+                name=partner["name"],
+                dob=partner["dob"],
+                tob=partner["tob"],
+                lat=partner["lat"],
+                lon=partner["lng"],
+                language=lang,
+            )
+        else:
+            kundali_partner = {}
+
+        # assign boy / girl correctly
+        if payload.get("boy_is_user", True):
+            kundali_boy = kundali_user
+            kundali_girl = kundali_partner
+        else:
+            kundali_boy = kundali_partner
+            kundali_girl = kundali_user
+
+        mangal_dosh = None
+        if kundali_boy and kundali_girl:
+            mangal_dosh = compare_mangal_dosh(
+                kundali_boy,
+                kundali_girl,
+                language=lang,
+            )
+
         # 2️⃣ Compiler payload (LOCKED structure)
         report_payload = {
-            "language": payload.get("language", "en"),
+            "language": lang,
             "client": user,
+            "kundali_boy": kundali_boy,
+            "kundali_girl": kundali_girl,
+            "mangal_dosh": mangal_dosh,
             **base_result,
         }
 
