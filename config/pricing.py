@@ -11,7 +11,7 @@ PRODUCT_PRICES = {
     "startup_suggestion_report": 51,
     "love_marriage_report": 51,
     "business_report": 51,
-    "legal_disputes_report": 1,
+    "legal_disputes_report": 51,
     "gemstone_consultation": 51,
     "children_parenting_report": 51,
     "delay_in_marriage_report": 51,
