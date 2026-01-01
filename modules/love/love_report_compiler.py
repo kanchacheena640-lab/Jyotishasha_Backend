@@ -18,6 +18,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
+from modules.love.mangal_dosh_comparator import compare_mangal_dosh
+
 
 
 REPORT_KEY = "love_marriage_life"
@@ -157,6 +159,19 @@ class LoveReportCompiler:
         disclaimers = self.build_disclaimers(lang, client)
         signals = self.build_signals(lang, kundali, ashtakoot, dasha, transits, house_planets)
 
+        mangal_dosh = None
+
+        kundali_boy = payload.get("kundali_boy")
+        kundali_girl = payload.get("kundali_girl")
+
+        if isinstance(kundali_boy, dict) and isinstance(kundali_girl, dict):
+            mangal_dosh = compare_mangal_dosh(
+                kundali_boy=kundali_boy,
+                kundali_girl=kundali_girl,
+                language=lang
+            )
+
+
         koota_notes = self.build_koota_notes(lang, ashtakoot)
         verdict = self.build_verdict(lang, ashtakoot, koota_notes)
 
@@ -185,6 +200,7 @@ class LoveReportCompiler:
             },
             "sections": [s.to_dict() for s in sections],
             "signals": signals,
+            "mangal_dosh": mangal_dosh,
             "disclaimers": disclaimers,
             # rule evidence (safe for debug/UI)
             "meta": {"houses_with_planets": sorted(list(house_planets.keys()))},
