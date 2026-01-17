@@ -1,6 +1,6 @@
 {
   "Exalted": {
-    "description": "{planet} is exalted in your chart, giving it immense strength and positive expression. This enhances the planet's blessings in all related areas of life."
+    "description": "{planet} is exalted in your chart, giving it immense strength and positive expression. This enhances the planet's blessings."
   },
   "Debilitated": {
     "description": "{planet} is debilitated in your chart, which may weaken its natural qualities and create internal struggles. Conscious effort is needed to balance this influence."
@@ -15,6 +15,6 @@
     "description": "{planet} is in an enemy sign, which may bring friction and inconsistency in its results. Effort and remedies can help align this energy."
   },
   "Neutral": {
-    "description": "{planet} is in a neutral sign, leading to moderate results — neither too strong nor too weak — in its areas of influence."
+    "description": "{planet} is in a neutral sign, leading to moderate results — neither too strong nor too weak."
   }
 }
