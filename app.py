@@ -90,6 +90,13 @@ def home():
 def health_check():
     return jsonify({"ok": True})
 
+# ------------------- DEBUG DAILY HOROSCOPE ------------------- #
+@app.route("/_debug/run-daily", methods=["GET"])
+def debug_run_daily():
+    from scripts.daily_rotation_engine import run_daily_rotation
+    run_daily_rotation()
+    return jsonify({"status": "ok"})
+
 # ------------------- USER APIs ------------------- #
 @app.route("/add_user", methods=["POST"])
 def add_user():
@@ -317,6 +324,7 @@ def create_razorpay_order():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
 
 
 
