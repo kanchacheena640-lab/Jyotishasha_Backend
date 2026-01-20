@@ -1,14 +1,8 @@
 from flask import Blueprint, request, jsonify
-import json, os
 from datetime import datetime
+from scripts.daily_rotation_engine import run_daily_rotation_runtime
 
 daily_bp = Blueprint("daily_bp", __name__)
-
-BASE_DIR = os.path.dirname(__file__)
-DATA_DIR = os.path.join(BASE_DIR, "..", "data")
-
-DAILY_FILE_EN = os.path.join(DATA_DIR, "daily_fixed.json")
-DAILY_FILE_HI = os.path.join(DATA_DIR, "daily_fixed_hi.json")
 
 ZODIACS = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
@@ -28,6 +22,7 @@ MONTH_HI = {
     9: "सितंबर", 10: "अक्टूबर", 11: "नवंबर", 12: "दिसंबर"
 }
 
+
 @daily_bp.route("/api/daily-horoscope", methods=["GET"])
 def get_daily_horoscope():
     sign = request.args.get("sign", "").lower()
@@ -36,18 +31,13 @@ def get_daily_horoscope():
     if sign not in ZODIACS:
         return jsonify({"error": "Invalid zodiac sign"}), 400
 
-    data_file = DAILY_FILE_HI if lang == "hi" else DAILY_FILE_EN
+    # 🔁 Runtime rotation (DB-based)
+    data_en, data_hi = run_daily_rotation_runtime()
+    data = data_hi if lang == "hi" else data_en
 
-    if not os.path.exists(data_file):
-        return jsonify({"error": "Daily horoscope not ready"}), 503
-
-    with open(data_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    if sign not in data:
+    result = data.get(sign)
+    if not result:
         return jsonify({"error": "Horoscope not found"}), 404
-
-    result = dict(data[sign])
 
     now = datetime.now()
 
@@ -60,19 +50,21 @@ def get_daily_horoscope():
         sign_name = sign.capitalize()
         heading = f"Today's Daily Horoscope for {sign_name} – {today_date}"
 
-    result.update({
+    # Final response
+    response = {
+        **result,
         "heading": heading,
         "sign": sign,
         "date": today_date,
         "lang": lang
-    })
+    }
 
     for k in ("intro", "paragraph", "tips"):
-        if k in result and isinstance(result[k], str):
-            result[k] = (
-                result[k]
+        if k in response and isinstance(response[k], str):
+            response[k] = (
+                response[k]
                 .replace("{SIGN}", sign_name)
                 .replace("{DATE}", today_date)
             )
 
-    return jsonify(result), 200
+    return jsonify(response), 200

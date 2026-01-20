@@ -27,3 +27,16 @@ def admin_add_tokens():
         "message": f"Added {tokens} tokens to user {user_id}",
         "new_total": user.asknow_tokens,
     }), 200
+
+# ------------------- INIT DAILY COUNTER (ONE-TIME) -------------------
+from modules.daily_counter.model import DailyCounter
+
+@routes_admin_tokens.route("/_admin/init-daily-counter", methods=["GET"])
+def init_daily_counter():
+    existing = DailyCounter.query.first()
+    if existing:
+        return jsonify({"status": "exists", "counter": existing.counter})
+
+    db.session.add(DailyCounter(counter=0))
+    db.session.commit()
+    return jsonify({"status": "created", "counter": 0})
