@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 9,
+  "lang": "en",
+  "title": "Mercury Transit in the 9th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the ninth house expands mental horizons and shifts focus toward learning, beliefs, and long-term vision. Curiosity grows around philosophy, higher knowledge, travel, and future planning. Conversations with mentors or guides become meaningful. This phase supports studies, writing, and strategic outlooks, but over-questioning belief systems or scattered ideologies can dilute clarity if direction is not defined.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Broader thinking and open-mindedness increase",
+        "Strong urge to question and understand beliefs",
+        "Interest in learning and exploration rises",
+        "Mental restlessness without clear direction"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for education, teaching, and publishing",
+        "Long-term planning gains clarity",
+        "Guidance from mentors proves useful",
+        "Avoid jumping between multiple philosophies"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Conversations focus on values and principles",
+        "Respect for differing viewpoints is tested",
+        "Bonding through shared learning",
+        "Debates may arise over beliefs"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Financial planning looks long-term",
+        "Expenses on education or travel possible",
+        "Advisory input helps decisions",
+        "Avoid assumptions based on partial knowledge"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks meaning and purpose",
+        "Curiosity toward abstract ideas",
+        "Confusion if too many ideologies mix",
+        "Focus restores inner alignment"
+      ]
+    }
+  ],
+  "strengths": [
+    "Philosophical clarity",
+    "Learning ability",
+    "Visionary thinking",
+    "Communication of ideas"
+  ],
+  "challenges": [
+    "Ideological confusion",
+    "Over-questioning faith",
+    "Scattered beliefs",
+    "Mental inconsistency"
+  ],
+  "closing": "This transit reshapes how you think about purpose and direction. Clear learning goals turn curiosity into wisdom.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 9
+  }
+}

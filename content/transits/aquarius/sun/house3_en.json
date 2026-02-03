@@ -1,0 +1,74 @@
+{
+  "ascendant": "Aquarius",
+  "planet": "Sun",
+  "house": 3,
+  "lang": "EN",
+  "title": "Sun Transit in the 3rd House: Courage, Communication, and Initiative",
+  "summary": "When the Sun transits the 3rd house for an Aquarius Ascendant, confidence in communication and personal initiative rises. You feel motivated to take bold steps, express ideas clearly, and assert your viewpoint. Siblings, teamwork, and daily interactions gain importance, though ego clashes can surface if listening drops. This transit supports writing, sales, leadership through action, and short journeys. Success comes by pairing courage with humility and consistent effort rather than force.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Bold self-expression",
+        "Increased courage",
+        "Action-oriented mindset",
+        "Low tolerance for passivity"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Leadership through communication",
+        "Sales, media, writing favored",
+        "Initiating new projects",
+        "Avoid dominating collaborators"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Assertive interactions",
+        "Sibling dynamics highlighted",
+        "Need for mutual respect",
+        "Listening improves harmony"
+      ]
+    },
+    {
+      "title": "Effort & Travel",
+      "points": [
+        "Strong drive for action",
+        "Productive short trips",
+        "Hands-on problem solving",
+        "Consistency brings results"
+      ]
+    },
+    {
+      "title": "Mental & Inner State",
+      "points": [
+        "Confident decision-making",
+        "Restlessness if restricted",
+        "Clear articulation of ideas",
+        "Calm through balanced effort"
+      ]
+    }
+  ],
+  "strengths": [
+    "Initiative",
+    "Effective communication",
+    "Courage",
+    "Leadership in action"
+  ],
+  "challenges": [
+    "Ego in speech",
+    "Impatience",
+    "Sibling friction",
+    "Overassertion"
+  ],
+  "closing": "Sun in the 3rd house fuels courage and voice—progress accelerates when confidence is balanced with listening.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Aquarius",
+    "planet": "Sun",
+    "house": 3
+  }
+}

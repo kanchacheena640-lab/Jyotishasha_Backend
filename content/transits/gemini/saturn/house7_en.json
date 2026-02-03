@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 7,
+  "lang": "en",
+  "title": "Saturn Transit in the 7th House for Gemini Ascendant",
+  "summary": "Saturn transiting the seventh house tests commitment, fairness, and accountability in partnerships. Relationships—personal and professional—demand maturity, patience, and clear boundaries. Superficial bonds fade while durable alliances strengthen. Delays or responsibilities may arise around marriage or contracts, but steady effort builds trust and long-term stability.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Serious and responsible approach to partnerships",
+        "Heightened awareness of obligations",
+        "Reduced tolerance for imbalance",
+        "Commitment over convenience"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Contracts and collaborations require diligence",
+        "Client relationships become more formal",
+        "Slow but dependable partnership gains",
+        "Avoid cutting corners in agreements"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Commitments tested for durability",
+        "Boundaries clarify expectations",
+        "Delayed marriage matters possible",
+        "Honesty strengthens long-term bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Shared finances need structure",
+        "Conservative joint decisions favored",
+        "Returns improve with accountability",
+        "Avoid unequal financial arrangements"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Serious reflection on commitment",
+        "Pressure to meet expectations",
+        "Loneliness if balance is lacking",
+        "Clarity restores confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Reliability",
+    "Long-term commitment",
+    "Fairness",
+    "Accountability"
+  ],
+  "challenges": [
+    "Relationship delays",
+    "Emotional distance",
+    "Heavy responsibility",
+    "Rigidity"
+  ],
+  "closing": "This transit matures partnerships through responsibility and truth. Patience transforms tests into lasting alliances.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 7
+  }
+}

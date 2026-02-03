@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 10,
+  "lang": "en",
+  "title": "Sun Transit in the 10th House for Cancer Ascendant",
+  "summary": "The Sun transiting the tenth house places career, reputation, and authority at the center. Ambition intensifies and the need to be recognized for leadership grows strong. Professional visibility increases, bringing opportunities to lead and influence. However, pressure, ego clashes with seniors, or work–life imbalance can arise if humility is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong ambition",
+        "Publicly visible confidence",
+        "Authority-driven mindset",
+        "Goal-oriented focus"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Major career spotlight",
+        "Leadership and promotions possible",
+        "Responsibility increases",
+        "Avoid power struggles with authority"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Work prioritized over personal life",
+        "Respect expected from others",
+        "Distance due to professional pressure",
+        "Balance restores harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income growth through position",
+        "Status-linked financial gains",
+        "Spending to maintain image",
+        "Plan long-term stability"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "High responsibility pressure",
+        "Fear of failure",
+        "Drive to prove capability",
+        "Calm comes with purpose"
+      ]
+    }
+  ],
+  "strengths": [
+    "Leadership authority",
+    "Career focus",
+    "Professional recognition",
+    "Determination"
+  ],
+  "challenges": [
+    "Ego clashes",
+    "Work–life imbalance",
+    "Stress from pressure",
+    "Rigidity in approach"
+  ],
+  "closing": "This transit crowns professional effort with visibility. Lead with integrity, not dominance.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 10
+  }
+}

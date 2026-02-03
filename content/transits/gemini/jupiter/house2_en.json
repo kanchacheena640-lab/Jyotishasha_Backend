@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Jupiter",
+  "house": 2,
+  "lang": "en",
+  "title": "Jupiter Transit in the 2nd House for Gemini Ascendant",
+  "summary": "Jupiter’s transit through the second house emphasizes growth in values, speech, and financial stability. This phase supports wiser money management, ethical earning, and respectful communication within family matters. Confidence in decision-making improves, and long-term security becomes a priority. While expansion is favored, excess spending or moral rigidity can create imbalance if moderation is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Values and principles strengthen",
+        "Speech becomes confident and influential",
+        "Sense of responsibility toward family increases",
+        "Pride in personal ethics may rise"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Steady progress through consistent effort",
+        "Trust-based roles gain recognition",
+        "Advisory or teaching skills add value",
+        "Avoid complacency due to comfort"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family bonds strengthen through guidance",
+        "Respectful communication improves harmony",
+        "Expectation of moral alignment increases",
+        "Preaching tone can create distance"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income stability improves",
+        "Favorable for savings and long-term planning",
+        "Ethical investments bring confidence",
+        "Watch over-expansion of expenses"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind feels secure and optimistic",
+        "Focus on long-term safety",
+        "Confidence in judgment increases",
+        "Rigidity in beliefs may limit flexibility"
+      ]
+    }
+  ],
+  "strengths": [
+    "Financial wisdom",
+    "Strong values",
+    "Confident speech",
+    "Stability mindset"
+  ],
+  "challenges": [
+    "Overconfidence in beliefs",
+    "Excess spending",
+    "Rigid value system",
+    "Comfort-driven laziness"
+  ],
+  "closing": "This transit builds lasting security through values and discipline. Balanced expansion strengthens both wealth and self-worth.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Jupiter",
+    "house": 2
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 2,
+  "lang": "en",
+  "title": "Moon Transit in the 2nd House for Cancer Ascendant",
+  "summary": "The Moon transiting the second house heightens emotional attachment to family, finances, and personal values. Speech becomes more expressive and nurturing, yet mood-driven decisions around money are possible. Comfort, food, and security needs increase. While support from family feels important, maintaining financial discipline prevents emotional overspending.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotionally value-driven",
+        "Nurturing speech",
+        "Security-oriented mindset",
+        "Attachment to comforts"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Income linked to emotional satisfaction",
+        "Preference for stable work",
+        "Supportive team environments",
+        "Mood affects productivity"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Strong family bonding",
+        "Need for emotional reassurance",
+        "Sensitivity in conversations",
+        "Gentle words build trust"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Emotion-driven spending",
+        "Focus on savings for security",
+        "Expenses on food and comfort",
+        "Budgeting prevents imbalance"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Security-focused emotions",
+        "Mood-linked confidence",
+        "Anxiety if stability feels shaky",
+        "Grounding restores calm"
+      ]
+    }
+  ],
+  "strengths": [
+    "Family support",
+    "Expressive communication",
+    "Value clarity",
+    "Emotional warmth"
+  ],
+  "challenges": [
+    "Overspending",
+    "Emotional speech",
+    "Attachment anxiety",
+    "Mood-based decisions"
+  ],
+  "closing": "This transit ties emotions to values and security. Steady habits keep finances and feelings balanced.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 2
+  }
+}

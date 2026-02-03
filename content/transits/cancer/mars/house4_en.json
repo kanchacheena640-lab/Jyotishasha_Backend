@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Mars",
+  "house": 4,
+  "lang": "en",
+  "title": "Mars Transit in the 4th House for Cancer Ascendant",
+  "summary": "Mars transiting the fourth house activates domestic life, emotional security, and inner stability. For Cancer ascendants, this phase brings strong urges to take control of home-related matters, property decisions, or family responsibilities. Emotional intensity increases, making reactions at home quicker and sometimes confrontational. While this transit supports repairs, real estate actions, and decisive moves regarding residence, it also requires patience to maintain harmony. Channeling energy constructively helps strengthen foundations rather than disturb peace.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened emotional intensity",
+        "Strong need for inner security",
+        "Protective attitude toward home",
+        "Risk of reactive emotional responses"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Focus on work-from-home or property matters",
+        "Support for real estate or infrastructure roles",
+        "Productivity improves with a stable base",
+        "Avoid mixing family stress with work"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Tense moments with family members",
+        "Strong desire to assert control at home",
+        "Arguments possible if patience is low",
+        "Calm communication restores balance"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on home, repairs, or property",
+        "Decisive financial actions for assets",
+        "Short-term strain due to expenses",
+        "Long-term stability through planning"
+      ]
+    },
+    {
+      "heading": "Mental / Inner",
+      "points": [
+        "Inner restlessness increases",
+        "Emotions surface more quickly",
+        "Need to release pent-up anger",
+        "Physical activity at home helps"
+      ]
+    }
+  ],
+  "strengths": [
+    "Ability to take decisive domestic action",
+    "Protective and responsible mindset",
+    "Focus on long-term security",
+    "Emotional courage"
+  ],
+  "challenges": [
+    "Domestic conflicts",
+    "Emotional volatility",
+    "Stress related to home matters",
+    "Difficulty relaxing"
+  ],
+  "closing": "This transit asks for strength with sensitivity.\nUse Mars to build stability, not disrupt peace.\nBalanced action creates a secure foundation.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Mars",
+    "house": 4
+  }
+}

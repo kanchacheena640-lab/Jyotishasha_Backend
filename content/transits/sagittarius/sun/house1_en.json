@@ -1,0 +1,74 @@
+{
+  "ascendant": "Sagittarius",
+  "planet": "Sun",
+  "house": 1,
+  "lang": "EN",
+  "title": "Sun Transit in the 1st House for Sagittarius Ascendant",
+  "summary": "When the Sun transits the 1st house for Sagittarius Ascendant, vitality, confidence, and self-expression rise sharply. This phase enhances leadership presence, clarity of purpose, and the desire to act independently. Personal goals come into focus, and others notice your authority and conviction. Health and energy generally improve, though ego clashes are possible if confidence turns rigid. When balanced with humility, this transit supports strong self-belief, decisive action, and a renewed sense of direction.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Confidence and visibility increase",
+        "Clear sense of identity",
+        "Strong willpower",
+        "Natural leadership presence"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Initiative leads to recognition",
+        "Leadership roles activate",
+        "Independent decisions succeed",
+        "Avoid dominance over teamwork"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Direct and assertive expression",
+        "Ego clashes possible",
+        "Respect strengthens bonds",
+        "Balance self-focus with empathy"
+      ]
+    },
+    {
+      "title": "Finance",
+      "points": [
+        "Income improves through initiative",
+        "Career-driven gains",
+        "Spending on self-development",
+        "Plan to avoid impulsive costs"
+      ]
+    },
+    {
+      "title": "Mental / Inner",
+      "points": [
+        "Clarity of purpose",
+        "High motivation",
+        "Confidence boosts morale",
+        "Calm grows with self-discipline"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong leadership",
+    "High vitality",
+    "Clear self-direction",
+    "Decisive action"
+  ],
+  "challenges": [
+    "Ego sensitivity",
+    "Overassertion",
+    "Impatience",
+    "Self-centered focus"
+  ],
+  "closing": "This Sun transit empowers identity and leadership. With humility, it becomes a powerful phase for confident beginnings and personal authority.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Sagittarius",
+    "planet": "Sun",
+    "house": 1
+  }
+}

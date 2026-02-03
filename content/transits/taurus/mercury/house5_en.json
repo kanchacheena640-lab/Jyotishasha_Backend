@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Mercury",
+  "house": 5,
+  "lang": "en",
+  "title": "Mercury Transit in the 5th House for Taurus Ascendant",
+  "summary": "Mercury transiting the 5th house activates intellect in matters of creativity, education, romance, children, and speculative thinking. This phase enhances analytical ability in creative pursuits, sharpens learning capacity, and promotes intelligent self-expression. Romantic communication becomes playful yet thoughtful, while interactions with children focus on guidance and reasoning. Speculative decisions rely more on logic than impulse, though overthinking can reduce spontaneity. When balanced, this transit supports smart creativity, academic success, and mentally engaging emotional connections.",
+  "sections": [
+    {
+      "heading": "Creativity & Intelligence",
+      "points": [
+        "Ideas expressed with clarity",
+        "Creative output becomes structured",
+        "Intellectual approach to art",
+        "Overanalysis may limit flow"
+      ]
+    },
+    {
+      "heading": "Education & Learning",
+      "points": [
+        "Strong grasp of concepts",
+        "Improved memory and focus",
+        "Favorable for studies and exams",
+        "Consistency enhances results"
+      ]
+    },
+    {
+      "heading": "Romance & Expression",
+      "points": [
+        "Playful and verbal romance",
+        "Communication drives attraction",
+        "Emotions filtered through logic",
+        "Warmth sustains bonding"
+      ]
+    },
+    {
+      "heading": "Children & Guidance",
+      "points": [
+        "Logical guidance to children",
+        "Focus on education and skills",
+        "Debates or questioning increase",
+        "Patience builds trust"
+      ]
+    },
+    {
+      "heading": "Speculation & Decision",
+      "points": [
+        "Calculated risk-taking",
+        "Interest in market analysis",
+        "Quick evaluations of options",
+        "Avoid mental overconfidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Intellectual creativity",
+    "Strong learning ability",
+    "Clear romantic communication",
+    "Analytical decision-making"
+  ],
+  "challenges": [
+    "Overthinking emotions",
+    "Reduced spontaneity",
+    "Mental restlessness",
+    "Speculative overanalysis"
+  ],
+  "closing": "Mercury in the 5th house refines creativity through intellect. Balanced thinking allows intelligence and joy to coexist.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Mercury",
+    "house": 5
+  }
+}

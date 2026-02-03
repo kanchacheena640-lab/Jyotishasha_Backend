@@ -1,0 +1,74 @@
+{
+  "ascendant": "Scorpio",
+  "planet": "Mercury",
+  "house": 6,
+  "lang": "EN",
+  "title": "Mercury Transit in the 6th House for Scorpio Ascendant",
+  "summary": "When Mercury transits the 6th house for Scorpio Ascendant, thinking becomes practical, problem-solving oriented, and focused on daily responsibilities. Attention turns to work routines, health management, and resolving conflicts through logic. This is a strong phase for analysis, service roles, and handling paperwork or compliance matters. However, overthinking can increase stress or nervous tension. When used consciously, this transit strengthens efficiency, strategic handling of challenges, and mental discipline in day-to-day affairs.",
+  "sections": [
+    {
+      "title": "Work & Routine",
+      "points": [
+        "Analytical approach to daily tasks",
+        "Focus on efficiency and order",
+        "Improved handling of details",
+        "Mental overload if overworked"
+      ]
+    },
+    {
+      "title": "Problem-Solving",
+      "points": [
+        "Logical handling of obstacles",
+        "Clear assessment of issues",
+        "Step-by-step solutions",
+        "Excess analysis delays action"
+      ]
+    },
+    {
+      "title": "Health & Habits",
+      "points": [
+        "Attention to diet and routines",
+        "Mental stress affects health",
+        "Benefit from structured schedules",
+        "Nervous strain needs management"
+      ]
+    },
+    {
+      "title": "Conflicts & Service",
+      "points": [
+        "Disputes handled through logic",
+        "Service-oriented mindset",
+        "Debates at workplace possible",
+        "Calm communication reduces friction"
+      ]
+    },
+    {
+      "title": "Mental & Inner State",
+      "points": [
+        "Task-focused mindset",
+        "Worry over unfinished work",
+        "Restlessness from perfectionism",
+        "Balance restores clarity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong analytical ability",
+    "Effective problem-solving",
+    "Organized work habits",
+    "Mental discipline"
+  ],
+  "challenges": [
+    "Mental stress",
+    "Overthinking routines",
+    "Workplace debates",
+    "Nervous fatigue"
+  ],
+  "closing": "This Mercury transit sharpens Scorpio Ascendant’s ability to manage work and challenges. Clarity comes from action, not overanalysis.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Scorpio",
+    "planet": "Mercury",
+    "house": 6
+  }
+}

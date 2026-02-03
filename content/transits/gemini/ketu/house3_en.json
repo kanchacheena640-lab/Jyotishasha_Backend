@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Ketu",
+  "house": 3,
+  "lang": "en",
+  "title": "Ketu Transit in the 3rd House for Gemini Ascendant",
+  "summary": "Ketu transiting the third house reduces interest in constant communication, competition, and self-promotion. Efforts become quieter and more selective, favoring skill refinement over visibility. Relationships with siblings or peers may feel distant, yet focused practice brings mastery. Avoid withdrawing completely—measured engagement keeps progress steady.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Reserved expression",
+        "Selective use of effort",
+        "Preference for depth over noise",
+        "Low appetite for competition"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Behind-the-scenes skill building",
+        "Reduced interest in marketing or outreach",
+        "Quality over quantity in tasks",
+        "Consistency beats visibility"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Distance with siblings or peers",
+        "Minimal but meaningful interactions",
+        "Misunderstandings from silence",
+        "Clear check-ins help"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income via niche skills",
+        "Less focus on commissions",
+        "Controlled spending on tools",
+        "Track small expenses"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mental quietude",
+        "Detachment from chatter",
+        "Focus through solitude",
+        "Balance prevents isolation"
+      ]
+    }
+  ],
+  "strengths": [
+    "Focused practice",
+    "Skill depth",
+    "Mental clarity",
+    "Selective effort"
+  ],
+  "challenges": [
+    "Withdrawal",
+    "Reduced networking",
+    "Communication gaps",
+    "Low motivation for outreach"
+  ],
+  "closing": "This transit refines effort and skill. Quiet consistency creates durable competence.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Ketu",
+    "house": 3
+  }
+}

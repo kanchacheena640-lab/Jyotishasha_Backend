@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 10,
+  "lang": "en",
+  "title": "Moon Transit in the 10th House for Cancer Ascendant",
+  "summary": "The Moon transiting the tenth house brings emotional focus to career, responsibilities, and public image. Professional matters strongly affect mood, and recognition or feedback feels personal. You may seek emotional security through achievement or approval from authority figures. While adaptability helps manage changing demands, mood-driven decisions at work should be handled carefully.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotionally invested in success",
+        "Need for public validation",
+        "Responsibility-driven mindset",
+        "Mood tied to achievements"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "High visibility at work",
+        "Responsiveness to leadership roles",
+        "Fluctuating motivation",
+        "Stability comes from structure"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Work stress spills into personal life",
+        "Expectation of understanding from others",
+        "Respect matters emotionally",
+        "Balance restores harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income linked to professional mood",
+        "Focus on job security",
+        "Conservative financial choices",
+        "Avoid impulsive career spending"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Emotional pressure to perform",
+        "Sensitivity to criticism",
+        "Desire for reassurance",
+        "Calm planning steadies mind"
+      ]
+    }
+  ],
+  "strengths": [
+    "Adaptability at work",
+    "Emotional dedication",
+    "Public responsiveness",
+    "Sense of duty"
+  ],
+  "challenges": [
+    "Mood-based decisions",
+    "Overdependence on approval",
+    "Work-related anxiety",
+    "Emotional burnout"
+  ],
+  "closing": "This transit ties emotions to career progress. Emotional balance sustains long-term success.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 10
+  }
+}

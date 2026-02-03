@@ -1,0 +1,76 @@
+{
+  "ascendant": "Libra",
+  "planet": "Sun",
+  "house": 1,
+  "lang": "EN",
+  "title": "Sun in 1st House for Libra Ascendant",
+  "summary": "When the Sun transits the 1st house for Libra Ascendant, identity, confidence, and self-expression come into sharp focus. Personal authority increases, and there is a strong urge to be seen, heard, and recognized. Decision-making becomes more self-driven, sometimes reducing Libra’s natural tendency to compromise. Leadership qualities rise, but ego clashes can occur if balance is ignored. This phase favors self-branding, initiative, and clarity of direction, provided diplomacy and fairness are consciously maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened self-awareness",
+        "Strong need for recognition",
+        "Assertive self-expression",
+        "Confidence rises noticeably"
+      ]
+    },
+    {
+      "heading": "Career & Direction",
+      "points": [
+        "Leadership roles favored",
+        "Self-driven career moves",
+        "Visibility at workplace increases",
+        "Avoid dominating colleagues"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Focus shifts toward self-needs",
+        "Partners may feel overshadowed",
+        "Ego clashes possible",
+        "Balance assertion with empathy"
+      ]
+    },
+    {
+      "heading": "Finance & Growth",
+      "points": [
+        "Income through personal brand",
+        "Earnings linked to authority",
+        "Spending to boost image",
+        "Avoid status-driven expenses"
+      ]
+    },
+    {
+      "heading": "Health & Mindset",
+      "points": [
+        "Vitality fluctuates with confidence",
+        "Head or eye strain possible",
+        "Mental restlessness",
+        "Routine stabilizes energy"
+      ]
+    }
+  ],
+  "strengths": [
+    "Leadership presence",
+    "Clear self-direction",
+    "Personal authority",
+    "Initiative power",
+    "Strong visibility"
+  ],
+  "challenges": [
+    "Ego imbalance",
+    "Reduced cooperation",
+    "Over-assertiveness",
+    "Image obsession",
+    "Relationship strain"
+  ],
+  "closing": "Sun in the 1st house empowers Libra Ascendant to lead with confidence, when balance tempers ego.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Libra",
+    "planet": "Sun",
+    "house": 1
+  }
+}

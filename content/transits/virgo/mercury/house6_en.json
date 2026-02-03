@@ -1,0 +1,74 @@
+{
+  "ascendant": "Virgo",
+  "planet": "Mercury",
+  "house": 6,
+  "lang": "en",
+  "title": "Mercury Transit in the 6th House for Virgo Ascendant",
+  "summary": "When Mercury transits your 6th house, attention turns to work routines, problem-solving, health management, and daily efficiency. The mind becomes analytical and detail-focused, helping you organize tasks, resolve conflicts, and improve productivity. Communication at the workplace becomes frequent and practical. This is a strong phase for handling paperwork, compliance, and service-oriented roles. However, overanalysis can create stress or arguments. Clear prioritization, calm dialogue, and structured habits help convert mental sharpness into sustainable performance.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Detail-oriented and practical mindset",
+        "Strong urge to fix problems",
+        "Focus on efficiency and order",
+        "Critical thinking increases"
+      ]
+    },
+    {
+      "heading": "Career & Work",
+      "points": [
+        "Productivity improves through planning",
+        "Favorable for analysis and audits",
+        "Clear communication resolves issues",
+        "Avoid micromanaging colleagues"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Practical tone in interactions",
+        "Arguments over small matters possible",
+        "Need for logical resolution",
+        "Patience reduces friction"
+      ]
+    },
+    {
+      "heading": "Finance & Assets",
+      "points": [
+        "Spending on health or tools",
+        "Controlled budgeting favored",
+        "Avoid debt-related overthinking",
+        "Small savings through efficiency"
+      ]
+    },
+    {
+      "heading": "Mental & Inner State",
+      "points": [
+        "Mentally alert and task-focused",
+        "Stress from excessive analysis",
+        "Relief through organized routines",
+        "Calm improves with delegation"
+      ]
+    }
+  ],
+  "strengths": [
+    "Analytical problem-solving",
+    "Work efficiency",
+    "Clear task communication",
+    "Service mindset"
+  ],
+  "challenges": [
+    "Overcritical attitude",
+    "Work-related stress",
+    "Arguments over details",
+    "Mental fatigue"
+  ],
+  "closing": "This Mercury transit sharpens efficiency and problem-solving. Structure and calm communication sustain performance without stress.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Virgo",
+    "planet": "Mercury",
+    "house": 6
+  }
+}

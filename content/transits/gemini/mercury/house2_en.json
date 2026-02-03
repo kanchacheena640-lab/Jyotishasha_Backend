@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 2,
+  "lang": "en",
+  "title": "Mercury Transit in the 2nd House for Gemini Ascendant",
+  "summary": "Mercury’s transit through your second house sharpens focus on speech, values, and financial decisions. Communication becomes practical and results-oriented, especially around money, family matters, and daily resources. This phase favors budgeting, negotiations, and skill-based income, but careless words can affect relationships if spoken without thought.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Speech becomes measured and purposeful",
+        "Stronger awareness of personal values",
+        "Practical thinking dominates choices",
+        "Tone matters more than intent"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Good for salary talks and client discussions",
+        "Skill-based earnings get attention",
+        "Paperwork and accounts move faster",
+        "Avoid verbal commitments without clarity"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family conversations take priority",
+        "Words can heal or hurt—choose carefully",
+        "Value alignment becomes important",
+        "Possessiveness through speech may arise"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Favorable for budgeting and planning",
+        "Small but steady gains possible",
+        "Trading or communication-linked income improves",
+        "Avoid impulsive spending decisions"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind stays practical and alert",
+        "Security-related thoughts increase",
+        "Over-calculation can cause stress",
+        "Grounding routines bring balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Financial clarity",
+    "Controlled speech",
+    "Practical intelligence",
+    "Negotiation skills"
+  ],
+  "challenges": [
+    "Harsh words",
+    "Over-analysis of money",
+    "Attachment to security",
+    "Rigid thinking"
+  ],
+  "closing": "This transit rewards mindful speech and calculated decisions, especially in matters of money and family values.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 2
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 8,
+  "lang": "en",
+  "title": "Venus Transit in the 8th House for Gemini Ascendant",
+  "summary": "Venus transiting the eighth house intensifies emotional depth, intimacy, and transformation in relationships. Attraction becomes subtle and magnetic, drawing interest toward shared resources, secrets, and deeper bonding. This phase supports healing, research, and understanding hidden dynamics. While passion and intuition increase, dependency, secrecy, or financial entanglements can create imbalance if transparency is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Magnetic and emotionally intense presence",
+        "Interest in hidden or deeper truths",
+        "Heightened sensitivity in bonds",
+        "Tendency toward emotional secrecy"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for research, healing, or investigative roles",
+        "Ability to handle confidential matters",
+        "Creative insight in complex situations",
+        "Avoid mixing emotions with obligations"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Intimacy and passion deepen",
+        "Trust becomes central to bonding",
+        "Old emotional patterns may resurface",
+        "Avoid possessiveness or control"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Focus on shared finances or investments",
+        "Unexpected gains or expenses possible",
+        "Financial dependency needs caution",
+        "Clarity in joint matters is essential"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Emotions run deep and transformative",
+        "Strong intuitive awareness",
+        "Attachment may intensify fears",
+        "Grounding restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional depth",
+    "Magnetic attraction",
+    "Healing capacity",
+    "Intuitive insight"
+  ],
+  "challenges": [
+    "Emotional dependency",
+    "Secrecy",
+    "Financial entanglement",
+    "Fear of loss"
+  ],
+  "closing": "This transit transforms relationships through depth and intimacy. Transparency turns intensity into lasting trust.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 8
+  }
+}

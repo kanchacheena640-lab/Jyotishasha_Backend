@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 4,
+  "lang": "en",
+  "title": "Saturn Transit in the 4th House for Gemini Ascendant",
+  "summary": "Saturn transiting the fourth house restructures home, emotional security, and foundations. Responsibilities toward family and property increase, prompting maturity and patience. Comfort feels earned through effort, not ease. While emotional heaviness or distance may surface initially, consistent care and boundaries build lasting inner stability and a dependable domestic base.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Serious approach to emotional security",
+        "Heightened sense of duty at home",
+        "Reserved emotional expression",
+        "Stability built through responsibility"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Focus improves with structured routines",
+        "Work-from-home needs discipline",
+        "Long-term planning favored",
+        "Avoid letting domestic stress spill into work"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family matters demand patience",
+        "Boundaries bring respect at home",
+        "Support expressed through actions",
+        "Emotional distance needs gentle repair"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses related to home or property",
+        "Conservative approach to assets",
+        "Delayed but secure property outcomes",
+        "Maintenance over luxury"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Introspective and grounded mindset",
+        "Need for quiet and order",
+        "Emotional weight early on",
+        "Consistency restores peace"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional resilience",
+    "Domestic discipline",
+    "Foundational stability",
+    "Long-term security"
+  ],
+  "challenges": [
+    "Emotional heaviness",
+    "Isolation at home",
+    "Slow comfort gains",
+    "Rigid routines"
+  ],
+  "closing": "This transit builds a strong inner and domestic foundation through patience and care. Stability grows with steady effort.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 4
+  }
+}

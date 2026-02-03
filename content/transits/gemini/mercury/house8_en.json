@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 8,
+  "lang": "en",
+  "title": "Mercury Transit in the 8th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the eighth house draws the mind toward depth, secrecy, and hidden mechanisms of life. You may feel inclined to research, analyze complex subjects, or understand matters related to shared resources and long-term security. Conversations tend to be selective and private. This phase supports investigation and strategic thinking, but excessive suspicion or mental obsession can create inner tension if clarity is lacking.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Thinking becomes deeper and more investigative",
+        "Preference for privacy in communication",
+        "Heightened awareness of underlying motives",
+        "Tendency to question surface-level answers"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for research, analysis, and confidential work",
+        "Strategic planning improves behind the scenes",
+        "Ability to handle complex data increases",
+        "Avoid office politics and overthinking intentions"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Conversations turn intense and meaningful",
+        "Need for trust and transparency rises",
+        "Secrets or unresolved issues may surface",
+        "Over-analysis can create emotional distance"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Focus on shared finances or long-term assets",
+        "Good time to review insurance, taxes, or investments",
+        "Unexpected financial discussions may arise",
+        "Avoid assuming outcomes without full facts"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks hidden patterns and truths",
+        "Obsession with certain thoughts possible",
+        "Introspection increases significantly",
+        "Grounding practices help reduce anxiety"
+      ]
+    }
+  ],
+  "strengths": [
+    "Research ability",
+    "Strategic depth",
+    "Analytical insight",
+    "Discretion"
+  ],
+  "challenges": [
+    "Mental fixation",
+    "Suspicion",
+    "Over-analysis",
+    "Difficulty expressing vulnerability"
+  ],
+  "closing": "This transit sharpens your ability to see beneath the surface. When curiosity is balanced with trust, inner clarity emerges.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 8
+  }
+}

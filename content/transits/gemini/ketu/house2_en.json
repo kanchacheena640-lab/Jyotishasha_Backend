@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Ketu",
+  "house": 2,
+  "lang": "en",
+  "title": "Ketu Transit in the 2nd House for Gemini Ascendant",
+  "summary": "Ketu transiting the second house reduces attachment to wealth, possessions, and speech-driven validation. You may feel indifferent toward accumulation, preferring simplicity and meaning over material security. Communication becomes minimal and precise, though emotional detachment in family matters can surface. Conscious financial structure and mindful speech maintain stability during this inward shift.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Detachment from material identity",
+        "Minimalistic value shift",
+        "Reserved communication style",
+        "Inner security over external proof"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Lower focus on money-centric roles",
+        "Preference for meaningful output",
+        "Reduced interest in sales/persuasion",
+        "Quiet efficiency improves results"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Emotional distance in family matters",
+        "Misunderstandings due to silence",
+        "Need for gentle reassurance",
+        "Clarity prevents disconnect"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Indifference toward accumulation",
+        "Irregular income motivation",
+        "Simple spending patterns",
+        "Structured budgeting essential"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Detachment from desires",
+        "Silence brings insight",
+        "Value confusion phases",
+        "Grounding restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Simplicity",
+    "Value clarity",
+    "Speech restraint",
+    "Inner security"
+  ],
+  "challenges": [
+    "Financial neglect",
+    "Family disconnect",
+    "Low earning drive",
+    "Communication gaps"
+  ],
+  "closing": "This transit redefines values through detachment. Structure keeps life steady while priorities realign.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Ketu",
+    "house": 2
+  }
+}

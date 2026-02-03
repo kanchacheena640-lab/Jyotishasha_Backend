@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 2,
+  "lang": "en",
+  "title": "Venus Transit in the 2nd House for Gemini Ascendant",
+  "summary": "Venus transiting the second house enhances sweetness in speech, family harmony, and attraction toward material comforts. Financial matters gain a pleasant flow through diplomacy, creativity, or aesthetic skills. This phase supports value-building and refined tastes. However, indulgence in luxury or emotional attachment to possessions can disturb balance if moderation is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Speech becomes charming and persuasive",
+        "Strong attachment to comfort and beauty",
+        "Desire for stability and pleasant surroundings",
+        "Self-worth linked to material security"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Income improves through creative or people-facing roles",
+        "Favorable for finance, design, art, or luxury sectors",
+        "Negotiations benefit from soft communication",
+        "Avoid comfort over productivity"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family bonds feel warmer and supportive",
+        "Romance influenced by shared values",
+        "Affection expressed through care and gifts",
+        "Possessiveness may rise subtly"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Steady flow of money through refined skills",
+        "Spending on luxury, food, or aesthetics",
+        "Good time to build savings gracefully",
+        "Overindulgence can reduce gains"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks comfort and reassurance",
+        "Pleasure linked to stability",
+        "Calm increases with financial clarity",
+        "Anxiety if security feels threatened"
+      ]
+    }
+  ],
+  "strengths": [
+    "Charming speech",
+    "Financial grace",
+    "Family harmony",
+    "Refined values"
+  ],
+  "challenges": [
+    "Overindulgence",
+    "Material attachment",
+    "Possessiveness",
+    "Comfort-driven laziness"
+  ],
+  "closing": "This transit softens speech and strengthens values. Moderation keeps pleasure aligned with lasting security.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 2
+  }
+}

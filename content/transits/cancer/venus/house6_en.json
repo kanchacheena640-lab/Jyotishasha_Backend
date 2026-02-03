@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Venus",
+  "house": 6,
+  "lang": "en",
+  "title": "Venus Transit in the 6th House for Cancer Ascendant",
+  "summary": "Venus transiting the sixth house refines daily routines, work relationships, and health awareness. For Cancer ascendants, this phase brings harmony into service-oriented roles and improves cooperation with colleagues through tact and empathy. Conflicts can soften when approached diplomatically. Attention to wellness, diet, and balanced habits increases, though comfort-seeking can interfere with discipline. This transit favors graceful problem-solving, pleasant work environments, and consistent self-care, helping turn obligations into manageable rhythms without sacrificing emotional balance.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Desire for harmony in daily life",
+        "Service-oriented yet gentle approach",
+        "Improved patience in routines",
+        "Risk of avoiding necessary discipline"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Better teamwork through diplomacy",
+        "Support in service or support roles",
+        "Conflict resolution via tact",
+        "Avoid prioritizing comfort over duty"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Softer handling of disagreements",
+        "Helpful and considerate demeanor",
+        "Boundaries improve cooperation",
+        "Do not over-accommodate others"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Stable income from routine work",
+        "Expenses toward health or conveniences",
+        "Small savings through consistency",
+        "Watch indulgent daily spending"
+      ]
+    },
+    {
+      "heading": "Mental / Inner",
+      "points": [
+        "Calm through orderly habits",
+        "Emotional balance via self-care",
+        "Pleasure in productive routines",
+        "Discipline sustains well-being"
+      ]
+    }
+  ],
+  "strengths": [
+    "Diplomatic problem-solving",
+    "Harmonious teamwork",
+    "Gentle discipline",
+    "Health-conscious choices"
+  ],
+  "challenges": [
+    "Comfort over duty",
+    "Routine indulgence",
+    "Delayed discipline",
+    "Over-accommodation"
+  ],
+  "closing": "This transit brings grace into effort and service.\nUse Venus to balance duty with care and tact.\nConsistent harmony sustains daily well-being.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Venus",
+    "house": 6
+  }
+}

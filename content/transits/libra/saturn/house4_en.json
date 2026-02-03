@@ -1,0 +1,74 @@
+{
+  "ascendant": "Libra",
+  "planet": "Saturn",
+  "house": 4,
+  "lang": "EN",
+  "title": "Saturn Transit in the 4th House for Libra Ascendant",
+  "summary": "When Saturn transits the 4th house for Libra ascendant, focus shifts toward emotional discipline, domestic responsibilities, and long-term security. Matters related to home, property, and inner stability demand patience and structure. Comfort feels restricted initially, but sustained effort builds durable foundations. Family obligations increase, requiring maturity and boundaries. Ignoring emotional needs or delaying practical decisions can deepen inner heaviness, while steady responsibility gradually restores confidence and peace.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotional maturity develops through responsibility",
+        "Need for stability outweighs comfort",
+        "Inner resilience strengthens slowly",
+        "Serious outlook replaces emotional ease"
+      ]
+    },
+    {
+      "heading": "Home & Family",
+      "points": [
+        "Domestic duties increase noticeably",
+        "Family matters require patience and structure",
+        "Support is practical rather than emotional",
+        "Avoid emotional withdrawal at home"
+      ]
+    },
+    {
+      "heading": "Property & Security",
+      "points": [
+        "Property decisions demand careful planning",
+        "Delays test patience but ensure durability",
+        "Long-term security takes priority",
+        "Avoid rushing commitments"
+      ]
+    },
+    {
+      "heading": "Education & Foundations",
+      "points": [
+        "Focus on foundational learning increases",
+        "Progress feels slow but steady",
+        "Discipline improves concentration",
+        "Lack of structure reduces outcomes"
+      ]
+    },
+    {
+      "heading": "Mental & Inner State",
+      "points": [
+        "Inner heaviness tests emotional balance",
+        "Sense of isolation may arise",
+        "Stability grows through routine",
+        "Self-care restores emotional strength"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong emotional discipline",
+    "Durable domestic foundations",
+    "Responsible family approach",
+    "Long-term security mindset"
+  ],
+  "challenges": [
+    "Emotional heaviness",
+    "Delayed comfort",
+    "Domestic pressure",
+    "Difficulty expressing feelings"
+  ],
+  "closing": "This transit rebuilds inner foundations through patience. When responsibility is carried steadily, Saturn creates lasting emotional and domestic stability.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Libra",
+    "planet": "Saturn",
+    "house": 4
+  }
+}

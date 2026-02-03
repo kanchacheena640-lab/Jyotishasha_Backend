@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Jupiter",
+  "house": 3,
+  "lang": "en",
+  "title": "Jupiter Transit in the 3rd House for Gemini Ascendant",
+  "summary": "Jupiter’s transit through the third house expands courage, communication skills, and learning through experience. Your confidence in expressing ideas increases, and efforts made through writing, speaking, or networking begin to show results. This phase supports skill development, short travels, and initiative-based growth. However, overestimating abilities or spreading energy too thin can reduce the effectiveness of this expansion.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Confidence in self-expression increases",
+        "Optimistic and encouraging communication style",
+        "Willingness to take calculated initiatives",
+        "Desire to learn through action"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Growth through skill-based or communication roles",
+        "Favorable for writing, teaching, marketing, and training",
+        "Efforts gain recognition over time",
+        "Avoid ignoring practical limits"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Supportive bond with siblings and peers",
+        "Encouraging role in close relationships",
+        "Honest conversations strengthen trust",
+        "Over-advice can feel overwhelming to others"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income improves through skills and initiatives",
+        "Opportunities via short projects or side efforts",
+        "Expenses on learning or travel increase",
+        "Plan investments of time carefully"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind feels hopeful and action-oriented",
+        "Strong belief in personal abilities",
+        "Restlessness if growth feels slow",
+        "Patience brings steady results"
+      ]
+    }
+  ],
+  "strengths": [
+    "Courage",
+    "Skill expansion",
+    "Positive communication",
+    "Initiative-driven growth"
+  ],
+  "challenges": [
+    "Overconfidence",
+    "Scattered efforts",
+    "Impatience",
+    "Over-promising"
+  ],
+  "closing": "This transit rewards learning through action. Focused effort turns confidence into meaningful progress.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Jupiter",
+    "house": 3
+  }
+}

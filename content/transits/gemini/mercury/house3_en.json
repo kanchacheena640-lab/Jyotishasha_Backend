@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 3,
+  "lang": "en",
+  "title": "Mercury Transit in the 3rd House for Gemini Ascendant",
+  "summary": "Mercury transiting your third house activates communication, courage, and daily interactions. This is a mentally active phase where ideas flow quickly and the urge to connect, write, speak, or travel short distances increases. Siblings, colleagues, and close networks become important. The transit supports learning, marketing, and initiative, but impatience or scattered efforts can reduce effectiveness if focus is lacking.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "You appear confident and mentally alert",
+        "Communication becomes bold and expressive",
+        "Curiosity and initiative increase",
+        "Restlessness rises if energy is unused"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Good for sales, marketing, writing, and media",
+        "Short projects and pitches move forward",
+        "Networking brings quick opportunities",
+        "Avoid rushing decisions without details"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Improved bonding with siblings or peers",
+        "Conversations become frequent and direct",
+        "Minor arguments may arise due to impatience",
+        "Honest dialogue helps clear issues"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income opportunities through skills and communication",
+        "Side hustles or short-term gains possible",
+        "Expenses on travel or gadgets may increase",
+        "Plan before acting on ideas"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind stays active and fast-moving",
+        "Strong urge to share thoughts",
+        "Distraction increases with excess stimuli",
+        "Single-task focus improves results"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong communication drive",
+    "Initiative and courage",
+    "Quick learning ability",
+    "Networking skills"
+  ],
+  "challenges": [
+    "Impatience",
+    "Scattered energy",
+    "Verbal conflicts",
+    "Lack of follow-through"
+  ],
+  "closing": "This transit rewards action driven by clear thinking. Focused communication turns ideas into meaningful progress.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 3
+  }
+}

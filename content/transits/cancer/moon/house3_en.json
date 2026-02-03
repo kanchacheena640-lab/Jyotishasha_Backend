@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 3,
+  "lang": "en",
+  "title": "Moon Transit in the 3rd House for Cancer Ascendant",
+  "summary": "The Moon transiting the third house heightens emotional communication, curiosity, and responsiveness. You feel compelled to express feelings, connect with siblings, and engage in short travels or learning. Motivation fluctuates with mood, making consistency important. When emotions are channeled constructively, writing, speaking, and skill-building become productive.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotion-led expression",
+        "Curious and responsive nature",
+        "Mood-linked initiative",
+        "Desire to connect"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Communication-driven tasks favored",
+        "Writing, media, or sales supported",
+        "Short-term projects highlighted",
+        "Avoid mood-based delays"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Emotional bonding with siblings",
+        "Frequent messaging and calls",
+        "Sensitivity in discussions",
+        "Active listening builds harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses on travel or learning",
+        "Small gains through skills",
+        "Cautious short-term decisions",
+        "Track minor spends"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Restless thoughts",
+        "Emotional curiosity",
+        "Need for expression",
+        "Routine steadies focus"
+      ]
+    }
+  ],
+  "strengths": [
+    "Expressive communication",
+    "Learning agility",
+    "Emotional rapport",
+    "Adaptability"
+  ],
+  "challenges": [
+    "Inconsistent effort",
+    "Overthinking",
+    "Emotional reactions",
+    "Distraction"
+  ],
+  "closing": "This transit energizes emotional communication. Consistent expression turns curiosity into progress.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 3
+  }
+}

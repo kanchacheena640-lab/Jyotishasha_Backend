@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Venus",
+  "house": 2,
+  "lang": "en",
+  "title": "Venus Transit in the 2nd House for Taurus Ascendant",
+  "summary": "Venus transiting the 2nd house enhances focus on finances, values, speech, and material stability for Taurus Ascendant. This phase supports income growth through refined skills, pleasant communication, and value-based choices. Appreciation for comfort, food, and aesthetics increases, influencing spending patterns. Family interactions become smoother when words are chosen with care. However, indulgence or attachment to luxury can strain resources. When moderation guides desire, this transit strengthens financial harmony, self-worth, and sustainable security.",
+  "sections": [
+    {
+      "heading": "Finances & Income",
+      "points": [
+        "Opportunities to improve earnings",
+        "Income linked to refined abilities",
+        "Value-driven financial decisions",
+        "Moderation sustains stability"
+      ]
+    },
+    {
+      "heading": "Speech & Communication",
+      "points": [
+        "Pleasant and persuasive speech",
+        "Diplomatic expression improves",
+        "Words influence outcomes",
+        "Mindful speech avoids excess"
+      ]
+    },
+    {
+      "heading": "Family & Values",
+      "points": [
+        "Harmony in family interactions",
+        "Shared values gain importance",
+        "Support through cooperation",
+        "Boundaries maintain balance"
+      ]
+    },
+    {
+      "heading": "Comfort & Possessions",
+      "points": [
+        "Desire for quality possessions",
+        "Attraction to comfort and taste",
+        "Aesthetic sense refines choices",
+        "Overindulgence needs restraint"
+      ]
+    },
+    {
+      "heading": "Self-Worth & Security",
+      "points": [
+        "Stronger sense of self-value",
+        "Security through consistency",
+        "Confidence tied to stability",
+        "Discipline protects resources"
+      ]
+    }
+  ],
+  "strengths": [
+    "Financial harmony",
+    "Pleasant communication",
+    "Refined values",
+    "Stable self-worth"
+  ],
+  "challenges": [
+    "Luxury-driven spending",
+    "Overattachment to comfort",
+    "Complacency in savings",
+    "Emotional spending"
+  ],
+  "closing": "Venus in the 2nd house refines values and resources. Balanced enjoyment transforms income into lasting security.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Venus",
+    "house": 2
+  }
+}

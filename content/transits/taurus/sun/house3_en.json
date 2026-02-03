@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Sun",
+  "house": 3,
+  "lang": "en",
+  "title": "Sun Transit in the 3rd House for Taurus Ascendant",
+  "summary": "The Sun transiting your 3rd house strengthens courage, communication, and self-initiated effort. This phase boosts confidence in expressing ideas, taking initiatives, and asserting opinions. You feel motivated to act independently, sharpen skills, and take leadership in short-term projects. Relationships with siblings and peers become more visible, sometimes competitive. While determination and visibility increase, impatience or dominance in communication can create friction. Balanced assertion ensures your drive converts into productive momentum and constructive influence.",
+  "sections": [
+    {
+      "heading": "Courage & Initiative",
+      "points": [
+        "Increase in self-driven effort",
+        "Confidence to take bold initiatives",
+        "Strong desire to prove capability",
+        "Consistency improves outcomes"
+      ]
+    },
+    {
+      "heading": "Communication & Expression",
+      "points": [
+        "Clear and assertive communication style",
+        "Willingness to voice opinions openly",
+        "Persuasive influence through speech",
+        "Avoid dominating conversations"
+      ]
+    },
+    {
+      "heading": "Skills & Learning",
+      "points": [
+        "Focus on developing practical skills",
+        "Hands-on learning brings progress",
+        "Interest in writing or communication tools",
+        "Short-term training proves effective"
+      ]
+    },
+    {
+      "heading": "Siblings & Peers",
+      "points": [
+        "Increased interaction with siblings",
+        "Leadership tendency in peer groups",
+        "Competitive dynamics may arise",
+        "Respect maintains harmony"
+      ]
+    },
+    {
+      "heading": "Mental Drive & Focus",
+      "points": [
+        "High mental energy and motivation",
+        "Quick decision-making ability",
+        "Restlessness if idle",
+        "Channel energy into action"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong initiative",
+    "Confident communication",
+    "Skill-oriented mindset",
+    "Mental alertness"
+  ],
+  "challenges": [
+    "Impatience",
+    "Overassertive speech",
+    "Sibling rivalry",
+    "Mental restlessness"
+  ],
+  "closing": "Sun in the 3rd house fuels courage and expression. Focused effort and respectful communication turn drive into steady progress.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Sun",
+    "house": 3
+  }
+}

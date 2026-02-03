@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 6,
+  "lang": "en",
+  "title": "Saturn Transit in the 6th House for Gemini Ascendant",
+  "summary": "Saturn transiting the sixth house strengthens discipline in work, health, and problem-solving. Challenges increase but so does endurance. This phase favors structured routines, service-oriented roles, and steady improvement through persistence. Enemies, debts, or health issues can be managed successfully with consistency. Avoid burnout by balancing duty with recovery.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Highly disciplined and duty-focused",
+        "Strong tolerance for pressure",
+        "Practical problem-solver",
+        "Serious approach to self-care"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Hard work brings tangible results",
+        "Service, compliance, or technical roles favored",
+        "Ability to outlast competition",
+        "Avoid overloading yourself"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Boundaries strengthen daily interactions",
+        "Less tolerance for inefficiency",
+        "Support expressed through responsibility",
+        "Avoid becoming overly critical"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Gradual clearing of debts",
+        "Income stabilizes through effort",
+        "Expenses linked to health or tools",
+        "Avoid unnecessary liabilities"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mentally resilient and focused",
+        "Stress handled through routine",
+        "Risk of fatigue if rest is ignored",
+        "Consistency restores confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Work discipline",
+    "Endurance",
+    "Problem-solving ability",
+    "Competitive resilience"
+  ],
+  "challenges": [
+    "Burnout",
+    "Over-criticism",
+    "Health neglect",
+    "Work obsession"
+  ],
+  "closing": "This transit rewards persistence and discipline. Sustainable routines turn challenges into long-term victories.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 6
+  }
+}

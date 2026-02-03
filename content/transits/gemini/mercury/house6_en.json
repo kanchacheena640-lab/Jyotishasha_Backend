@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 6,
+  "lang": "en",
+  "title": "Mercury Transit in the 6th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the sixth house sharpens focus on work routines, problem-solving, and practical efficiency. This phase supports analytical tasks, service-oriented roles, and handling disputes with logic. You may become more detail-driven in daily responsibilities and health habits. While this transit favors productivity and strategic thinking, mental strain can arise if you overanalyze minor issues or engage in unnecessary arguments.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "More practical and solution-oriented mindset",
+        "Attention to details increases",
+        "Desire to improve systems and routines",
+        "Critical thinking becomes prominent"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Strong phase for problem-solving roles",
+        "Good for audits, analysis, and operational work",
+        "Ability to handle competition improves",
+        "Avoid nitpicking coworkers"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Conversations may revolve around duties",
+        "Tendency to correct others increases",
+        "Clear boundaries reduce conflicts",
+        "Avoid argumentative tone"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Focus on clearing dues or liabilities",
+        "Careful planning helps control expenses",
+        "Gains through service or analytical work",
+        "Avoid stress-driven spending"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind stays alert but task-focused",
+        "Worry over small matters possible",
+        "Mental fatigue from over-analysis",
+        "Structured routines restore balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Problem-solving ability",
+    "Practical intelligence",
+    "Work discipline",
+    "Strategic communication"
+  ],
+  "challenges": [
+    "Over-criticism",
+    "Mental stress",
+    "Argumentative tendencies",
+    "Fixation on minor flaws"
+  ],
+  "closing": "This transit rewards clear thinking applied to real problems. When logic is balanced with patience, efficiency improves steadily.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 6
+  }
+}

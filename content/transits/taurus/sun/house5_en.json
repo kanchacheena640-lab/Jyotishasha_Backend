@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Sun",
+  "house": 5,
+  "lang": "en",
+  "title": "Sun Transit in the 5th House for Taurus Ascendant",
+  "summary": "The Sun transiting your 5th house activates creativity, self-expression, intelligence, and the need for recognition. This phase heightens confidence in talents and decision-making, encouraging you to lead through ideas, creativity, or performance. Romantic expression becomes more direct, and pride in achievements increases. While speculative instincts sharpen, ego-driven risk-taking can create instability. The Sun here asks you to express brilliance with responsibility, so confidence enhances creativity without turning into dominance or impatience.",
+  "sections": [
+    {
+      "heading": "Creativity & Expression",
+      "points": [
+        "Strong urge to showcase creative talent",
+        "Confidence in self-expression increases",
+        "Desire for appreciation and visibility",
+        "Balance prevents ego-driven display"
+      ]
+    },
+    {
+      "heading": "Intellect & Judgment",
+      "points": [
+        "Clear and authoritative thinking",
+        "Confidence in personal decisions",
+        "Ability to guide others intellectually",
+        "Avoid rigid or pride-based judgments"
+      ]
+    },
+    {
+      "heading": "Romance & Pleasure",
+      "points": [
+        "Direct and expressive romantic approach",
+        "Desire to lead in emotional matters",
+        "Heightened pride in romantic bonds",
+        "Sensitivity if appreciation is lacking"
+      ]
+    },
+    {
+      "heading": "Speculation & Risk",
+      "points": [
+        "Increased interest in speculative activities",
+        "Confidence-driven risk-taking",
+        "Short-term gains possible",
+        "Discipline needed to avoid losses"
+      ]
+    },
+    {
+      "heading": "Children & Responsibility",
+      "points": [
+        "Strong authoritative role with children",
+        "Pride in guidance and mentorship",
+        "Expectations may rise",
+        "Patience strengthens bonds"
+      ]
+    }
+  ],
+  "strengths": [
+    "Creative leadership",
+    "Strong intellectual confidence",
+    "Expressive vitality",
+    "Inspirational influence"
+  ],
+  "challenges": [
+    "Ego-driven expression",
+    "Impatience in romance",
+    "Speculative overconfidence",
+    "High expectations from others"
+  ],
+  "closing": "Sun in the 5th house amplifies creativity and confidence. Responsible expression ensures brilliance inspires rather than dominates.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Sun",
+    "house": 5
+  }
+}

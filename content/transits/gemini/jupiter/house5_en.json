@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Jupiter",
+  "house": 5,
+  "lang": "en",
+  "title": "Jupiter Transit in the 5th House for Gemini Ascendant",
+  "summary": "Jupiter’s transit through the fifth house expands creativity, intelligence, and positive self-expression. This phase supports learning, teaching, mentoring, and idea-driven growth. Confidence in judgment increases, and there is a natural inclination toward wisdom-based decisions. While optimism and creative flow strengthen, excess speculation or moral superiority can reduce balance if restraint is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Creative confidence and optimism rise",
+        "Strong belief in personal intelligence",
+        "Joy in learning and sharing knowledge",
+        "Desire to be admired for wisdom"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for education, training, and advisory roles",
+        "Creative leadership gains recognition",
+        "Ideas find supportive audiences",
+        "Avoid ego-driven decision making"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Warmth and generosity in romantic bonds",
+        "Mentor-like approach in close relationships",
+        "Emotional expression becomes more confident",
+        "Preaching tone may create imbalance"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Calculated risks show learning outcomes",
+        "Speculative interests increase",
+        "Long-term gains favored over short bets",
+        "Avoid overconfidence in predictions"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind feels inspired and expansive",
+        "Strong faith in personal direction",
+        "Optimism fuels creativity",
+        "Judgment weakens with excess pride"
+      ]
+    }
+  ],
+  "strengths": [
+    "Creative wisdom",
+    "Teaching ability",
+    "Optimistic intelligence",
+    "Inspired leadership"
+  ],
+  "challenges": [
+    "Overconfidence",
+    "Speculative excess",
+    "Moral arrogance",
+    "Ignoring feedback"
+  ],
+  "closing": "This transit enhances creative intelligence and joy in expression. Humility keeps growth aligned with wisdom.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Jupiter",
+    "house": 5
+  }
+}

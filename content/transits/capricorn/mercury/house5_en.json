@@ -1,0 +1,74 @@
+{
+  "ascendant": "Capricorn",
+  "planet": "Mercury",
+  "house": 5,
+  "lang": "EN",
+  "title": "Mercury Transit in the 5th House for Capricorn Ascendant",
+  "summary": "When Mercury transits the 5th house for Capricorn Ascendant, intellect fuels creativity, learning, and self-expression. You think more strategically about education, speculation, romance, and matters related to children. Communication becomes playful yet calculated, supporting teaching, writing, and analytical creativity. This phase favors skill-based gains and thoughtful decision-making in risks. However, overanalysis can dampen spontaneity or cause misunderstandings in love. Progress comes by blending logic with joy, allowing ideas to inspire without becoming overly controlled.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Creative yet analytical thinking",
+        "Curiosity in learning and expression",
+        "Desire to articulate talents",
+        "Risk of overthinking emotions"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Teaching and advisory roles favored",
+        "Creative communication gains visibility",
+        "Skill-based leadership improves outcomes",
+        "Avoid micromanaging ideas"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Romantic conversations increase",
+        "Playful yet logical exchanges",
+        "Misunderstandings from excessive analysis",
+        "Warmth strengthens bonds"
+      ]
+    },
+    {
+      "title": "Finance",
+      "points": [
+        "Calculated approach to speculation",
+        "Gains through intellectual skills",
+        "Short-term opportunities via analysis",
+        "Avoid overthinking risks"
+      ]
+    },
+    {
+      "title": "Mental / Inner",
+      "points": [
+        "Active creative mind",
+        "Mental stimulation brings joy",
+        "Restlessness without expression",
+        "Balance through structured creativity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Analytical creativity",
+    "Teaching ability",
+    "Strategic expression",
+    "Skill-based intelligence"
+  ],
+  "challenges": [
+    "Overanalysis",
+    "Reduced spontaneity",
+    "Emotional misreads",
+    "Mental distraction"
+  ],
+  "closing": "This Mercury transit sharpens Capricorn Ascendants’ creative intelligence. Joyful expression keeps logic inspiring and effective.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Capricorn",
+    "planet": "Mercury",
+    "house": 5
+  }
+}

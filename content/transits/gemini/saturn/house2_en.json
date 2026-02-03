@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 2,
+  "lang": "en",
+  "title": "Saturn Transit in the 2nd House for Gemini Ascendant",
+  "summary": "Saturn transiting the second house emphasizes discipline in finances, speech, and family responsibilities. Income grows steadily through patience and structure rather than quick gains. This phase asks for realistic budgeting, value-based decisions, and mindful communication. While progress may feel slow, consistency builds lasting security and a stronger sense of self-worth.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Practical and value-conscious outlook",
+        "Measured and thoughtful speech",
+        "Heightened sense of responsibility",
+        "Self-worth built through effort"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Stable earnings through sustained work",
+        "Focus on skill-building for income",
+        "Conservative decisions favored",
+        "Avoid shortcuts for quick money"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Serious tone in family matters",
+        "Clear boundaries around support",
+        "Communication becomes reserved",
+        "Reliability strengthens trust"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Budgeting and savings prioritized",
+        "Delayed but durable gains",
+        "Cautious spending habits",
+        "Asset-building over consumption"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Concern for security and stability",
+        "Reduced impulsive spending urges",
+        "Patience tested by delays",
+        "Consistency restores confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Financial discipline",
+    "Steady growth",
+    "Responsible speech",
+    "Value clarity"
+  ],
+  "challenges": [
+    "Fear of scarcity",
+    "Over-cautiousness",
+    "Emotional restraint",
+    "Slow gratification"
+  ],
+  "closing": "This transit strengthens financial foundations through patience and discipline. Long-term security outweighs short-term speed.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 2
+  }
+}

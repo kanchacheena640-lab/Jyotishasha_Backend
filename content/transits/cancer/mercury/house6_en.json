@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Mercury",
+  "house": 6,
+  "lang": "en",
+  "title": "Mercury Transit in the 6th House for Cancer Ascendant",
+  "summary": "Mercury transiting the sixth house sharpens analytical ability in daily work, health, and problem-solving. For Cancer ascendants, this phase increases efficiency, attention to detail, and a practical approach to routines. You become mentally alert in handling tasks, paperwork, and conflicts, with a stronger focus on improvement. While productivity rises, overthinking minor issues or excessive criticism can create stress. This transit favors structured planning, skill refinement, and clear communication to resolve challenges steadily and effectively.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Practical and analytical mindset",
+        "Focus on fixing inefficiencies",
+        "Heightened attention to detail",
+        "Risk of mental overwork"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Improved performance in routine tasks",
+        "Strength in analysis, auditing, or documentation",
+        "Effective handling of workplace issues",
+        "Avoid nitpicking coworkers"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Direct communication to resolve issues",
+        "Less emotional, more rational tone",
+        "Arguments over small matters possible",
+        "Patience maintains harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Focus on clearing dues or managing expenses",
+        "Financial order through planning",
+        "Small but consistent savings",
+        "Avoid stress-driven spending"
+      ]
+    },
+    {
+      "heading": "Mental / Inner",
+      "points": [
+        "Busy and problem-solving mind",
+        "Concern for efficiency and health",
+        "Mental fatigue from constant analysis",
+        "Structured breaks restore balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong problem-solving ability",
+    "Organized work approach",
+    "Clear communication in conflicts",
+    "Attention to detail"
+  ],
+  "challenges": [
+    "Overanalysis of minor issues",
+    "Mental stress",
+    "Critical communication",
+    "Difficulty relaxing"
+  ],
+  "closing": "This transit rewards clarity through structure.\nUse Mercury to organize work and health routines.\nBalanced thinking sustains steady progress.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Mercury",
+    "house": 6
+  }
+}

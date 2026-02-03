@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 9,
+  "lang": "en",
+  "title": "Moon Transit in the 9th House for Cancer Ascendant",
+  "summary": "The Moon transiting the ninth house shifts emotions toward belief systems, purpose, and higher understanding. You may feel drawn to learning, spiritual inquiry, or guidance from mentors. Emotional faith strengthens, yet beliefs can fluctuate with mood. Travel, studies, or philosophical discussions feel emotionally engaging. Balance intuition with openness to avoid becoming overly subjective.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotionally driven beliefs",
+        "Search for meaning",
+        "Respect for guidance",
+        "Mood-linked optimism"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Learning and advisory roles favored",
+        "Teaching or mentoring supported",
+        "Decisions influenced by intuition",
+        "Avoid rigid opinions"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Bonding through shared beliefs",
+        "Emotional respect for elders",
+        "Differences in ideology may surface",
+        "Open dialogue sustains harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses on travel or education",
+        "Fortune fluctuates with mindset",
+        "Cautious long-term planning",
+        "Avoid faith-based spending"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Emotional faith and hope",
+        "Philosophical reflection",
+        "Restlessness for growth",
+        "Grounding keeps balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Intuitive wisdom",
+    "Emotional optimism",
+    "Learning orientation",
+    "Respect for values"
+  ],
+  "challenges": [
+    "Subjective beliefs",
+    "Mood-based faith shifts",
+    "Ideological sensitivity",
+    "Inconsistent direction"
+  ],
+  "closing": "This transit nurtures emotional faith and learning. Openness keeps beliefs expansive and balanced.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 9
+  }
+}

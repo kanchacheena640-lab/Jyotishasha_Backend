@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 1,
+  "lang": "en",
+  "title": "Sun Transit in the 1st House for Cancer Ascendant",
+  "summary": "The Sun transiting the first house for Cancer Ascendant brings strong self-focus, visibility, and a push to assert identity. Confidence rises, and leadership instincts become more pronounced. You may feel driven to take charge and be recognized for your individuality. While vitality improves, ego clashes or impatience can surface if balance is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened self-awareness",
+        "Strong personal presence",
+        "Leadership instinct awakens",
+        "Desire to be acknowledged"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Opportunities to lead",
+        "Visibility at workplace increases",
+        "Authority roles favored",
+        "Avoid dominating behavior"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Self-first attitude noticeable",
+        "Need for appreciation from others",
+        "Potential ego clashes",
+        "Listening restores harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Focus on personal growth expenses",
+        "Spending to enhance status",
+        "Income linked to self-effort",
+        "Avoid impulsive prestige buys"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Strong sense of identity",
+        "Increased motivation",
+        "Restlessness if ignored",
+        "Balance confidence with humility"
+      ]
+    }
+  ],
+  "strengths": [
+    "Confidence",
+    "Leadership",
+    "Self-belief",
+    "Vitality"
+  ],
+  "challenges": [
+    "Ego sensitivity",
+    "Impatience",
+    "Over-assertiveness",
+    "Burnout risk"
+  ],
+  "closing": "This transit puts the spotlight on you. Lead with confidence, but let humility guide your actions.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 1
+  }
+}

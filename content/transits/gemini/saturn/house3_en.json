@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 3,
+  "lang": "en",
+  "title": "Saturn Transit in the 3rd House for Gemini Ascendant",
+  "summary": "Saturn transiting the third house restructures communication, courage, and daily efforts. Progress comes through disciplined learning, consistent practice, and realistic planning. Interactions with siblings and peers demand responsibility and patience. While confidence may feel tested initially, steady effort strengthens skills, mental focus, and long-term self-belief built on experience rather than impulse.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Serious and focused communication style",
+        "Cautious but determined mindset",
+        "Reduced impulsive actions",
+        "Confidence grows through practice"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Skill-based growth through repetition",
+        "Writing, media, or analysis needs structure",
+        "Short-term efforts feel slow but solid",
+        "Avoid rushing results"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Responsible dealings with siblings",
+        "Clear but reserved communication",
+        "Boundaries with peers strengthen respect",
+        "Effort required to maintain connections"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income linked to skills and effort",
+        "Gradual gains from consistent work",
+        "Careful spending on tools or learning",
+        "Avoid speculative shortcuts"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind becomes disciplined and practical",
+        "Self-doubt reduces with mastery",
+        "Patience tested in early phase",
+        "Consistency builds inner strength"
+      ]
+    }
+  ],
+  "strengths": [
+    "Mental discipline",
+    "Skill mastery",
+    "Focused effort",
+    "Reliable communication"
+  ],
+  "challenges": [
+    "Initial self-doubt",
+    "Communication heaviness",
+    "Slow momentum",
+    "Over-seriousness"
+  ],
+  "closing": "This transit builds courage through discipline and steady effort. Mastery replaces impulse as confidence grows.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 3
+  }
+}

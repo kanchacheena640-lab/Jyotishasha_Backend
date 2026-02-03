@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 3,
+  "lang": "en",
+  "title": "Sun Transit in the 3rd House for Cancer Ascendant",
+  "summary": "The Sun transiting the third house boosts courage, initiative, and communication. You feel driven to express ideas confidently and take decisive action. Sibling dynamics and teamwork may revolve around leadership or dominance. Short travels, writing, and skill-building gain momentum. Channel confidence constructively to avoid ego clashes.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Bold self-expression",
+        "Heightened courage",
+        "Action-oriented mindset",
+        "Confidence in communication"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Leadership in projects",
+        "Strong presentation skills",
+        "Initiative in negotiations",
+        "Avoid forceful persuasion"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Assertive sibling interactions",
+        "Need to be heard",
+        "Possible dominance issues",
+        "Listening builds rapport"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Earnings via skills/communication",
+        "Short-term opportunities",
+        "Travel-related expenses",
+        "Plan impulsive spends"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "High motivation",
+        "Restless energy",
+        "Desire to prove ability",
+        "Balance action with patience"
+      ]
+    }
+  ],
+  "strengths": [
+    "Courage",
+    "Clear communication",
+    "Initiative",
+    "Skill confidence"
+  ],
+  "challenges": [
+    "Ego in speech",
+    "Impatience",
+    "Sibling friction",
+    "Overexertion"
+  ],
+  "closing": "This transit energizes your voice and courage. Lead with clarity, not force.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 3
+  }
+}

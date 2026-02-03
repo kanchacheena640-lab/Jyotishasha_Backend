@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Mercury",
+  "house": 12,
+  "lang": "en",
+  "title": "Mercury Transit in the 12th House for Taurus Ascendant",
+  "summary": "Mercury transiting the 12th house redirects mental energy toward introspection, isolation, foreign matters, and hidden expenses. Thinking becomes private and reflective, supporting research, planning, and behind-the-scenes work. Communication may reduce outwardly while internal analysis deepens. Expenses linked to travel, health, or documentation can rise if details are ignored. Overthinking can disturb sleep or peace of mind. When managed with structure, this transit supports strategic withdrawal, spiritual study, and quiet progress without unnecessary exposure.",
+  "sections": [
+    {
+      "heading": "Mind & Introspection",
+      "points": [
+        "Inward-focused thinking",
+        "Increased self-analysis",
+        "Need for mental privacy",
+        "Grounding calms restlessness"
+      ]
+    },
+    {
+      "heading": "Communication Style",
+      "points": [
+        "Reduced external expression",
+        "Selective sharing of thoughts",
+        "Misunderstandings if vague",
+        "Clarity prevents confusion"
+      ]
+    },
+    {
+      "heading": "Expenses & Planning",
+      "points": [
+        "Hidden or unnoticed expenses",
+        "Costs linked to travel or health",
+        "Paperwork requires attention",
+        "Budget discipline is essential"
+      ]
+    },
+    {
+      "heading": "Foreign & Remote Work",
+      "points": [
+        "Focus on foreign connections",
+        "Behind-the-scenes assignments",
+        "Delayed visible outcomes",
+        "Patience sustains effort"
+      ]
+    },
+    {
+      "heading": "Sleep & Mental Health",
+      "points": [
+        "Overthinking affects rest",
+        "Dream activity increases",
+        "Mental fatigue possible",
+        "Routine restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strategic thinking in isolation",
+    "Research-oriented mindset",
+    "Quiet analytical depth",
+    "Ability to plan privately"
+  ],
+  "challenges": [
+    "Mental anxiety",
+    "Sleep disturbance",
+    "Hidden expenses",
+    "Communication gaps"
+  ],
+  "closing": "Mercury in the 12th house favors quiet intelligence and disciplined reflection. Structured thinking converts isolation into strategic clarity.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Mercury",
+    "house": 12
+  }
+}

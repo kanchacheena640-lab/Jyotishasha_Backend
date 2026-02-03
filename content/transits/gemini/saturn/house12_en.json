@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 12,
+  "lang": "en",
+  "title": "Saturn Transit in the 12th House for Gemini Ascendant",
+  "summary": "Saturn transiting the twelfth house emphasizes closure, solitude, and disciplined release. Old burdens surface to be resolved. This phase supports structured retreats, behind-the-scenes work, and mindful expense control. Though isolation or fatigue may appear, intentional rest and accountability restore clarity and prepare the ground for a new cycle.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Introspective and reserved demeanor",
+        "Heightened need for solitude",
+        "Accountability for past patterns",
+        "Quiet strength through restraint"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Effective behind-the-scenes contributions",
+        "Completion of long projects",
+        "Foreign or institutional settings favored",
+        "Avoid unclear obligations"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Reduced social engagement",
+        "Clear emotional boundaries",
+        "Karmic ties resolve",
+        "Honest closure over avoidance"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Strict expense control",
+        "Hidden leaks addressed",
+        "Focus on debt and dues",
+        "Savings through discipline"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Need for rest and recovery",
+        "Release of guilt and fear",
+        "Loneliness if balance lacks",
+        "Mind clears with structure"
+      ]
+    }
+  ],
+  "strengths": [
+    "Inner discipline",
+    "Conscious release",
+    "Completion power",
+    "Spiritual maturity"
+  ],
+  "challenges": [
+    "Isolation",
+    "Fatigue",
+    "Hidden expenses",
+    "Avoidance tendencies"
+  ],
+  "closing": "This transit closes cycles with discipline and honesty. Rest, resolve, and prepare for renewal.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 12
+  }
+}

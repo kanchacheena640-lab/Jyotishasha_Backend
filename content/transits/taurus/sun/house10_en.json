@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Sun",
+  "house": 10,
+  "lang": "en",
+  "title": "Sun Transit in the 10th House for Taurus Ascendant",
+  "summary": "The Sun transiting your 10th house brings strong emphasis on career, authority, and public reputation. This phase increases ambition, visibility, and the desire to lead through performance and responsibility. You may step into roles that demand decision-making and accountability, gaining recognition for consistent effort. While professional confidence rises, ego clashes with superiors or rigidity in approach can create resistance. Balanced leadership and ethical conduct help convert visibility into sustained respect and long-term advancement.",
+  "sections": [
+    {
+      "heading": "Career & Ambition",
+      "points": [
+        "Heightened focus on professional growth",
+        "Strong drive to achieve leadership roles",
+        "Recognition through responsibility",
+        "Consistency strengthens authority"
+      ]
+    },
+    {
+      "heading": "Public Image & Status",
+      "points": [
+        "Increased visibility in public or professional spaces",
+        "Reputation shaped by actions and decisions",
+        "Desire for acknowledgment and respect",
+        "Humility preserves credibility"
+      ]
+    },
+    {
+      "heading": "Authority & Leadership",
+      "points": [
+        "Confidence in decision-making",
+        "Ability to guide teams or structures",
+        "Expectation of obedience may rise",
+        "Fairness sustains leadership"
+      ]
+    },
+    {
+      "heading": "Workplace Dynamics",
+      "points": [
+        "Interactions with superiors become prominent",
+        "Potential for ego-based disagreements",
+        "Clear boundaries improve cooperation",
+        "Professionalism ensures progress"
+      ]
+    },
+    {
+      "heading": "Long-Term Direction",
+      "points": [
+        "Focus on defining career direction",
+        "Desire to build lasting achievements",
+        "Purpose-driven goals gain clarity",
+        "Patience supports steady success"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong professional drive",
+    "Leadership visibility",
+    "Clear career focus",
+    "Decision-making authority"
+  ],
+  "challenges": [
+    "Ego clashes with authority figures",
+    "Over-identification with status",
+    "Rigid work approach",
+    "Pressure from high expectations"
+  ],
+  "closing": "Sun in the 10th house elevates career focus and authority. Balanced leadership transforms recognition into lasting professional respect.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Sun",
+    "house": 10
+  }
+}

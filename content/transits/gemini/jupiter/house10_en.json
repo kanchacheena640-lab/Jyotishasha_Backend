@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Jupiter",
+  "house": 10,
+  "lang": "en",
+  "title": "Jupiter Transit in the 10th House for Gemini Ascendant",
+  "summary": "Jupiter’s transit through the tenth house expands career scope, public reputation, and long-term professional growth. This phase brings recognition through ethical conduct, wisdom, and leadership. Authority figures notice your efforts, and responsibilities increase with opportunity. While success and respect grow steadily, complacency or overconfidence in status can slow progress if discipline is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Stronger sense of purpose and responsibility",
+        "Confidence in leadership roles",
+        "Desire to be respected for integrity",
+        "Attachment to status may increase"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Career growth through ethical leadership",
+        "Favorable for promotions and recognition",
+        "Guidance roles and authority increase",
+        "Avoid taking reputation for granted"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Professional relationships gain importance",
+        "Respect-based interactions strengthen",
+        "Limited time for personal connections",
+        "Balance work and family consciously"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income improves with career advancement",
+        "Long-term financial stability strengthens",
+        "Professional decisions impact wealth",
+        "Avoid ego-driven financial risks"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind focused on achievement and legacy",
+        "Faith in long-term success",
+        "Pressure to live up to expectations",
+        "Humility keeps clarity intact"
+      ]
+    }
+  ],
+  "strengths": [
+    "Leadership wisdom",
+    "Professional growth",
+    "Public respect",
+    "Ethical authority"
+  ],
+  "challenges": [
+    "Overconfidence in position",
+    "Work-life imbalance",
+    "Status attachment",
+    "Ignoring feedback"
+  ],
+  "closing": "This transit elevates your public role and responsibilities. Consistent ethics and humility turn success into lasting legacy.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Jupiter",
+    "house": 10
+  }
+}

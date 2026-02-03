@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 11,
+  "lang": "en",
+  "title": "Venus Transit in the 11th House for Gemini Ascendant",
+  "summary": "Venus transiting the eleventh house enhances gains, social harmony, and fulfillment of desires. Friendships become supportive, and networks offer pleasant opportunities. This phase favors income growth through connections, creative collaborations, and shared goals. While enjoyment and popularity increase, relying too much on social approval or spending for status can weaken long-term benefits if discretion is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Socially warm and approachable demeanor",
+        "Desire for shared happiness and enjoyment",
+        "Optimism toward future goals",
+        "Need for appreciation from peers"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Gains through networking and teamwork",
+        "Creative collaborations bring rewards",
+        "Support from friends or groups",
+        "Avoid mixing pleasure with obligations"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Friendships feel affectionate and harmonious",
+        "Romance may begin through social circles",
+        "Shared interests strengthen bonds",
+        "Over-expectation from friends may disappoint"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income growth through contacts and alliances",
+        "Spending on social life and celebrations",
+        "Favorable period for wish fulfillment",
+        "Control status-driven expenses"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind feels hopeful and socially satisfied",
+        "Joy in collective achievements",
+        "Sensitivity to social acceptance",
+        "Inner balance sustains gains"
+      ]
+    }
+  ],
+  "strengths": [
+    "Social harmony",
+    "Financial gains",
+    "Supportive networks",
+    "Collaborative success"
+  ],
+  "challenges": [
+    "Approval-seeking",
+    "Over-spending socially",
+    "Dependence on friends",
+    "Complacency"
+  ],
+  "closing": "This transit fulfills desires through connection and collaboration. Disciplined enjoyment keeps gains sustainable.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 11
+  }
+}

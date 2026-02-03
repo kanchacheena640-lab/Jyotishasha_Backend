@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Venus",
+  "house": 6,
+  "lang": "en",
+  "title": "Venus Transit in the 6th House for Taurus Ascendant",
+  "summary": "Venus transiting the 6th house shifts focus toward work routines, service, health balance, and relationship dynamics in daily environments. This phase supports smoother workplace interactions, diplomatic handling of conflicts, and refinement of skills through cooperation. Attraction toward comfort at work increases, though complacency or people-pleasing may reduce efficiency. Health improves through balanced habits rather than indulgence. When discipline guides desire, this transit enhances harmony in service, practical relationships, and sustainable productivity.",
+  "sections": [
+    {
+      "heading": "Work & Routine",
+      "points": [
+        "Pleasant workplace interactions",
+        "Cooperation improves efficiency",
+        "Refinement of daily tasks",
+        "Consistency sustains results"
+      ]
+    },
+    {
+      "heading": "Conflicts & Resolution",
+      "points": [
+        "Diplomatic handling of disputes",
+        "Desire for peaceful outcomes",
+        "Avoidance of confrontation possible",
+        "Clarity prevents imbalance"
+      ]
+    },
+    {
+      "heading": "Service & Responsibility",
+      "points": [
+        "Service-oriented mindset grows",
+        "Supportive role in teams",
+        "Value-driven work ethic",
+        "Boundaries protect energy"
+      ]
+    },
+    {
+      "heading": "Health & Balance",
+      "points": [
+        "Focus on comfort-based habits",
+        "Health improves with moderation",
+        "Risk of indulgent routines",
+        "Discipline restores vitality"
+      ]
+    },
+    {
+      "heading": "Practical Relationships",
+      "points": [
+        "Cordial relations with colleagues",
+        "Fairness in daily dealings",
+        "Attraction in work settings",
+        "Professional limits maintain order"
+      ]
+    }
+  ],
+  "strengths": [
+    "Diplomatic work approach",
+    "Harmonious daily interactions",
+    "Service-oriented attitude",
+    "Balanced productivity"
+  ],
+  "challenges": [
+    "People-pleasing tendencies",
+    "Avoiding necessary confrontation",
+    "Indulgent habits",
+    "Reduced competitive drive"
+  ],
+  "closing": "Venus in the 6th house refines service and daily relationships. Disciplined balance converts harmony into reliable progress.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Venus",
+    "house": 6
+  }
+}

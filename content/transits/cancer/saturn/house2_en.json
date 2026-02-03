@@ -1,0 +1,76 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Saturn",
+  "house": 2,
+  "lang": "en",
+  "title": "Saturn Transit in the 2nd House for Cancer Ascendant",
+  "summary": "Saturn transiting your second house shifts focus toward finances, family responsibilities, speech, and core values. This phase demands discipline in money matters and maturity in communication. Income may grow slowly, but stability becomes the priority. Family obligations can feel heavy, yet they strengthen your sense of duty. Saturn teaches you to value what is earned through patience, restraint, and consistency, helping you build long-term security rather than short-lived comfort.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Speech becomes measured and thoughtful.",
+        "Values shift toward practicality and realism.",
+        "Emotional expression turns more controlled.",
+        "Sense of responsibility deepens."
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Income-linked efforts demand sustained hard work.",
+        "Recognition comes through reliability, not speed.",
+        "Family-linked businesses need careful handling.",
+        "Professional patience becomes essential."
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family duties increase emotional weight.",
+        "Conversations may feel serious or restrained.",
+        "Trust builds through actions, not words.",
+        "Old family patterns surface for resolution."
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Slow but steady financial consolidation.",
+        "Savings discipline becomes crucial.",
+        "Unnecessary expenses are curtailed.",
+        "Focus on long-term wealth security."
+      ]
+    },
+    {
+      "heading": "Mental & Inner State",
+      "points": [
+        "Concerns about security may rise.",
+        "Patience is tested through delays.",
+        "Inner discipline strengthens self-worth.",
+        "Confidence grows through financial control."
+      ]
+    }
+  ],
+  "strengths": [
+    "Financial discipline",
+    "Responsible communication",
+    "Value-based decision-making",
+    "Long-term stability focus",
+    "Emotional restraint"
+  ],
+  "challenges": [
+    "Cash flow delays",
+    "Family pressure",
+    "Harsh self-judgment",
+    "Restricted self-expression",
+    "Fear of loss"
+  ],
+  "closing": "Saturn here teaches you that real wealth is built slowly. What you protect and nurture now becomes your future foundation.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Saturn",
+    "house": 2
+  }
+}

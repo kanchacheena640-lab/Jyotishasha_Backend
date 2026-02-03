@@ -1,0 +1,74 @@
+{
+  "ascendant": "Sagittarius",
+  "planet": "Moon",
+  "house": 12,
+  "lang": "EN",
+  "title": "Moon Transit in the 12th House for Sagittarius Ascendant",
+  "summary": "When the Moon transits the 12th house for Sagittarius Ascendant, emotions turn inward toward solitude, rest, and subconscious processing. Sensitivity increases, making you more receptive to hidden feelings, dreams, and unspoken concerns. Energy may feel low, and the need for withdrawal or privacy grows. Expenses can rise due to health, travel, or emotional comfort. When approached consciously, this transit supports emotional healing, spiritual reflection, and the release of past emotional baggage.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Increased emotional sensitivity",
+        "Need for solitude and rest",
+        "Heightened subconscious awareness",
+        "Desire for emotional release"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Behind-the-scenes work favored",
+        "Low visibility but steady effort",
+        "Reduced motivation for public roles",
+        "Rest improves productivity"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Emotional withdrawal increases",
+        "Need for personal space",
+        "Unspoken feelings surface",
+        "Gentle communication avoids distance"
+      ]
+    },
+    {
+      "title": "Finance",
+      "points": [
+        "Expenses rise quietly",
+        "Spending on health or travel",
+        "Comfort-based costs increase",
+        "Monitoring prevents imbalance"
+      ]
+    },
+    {
+      "title": "Mental / Inner",
+      "points": [
+        "Deep introspection",
+        "Emotional cleansing phase",
+        "Dreams carry messages",
+        "Stillness restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional healing",
+    "Spiritual sensitivity",
+    "Subconscious insight",
+    "Ability to release"
+  ],
+  "challenges": [
+    "Emotional fatigue",
+    "Withdrawal tendency",
+    "Rising expenses",
+    "Low motivation"
+  ],
+  "closing": "This Moon transit invites rest and emotional renewal. With awareness, it becomes a phase of healing, reflection, and inner peace.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Sagittarius",
+    "planet": "Moon",
+    "house": 12
+  }
+}

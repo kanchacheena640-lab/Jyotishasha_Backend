@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 9,
+  "lang": "en",
+  "title": "Saturn Transit in the 9th House for Gemini Ascendant",
+  "summary": "Saturn transiting the ninth house restructures belief systems, higher learning, and long-term direction. Faith is tested through practical experience rather than blind optimism. Education, legal matters, travel, and guidance from mentors require patience and responsibility. Though progress may feel slow, disciplined effort refines wisdom, ethics, and a realistic worldview that supports lasting growth.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Practical and realistic belief system",
+        "Questioning of inherited philosophies",
+        "Serious approach to meaning and purpose",
+        "Wisdom built through experience"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Structured progress in education or law",
+        "Mentors demand accountability",
+        "Slow advancement in advisory roles",
+        "Ethics prioritized over shortcuts"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Respect-based connections with elders",
+        "Ideological differences tested",
+        "Guidance relationships become formal",
+        "Patience strengthens mutual respect"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Conservative approach to long-term plans",
+        "Expenses on education or legal matters",
+        "Delayed returns from overseas links",
+        "Stability over speculation"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Serious reflection on life direction",
+        "Faith tested through responsibility",
+        "Reduced idealism",
+        "Clarity grows with discipline"
+      ]
+    }
+  ],
+  "strengths": [
+    "Ethical clarity",
+    "Disciplined wisdom",
+    "Long-term vision",
+    "Responsible faith"
+  ],
+  "challenges": [
+    "Loss of blind optimism",
+    "Delays in higher pursuits",
+    "Rigid beliefs",
+    "Mentor-related pressure"
+  ],
+  "closing": "This transit grounds beliefs in reality and effort. Disciplined faith builds a reliable path forward.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 9
+  }
+}

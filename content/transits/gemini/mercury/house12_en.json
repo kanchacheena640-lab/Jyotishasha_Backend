@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 12,
+  "lang": "en",
+  "title": "Mercury Transit in the 12th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the twelfth house turns the mind inward and highlights solitude, reflection, and behind-the-scenes activity. Thoughts become more private, imaginative, and introspective. This phase supports research, spiritual study, and work done away from the spotlight. While intuition and subtle understanding increase, mental overthinking or isolation can rise if communication is completely withdrawn.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "More introspective and inward-focused thinking",
+        "Preference for silence over constant interaction",
+        "Heightened imagination and subtle perception",
+        "Difficulty expressing thoughts openly"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for research and confidential tasks",
+        "Behind-the-scenes planning proves effective",
+        "Work in foreign or isolated environments benefits",
+        "Avoid lack of clarity with coworkers"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Need for personal space increases",
+        "Unspoken thoughts may create distance",
+        "Private or long-distance connections highlighted",
+        "Clear communication prevents misunderstandings"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses may rise on travel or solitude needs",
+        "Hidden costs require careful tracking",
+        "Good time to review financial leaks",
+        "Avoid vague financial commitments"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks rest and quiet processing",
+        "Dreams and subconscious signals increase",
+        "Overthinking in isolation possible",
+        "Meditation restores clarity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Intuition",
+    "Imaginative thinking",
+    "Strategic privacy",
+    "Spiritual curiosity"
+  ],
+  "challenges": [
+    "Mental isolation",
+    "Unexpressed thoughts",
+    "Confusion",
+    "Escapist thinking"
+  ],
+  "closing": "This transit invites mental retreat and inner clarity. When silence is balanced with awareness, deep insight emerges.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 12
+  }
+}

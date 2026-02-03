@@ -1,0 +1,74 @@
+{
+  "ascendant": "Scorpio",
+  "planet": "Mercury",
+  "house": 10,
+  "lang": "EN",
+  "title": "Mercury Transit in the 10th House for Scorpio Ascendant",
+  "summary": "When Mercury transits the 10th house for Scorpio Ascendant, intellect and communication directly influence career, reputation, and authority. Decision-making becomes sharp in professional matters, and success depends on clarity of speech, planning, and strategy. Discussions with seniors, clients, or the public increase. This phase favors presentations, negotiations, and management roles. However, overthinking or excessive talking can weaken authority. When used consciously, this transit strengthens professional intelligence, career growth, and a credible public image.",
+  "sections": [
+    {
+      "title": "Career & Direction",
+      "points": [
+        "Clear thinking in career decisions",
+        "Strategic planning gains importance",
+        "Logic drives professional growth",
+        "Overanalysis can slow progress"
+      ]
+    },
+    {
+      "title": "Communication at Work",
+      "points": [
+        "Frequent discussions with seniors",
+        "Effective client communication",
+        "Presentations and meetings highlighted",
+        "Tone affects authority"
+      ]
+    },
+    {
+      "title": "Reputation & Image",
+      "points": [
+        "Public image shaped by words",
+        "Credibility through clarity",
+        "Talking too much can dilute impact",
+        "Measured speech builds respect"
+      ]
+    },
+    {
+      "title": "Management & Responsibility",
+      "points": [
+        "Handling responsibility intellectually",
+        "Delegation through communication",
+        "Focus on systems and structure",
+        "Indecision creates confusion"
+      ]
+    },
+    {
+      "title": "Mental & Inner State",
+      "points": [
+        "Career-focused mindset",
+        "Pressure to prove competence",
+        "Mental restlessness over outcomes",
+        "Clarity stabilizes ambition"
+      ]
+    }
+  ],
+  "strengths": [
+    "Professional intelligence",
+    "Strategic communication",
+    "Clear decision-making",
+    "Credible public presence"
+  ],
+  "challenges": [
+    "Overthinking career moves",
+    "Authority weakened by excess talk",
+    "Mental pressure",
+    "Indecision"
+  ],
+  "closing": "This Mercury transit sharpens Scorpio Ascendant’s career thinking and public voice. Authority grows through clarity, not verbosity.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Scorpio",
+    "planet": "Mercury",
+    "house": 10
+  }
+}

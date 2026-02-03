@@ -1,0 +1,76 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Saturn",
+  "house": 5,
+  "lang": "en",
+  "title": "Saturn Transit in the 5th House for Cancer Ascendant",
+  "summary": "Saturn transiting your fifth house brings a serious tone to creativity, romance, children, and self-expression. Pleasure-driven pursuits slow down, making space for discipline and responsibility. Romantic matters may feel tested, pushing you to seek depth over excitement. Creative output improves through structure and patience rather than spontaneity. This phase may delay gratification, but it strengthens commitment, maturity, and long-term fulfillment in love, learning, and personal talents.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Self-expression becomes controlled and purposeful.",
+        "Fun gives way to responsibility and realism.",
+        "Ego matures through limitation and effort.",
+        "Focus shifts from attention to substance."
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Creative careers demand structure and consistency.",
+        "Speculative success requires patience and planning.",
+        "Teaching or mentoring roles gain importance.",
+        "Recognition comes through mastery, not flair."
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Romantic matters feel serious or delayed.",
+        "Casual attractions lose importance.",
+        "Commitment is tested for authenticity.",
+        "Emotional responsibility deepens bonds."
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Speculative investments require caution.",
+        "Short-term gains give way to long-term planning.",
+        "Spending on leisure reduces naturally.",
+        "Disciplined saving supports stability."
+      ]
+    },
+    {
+      "heading": "Mental & Inner State",
+      "points": [
+        "Joy feels restrained but purposeful.",
+        "Fear of failure sharpens discipline.",
+        "Patience replaces impulsive desire.",
+        "Inner satisfaction grows slowly."
+      ]
+    }
+  ],
+  "strengths": [
+    "Creative discipline",
+    "Emotional maturity in love",
+    "Long-term vision",
+    "Responsible self-expression",
+    "Focused learning"
+  ],
+  "challenges": [
+    "Reduced joy or spontaneity",
+    "Romantic delays",
+    "Creative blocks initially",
+    "Fear of risk",
+    "Emotional heaviness"
+  ],
+  "closing": "Saturn here refines pleasure into purpose. What endures now becomes a source of lasting pride and fulfillment.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Saturn",
+    "house": 5
+  }
+}

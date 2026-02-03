@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 12,
+  "lang": "en",
+  "title": "Venus Transit in the 12th House for Gemini Ascendant",
+  "summary": "Venus transiting the twelfth house turns affection inward, heightening compassion, solitude, and subtle pleasures. Love expresses quietly through care, sacrifice, and behind-the-scenes support. This phase favors healing, creativity in isolation, spiritual retreats, and foreign connections. While empathy and artistic sensitivity rise, escapism, secret attachments, or untracked expenses can dilute clarity if boundaries are not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Gentle, compassionate, and introspective tone",
+        "Preference for privacy in emotions",
+        "Heightened artistic sensitivity",
+        "Tendency to withdraw for peace"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Supportive for behind-the-scenes roles",
+        "Creative work benefits from solitude",
+        "Foreign or institutional settings favored",
+        "Avoid unclear commitments"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Quiet expressions of love and care",
+        "Desire for soulful connection",
+        "Risk of secret or one-sided bonds",
+        "Honesty prevents emotional drain"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses on comfort, art, or charity",
+        "Foreign-related costs possible",
+        "Hidden leaks need monitoring",
+        "Budgeting restores control"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Deep empathy and sensitivity",
+        "Need for rest and retreat",
+        "Escapism if overwhelmed",
+        "Grounding renews balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Compassion",
+    "Artistic depth",
+    "Healing presence",
+    "Quiet devotion"
+  ],
+  "challenges": [
+    "Escapism",
+    "Secrecy",
+    "Emotional drain",
+    "Untracked spending"
+  ],
+  "closing": "This transit deepens compassion and quiet love. Clear boundaries turn sensitivity into sustainable peace.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 12
+  }
+}

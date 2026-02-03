@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 4,
+  "lang": "en",
+  "title": "Sun Transit in the 4th House for Cancer Ascendant",
+  "summary": "The Sun transiting the fourth house shifts focus toward home, emotional foundations, and inner security. Authority themes may surface in domestic matters, creating a desire to lead or control the home environment. Pride in family and roots increases, but emotional rigidity can cause friction. Balance power with care to keep inner peace intact.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong attachment to home",
+        "Need for emotional control",
+        "Protective inner stance",
+        "Pride in roots and identity"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Focus on stability over ambition",
+        "Work-from-home productivity",
+        "Authority clashes with seniors possible",
+        "Patience improves outcomes"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Dominant role in family",
+        "Sensitivity to emotional disrespect",
+        "Parental dynamics highlighted",
+        "Soft leadership restores harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on home or property",
+        "Desire to upgrade comfort",
+        "Security-driven decisions",
+        "Avoid ego-led investments"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Emotional intensity",
+        "Inner restlessness",
+        "Strong need for control",
+        "Calm through reassurance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Protectiveness",
+    "Emotional leadership",
+    "Family loyalty",
+    "Inner resilience"
+  ],
+  "challenges": [
+    "Domestic ego clashes",
+    "Emotional rigidity",
+    "Control issues",
+    "Inner tension"
+  ],
+  "closing": "This transit strengthens emotional authority. Lead the home with warmth, not dominance.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 4
+  }
+}

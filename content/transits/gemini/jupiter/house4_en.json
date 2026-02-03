@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Jupiter",
+  "house": 4,
+  "lang": "en",
+  "title": "Jupiter Transit in the 4th House for Gemini Ascendant",
+  "summary": "Jupiter’s transit through the fourth house expands emotional security, domestic harmony, and inner stability. Focus shifts toward home, family support, and long-term comfort. This phase favors property matters, education from home, and strengthening inner foundations. Optimism within the family grows, but excess comfort-seeking or emotional dependence can reduce momentum if balance is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotional confidence and inner calm increase",
+        "Strong attachment to home and roots",
+        "Protective attitude toward family",
+        "Comfort becomes a priority"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Support for work-from-home or education-based roles",
+        "Strategic planning improves in calm environments",
+        "Property or administrative work favored",
+        "Avoid slowing down due to comfort"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family bonds strengthen naturally",
+        "Supportive and guiding role at home",
+        "Emotional understanding improves",
+        "Over-caretaking may limit independence"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on home or property increases",
+        "Favorable for real-estate planning",
+        "Long-term security matters gain focus",
+        "Avoid over-investing emotionally in assets"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind feels safe and optimistic",
+        "Desire for inner growth and peace",
+        "Attachment to comfort zones",
+        "Gratitude restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional stability",
+    "Family support",
+    "Inner confidence",
+    "Long-term security mindset"
+  ],
+  "challenges": [
+    "Over-attachment",
+    "Comfort-driven stagnation",
+    "Emotional dependency",
+    "Reduced external drive"
+  ],
+  "closing": "This transit strengthens inner foundations and emotional security. Balanced comfort supports lasting personal growth.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Jupiter",
+    "house": 4
+  }
+}

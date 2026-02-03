@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Mercury",
+  "house": 1,
+  "lang": "en",
+  "title": "Mercury Transit in the 1st House for Cancer Ascendant",
+  "summary": "Mercury transiting the first house sharpens intellect, communication, and self-expression. For Cancer ascendants, this phase brings mental alertness and a stronger need to articulate thoughts clearly. You become more curious, adaptable, and responsive in interactions, with a visible shift toward reasoning over emotion. Decisions are quicker, conversations increase, and learning accelerates. However, overthinking or nervousness can surface if the mind is overstimulated. This transit favors personal branding, study, writing, and negotiations when balanced with emotional grounding.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Increased mental agility and curiosity",
+        "Clearer self-expression and speech",
+        "Adaptive and observant demeanor",
+        "Risk of overthinking or restlessness"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Strong phase for communication-based roles",
+        "Favorable for interviews and presentations",
+        "Quick learning and skill acquisition",
+        "Avoid scattered focus across tasks"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "More dialogue and exchange of ideas",
+        "Rational approach to emotional matters",
+        "Misunderstandings clear through discussion",
+        "Listen actively to avoid superficiality"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Financial decisions guided by logic",
+        "Opportunities through information or trade",
+        "Short-term planning improves control",
+        "Avoid impulsive micro-spending"
+      ]
+    },
+    {
+      "heading": "Mental / Inner",
+      "points": [
+        "Busy and analytical mind",
+        "Desire to understand oneself better",
+        "Nervous energy if overloaded",
+        "Mindfulness stabilizes clarity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Sharp communication skills",
+    "Mental flexibility",
+    "Quick decision-making",
+    "Learning and adaptability"
+  ],
+  "challenges": [
+    "Overanalysis",
+    "Mental restlessness",
+    "Surface-level engagement",
+    "Inconsistent focus"
+  ],
+  "closing": "This transit highlights the power of clear thought.\nUse Mercury to express, learn, and connect wisely.\nBalanced thinking brings confident self-expression.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Mercury",
+    "house": 1
+  }
+}

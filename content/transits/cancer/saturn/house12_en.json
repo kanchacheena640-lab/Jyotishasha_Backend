@@ -1,0 +1,76 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Saturn",
+  "house": 12,
+  "lang": "en",
+  "title": "Saturn Transit in the 12th House for Cancer Ascendant",
+  "summary": "Saturn transiting your twelfth house initiates a phase of withdrawal, closure, and deep inner restructuring. External progress may slow as focus shifts toward solitude, healing, and unfinished karmic matters. Expenses related to health, isolation, or responsibilities can increase, demanding disciplined management. This transit encourages detachment from old burdens and unconscious fears. Through patience and inner discipline, Saturn prepares you for a new cycle by strengthening spiritual resilience and emotional self-reliance.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Introversion and self-reflection increase naturally.",
+        "Detachment from old identities begins.",
+        "Emotional endurance develops quietly.",
+        "You seek meaning beyond external validation."
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Behind-the-scenes work becomes prominent.",
+        "Progress is subtle but strategically important.",
+        "Isolation aids concentration and precision.",
+        "Long-term planning replaces visible advancement."
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Need for personal space becomes stronger.",
+        "Emotional distance encourages healing.",
+        "Past attachments dissolve naturally.",
+        "Compassion deepens without dependency."
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses require strict control and planning.",
+        "Hidden costs may surface unexpectedly.",
+        "Savings benefit from conservative strategies.",
+        "Letting go reduces financial leakage."
+      ]
+    },
+    {
+      "heading": "Mental & Inner State",
+      "points": [
+        "Solitude promotes psychological clarity.",
+        "Old fears rise for conscious release.",
+        "Discipline stabilizes emotional fluctuations.",
+        "Inner peace grows through acceptance."
+      ]
+    }
+  ],
+  "strengths": [
+    "Spiritual resilience",
+    "Emotional detachment",
+    "Inner discipline",
+    "Karmic cleansing",
+    "Quiet self-mastery"
+  ],
+  "challenges": [
+    "Increased expenses",
+    "Feelings of isolation",
+    "Low visible progress",
+    "Sleep or rest disturbances",
+    "Emotional withdrawal"
+  ],
+  "closing": "Saturn here closes a cycle. What you release in silence becomes the ground for a stronger new beginning.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Saturn",
+    "house": 12
+  }
+}

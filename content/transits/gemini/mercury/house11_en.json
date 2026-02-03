@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 11,
+  "lang": "en",
+  "title": "Mercury Transit in the 11th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the eleventh house activates gains, networks, and future-oriented thinking. Communication with friends, teams, and professional circles increases, bringing new ideas and opportunities. This phase favors collaboration, goal planning, and leveraging contacts for progress. While intellectual exchange supports growth, over-commitment or scattered social energy can dilute outcomes if priorities are unclear.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "More socially expressive and idea-driven",
+        "Future goals become mentally active",
+        "Comfort in group discussions increases",
+        "Tendency to juggle many plans"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Networking opens doors to opportunities",
+        "Team-based projects gain momentum",
+        "Ideas gain support through discussion",
+        "Avoid promising more than you can deliver"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Friendships and alliances strengthen",
+        "Intellectual bonding within groups",
+        "Expectations from friends may rise",
+        "Miscommunication in groups possible"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Gains through networks or referrals",
+        "Income linked to communication and planning",
+        "Multiple small inflows possible",
+        "Track commitments carefully"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind stays optimistic and forward-looking",
+        "Excitement about future plans",
+        "Mental clutter from too many ideas",
+        "Prioritization restores clarity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Networking skills",
+    "Goal-oriented thinking",
+    "Collaborative communication",
+    "Idea generation"
+  ],
+  "challenges": [
+    "Over-commitment",
+    "Scattered focus",
+    "Dependence on external validation",
+    "Unclear priorities"
+  ],
+  "closing": "This transit amplifies gains through communication and connections. Clear priorities turn ideas into tangible progress.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 11
+  }
+}

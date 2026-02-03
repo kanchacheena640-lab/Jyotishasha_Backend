@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 8,
+  "lang": "en",
+  "title": "Moon Transit in the 8th House for Cancer Ascendant",
+  "summary": "The Moon transiting the eighth house intensifies emotions around intimacy, trust, and hidden matters. Feelings may surface suddenly, bringing deep psychological insights or vulnerability. This phase heightens intuition and sensitivity to undercurrents in relationships and finances. While emotional depth increases, mood swings or anxiety can arise if fears are not acknowledged and released consciously.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened emotional intensity",
+        "Strong intuitive awareness",
+        "Sensitivity to hidden dynamics",
+        "Desire for emotional depth"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Research and analysis favored",
+        "Behind-the-scenes work highlighted",
+        "Focus on problem investigation",
+        "Avoid secrecy-driven stress"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Deep emotional bonding",
+        "Trust and intimacy tested",
+        "Possessiveness may rise",
+        "Honest communication eases tension"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Attention to joint finances",
+        "Unexpected expenses possible",
+        "Focus on insurance or taxes",
+        "Plan for contingencies"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Emotional vulnerability",
+        "Heightened fears or anxieties",
+        "Strong inner reflection",
+        "Release brings relief"
+      ]
+    }
+  ],
+  "strengths": [
+    "Psychological insight",
+    "Intuitive depth",
+    "Emotional resilience",
+    "Transformational awareness"
+  ],
+  "challenges": [
+    "Mood volatility",
+    "Fear-driven reactions",
+    "Emotional secrecy",
+    "Anxiety spikes"
+  ],
+  "closing": "This transit invites emotional transformation. Facing inner fears leads to healing and renewal.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 8
+  }
+}

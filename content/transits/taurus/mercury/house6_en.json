@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Mercury",
+  "house": 6,
+  "lang": "en",
+  "title": "Mercury Transit in the 6th House for Taurus Ascendant",
+  "summary": "Mercury transiting the 6th house sharpens intellect in matters of work, service, health, and problem-solving. This phase enhances analytical ability to manage routines, handle conflicts, and address practical challenges efficiently. Communication becomes precise and task-oriented, supporting negotiations, documentation, and service roles. However, overthinking or excessive criticism can strain workplace harmony and mental health. When directed constructively, this transit supports disciplined routines, strategic thinking, and steady improvement through consistent effort.",
+  "sections": [
+    {
+      "heading": "Work & Service",
+      "points": [
+        "Strong focus on daily tasks",
+        "Efficiency through planning",
+        "Attention to detail increases",
+        "Avoid micromanagement"
+      ]
+    },
+    {
+      "heading": "Problem-Solving",
+      "points": [
+        "Analytical handling of issues",
+        "Logical conflict resolution",
+        "Quick assessment of challenges",
+        "Patience improves outcomes"
+      ]
+    },
+    {
+      "heading": "Health & Routine",
+      "points": [
+        "Awareness of diet and habits",
+        "Mental health needs balance",
+        "Stress from overanalysis",
+        "Structured routine stabilizes energy"
+      ]
+    },
+    {
+      "heading": "Competition & Disputes",
+      "points": [
+        "Sharp arguments in debates",
+        "Ability to outthink rivals",
+        "Risk of verbal conflicts",
+        "Diplomacy preserves advantage"
+      ]
+    },
+    {
+      "heading": "Communication Style",
+      "points": [
+        "Practical and factual speech",
+        "Clear documentation skills",
+        "Critical tone may offend",
+        "Mindful wording builds trust"
+      ]
+    }
+  ],
+  "strengths": [
+    "Analytical efficiency",
+    "Strong problem-solving skills",
+    "Disciplined work approach",
+    "Clear task communication"
+  ],
+  "challenges": [
+    "Overcritical mindset",
+    "Mental stress",
+    "Workplace arguments",
+    "Health strain from worry"
+  ],
+  "closing": "Mercury in the 6th house rewards disciplined thinking and practical service. Calm analysis turns daily challenges into steady progress.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Mercury",
+    "house": 6
+  }
+}

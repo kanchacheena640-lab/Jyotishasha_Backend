@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 10,
+  "lang": "en",
+  "title": "Mercury Transit in the 10th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the tenth house sharpens focus on career, public image, and decision-making authority. Communication becomes goal-oriented and strategic, especially in professional settings. This phase supports planning, presentations, and leadership through intellect. Visibility increases due to ideas and speech. However, overthinking career moves or constant self-evaluation can slow progress if confidence is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "More responsible and goal-focused mindset",
+        "Public image shaped by words and ideas",
+        "Strong need to be heard professionally",
+        "Self-criticism may rise"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for promotions, meetings, and strategy",
+        "Authority improves through clear communication",
+        "Good time for planning and reporting",
+        "Avoid frequent change of direction"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Professional relationships take priority",
+        "Clear boundaries between work and personal life needed",
+        "Respect grows through competence",
+        "Emotional distance due to work focus possible"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income linked to performance and communication",
+        "Career decisions impact finances directly",
+        "Negotiations bring steady gains",
+        "Avoid impulsive career-based spending"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind stays alert and achievement-oriented",
+        "Pressure to perform mentally",
+        "Over-analysis of status possible",
+        "Clarity of goals restores calm"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strategic thinking",
+    "Professional communication",
+    "Leadership through intellect",
+    "Career clarity"
+  ],
+  "challenges": [
+    "Overthinking career moves",
+    "Mental pressure",
+    "Fear of public judgment",
+    "Work-life imbalance"
+  ],
+  "closing": "This transit strengthens your professional voice. Clear intent and confident communication elevate your public standing.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 10
+  }
+}

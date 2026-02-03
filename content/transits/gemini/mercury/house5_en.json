@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 5,
+  "lang": "en",
+  "title": "Mercury Transit in the 5th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the fifth house activates creativity, intelligence, and self-expression. This phase sharpens analytical thinking and brings a playful, curious tone to learning and communication. You may feel mentally stimulated by creative pursuits, studies, or strategic planning. While this transit supports smart speculation and idea-driven output, overthinking outcomes or intellectualizing emotions can reduce natural joy.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Creative thinking becomes sharper and more expressive",
+        "Strong urge to share ideas or opinions",
+        "Playful but intellectual approach dominates",
+        "Need for mental validation increases"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Good for strategy, teaching, and content creation",
+        "Ideas gain recognition when communicated clearly",
+        "Favorable for planning rather than execution-heavy work",
+        "Avoid ego clashes over intellect"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Romantic conversations become engaging and lively",
+        "Attraction through wit and intelligence increases",
+        "Emotions may be analyzed more than felt",
+        "Light-hearted communication strengthens bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Calculated risks bring learning experiences",
+        "Speculative thinking increases",
+        "Avoid gambling based on logic alone",
+        "Creative skills can support income"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind feels stimulated and alert",
+        "Strong interest in learning or problem-solving",
+        "Over-analysis can reduce enjoyment",
+        "Creative outlets restore balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Creative intelligence",
+    "Strategic thinking",
+    "Expressive communication",
+    "Quick learning"
+  ],
+  "challenges": [
+    "Over-intellectualizing emotions",
+    "Mental pride",
+    "Speculative overconfidence",
+    "Difficulty relaxing"
+  ],
+  "closing": "This transit enhances intellectual creativity. When curiosity is balanced with joy, self-expression becomes rewarding.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 5
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Sagittarius",
+  "planet": "Mars",
+  "house": 1,
+  "lang": "EN",
+  "title": "Mars Transit in the 1st House for Sagittarius Ascendant",
+  "summary": "When Mars transits the 1st house for Sagittarius Ascendant, energy, drive, and assertiveness rise sharply. Physical vitality increases, along with the urge to act independently and take initiative. Confidence turns action-oriented, but impatience or impulsive reactions can surface if energy is unmanaged. This phase favors bold starts, leadership, and competitive pursuits. When directed with discipline, it strengthens courage, decisiveness, and the ability to assert personal goals without unnecessary conflict.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "High energy and assertiveness",
+        "Action-oriented mindset",
+        "Strong self-drive",
+        "Risk-taking tendency"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Initiative brings momentum",
+        "Leadership through action",
+        "Competitive roles favored",
+        "Avoid impulsive decisions"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Direct and intense expression",
+        "Quick reactions in conflicts",
+        "Need for patience",
+        "Respect calms friction"
+      ]
+    },
+    {
+      "title": "Finance",
+      "points": [
+        "Earnings through active effort",
+        "Spending on action or fitness",
+        "Short-term gains possible",
+        "Plan to avoid rash expenses"
+      ]
+    },
+    {
+      "title": "Mental / Inner",
+      "points": [
+        "Strong willpower",
+        "Restlessness if idle",
+        "Focus channels energy",
+        "Discipline brings control"
+      ]
+    }
+  ],
+  "strengths": [
+    "Courage",
+    "Initiative",
+    "Physical vitality",
+    "Decisive action"
+  ],
+  "challenges": [
+    "Impulsiveness",
+    "Anger spikes",
+    "Impatience",
+    "Conflict tendency"
+  ],
+  "closing": "This Mars transit fuels confidence and action. With discipline, it becomes a powerful phase for leadership, courage, and decisive new beginnings.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Sagittarius",
+    "planet": "Mars",
+    "house": 1
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 12,
+  "lang": "en",
+  "title": "Sun Transit in the 12th House for Cancer Ascendant",
+  "summary": "The Sun transiting the twelfth house turns focus inward, reducing interest in external recognition and pushing attention toward rest, reflection, and closure. Energy may feel lower, and expenses can rise on travel, health, or behind-the-scenes matters. This phase favors spiritual work, planning, and release of ego-driven goals. Avoid isolation by maintaining gentle routines.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Introverted self-focus",
+        "Reduced desire for spotlight",
+        "Heightened inner awareness",
+        "Need for rest and solitude"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Behind-the-scenes work favored",
+        "Low visibility phase",
+        "Planning over execution",
+        "Avoid forced exposure"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Need for personal space",
+        "Quiet emotional processing",
+        "Distance without clear expression",
+        "Gentle communication maintains bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Rise in hidden expenses",
+        "Spending on travel or health",
+        "Less focus on gains",
+        "Budget awareness needed"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mental withdrawal",
+        "Sleep or energy fluctuations",
+        "Desire for closure",
+        "Grounding restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Inner clarity",
+    "Spiritual focus",
+    "Ability to let go",
+    "Strategic reflection"
+  ],
+  "challenges": [
+    "Low energy",
+    "Isolation tendency",
+    "Expense leakage",
+    "Loss of motivation"
+  ],
+  "closing": "This transit closes a solar cycle. Rest, reflect, and prepare quietly for a fresh beginning.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 12
+  }
+}

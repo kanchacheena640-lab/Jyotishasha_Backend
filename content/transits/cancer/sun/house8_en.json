@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 8,
+  "lang": "en",
+  "title": "Sun Transit in the 8th House for Cancer Ascendant",
+  "summary": "The Sun transiting the eighth house brings deep internal shifts, exposing hidden fears, power dynamics, and transformation themes. Interest in control, secrets, or joint matters increases, while ego is tested through sudden changes. This phase supports research, healing, and inner strength-building. Resistance to change creates stress; conscious acceptance brings renewal.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Intense inner focus",
+        "Confrontation with fears",
+        "Desire to control outcomes",
+        "Transformational self-awareness"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Research or crisis roles highlighted",
+        "Authority tested through uncertainty",
+        "Low tolerance for manipulation",
+        "Transparency prevents conflict"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Power dynamics surface",
+        "Emotional intensity in bonds",
+        "Trust issues may arise",
+        "Honesty restores stability"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Focus on joint finances",
+        "Sudden expenses or adjustments",
+        "Caution with shared assets",
+        "Avoid risky power plays"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Heightened anxiety phases",
+        "Desire for control",
+        "Deep self-reflection",
+        "Release enables growth"
+      ]
+    }
+  ],
+  "strengths": [
+    "Inner resilience",
+    "Transformational courage",
+    "Psychological insight",
+    "Crisis management"
+  ],
+  "challenges": [
+    "Control issues",
+    "Fear-driven reactions",
+    "Trust struggles",
+    "Stress from resistance"
+  ],
+  "closing": "This transit transforms ego through intensity. Let go of control to reclaim inner power.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 8
+  }
+}

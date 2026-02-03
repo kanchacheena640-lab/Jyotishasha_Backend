@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 7,
+  "lang": "en",
+  "title": "Venus Transit in the 7th House for Gemini Ascendant",
+  "summary": "Venus transiting the seventh house enhances harmony, attraction, and mutual understanding in partnerships. Relationships—personal and professional—become smoother, with a stronger desire for balance and cooperation. This phase supports marriage, agreements, and public interactions. While charm and diplomacy increase, over-dependence on approval or avoiding necessary confrontations can weaken authenticity if boundaries are ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "More relationship-oriented and cooperative",
+        "Desire for balance and fairness",
+        "Increased charm in one-to-one dealings",
+        "Tendency to seek validation through others"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for partnerships, contracts, and negotiations",
+        "Client-facing roles benefit from diplomacy",
+        "Collaborations feel supportive and productive",
+        "Avoid compromising values for harmony"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Romantic attraction and bonding increase",
+        "Marriage and long-term commitments favored",
+        "Affection expressed through understanding",
+        "Avoid people-pleasing at personal cost"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Gains through partnerships or joint ventures",
+        "Shared financial decisions feel smoother",
+        "Spending on partner or shared comforts",
+        "Clarity needed in financial agreements"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks connection and balance",
+        "Emotional satisfaction through companionship",
+        "Discomfort with conflict",
+        "Healthy boundaries restore confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Diplomacy",
+    "Attraction",
+    "Partnership harmony",
+    "Social grace"
+  ],
+  "challenges": [
+    "People-pleasing",
+    "Dependency",
+    "Conflict avoidance",
+    "Blurred boundaries"
+  ],
+  "closing": "This transit strengthens bonds through harmony and attraction. Balance between self and others sustains lasting relationships.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 7
+  }
+}

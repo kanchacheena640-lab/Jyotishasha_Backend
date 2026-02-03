@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Rahu",
+  "house": 8,
+  "lang": "en",
+  "title": "Rahu Transit in the 8th House for Gemini Ascendant",
+  "summary": "Rahu transiting the eighth house intensifies themes of secrecy, sudden change, and deep transformation. Interest in hidden matters, research, and taboo subjects rises. This phase can trigger unexpected financial shifts, inheritance issues, or psychological breakthroughs. While gains may come abruptly, instability follows secrecy. Transparency and inner work convert volatility into empowered transformation.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened curiosity about the hidden",
+        "Magnetic yet private demeanor",
+        "Fear mixed with fascination",
+        "Desire for control over uncertainty"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Research, analytics, or investigative roles favored",
+        "Crisis-handling abilities improve",
+        "Sudden role changes possible",
+        "Avoid risky shortcuts"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Intense emotional bonds",
+        "Trust and secrecy issues surface",
+        "Power dynamics require honesty",
+        "Clear boundaries prevent drama"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Sudden gains or losses",
+        "Focus on joint finances and taxes",
+        "Speculative risks increase",
+        "Prudent management essential"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Psychological intensity",
+        "Obsession with control",
+        "Anxiety around loss",
+        "Healing through awareness"
+      ]
+    }
+  ],
+  "strengths": [
+    "Investigative depth",
+    "Crisis resilience",
+    "Transformational insight",
+    "Strategic secrecy"
+  ],
+  "challenges": [
+    "Volatility",
+    "Trust issues",
+    "Hidden fears",
+    "Risk exposure"
+  ],
+  "closing": "This transit forces transformation through the unseen. Awareness and honesty turn chaos into power.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Rahu",
+    "house": 8
+  }
+}

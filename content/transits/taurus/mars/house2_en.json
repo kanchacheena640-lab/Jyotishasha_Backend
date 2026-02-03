@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Mars",
+  "house": 2,
+  "lang": "en",
+  "title": "Mars Transit in the 2nd House for Taurus Ascendant",
+  "summary": "Mars transiting your 2nd house energizes matters of speech, finances, and personal values. This phase sharpens assertiveness in communication and decision-making related to money, often pushing you to act decisively about resources. While motivation to increase income strengthens, impatience or harsh expression can create friction within family or financial discussions. Spending impulses may rise under emotional pressure. When discipline guides actions and words are chosen carefully, this transit supports financial initiative, value-driven effort, and confident self-worth.",
+  "sections": [
+    {
+      "heading": "Finances & Resources",
+      "points": [
+        "Strong drive to improve income",
+        "Decisive financial actions favored",
+        "Risk-taking under pressure",
+        "Planning stabilizes gains"
+      ]
+    },
+    {
+      "heading": "Speech & Expression",
+      "points": [
+        "Direct and forceful communication",
+        "Lower tolerance for disagreement",
+        "Words carry stronger impact",
+        "Mindful speech avoids conflict"
+      ]
+    },
+    {
+      "heading": "Family & Values",
+      "points": [
+        "Assertive stance within family matters",
+        "Defending personal values strongly",
+        "Potential for heated discussions",
+        "Respect maintains harmony"
+      ]
+    },
+    {
+      "heading": "Self-Worth & Confidence",
+      "points": [
+        "Confidence tied to material stability",
+        "Motivation to prove capability",
+        "Competitive mindset around security",
+        "Balance sustains self-esteem"
+      ]
+    },
+    {
+      "heading": "Spending & Control",
+      "points": [
+        "Impulsive expenses possible",
+        "Emotional triggers affect spending",
+        "Focus on immediate needs",
+        "Restraint protects resources"
+      ]
+    }
+  ],
+  "strengths": [
+    "Financial initiative",
+    "Confident expression",
+    "Strong value orientation",
+    "Decisive action"
+  ],
+  "challenges": [
+    "Harsh speech",
+    "Impulsive spending",
+    "Family tension",
+    "Over-assertiveness"
+  ],
+  "closing": "Mars in the 2nd house activates finances and expression. Disciplined action and mindful speech turn drive into lasting stability.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Mars",
+    "house": 2
+  }
+}

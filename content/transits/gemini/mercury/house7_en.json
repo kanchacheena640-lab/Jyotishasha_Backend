@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 7,
+  "lang": "en",
+  "title": "Mercury Transit in the 7th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the seventh house highlights communication within partnerships, agreements, and public dealings. Dialogue becomes central in relationships, whether personal or professional. This phase supports negotiations, contracts, and collaborative efforts, as clarity and logic guide interactions. However, over-analysis or excessive debating can strain bonds if emotional sensitivity is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "More responsive and communicative with others",
+        "Strong focus on exchange of ideas",
+        "Adaptable approach in one-to-one situations",
+        "Tendency to analyze people closely"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for partnerships and client meetings",
+        "Negotiations and contracts progress smoothly",
+        "Business discussions gain clarity",
+        "Avoid changing terms too frequently"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Communication becomes the foundation of bonding",
+        "Need for intellectual compatibility increases",
+        "Misunderstandings resolve through dialogue",
+        "Over-logic can cool emotional warmth"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Financial matters linked to partnerships surface",
+        "Joint decisions require clear discussion",
+        "Trade or consultancy brings gains",
+        "Avoid verbal promises without documentation"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind stays alert in social interactions",
+        "Constant processing of others’ viewpoints",
+        "Mental fatigue from excessive discussion",
+        "Silence helps restore balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Negotiation skills",
+    "Clear articulation",
+    "Collaborative thinking",
+    "Adaptability in partnerships"
+  ],
+  "challenges": [
+    "Over-analysis of relationships",
+    "Debate-driven conflicts",
+    "Emotional detachment",
+    "Indecisiveness in agreements"
+  ],
+  "closing": "This transit refines how you relate and negotiate. Balanced communication strengthens partnerships and mutual understanding.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 7
+  }
+}

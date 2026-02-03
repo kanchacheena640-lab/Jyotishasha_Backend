@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 10,
+  "lang": "en",
+  "title": "Saturn Transit in the 10th House for Gemini Ascendant",
+  "summary": "Saturn transiting the tenth house restructures career, authority, and public responsibility. Professional life demands discipline, accountability, and long-term planning. Recognition comes slowly, earned through consistency rather than shortcuts. Pressure from superiors or increased workload can feel heavy, but sustained effort builds credibility, leadership maturity, and a durable public reputation.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Highly responsible and goal-oriented mindset",
+        "Strong sense of duty toward work",
+        "Reduced tolerance for inefficiency",
+        "Identity tied to achievement and integrity"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Major responsibilities and leadership tests",
+        "Slow but solid career advancement",
+        "Authority figures demand results",
+        "Avoid cutting corners under pressure"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Work-life balance requires conscious effort",
+        "Professional boundaries strengthen respect",
+        "Limited emotional availability",
+        "Support through reliability rather than words"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income stabilizes through sustained work",
+        "Focus on long-term security",
+        "Delayed rewards with lasting impact",
+        "Avoid reputation-risking decisions"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "High pressure and responsibility",
+        "Fear of failure motivates discipline",
+        "Mental fatigue if rest is ignored",
+        "Confidence grows with results"
+      ]
+    }
+  ],
+  "strengths": [
+    "Professional discipline",
+    "Leadership maturity",
+    "Credibility",
+    "Long-term authority"
+  ],
+  "challenges": [
+    "Work pressure",
+    "Delayed recognition",
+    "Burnout risk",
+    "Rigid self-expectations"
+  ],
+  "closing": "This transit forges authority through responsibility and persistence. True success is built, not rushed.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 10
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 5,
+  "lang": "en",
+  "title": "Sun Transit in the 5th House for Cancer Ascendant",
+  "summary": "The Sun transiting the fifth house heightens creative self-expression, pride in achievements, and the desire to be noticed for talents. Leadership energy flows into education, children, romance, and creative pursuits. Recognition feels motivating, but ego sensitivity in love or with children can surface. Channel confidence into creation, not control.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong creative confidence",
+        "Desire for appreciation",
+        "Expressive intelligence",
+        "Playful authority"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Creative leadership roles",
+        "Teaching or mentoring favored",
+        "Visibility through talent",
+        "Avoid ego-driven risks"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Pride in romance or children",
+        "Need to feel admired",
+        "Possible dominance in love",
+        "Warmth restores balance"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on creativity or children",
+        "Controlled speculation",
+        "Rewards through talent",
+        "Avoid pride-based bets"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Joy from self-expression",
+        "Sensitivity to criticism",
+        "Motivation through praise",
+        "Humility sustains happiness"
+      ]
+    }
+  ],
+  "strengths": [
+    "Creative leadership",
+    "Confidence in talent",
+    "Mentoring ability",
+    "Inspirational presence"
+  ],
+  "challenges": [
+    "Ego in love",
+    "Sensitivity to feedback",
+    "Overcontrol with children",
+    "Risk-taking pride"
+  ],
+  "closing": "This transit shines a light on creativity and joy. Lead with heart, not ego.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 5
+  }
+}

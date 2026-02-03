@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Jupiter",
+  "house": 3,
+  "lang": "en",
+  "title": "Jupiter Transit in the 3rd House for Taurus Ascendant",
+  "summary": "Jupiter transiting the 3rd house expands courage, communication, learning, and self-effort. This phase encourages confidence in expressing ideas, taking initiative, and developing skills through consistent practice. Interactions with siblings, peers, and networks become supportive, often opening doors through guidance or shared knowledge. Writing, teaching, marketing, and short travels gain purpose. While optimism fuels action, complacency or overpromising can dilute results. When effort remains disciplined, this transit supports steady progress through informed initiative.",
+  "sections": [
+    {
+      "heading": "Courage & Initiative",
+      "points": [
+        "Confidence to take calculated steps",
+        "Positive approach to challenges",
+        "Self-effort brings opportunities",
+        "Consistency compounds gains"
+      ]
+    },
+    {
+      "heading": "Communication & Learning",
+      "points": [
+        "Clear and encouraging expression",
+        "Growth through teaching or writing",
+        "Skill development accelerates",
+        "Practice refines mastery"
+      ]
+    },
+    {
+      "heading": "Siblings & Peers",
+      "points": [
+        "Supportive exchanges increase",
+        "Guidance offered or received",
+        "Minor differences resolved maturely",
+        "Mutual respect strengthens bonds"
+      ]
+    },
+    {
+      "heading": "Travel & Outreach",
+      "points": [
+        "Purposeful short journeys",
+        "Outreach expands influence",
+        "Plans benefit from structure",
+        "Timing improves outcomes"
+      ]
+    },
+    {
+      "heading": "Effort & Results",
+      "points": [
+        "Optimism fuels perseverance",
+        "Measured risks pay off",
+        "Avoid overcommitment",
+        "Follow-through ensures success"
+      ]
+    }
+  ],
+  "strengths": [
+    "Confident self-effort",
+    "Skill-based growth",
+    "Supportive communication",
+    "Purposeful initiative"
+  ],
+  "challenges": [
+    "Overpromising",
+    "Complacency",
+    "Scattered outreach",
+    "Inconsistent follow-through"
+  ],
+  "closing": "Jupiter in the 3rd house rewards disciplined initiative and constructive communication. Steady effort transforms optimism into reliable progress.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Jupiter",
+    "house": 3
+  }
+}

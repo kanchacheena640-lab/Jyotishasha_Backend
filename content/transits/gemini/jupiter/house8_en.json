@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Jupiter",
+  "house": 8,
+  "lang": "en",
+  "title": "Jupiter Transit in the 8th House for Gemini Ascendant",
+  "summary": "Jupiter’s transit through the eighth house brings growth through transformation, deep learning, and inner change. This phase pushes you to understand hidden patterns related to shared resources, emotional depth, and life transitions. Wisdom develops through challenges rather than ease. While intuition and research abilities strengthen, blind optimism or avoidance of practical realities can create instability if grounding is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Interest in deeper truths and hidden knowledge",
+        "Greater emotional maturity through experience",
+        "Acceptance of change as part of growth",
+        "Tendency to philosophize personal struggles"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for research, healing, and investigative roles",
+        "Ability to manage confidential or complex matters",
+        "Growth through crisis-handling responsibilities",
+        "Avoid taking ethical risks blindly"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Emotional bonds deepen significantly",
+        "Need for trust and transparency increases",
+        "Old emotional patterns may surface for healing",
+        "Avoid moral justification of unhealthy dynamics"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Focus on shared finances, insurance, or inheritance",
+        "Long-term financial restructuring favored",
+        "Unexpected financial developments possible",
+        "Avoid speculative optimism in joint matters"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks meaning behind life changes",
+        "Spiritual curiosity increases",
+        "Faith tested through uncertainty",
+        "Grounded reflection restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Transformational wisdom",
+    "Emotional depth",
+    "Research insight",
+    "Spiritual growth"
+  ],
+  "challenges": [
+    "Blind faith",
+    "Emotional overextension",
+    "Financial complexity",
+    "Avoidance of hard facts"
+  ],
+  "closing": "This transit teaches growth through transformation. When wisdom is paired with realism, deep stability emerges.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Jupiter",
+    "house": 8
+  }
+}

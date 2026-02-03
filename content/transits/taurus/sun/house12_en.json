@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Sun",
+  "house": 12,
+  "lang": "en",
+  "title": "Sun Transit in the 12th House for Taurus Ascendant",
+  "summary": "The Sun transiting your 12th house shifts focus toward introspection, withdrawal, and behind-the-scenes responsibilities. This phase highlights the need to conserve energy, manage expenses, and work quietly without immediate recognition. You may feel drawn to solitude, spiritual reflection, or roles that require discretion. While inner awareness deepens, visibility in external matters may reduce, leading to frustration if expectations remain high. Acceptance of this inward phase helps restore clarity, strengthen inner authority, and prepare for renewed outward expression.",
+  "sections": [
+    {
+      "heading": "Inner Focus & Solitude",
+      "points": [
+        "Increased need for privacy and reflection",
+        "Energy turns inward rather than outward",
+        "Comfort found in quiet environments",
+        "Solitude supports mental clarity"
+      ]
+    },
+    {
+      "heading": "Expenses & Resource Use",
+      "points": [
+        "Heightened awareness of spending patterns",
+        "Costs linked to health, travel, or obligations",
+        "Need for disciplined financial planning",
+        "Mindful use prevents drain"
+      ]
+    },
+    {
+      "heading": "Work Behind the Scenes",
+      "points": [
+        "Focus on preparation rather than visibility",
+        "Efforts may go unnoticed temporarily",
+        "Responsibility without recognition possible",
+        "Patience strengthens outcomes"
+      ]
+    },
+    {
+      "heading": "Spiritual Awareness",
+      "points": [
+        "Interest in introspection or spiritual practices",
+        "Release of ego-driven expectations",
+        "Awareness of subconscious patterns",
+        "Inner alignment restores balance"
+      ]
+    },
+    {
+      "heading": "Closure & Renewal",
+      "points": [
+        "Completion of unfinished matters",
+        "Letting go of outdated roles",
+        "Reduced external engagement",
+        "Preparation for a new cycle"
+      ]
+    }
+  ],
+  "strengths": [
+    "Deep self-awareness",
+    "Spiritual grounding",
+    "Ability to work quietly",
+    "Inner resilience"
+  ],
+  "challenges": [
+    "Low visibility",
+    "Rising expenses",
+    "Isolation tendencies",
+    "Frustration from lack of recognition"
+  ],
+  "closing": "Sun in the 12th house emphasizes inner consolidation. Acceptance of this quieter phase builds strength for the next outward cycle.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Sun",
+    "house": 12
+  }
+}

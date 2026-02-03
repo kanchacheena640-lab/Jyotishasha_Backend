@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Ketu",
+  "house": 1,
+  "lang": "en",
+  "title": "Ketu Transit in the 1st House for Gemini Ascendant",
+  "summary": "Ketu transiting the first house shifts focus inward, reducing attachment to identity and external validation. You may feel detached from past self-images, prompting introspection and subtle behavioral changes. Confidence becomes quieter, driven by inner clarity rather than visibility. While confusion about direction can arise, mindful self-awareness helps align actions with authentic purpose.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Detached self-image",
+        "Introverted confidence",
+        "Reduced ego-driven behavior",
+        "Search for inner clarity"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Lower interest in spotlight roles",
+        "Preference for independent work",
+        "Discomfort with rigid hierarchies",
+        "Focus on meaningful output"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Emotional distance increases",
+        "Less need for validation",
+        "Misunderstandings from withdrawal",
+        "Clear communication avoids gaps"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Reduced material attachment",
+        "Simple financial choices favored",
+        "Lack of motivation for accumulation",
+        "Practical budgeting required"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Identity confusion phases",
+        "Strong introspection",
+        "Mental withdrawal from noise",
+        "Grounding restores direction"
+      ]
+    }
+  ],
+  "strengths": [
+    "Inner awareness",
+    "Ego detachment",
+    "Authentic self-alignment",
+    "Spiritual inclination"
+  ],
+  "challenges": [
+    "Low motivation",
+    "Self-doubt",
+    "Social withdrawal",
+    "Direction uncertainty"
+  ],
+  "closing": "This transit dissolves outdated identities. Inner clarity becomes the new strength.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Ketu",
+    "house": 1
+  }
+}

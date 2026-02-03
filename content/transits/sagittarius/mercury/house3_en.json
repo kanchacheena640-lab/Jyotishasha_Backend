@@ -1,0 +1,74 @@
+{
+  "ascendant": "Sagittarius",
+  "planet": "Mercury",
+  "house": 3,
+  "lang": "EN",
+  "title": "Mercury Transit in the 3rd House for Sagittarius Ascendant",
+  "summary": "When Mercury transits the 3rd house for Sagittarius Ascendant, communication, courage, and mental agility increase. This phase boosts writing, speaking, marketing, and short-distance travel. You feel motivated to take initiatives, express ideas confidently, and engage with siblings or peers. Curiosity and multitasking rise, though scattered focus or impulsive words can reduce effectiveness. When directed with discipline, this transit supports skill-building, persuasive communication, and steady progress through consistent effort.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Energetic and expressive mindset",
+        "Quick thinking and adaptability",
+        "Strong urge to communicate",
+        "Risk of scattered focus"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Marketing and sales favored",
+        "Writing and media work improves",
+        "Short projects gain momentum",
+        "Avoid half-finished tasks"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Interaction with siblings increases",
+        "Friendly and talkative approach",
+        "Arguments due to impulsive speech",
+        "Clear intent maintains harmony"
+      ]
+    },
+    {
+      "title": "Finance",
+      "points": [
+        "Income through skills and effort",
+        "Small but frequent gains",
+        "Spending on travel or tools",
+        "Plan to avoid waste"
+      ]
+    },
+    {
+      "title": "Mental / Inner",
+      "points": [
+        "High mental activity",
+        "Restlessness without action",
+        "Need for focus",
+        "Routine stabilizes mind"
+      ]
+    }
+  ],
+  "strengths": [
+    "Communication skills",
+    "Initiative and courage",
+    "Learning agility",
+    "Persuasive ability"
+  ],
+  "challenges": [
+    "Distraction",
+    "Impulsive speech",
+    "Inconsistency",
+    "Mental restlessness"
+  ],
+  "closing": "This Mercury transit energizes communication and initiative. With focus, it supports skill growth, confident expression, and consistent progress.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Sagittarius",
+    "planet": "Mercury",
+    "house": 3
+  }
+}

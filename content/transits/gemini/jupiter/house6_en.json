@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Jupiter",
+  "house": 6,
+  "lang": "en",
+  "title": "Jupiter Transit in the 6th House for Gemini Ascendant",
+  "summary": "Jupiter’s transit through the sixth house shifts growth toward discipline, service, and problem-solving. Challenges become opportunities for learning, and you gain strength by improving routines, health habits, and work ethics. This phase supports overcoming obstacles through wisdom and patience. While resilience increases, moral rigidity or taking on others’ burdens unnecessarily can drain energy if balance is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Stronger sense of duty and responsibility",
+        "Confidence grows through solving problems",
+        "Ethical approach toward daily work",
+        "Tendency to overextend in service"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Growth through consistent effort and service roles",
+        "Ability to handle competition improves",
+        "Favorable for advisory or support-based positions",
+        "Avoid taking on excessive workload"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Helpful and supportive attitude toward others",
+        "Desire to guide or correct loved ones",
+        "Boundaries are necessary to avoid imbalance",
+        "Over-helping can create dependency"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Steady improvement through disciplined planning",
+        "Focus on clearing debts or liabilities",
+        "Gains through service or problem-solving work",
+        "Avoid generous spending beyond limits"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind becomes resilient and solution-oriented",
+        "Faith in effort over luck",
+        "Stress if responsibilities pile up",
+        "Balanced routines restore calm"
+      ]
+    }
+  ],
+  "strengths": [
+    "Resilience",
+    "Ethical discipline",
+    "Problem-solving wisdom",
+    "Service mindset"
+  ],
+  "challenges": [
+    "Over-responsibility",
+    "Moral rigidity",
+    "Fatigue",
+    "Difficulty saying no"
+  ],
+  "closing": "This transit teaches growth through discipline and service. When effort is balanced with self-care, lasting strength develops.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Jupiter",
+    "house": 6
+  }
+}

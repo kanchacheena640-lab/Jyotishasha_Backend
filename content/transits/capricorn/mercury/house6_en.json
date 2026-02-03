@@ -1,0 +1,74 @@
+{
+  "ascendant": "Capricorn",
+  "planet": "Mercury",
+  "house": 6,
+  "lang": "EN",
+  "title": "Mercury Transit in the 6th House for Capricorn Ascendant",
+  "summary": "When Mercury transits the 6th house for Capricorn Ascendant, attention sharpens on work routines, problem-solving, health management, and practical efficiency. The mind becomes analytical and solution-oriented, helping you organize tasks, handle disputes, and improve productivity. This phase supports service roles, data analysis, and clear communication in the workplace. However, overthinking, criticism, or stress can affect health if balance is ignored. Progress comes by using structured thinking to resolve issues calmly and maintain disciplined daily habits.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Practical and solution-focused mindset",
+        "Attention to detail and efficiency",
+        "Desire to fix problems quickly",
+        "Risk of mental stress"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Strong performance in analytical roles",
+        "Workplace communication improves",
+        "Ability to handle conflicts logically",
+        "Avoid excessive criticism of coworkers"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Task-oriented interactions dominate",
+        "Critical tone may strain bonds",
+        "Support through practical help",
+        "Patience maintains harmony"
+      ]
+    },
+    {
+      "title": "Finance",
+      "points": [
+        "Focus on managing expenses",
+        "Clearing dues through planning",
+        "Stable gains from service work",
+        "Avoid stress-driven decisions"
+      ]
+    },
+    {
+      "title": "Mental / Inner",
+      "points": [
+        "Analytical and busy mind",
+        "Worry over unfinished tasks",
+        "Need for mental organization",
+        "Clarity through disciplined routines"
+      ]
+    }
+  ],
+  "strengths": [
+    "Problem-solving ability",
+    "Work efficiency",
+    "Logical conflict handling",
+    "Disciplined thinking"
+  ],
+  "challenges": [
+    "Overthinking",
+    "Critical attitude",
+    "Work-related stress",
+    "Health neglect"
+  ],
+  "closing": "This Mercury transit helps Capricorn Ascendants resolve issues through logic and order. Balanced routines keep the mind and body aligned.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Capricorn",
+    "planet": "Mercury",
+    "house": 6
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Moon",
+  "house": 4,
+  "lang": "en",
+  "title": "Moon Transit in the 4th House for Taurus Ascendant",
+  "summary": "The Moon transiting your 4th house heightens emotional attachment to home, family, and inner security. This phase draws attention inward, increasing the need for comfort, familiarity, and emotional reassurance. Domestic matters and parental connections, especially with the mother, become more prominent and emotionally charged. While the desire for peace and stability strengthens, mood fluctuations can disturb inner calm if boundaries are unclear. Nurturing routines and emotional awareness help restore balance and create a supportive inner foundation.",
+  "sections": [
+    {
+      "heading": "Home & Comfort",
+      "points": [
+        "Strong emotional pull toward home",
+        "Need for comfort and familiarity",
+        "Domestic environment affects mood",
+        "Calm spaces restore balance"
+      ]
+    },
+    {
+      "heading": "Emotional Security",
+      "points": [
+        "Heightened need for inner safety",
+        "Sensitivity to emotional atmosphere",
+        "Reassurance becomes important",
+        "Self-soothing supports stability"
+      ]
+    },
+    {
+      "heading": "Parents & Family",
+      "points": [
+        "Emotional focus on parental matters",
+        "Mother-related themes become active",
+        "Past memories surface easily",
+        "Understanding reduces emotional strain"
+      ]
+    },
+    {
+      "heading": "Inner State & Mind",
+      "points": [
+        "Introspective emotional state",
+        "Mood influenced by surroundings",
+        "Tendency toward withdrawal",
+        "Grounding habits prevent heaviness"
+      ]
+    },
+    {
+      "heading": "Property & Space",
+      "points": [
+        "Attention to living space or property",
+        "Desire to feel settled and rooted",
+        "Emotional decisions around assets",
+        "Practical thinking ensures clarity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Deep emotional sensitivity",
+    "Strong nurturing instinct",
+    "Inner awareness",
+    "Connection to roots"
+  ],
+  "challenges": [
+    "Mood fluctuations",
+    "Emotional dependence",
+    "Withdrawal tendencies",
+    "Sensitivity to domestic tension"
+  ],
+  "closing": "Moon in the 4th house deepens emotional roots. Conscious nurturing of inner space builds lasting calm and security.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Moon",
+    "house": 4
+  }
+}

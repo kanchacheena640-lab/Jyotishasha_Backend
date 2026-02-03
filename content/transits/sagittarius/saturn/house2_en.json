@@ -1,0 +1,74 @@
+{
+  "ascendant": "Sagittarius",
+  "planet": "Saturn",
+  "house": 2,
+  "lang": "en",
+  "title": "Saturn Transit in the 2nd House for Sagittarius Ascendant",
+  "summary": "Saturn transiting the 2nd house for Sagittarius ascendant emphasizes discipline in finances, speech, and values. This phase brings a cautious approach toward income, savings, and family responsibilities. Growth may feel slow, but steady efforts help build long-term financial security. Speech becomes measured and serious, favoring clarity over charm. Progress comes through patience, ethical choices, and consistent management of resources rather than quick gains.",
+  "sections": [
+    {
+      "heading": "Finances & Savings",
+      "points": [
+        "Income grows through sustained effort",
+        "Savings require strict planning",
+        "Expenses need careful control",
+        "Security builds gradually"
+      ]
+    },
+    {
+      "heading": "Speech & Expression",
+      "points": [
+        "Speech becomes reserved",
+        "Words carry weight and authority",
+        "Communication favors practicality",
+        "Avoid harsh or rigid tone"
+      ]
+    },
+    {
+      "heading": "Family Responsibilities",
+      "points": [
+        "Duties toward family increase",
+        "Traditional values gain focus",
+        "Support requires patience",
+        "Stability comes from responsibility"
+      ]
+    },
+    {
+      "heading": "Values & Ethics",
+      "points": [
+        "Material priorities are reassessed",
+        "Ethical earning is emphasized",
+        "Long-term worth outweighs comfort",
+        "Discipline shapes value system"
+      ]
+    },
+    {
+      "heading": "Mindset & Persistence",
+      "points": [
+        "Patience is essential",
+        "Shortcuts prove ineffective",
+        "Consistency ensures results",
+        "Endurance strengthens confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Financial discipline",
+    "Responsible speech",
+    "Strong value system",
+    "Long-term security focus"
+  ],
+  "challenges": [
+    "Delayed financial rewards",
+    "Restrictive mindset",
+    "Family pressure",
+    "Fear of scarcity"
+  ],
+  "closing": "This transit builds lasting stability through discipline and patience. Careful words and steady effort create enduring security.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Sagittarius",
+    "planet": "Saturn",
+    "house": 2
+  }
+}

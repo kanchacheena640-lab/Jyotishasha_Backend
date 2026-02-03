@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 1,
+  "lang": "en",
+  "title": "Mercury Transit in the 1st House for Gemini Ascendant",
+  "summary": "When Mercury transits your first house, it directly influences your mind, speech, and self-expression. This is a phase where your thoughts become sharper and your words carry more impact. You may feel more curious, alert, and mentally active, with a strong urge to express ideas or initiate conversations. This transit supports learning, planning, and personal rebranding, but overthinking or nervous energy can surface if the mind is not grounded.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "You appear more articulate and mentally alert to others",
+        "Self-expression becomes quick, logical, and persuasive",
+        "Strong desire to share opinions and ideas",
+        "Restlessness increases if mental energy is not directed"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for interviews, presentations, and negotiations",
+        "Good time to initiate short-term projects or plans",
+        "Communication-based roles see momentum",
+        "Avoid multitasking beyond capacity"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Conversations become central in relationships",
+        "You may analyze emotions more than feel them",
+        "Clear communication helps resolve misunderstandings",
+        "Over-talking can irritate sensitive partners"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Financial decisions driven by logic and calculation",
+        "Good period to review budgets or documents",
+        "Avoid impulsive commitments based on assumptions",
+        "Small gains through communication or trade possible"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind remains active and curious throughout the day",
+        "Learning and reading feel stimulating",
+        "Anxiety may rise if thoughts scatter",
+        "Mindfulness helps stabilize focus"
+      ]
+    }
+  ],
+  "strengths": [
+    "Sharp intellect",
+    "Effective communication",
+    "Quick decision-making",
+    "Adaptability"
+  ],
+  "challenges": [
+    "Overthinking",
+    "Nervous tension",
+    "Scattered focus",
+    "Speaking without filtering"
+  ],
+  "closing": "This transit highlights the power of your mind and voice. When used consciously, it helps you redefine how you present yourself to the world.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 1
+  }
+}

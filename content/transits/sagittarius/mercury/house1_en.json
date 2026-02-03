@@ -1,0 +1,74 @@
+{
+  "ascendant": "Sagittarius",
+  "planet": "Mercury",
+  "house": 1,
+  "lang": "EN",
+  "title": "Mercury Transit in the 1st House for Sagittarius Ascendant",
+  "summary": "When Mercury transits the 1st house for Sagittarius Ascendant, communication, intellect, and self-expression become highly visible. Thoughts turn optimistic, philosophical, and future-oriented, with a strong urge to speak honestly and share ideas. This is a powerful phase for learning, teaching, writing, and personal decision-making. However, blunt speech or overconfidence in opinions can create friction. When balanced with listening and clarity, this transit enhances persuasive expression, intellectual confidence, and purposeful self-presentation.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Optimistic and expressive thinking",
+        "Philosophical outlook",
+        "Strong urge to speak truth",
+        "Risk of blunt communication"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Communication-based roles favored",
+        "Teaching, writing, or advisory work supported",
+        "Ideas gain public visibility",
+        "Avoid overpromising"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Honest and direct conversations",
+        "Opinions expressed strongly",
+        "Misunderstandings due to bluntness",
+        "Listening improves harmony"
+      ]
+    },
+    {
+      "title": "Finance",
+      "points": [
+        "Income through knowledge and skills",
+        "Logical financial decisions",
+        "Short-term gains via communication",
+        "Avoid impulsive commitments"
+      ]
+    },
+    {
+      "title": "Mental / Inner",
+      "points": [
+        "Active and curious mind",
+        "Focus on big-picture thinking",
+        "Mental restlessness",
+        "Learning restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Clear self-expression",
+    "Intellectual confidence",
+    "Philosophical clarity",
+    "Learning ability"
+  ],
+  "challenges": [
+    "Blunt speech",
+    "Overconfidence in ideas",
+    "Mental restlessness",
+    "Ignoring details"
+  ],
+  "closing": "This Mercury transit sharpens expression and intellect. With balance, it supports confident communication, learning, and purposeful self-direction.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Sagittarius",
+    "planet": "Mercury",
+    "house": 1
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 9,
+  "lang": "en",
+  "title": "Sun Transit in the 9th House for Cancer Ascendant",
+  "summary": "The Sun transiting the ninth house strengthens belief systems, ethics, and the urge to seek higher meaning. Confidence in personal philosophy rises, along with interest in guidance, teaching, or long-distance travel. You may assert opinions strongly or challenge existing doctrines. This phase favors learning and leadership through wisdom, but rigidity can block growth.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong belief in personal ideals",
+        "Moral confidence",
+        "Desire to guide others",
+        "Truth-seeking mindset"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Teaching or advisory roles highlighted",
+        "Authority through knowledge",
+        "Recognition for expertise",
+        "Avoid dogmatic attitudes"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Ideological differences surface",
+        "Respect for elders tested",
+        "Guiding role in relationships",
+        "Flexibility maintains harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on education or travel",
+        "Gains through guidance-based work",
+        "Fortune through self-belief",
+        "Plan expenses mindfully"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Expanded perspective",
+        "Confidence in direction",
+        "Restlessness for growth",
+        "Balance belief with openness"
+      ]
+    }
+  ],
+  "strengths": [
+    "Wisdom-led leadership",
+    "Strong ethics",
+    "Teaching ability",
+    "Optimism"
+  ],
+  "challenges": [
+    "Rigid beliefs",
+    "Ego in opinions",
+    "Conflicts with mentors",
+    "Overconfidence"
+  ],
+  "closing": "This transit empowers you through belief and wisdom. Lead with openness, not rigidity.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 9
+  }
+}

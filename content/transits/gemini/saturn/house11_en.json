@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 11,
+  "lang": "en",
+  "title": "Saturn Transit in the 11th House for Gemini Ascendant",
+  "summary": "Saturn transiting the eleventh house refines goals, gains, and social circles. Progress comes through disciplined networking and realistic expectations. Friends and alliances are tested for reliability, with fewer but stronger connections remaining. Income and achievements grow steadily through long-term planning rather than quick wins.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Goal-oriented and pragmatic outlook",
+        "Selective approach to friendships",
+        "Patience with long-term ambitions",
+        "Reduced need for social approval"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Gains through structured networks",
+        "Team goals require accountability",
+        "Slow but dependable progress",
+        "Avoid chasing hype"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Friendships tested for loyalty",
+        "Clear boundaries in groups",
+        "Support from mature allies",
+        "Distance from unreliable circles"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Steady income growth",
+        "Delayed fulfillment of desires",
+        "Focus on sustainable gains",
+        "Disciplined saving"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Calm, realistic mindset",
+        "Patience with outcomes",
+        "Less distraction by trends",
+        "Confidence from consistency"
+      ]
+    }
+  ],
+  "strengths": [
+    "Long-term planning",
+    "Reliable networks",
+    "Sustainable gains",
+    "Goal discipline"
+  ],
+  "challenges": [
+    "Delayed rewards",
+    "Social pruning discomfort",
+    "Rigidity in goals",
+    "Reduced spontaneity"
+  ],
+  "closing": "This transit consolidates gains through discipline and reliable alliances. Fewer goals, executed well, bring lasting success.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 11
+  }
+}

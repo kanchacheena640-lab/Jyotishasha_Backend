@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mercury",
+  "house": 4,
+  "lang": "en",
+  "title": "Mercury Transit in the 4th House for Gemini Ascendant",
+  "summary": "Mercury’s transit through the fourth house turns attention toward home, emotional security, and inner stability. Conversations around family, property, and long-term comfort increase. This phase favors planning, paperwork related to real estate or vehicles, and organizing domestic matters. While the mind seeks order and clarity at home, emotional over-analysis or restlessness indoors can arise if balance is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "More thoughtful and inwardly reflective",
+        "Need for mental peace at home increases",
+        "Desire to organize personal space",
+        "Mood fluctuates with domestic environment"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Work-from-home plans benefit",
+        "Good for real estate or administrative tasks",
+        "Strategic planning happens quietly",
+        "Avoid mixing emotions with decisions"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family discussions become frequent",
+        "Need to be heard by close ones",
+        "Old issues may resurface for resolution",
+        "Gentle communication restores harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses linked to home or comfort",
+        "Favorable for property-related paperwork",
+        "Budgeting for household improves",
+        "Avoid impulsive domestic purchases"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks emotional security",
+        "Overthinking about past matters possible",
+        "Quiet environments improve clarity",
+        "Journaling helps settle thoughts"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strategic thinking",
+    "Domestic planning",
+    "Emotional awareness",
+    "Organizational ability"
+  ],
+  "challenges": [
+    "Emotional over-analysis",
+    "Mental restlessness at home",
+    "Attachment to comfort",
+    "Mood-dependent focus"
+  ],
+  "closing": "This transit helps create mental order within your personal space. When emotions and logic align, inner stability strengthens.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Mercury",
+    "house": 4
+  }
+}

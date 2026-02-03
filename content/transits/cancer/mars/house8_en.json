@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Mars",
+  "house": 8,
+  "lang": "en",
+  "title": "Mars Transit in the 8th House for Cancer Ascendant",
+  "summary": "Mars transiting the eighth house intensifies transformation, hidden matters, and emotional depth. For Cancer ascendants, this phase brings strong urges to confront fears, secrets, and unresolved issues head-on. Sudden changes may arise around shared resources, inheritances, or joint finances. While this transit fuels courage to face crises and research deeply, it can also trigger anxiety or power struggles if impatience dominates. This period favors healing, investigation, and strategic planning, provided actions are thoughtful and emotionally grounded.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened emotional intensity and courage",
+        "Strong urge to uncover hidden truths",
+        "Transformational mindset",
+        "Risk of inner tension or impatience"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Good for research, analysis, and investigation",
+        "Handling confidential or complex matters",
+        "Crisis-management abilities strengthen",
+        "Avoid risky confrontations at work"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Deep emotional exchanges",
+        "Trust issues may surface",
+        "Power dynamics require sensitivity",
+        "Honest dialogue heals bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Focus on shared assets and liabilities",
+        "Sudden expenses or gains possible",
+        "Caution in joint investments",
+        "Strategic planning reduces risk"
+      ]
+    },
+    {
+      "heading": "Mental / Inner",
+      "points": [
+        "Intense inner processing",
+        "Fear-driven reactions may appear",
+        "Strong will to overcome inner blocks",
+        "Meditative practices restore balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Courage in facing transformation",
+    "Ability to handle crises",
+    "Deep focus and resilience",
+    "Strategic insight"
+  ],
+  "challenges": [
+    "Emotional turbulence",
+    "Anxiety around uncertainty",
+    "Power struggles",
+    "Impulsive reactions in sensitive matters"
+  ],
+  "closing": "This transit demands strength with emotional awareness.\nUse Mars to transform, not destabilize.\nCalm strategy turns challenges into renewal.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Mars",
+    "house": 8
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Sagittarius",
+  "planet": "Venus",
+  "house": 1,
+  "lang": "EN",
+  "title": "Venus Transit in the 1st House for Sagittarius Ascendant",
+  "summary": "When Venus transits the 1st house for Sagittarius Ascendant, charm, attractiveness, and social ease increase noticeably. Personality appears warmer, more pleasant, and expressive, drawing positive attention from others. Relationships benefit from improved diplomacy and friendliness, while personal style and self-image receive a boost. However, overindulgence or seeking validation can distract from purpose. When balanced, this transit supports harmonious self-expression, improved relationships, and a confident yet graceful personal presence.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Charming and pleasant demeanor",
+        "Increased self-confidence",
+        "Attractive personal presence",
+        "Risk of vanity"
+      ]
+    },
+    {
+      "title": "Career",
+      "points": [
+        "Public-facing roles favored",
+        "Better interpersonal rapport",
+        "Creative presentation improves",
+        "Avoid comfort-driven laziness"
+      ]
+    },
+    {
+      "title": "Relationships",
+      "points": [
+        "Magnetic social energy",
+        "Romantic attention increases",
+        "Diplomatic communication",
+        "Avoid emotional dependence"
+      ]
+    },
+    {
+      "title": "Finance",
+      "points": [
+        "Spending on appearance or comfort",
+        "Gains through personal appeal",
+        "Value-based decisions",
+        "Control luxury expenses"
+      ]
+    },
+    {
+      "title": "Mental / Inner",
+      "points": [
+        "Positive self-image",
+        "Desire for appreciation",
+        "Emotional softness",
+        "Inner balance through self-worth"
+      ]
+    }
+  ],
+  "strengths": [
+    "Personal charm",
+    "Social confidence",
+    "Relationship harmony",
+    "Graceful self-expression"
+  ],
+  "challenges": [
+    "Overindulgence",
+    "Vanity",
+    "Seeking validation",
+    "Comfort over discipline"
+  ],
+  "closing": "This Venus transit enhances charm and harmony. With self-awareness, it brings confidence, attraction, and balanced self-expression.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Sagittarius",
+    "planet": "Venus",
+    "house": 1
+  }
+}

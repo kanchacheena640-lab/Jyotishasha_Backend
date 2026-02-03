@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Mercury",
+  "house": 5,
+  "lang": "en",
+  "title": "Mercury Transit in the 5th House for Cancer Ascendant",
+  "summary": "Mercury transiting the fifth house sharpens intellect around creativity, learning, and self-expression. For Cancer ascendants, this phase enhances analytical thinking in matters of education, romance, and personal talents. You become more expressive, curious, and mentally playful, making it a favorable period for study, teaching, writing, and creative pursuits. Communication in love matters improves, though overthinking emotions can reduce spontaneity. This transit supports intellectual creativity and thoughtful risk-taking when the mind stays balanced and focused.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Creative and intellectually active mindset",
+        "Desire to express ideas and talents",
+        "Playful but analytical thinking",
+        "Risk of overthinking enjoyment"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for education and creative roles",
+        "Good time for teaching, writing, or content creation",
+        "Recognition through intellectual skills",
+        "Avoid scattered creative focus"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Light and communicative romantic tone",
+        "Clear expression of feelings",
+        "Tendency to analyze emotions",
+        "Open dialogue strengthens bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Calculated approach to investments",
+        "Small gains through smart speculation",
+        "Spending on learning or hobbies",
+        "Avoid mental gambling or overanalysis"
+      ]
+    },
+    {
+      "heading": "Mental / Inner",
+      "points": [
+        "Active imagination and curiosity",
+        "Joy derived from learning",
+        "Mental stimulation boosts confidence",
+        "Balance logic with spontaneity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Intellectual creativity",
+    "Clear self-expression",
+    "Learning agility",
+    "Thoughtful decision-making"
+  ],
+  "challenges": [
+    "Overanalysis in romance",
+    "Reduced spontaneity",
+    "Scattered creative energy",
+    "Mental distraction"
+  ],
+  "closing": "This transit blends intelligence with creativity.\nUse Mercury to express, learn, and enjoy thoughtfully.\nBalanced thinking keeps joy alive.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Mercury",
+    "house": 5
+  }
+}

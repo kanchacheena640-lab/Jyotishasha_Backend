@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Mars",
+  "house": 5,
+  "lang": "en",
+  "title": "Mars Transit in the 5th House for Taurus Ascendant",
+  "summary": "Mars transiting your 5th house intensifies creative drive, competitive spirit, and the desire for recognition. This phase activates passion in self-expression, romance, and performance-based efforts, pushing you to take bold risks with ideas and talents. Motivation to prove ability increases, though impatience or ego clashes can disrupt harmony in love or creative collaborations. Speculative tendencies rise under pressure. When energy is channelled with discipline, this transit supports confident creativity, focused ambition, and decisive expression without unnecessary conflict.",
+  "sections": [
+    {
+      "heading": "Creativity & Self-Expression",
+      "points": [
+        "Strong urge to showcase talents",
+        "Bold and action-oriented creativity",
+        "Desire for recognition increases",
+        "Discipline refines output"
+      ]
+    },
+    {
+      "heading": "Romance & Passion",
+      "points": [
+        "Heightened passion in romantic matters",
+        "Assertive approach to attraction",
+        "Impatience in emotional exchanges",
+        "Respect maintains balance"
+      ]
+    },
+    {
+      "heading": "Competition & Performance",
+      "points": [
+        "Competitive spirit intensifies",
+        "Motivation to outperform others",
+        "Pressure-driven reactions possible",
+        "Focus sharpens results"
+      ]
+    },
+    {
+      "heading": "Speculation & Risk",
+      "points": [
+        "Increased risk-taking tendency",
+        "Quick decisions in speculative matters",
+        "Emotional triggers affect judgment",
+        "Caution protects gains"
+      ]
+    },
+    {
+      "heading": "Children & Mentorship",
+      "points": [
+        "Assertive involvement with children",
+        "Desire to guide or control outcomes",
+        "Potential for friction from rigidity",
+        "Patience strengthens bonds"
+      ]
+    }
+  ],
+  "strengths": [
+    "Confident creativity",
+    "Strong competitive drive",
+    "Bold self-expression",
+    "Focused ambition"
+  ],
+  "challenges": [
+    "Ego-driven reactions",
+    "Impatience in romance",
+    "Risk-prone decisions",
+    "Control tendencies"
+  ],
+  "closing": "Mars in the 5th house fuels passion and creative ambition. Disciplined focus converts intensity into confident expression.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Mars",
+    "house": 5
+  }
+}

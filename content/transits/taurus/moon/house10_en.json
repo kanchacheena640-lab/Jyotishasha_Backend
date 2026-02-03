@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Moon",
+  "house": 10,
+  "lang": "en",
+  "title": "Moon Transit in the 10th House for Taurus Ascendant",
+  "summary": "The Moon transiting your 10th house brings emotional focus to career, responsibilities, and public image. This phase heightens sensitivity to professional recognition and the need to feel valued for your contributions. Work-related decisions are influenced by mood, and feedback from authority figures can strongly affect confidence. While adaptability and responsiveness at work increase, emotional fluctuations may create inconsistency. Grounded routines and objective planning help channel emotional awareness into steady performance and constructive professional visibility.",
+  "sections": [
+    {
+      "heading": "Career & Responsibilities",
+      "points": [
+        "Emotional involvement in professional duties",
+        "Desire to feel appreciated at work",
+        "Responsiveness to changing demands",
+        "Structure improves consistency"
+      ]
+    },
+    {
+      "heading": "Public Image & Recognition",
+      "points": [
+        "Heightened sensitivity to reputation",
+        "Feedback strongly affects confidence",
+        "Need for acknowledgment increases",
+        "Objectivity stabilizes self-image"
+      ]
+    },
+    {
+      "heading": "Authority & Guidance",
+      "points": [
+        "Emotional reactions to authority figures",
+        "Need for supportive leadership",
+        "Respectful communication eases tension",
+        "Boundaries maintain professionalism"
+      ]
+    },
+    {
+      "heading": "Decision-Making",
+      "points": [
+        "Decisions influenced by emotional state",
+        "Adaptability supports quick adjustments",
+        "Risk of inconsistency during stress",
+        "Planning restores balance"
+      ]
+    },
+    {
+      "heading": "Work-Life Balance",
+      "points": [
+        "Emotional spillover between work and home",
+        "Pressure from expectations",
+        "Need for rest and grounding",
+        "Balance sustains performance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Professional adaptability",
+    "Emotional awareness at work",
+    "Responsive leadership potential",
+    "Public sensitivity"
+  ],
+  "challenges": [
+    "Mood-based performance shifts",
+    "Sensitivity to criticism",
+    "Inconsistent focus",
+    "Emotional pressure from expectations"
+  ],
+  "closing": "Moon in the 10th house links emotions with career and reputation. Grounded objectivity turns sensitivity into reliable professional strength.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Moon",
+    "house": 10
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Rahu",
+  "house": 12,
+  "lang": "en",
+  "title": "Rahu Transit in the 12th House for Gemini Ascendant",
+  "summary": "Rahu transiting the twelfth house heightens themes of isolation, hidden expenses, foreign connections, and subconscious patterns. Interest in retreat, research, or behind-the-scenes work increases. This phase can bring sudden overseas links or unconventional spiritual curiosity, but also sleep disruption or financial leakages. Awareness, boundaries, and disciplined routines turn withdrawal into meaningful renewal.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong inward pull",
+        "Preference for privacy and solitude",
+        "Curiosity about the unseen",
+        "Detachment from external validation"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Behind-the-scenes roles thrive",
+        "Foreign or remote work links",
+        "Research and analysis favored",
+        "Avoid unclear obligations"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Reduced social engagement",
+        "Secretive dynamics surface",
+        "Need for clear boundaries",
+        "Honest closure heals ties"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Hidden expenses or losses",
+        "Spending on travel or retreat",
+        "Unplanned outflows possible",
+        "Strict tracking required"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Heightened imagination",
+        "Sleep or anxiety fluctuations",
+        "Escapist tendencies",
+        "Mindfulness restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Inner exploration",
+    "Research depth",
+    "Spiritual curiosity",
+    "Detachment clarity"
+  ],
+  "challenges": [
+    "Isolation",
+    "Financial leakage",
+    "Escapism",
+    "Sleep disruption"
+  ],
+  "closing": "This transit draws focus inward. Awareness and structure transform withdrawal into renewal.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Rahu",
+    "house": 12
+  }
+}

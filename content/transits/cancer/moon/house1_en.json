@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 1,
+  "lang": "en",
+  "title": "Moon Transit in the 1st House for Cancer Ascendant",
+  "summary": "The Moon transiting the first house heightens emotional awareness, sensitivity, and self-focus for Cancer Ascendant. Mood and intuition strongly influence decisions, and personal needs come to the forefront. You may feel more expressive, nurturing, or reactive depending on circumstances. While empathy increases, emotional fluctuation can affect consistency. Grounding habits help maintain balance and clarity.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened emotional sensitivity",
+        "Strong intuitive responses",
+        "Self-focused emotional awareness",
+        "Reactive mood patterns"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Intuition guides decisions",
+        "Preference for familiar environments",
+        "Productivity varies with mood",
+        "Supportive roles favored"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Increased need for care",
+        "Emotional expressiveness",
+        "Sensitivity to others’ reactions",
+        "Reassurance strengthens bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending influenced by mood",
+        "Focus on personal comfort",
+        "Cautious yet emotional decisions",
+        "Avoid impulsive purchases"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Strong inner awareness",
+        "Mood swings possible",
+        "Desire for emotional safety",
+        "Stability through grounding routines"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional intelligence",
+    "Intuition",
+    "Empathy",
+    "Self-awareness"
+  ],
+  "challenges": [
+    "Mood fluctuations",
+    "Emotional reactivity",
+    "Inconsistency",
+    "Over-sensitivity"
+  ],
+  "closing": "This transit amplifies feelings and intuition. Emotional balance becomes the key to confident self-expression.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 1
+  }
+}

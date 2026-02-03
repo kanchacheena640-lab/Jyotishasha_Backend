@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Mercury",
+  "house": 12,
+  "lang": "en",
+  "title": "Mercury Transit in the 12th House for Cancer Ascendant",
+  "summary": "Mercury transiting the twelfth house turns thinking inward toward reflection, solitude, and subconscious processing. For Cancer ascendants, this phase heightens mental sensitivity and draws attention to private matters, rest, and behind-the-scenes planning. Communication becomes subtle, with benefits from research, writing in isolation, or foreign connections. While insight deepens, excessive rumination or mental withdrawal can reduce clarity. This transit favors quiet analysis, spiritual study, and conscious rest, allowing the mind to reset and prepare for the next outward cycle.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Introspective and reflective mindset",
+        "Preference for solitude and privacy",
+        "Subtle and observant thinking",
+        "Risk of mental withdrawal"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Effective work behind the scenes",
+        "Research, analysis, or writing in isolation",
+        "Support for foreign or remote projects",
+        "Avoid miscommunication due to silence"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Need for personal space",
+        "Private conversations over public expression",
+        "Unspoken thoughts may create distance",
+        "Gentle sharing restores connection"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses on travel, learning, or healing",
+        "Hidden or unnoticed costs",
+        "Careful review of accounts needed",
+        "Planning prevents leakage"
+      ]
+    },
+    {
+      "heading": "Mental / Inner",
+      "points": [
+        "Heightened subconscious activity",
+        "Strong imagination and intuition",
+        "Overthinking in isolation",
+        "Meditation calms the mind"
+      ]
+    }
+  ],
+  "strengths": [
+    "Deep insight",
+    "Quiet analytical ability",
+    "Strategic inner planning",
+    "Intuitive understanding"
+  ],
+  "challenges": [
+    "Mental isolation",
+    "Unclear communication",
+    "Excessive rumination",
+    "Energy drain through worry"
+  ],
+  "closing": "This transit supports clarity through conscious withdrawal.\nUse Mercury to reflect, not retreat from awareness.\nQuiet insight prepares the next phase of action.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Mercury",
+    "house": 12
+  }
+}

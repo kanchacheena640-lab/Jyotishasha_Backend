@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Moon",
+  "house": 2,
+  "lang": "en",
+  "title": "Moon Transit in the 2nd House for Taurus Ascendant",
+  "summary": "The Moon transiting your 2nd house brings emotional focus to finances, values, and family support. This phase heightens sensitivity around income, savings, and material security, making you more responsive to fluctuations in resources. Speech becomes emotionally colored, influencing how your words are received. Comfort is closely tied to financial and familial stability, and spending decisions may be mood-driven. Grounded planning and mindful communication help maintain balance, allowing emotional intelligence to support security rather than disrupt it.",
+  "sections": [
+    {
+      "heading": "Finances & Security",
+      "points": [
+        "Emotional connection to money and savings",
+        "Sensitivity to financial changes",
+        "Desire for material reassurance",
+        "Planning stabilizes confidence"
+      ]
+    },
+    {
+      "heading": "Speech & Expression",
+      "points": [
+        "Emotionally expressive communication",
+        "Tone influences impact of words",
+        "Tendency toward reactive speech",
+        "Mindfulness improves clarity"
+      ]
+    },
+    {
+      "heading": "Family & Support",
+      "points": [
+        "Need for emotional support from family",
+        "Protective attitude toward loved ones",
+        "Family matters affect mood",
+        "Open dialogue strengthens bonds"
+      ]
+    },
+    {
+      "heading": "Values & Self-Worth",
+      "points": [
+        "Self-worth linked to security",
+        "Strong attachment to personal values",
+        "Desire for respect and reassurance",
+        "Inner validation reduces dependency"
+      ]
+    },
+    {
+      "heading": "Spending & Comfort",
+      "points": [
+        "Comfort-driven spending tendencies",
+        "Purchases influenced by mood",
+        "Short-term indulgence possible",
+        "Discipline prevents imbalance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional awareness of resources",
+    "Supportive family orientation",
+    "Expressive communication",
+    "Value-driven decision-making"
+  ],
+  "challenges": [
+    "Mood-based financial choices",
+    "Emotional spending",
+    "Reactive speech",
+    "Overdependence on security"
+  ],
+  "closing": "Moon in the 2nd house ties emotions to security and values. Mindful planning turns sensitivity into financial steadiness.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Moon",
+    "house": 2
+  }
+}

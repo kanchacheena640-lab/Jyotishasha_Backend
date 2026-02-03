@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Mercury",
+  "house": 10,
+  "lang": "en",
+  "title": "Mercury Transit in the 10th House for Taurus Ascendant",
+  "summary": "Mercury transiting the 10th house sharpens professional communication, strategic thinking, and public decision-making. This phase highlights planning, negotiations, and documentation in career matters, increasing visibility through intellect rather than force. Authority figures notice clarity of ideas, while multitasking and meetings increase. However, overanalysis or frequent opinion shifts can weaken credibility. When guided with consistency, this transit supports career growth through smart execution, clear messaging, and reputation built on competence and reliability.",
+  "sections": [
+    {
+      "heading": "Career & Strategy",
+      "points": [
+        "Clear professional planning",
+        "Idea-driven progress",
+        "Focus on execution details",
+        "Consistency strengthens results"
+      ]
+    },
+    {
+      "heading": "Authority & Management",
+      "points": [
+        "Logical leadership approach",
+        "Effective delegation through dialogue",
+        "Risk of overexplaining decisions",
+        "Concise direction builds trust"
+      ]
+    },
+    {
+      "heading": "Public Image",
+      "points": [
+        "Reputation shaped by communication",
+        "Visibility through presentations",
+        "Frequent evaluations and feedback",
+        "Steady messaging builds credibility"
+      ]
+    },
+    {
+      "heading": "Workload & Coordination",
+      "points": [
+        "Meetings and coordination increase",
+        "Multitasking becomes common",
+        "Mental fatigue from overload",
+        "Prioritization restores efficiency"
+      ]
+    },
+    {
+      "heading": "Decisions & Accountability",
+      "points": [
+        "Data-driven decisions",
+        "Accountability emphasized",
+        "Hesitation delays outcomes",
+        "Timely closure ensures progress"
+      ]
+    }
+  ],
+  "strengths": [
+    "Professional clarity",
+    "Strategic communication",
+    "Intellectual leadership",
+    "Reputation through competence"
+  ],
+  "challenges": [
+    "Overanalysis",
+    "Inconsistent messaging",
+    "Mental overload",
+    "Delayed decisions"
+  ],
+  "closing": "Mercury in the 10th house rewards clear thinking and consistent communication. Focused intellect converts plans into visible professional success.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Mercury",
+    "house": 10
+  }
+}

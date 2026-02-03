@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 10,
+  "lang": "en",
+  "title": "Venus Transit in the 10th House for Gemini Ascendant",
+  "summary": "Venus transiting the tenth house enhances public image, professional charm, and career harmony. Your work gains appreciation through diplomacy, aesthetics, and people skills. This phase supports recognition, creative authority, and smoother relations with seniors. While popularity and visibility rise, prioritizing image over substance or avoiding hard decisions can weaken long-term credibility if balance is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Polished and professional demeanor",
+        "Desire for respect and appreciation",
+        "Charm expressed through responsibility",
+        "Sensitivity to public opinion"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for leadership, branding, and client-facing roles",
+        "Recognition through diplomacy and creativity",
+        "Improved relations with authorities",
+        "Avoid comfort-driven compromises"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Professional relationships feel smoother",
+        "Respect and attraction through competence",
+        "Limited time for personal intimacy",
+        "Balance ambition with emotional presence"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income improves via career visibility",
+        "Spending on professional image increases",
+        "Stable gains through reputation",
+        "Avoid image-only financial risks"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind focused on success and approval",
+        "Satisfaction from public recognition",
+        "Stress if appreciation feels lacking",
+        "Inner balance sustains confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Professional charm",
+    "Public appeal",
+    "Creative authority",
+    "Diplomatic leadership"
+  ],
+  "challenges": [
+    "Image-dependence",
+    "Avoidance of tough calls",
+    "Work-life imbalance",
+    "Approval-seeking"
+  ],
+  "closing": "This transit elevates career presence through grace and diplomacy. Substance combined with charm builds lasting respect.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 10
+  }
+}

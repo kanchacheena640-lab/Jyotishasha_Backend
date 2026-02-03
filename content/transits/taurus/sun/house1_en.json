@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Sun",
+  "house": 1,
+  "lang": "en",
+  "title": "Sun Transit in the 1st House for Taurus Ascendant",
+  "summary": "The Sun transiting your 1st house heightens self-awareness, vitality, and personal authority. This phase strengthens presence and visibility, prompting you to assert identity with confidence and clarity. Leadership tendencies rise, and decisions are driven by self-belief rather than external approval. While motivation and stamina improve, ego sensitivity can surface if recognition is delayed. The Sun here asks for balanced self-expression—projecting strength without rigidity—so confidence translates into constructive action and authentic influence.",
+  "sections": [
+    {
+      "heading": "Identity & Self-Expression",
+      "points": [
+        "Stronger sense of personal identity",
+        "Clearer self-presentation and confidence",
+        "Desire to lead from the front",
+        "Need to avoid over-identification with ego"
+      ]
+    },
+    {
+      "heading": "Vitality & Health",
+      "points": [
+        "Improved physical energy and stamina",
+        "Focus on appearance and wellbeing",
+        "Heat or fatigue if overexerted",
+        "Routine supports sustained vitality"
+      ]
+    },
+    {
+      "heading": "Decision-Making & Will",
+      "points": [
+        "Decisive and self-driven choices",
+        "Reduced dependence on others’ opinions",
+        "Strong willpower for initiatives",
+        "Balance prevents stubbornness"
+      ]
+    },
+    {
+      "heading": "Leadership & Visibility",
+      "points": [
+        "Natural authority in interactions",
+        "Increased public or professional notice",
+        "Opportunity to set direction",
+        "Humility maintains rapport"
+      ]
+    },
+    {
+      "heading": "Attitude & Outlook",
+      "points": [
+        "Optimistic, self-focused mindset",
+        "Heightened pride in achievements",
+        "Sensitivity to criticism",
+        "Self-awareness refines confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong self-confidence",
+    "Clear leadership presence",
+    "Enhanced vitality",
+    "Independent decision-making"
+  ],
+  "challenges": [
+    "Ego sensitivity",
+    "Overassertion",
+    "Impatience with delays",
+    "Resistance to feedback"
+  ],
+  "closing": "Sun in the 1st house empowers identity and presence. Balanced confidence ensures authority translates into positive influence.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Sun",
+    "house": 1
+  }
+}

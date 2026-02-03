@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 7,
+  "lang": "en",
+  "title": "Sun Transit in the 7th House for Cancer Ascendant",
+  "summary": "The Sun transiting the seventh house brings strong focus on partnerships, public dealings, and one-to-one interactions. You may assert leadership in relationships and expect recognition from others. Business partnerships gain visibility, but ego clashes can arise if balance is lost. Cooperation with clarity, not dominance, ensures progress.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong presence in partnerships",
+        "Desire to be acknowledged by others",
+        "Leadership-oriented interaction style",
+        "Sensitivity to respect"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Visibility through clients or partners",
+        "Leadership in business dealings",
+        "Negotiation power increases",
+        "Avoid dominance in collaborations"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Need for appreciation from partner",
+        "Ego sensitivity in marriage",
+        "Power dynamics surface",
+        "Mutual respect restores harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income via partnerships or clients",
+        "Public-facing gains",
+        "Expenses linked to image",
+        "Clear agreements prevent loss"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Attention on external validation",
+        "Restlessness if ignored",
+        "Desire for balanced recognition",
+        "Calm through cooperation"
+      ]
+    }
+  ],
+  "strengths": [
+    "Public influence",
+    "Leadership in partnerships",
+    "Negotiation skills",
+    "Relationship awareness"
+  ],
+  "challenges": [
+    "Ego clashes",
+    "Power struggles",
+    "Over-dependence on validation",
+    "Rigid expectations"
+  ],
+  "closing": "This transit highlights partnerships and public roles. Lead together, not alone.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 7
+  }
+}

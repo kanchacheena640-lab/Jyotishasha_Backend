@@ -1,0 +1,74 @@
+{
+  "ascendant": "Aquarius",
+  "planet": "Jupiter",
+  "house": 4,
+  "lang": "EN",
+  "title": "Jupiter Transit in Fourth House: Inner Stability, Home, and Wisdom",
+  "summary": "For Aquarius Ascendant, Jupiter’s transit in the fourth house expands emotional intelligence, inner stability, and focus on home and roots. The mind seeks peace, wisdom, and ethical grounding in domestic matters. This phase supports education, property planning, and strengthening family bonds. Guidance from elders proves valuable, and inner confidence grows quietly. However, comfort-seeking or emotional idealism can slow action. Balanced decisions rooted in values help build lasting security and mental peace.",
+  "sections": [
+    {
+      "title": "Core Personality",
+      "points": [
+        "Emotionally mature outlook",
+        "Search for inner peace",
+        "Value-based thinking",
+        "Quiet confidence"
+      ]
+    },
+    {
+      "title": "Home and Family",
+      "points": [
+        "Harmonious family environment",
+        "Support from elders",
+        "Respect for traditions",
+        "Strengthening emotional bonds"
+      ]
+    },
+    {
+      "title": "Property and Stability",
+      "points": [
+        "Favorable for property planning",
+        "Long-term asset decisions",
+        "Ethical documentation approach",
+        "Focus on security"
+      ]
+    },
+    {
+      "title": "Education and Learning",
+      "points": [
+        "Support for foundational education",
+        "Interest in wisdom-based studies",
+        "Learning through guidance",
+        "Mental growth at home"
+      ]
+    },
+    {
+      "title": "Mental and Inner State",
+      "points": [
+        "Emotional clarity",
+        "Sense of inner safety",
+        "Calm decision-making",
+        "Risk of comfort dependency"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional wisdom",
+    "Inner stability",
+    "Family support",
+    "Value-based decisions"
+  ],
+  "challenges": [
+    "Comfort-driven inertia",
+    "Emotional idealism",
+    "Delayed action",
+    "Attachment to familiarity"
+  ],
+  "closing": "Jupiter in the fourth house builds lasting peace when wisdom guides emotional choices.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Aquarius",
+    "planet": "Jupiter",
+    "house": 4
+  }
+}

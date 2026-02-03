@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 11,
+  "lang": "en",
+  "title": "Moon Transit in the 11th House for Cancer Ascendant",
+  "summary": "The Moon transiting the eleventh house turns emotions toward friendships, aspirations, and gains. You may feel emotionally invested in social circles and future goals, seeking support and validation from networks. Gains can fluctuate with mood, and expectations from friends may rise. When emotions are managed well, teamwork and collective efforts bring satisfaction.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotionally goal-oriented",
+        "Need for social belonging",
+        "Responsive to group dynamics",
+        "Hope-driven mindset"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Teamwork and networking favored",
+        "Support from colleagues",
+        "Short-term gains possible",
+        "Avoid expectation-led pressure"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Emotional bonding with friends",
+        "Expectation of support",
+        "Sensitivity to group behavior",
+        "Clear communication maintains harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income fluctuations",
+        "Gains through networks",
+        "Emotion-linked spending",
+        "Plan finances practically"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Hopeful yet sensitive emotions",
+        "Fear of social rejection",
+        "Desire for validation",
+        "Grounding stabilizes outlook"
+      ]
+    }
+  ],
+  "strengths": [
+    "Team sensitivity",
+    "Networking ability",
+    "Emotional motivation",
+    "Adaptability"
+  ],
+  "challenges": [
+    "Over-expectation",
+    "Mood-based gains",
+    "Dependency on approval",
+    "Social stress"
+  ],
+  "closing": "This transit connects emotions with aspirations. Balanced expectations turn networks into steady support.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 11
+  }
+}

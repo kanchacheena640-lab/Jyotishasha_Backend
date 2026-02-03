@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 5,
+  "lang": "en",
+  "title": "Moon Transit in the 5th House for Cancer Ascendant",
+  "summary": "The Moon transiting the fifth house heightens emotional creativity, romance, and self-expression. Feelings seek joyful outlets through art, hobbies, children, or affection. Romantic sensitivity increases, making you more responsive to appreciation. While inspiration flows, mood swings can affect consistency. Channel emotions into creative focus to avoid impulsive reactions.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotion-driven creativity",
+        "Playful self-expression",
+        "Need for appreciation",
+        "Mood-linked enthusiasm"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Creative roles favored",
+        "Ideas shaped by intuition",
+        "Short bursts of inspiration",
+        "Avoid inconsistent follow-through"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Romantic sensitivity rises",
+        "Affectionate communication",
+        "Emotional bonding with children",
+        "Avoid emotional drama"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on hobbies or pleasure",
+        "Speculative urges increase",
+        "Caution in risk-taking",
+        "Balance joy with prudence"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Joy-seeking emotions",
+        "Fluctuating excitement",
+        "Desire for validation",
+        "Focus steadies creativity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Creative intuition",
+    "Emotional warmth",
+    "Romantic expression",
+    "Playful imagination"
+  ],
+  "challenges": [
+    "Mood swings",
+    "Impulsiveness",
+    "Inconsistent effort",
+    "Over-sensitivity to feedback"
+  ],
+  "closing": "This transit fuels creative joy and affection. Consistent focus turns emotion into art.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 5
+  }
+}

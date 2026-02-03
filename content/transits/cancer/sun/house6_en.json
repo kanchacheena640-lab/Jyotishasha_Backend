@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 6,
+  "lang": "en",
+  "title": "Sun Transit in the 6th House for Cancer Ascendant",
+  "summary": "The Sun transiting the sixth house sharpens focus on work, discipline, and problem-solving. You feel driven to overcome obstacles, compete effectively, and assert authority in daily routines. This is a strong phase for handling challenges, improving health habits, and winning disputes. However, stress or ego clashes at work can rise if balance is ignored.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong will to overcome obstacles",
+        "Competitive mindset",
+        "Discipline-driven approach",
+        "Heightened sense of duty"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Ability to defeat competition",
+        "Leadership in operational roles",
+        "Focus on efficiency and systems",
+        "Avoid power struggles at work"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Firm boundaries in daily interactions",
+        "Low tolerance for imbalance",
+        "Conflicts if ego dominates",
+        "Respect restores cooperation"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Steady income through effort",
+        "Focus on clearing debts",
+        "Controlled spending mindset",
+        "Avoid stress-driven expenses"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "High task focus",
+        "Stress from over-responsibility",
+        "Desire to prove competence",
+        "Balance work with rest"
+      ]
+    }
+  ],
+  "strengths": [
+    "Problem-solving power",
+    "Work discipline",
+    "Resilience",
+    "Competitive edge"
+  ],
+  "challenges": [
+    "Workplace ego clashes",
+    "Health strain from overwork",
+    "Rigidity in routines",
+    "Stress buildup"
+  ],
+  "closing": "This transit strengthens your ability to handle challenges. Discipline wins, but rest sustains success.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 6
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Jupiter",
+  "house": 4,
+  "lang": "en",
+  "title": "Jupiter Transit in the 4th House for Taurus Ascendant",
+  "summary": "Jupiter transiting the 4th house expands themes of emotional security, home, education, property, and inner stability. This phase supports harmony within the family, constructive guidance from elders, and wise decisions related to residence, land, or vehicles. Learning deepens in a calm environment, and moral grounding strengthens inner peace. However, overindulgence or complacency at home can reduce discipline. When balanced with responsibility, this transit nurtures stable foundations, supportive domestic bonds, and lasting emotional fulfillment.",
+  "sections": [
+    {
+      "heading": "Home & Emotional Security",
+      "points": [
+        "Sense of comfort and protection",
+        "Supportive home atmosphere",
+        "Desire to improve living conditions",
+        "Responsibility sustains harmony"
+      ]
+    },
+    {
+      "heading": "Family & Elders",
+      "points": [
+        "Guidance from elders increases",
+        "Respectful family dialogue",
+        "Moral values emphasized",
+        "Avoid taking support for granted"
+      ]
+    },
+    {
+      "heading": "Property & Assets",
+      "points": [
+        "Favorable for property planning",
+        "Long-term asset perspective",
+        "Wise decisions over quick gains",
+        "Due diligence ensures stability"
+      ]
+    },
+    {
+      "heading": "Education & Inner Growth",
+      "points": [
+        "Learning thrives in calm settings",
+        "Interest in foundational knowledge",
+        "Ethical understanding deepens",
+        "Consistency improves outcomes"
+      ]
+    },
+    {
+      "heading": "Peace & Well-being",
+      "points": [
+        "Improved emotional balance",
+        "Inner optimism strengthens",
+        "Risk of comfort-induced inertia",
+        "Moderation maintains vitality"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional stability",
+    "Supportive family environment",
+    "Wise property judgment",
+    "Inner growth and calm"
+  ],
+  "challenges": [
+    "Complacency at home",
+    "Overindulgence",
+    "Delayed decisions",
+    "Dependence on comfort"
+  ],
+  "closing": "Jupiter in the 4th house builds strong inner and domestic foundations. Responsible optimism transforms comfort into lasting security.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Jupiter",
+    "house": 4
+  }
+}

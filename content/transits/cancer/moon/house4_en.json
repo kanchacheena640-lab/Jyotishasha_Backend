@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 4,
+  "lang": "en",
+  "title": "Moon Transit in the 4th House for Cancer Ascendant",
+  "summary": "The Moon transiting the fourth house deepens emotional ties to home, family, and inner security. Comfort, privacy, and nurturing environments become priorities. You may feel drawn to domestic matters, property concerns, or reconnecting with roots. While emotional warmth increases, mood sensitivity at home can rise. Creating calm routines supports stability and peace.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened need for emotional security",
+        "Strong attachment to home and roots",
+        "Protective and nurturing instincts",
+        "Mood influenced by domestic atmosphere"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Preference for stable or home-based work",
+        "Focus may shift from ambition to comfort",
+        "Support roles favored",
+        "Avoid letting emotions affect decisions"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family bonding strengthens",
+        "Caregiving tendencies increase",
+        "Sensitivity in close relationships",
+        "Open communication maintains harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on home or property",
+        "Focus on long-term security",
+        "Cautious financial outlook",
+        "Plan expenses calmly"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Desire for emotional comfort",
+        "Nostalgic reflections",
+        "Inner peace through familiarity",
+        "Grounding restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional stability",
+    "Nurturing nature",
+    "Strong family bonds",
+    "Inner security"
+  ],
+  "challenges": [
+    "Mood sensitivity",
+    "Over-attachment",
+    "Withdrawal tendencies",
+    "Domestic stress"
+  ],
+  "closing": "This transit emphasizes inner peace and home harmony. Nurture your foundation for emotional strength.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 4
+  }
+}

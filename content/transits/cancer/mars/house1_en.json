@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Mars",
+  "house": 1,
+  "lang": "en",
+  "title": "Mars Transit in the 1st House for Cancer Ascendant",
+  "summary": "Mars transiting the first house energizes your personality, willpower, and physical drive. For Cancer ascendants, this phase amplifies courage and initiative, pushing you to act decisively and assert your needs. Emotions run hotter, making reactions quicker and more direct. While confidence and leadership rise, impatience or irritability can surface if energy is not well-channeled. This transit favors bold starts, self-improvement, and taking charge, provided you balance action with emotional awareness and avoid unnecessary confrontations.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Stronger self-assertion and personal drive",
+        "Heightened courage to take initiative",
+        "More direct expression of desires",
+        "Risk of impulsive or reactive behavior"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Push to lead or start something new",
+        "Competitive spirit increases at work",
+        "Good time for roles requiring action",
+        "Avoid conflicts with authority figures"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Dominant tone in interactions",
+        "Passion and intensity increase",
+        "Arguments may arise due to impatience",
+        "Needs conscious emotional sensitivity"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses on self, fitness, or tools",
+        "Bold financial moves possible",
+        "Short-term risk-taking tendency",
+        "Plan before acting on impulses"
+      ]
+    },
+    {
+      "heading": "Mental / Inner",
+      "points": [
+        "Restless and action-oriented mindset",
+        "Strong desire to prove oneself",
+        "Anger triggers more easily",
+        "Physical activity helps stabilize emotions"
+      ]
+    }
+  ],
+  "strengths": [
+    "High energy and motivation",
+    "Improved confidence and courage",
+    "Ability to take quick decisions",
+    "Leadership and initiative"
+  ],
+  "challenges": [
+    "Irritability and impatience",
+    "Impulsive reactions",
+    "Risk of ego clashes",
+    "Emotional overdrive"
+  ],
+  "closing": "This transit is about acting with strength, not aggression.\nChannel Mars into disciplined effort and self-mastery.\nBalanced action brings the best results.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Cancer",
+    "planet": "Mars",
+    "house": 1
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 3,
+  "lang": "en",
+  "title": "Venus Transit in the 3rd House for Gemini Ascendant",
+  "summary": "Venus transiting the third house enhances charm in communication, creativity in expression, and harmony in close interactions. Writing, speaking, marketing, and creative outreach gain a pleasant tone and better reception. Relationships with siblings and peers soften, and short travels bring enjoyment. While social ease increases, distraction or superficial engagement can reduce depth if focus is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Expressive, friendly communication style",
+        "Confidence in sharing ideas creatively",
+        "Curiosity mixed with aesthetic sense",
+        "Tendency toward light or playful thinking"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for media, writing, design, and marketing",
+        "Networking becomes smoother and pleasant",
+        "Creative pitches gain acceptance",
+        "Avoid scattered efforts due to distractions"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Improved bonding with siblings and peers",
+        "Flirtatious or playful exchanges increase",
+        "Short trips strengthen connections",
+        "Avoid miscommunication due to casual tone"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Gains through communication-based skills",
+        "Spending on travel, gadgets, or learning",
+        "Small opportunities add up gradually",
+        "Watch impulsive purchases"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind feels light and socially engaged",
+        "Pleasure in sharing thoughts",
+        "Restlessness if stimulation drops",
+        "Focus improves creative output"
+      ]
+    }
+  ],
+  "strengths": [
+    "Charming communication",
+    "Creative expression",
+    "Social ease",
+    "Networking skills"
+  ],
+  "challenges": [
+    "Distraction",
+    "Superficial focus",
+    "Impulsive spending",
+    "Inconsistent effort"
+  ],
+  "closing": "This transit sweetens communication and creative outreach. Consistent focus turns charm into tangible results.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 3
+  }
+}

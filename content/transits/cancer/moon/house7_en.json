@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 7,
+  "lang": "en",
+  "title": "Moon Transit in the 7th House for Cancer Ascendant",
+  "summary": "The Moon transiting the seventh house heightens emotional awareness within partnerships and one-to-one interactions. Relationships take center stage, and you may seek reassurance, closeness, or validation from others. Sensitivity to a partner’s mood increases, making cooperation important. While bonding deepens, emotional dependence or overreaction can disturb balance if boundaries are unclear.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Relationship-focused emotions",
+        "Need for companionship",
+        "Responsive to others’ moods",
+        "Desire for emotional balance"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Client-facing roles highlighted",
+        "Partnership-based work favored",
+        "Negotiations influenced by emotions",
+        "Maintain objectivity in decisions"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Emotional bonding intensifies",
+        "Need for reassurance from partner",
+        "Sensitivity in conflicts",
+        "Healthy boundaries maintain harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Joint financial discussions arise",
+        "Spending influenced by partner",
+        "Shared responsibilities highlighted",
+        "Clarity avoids misunderstandings"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Emotional mirroring of others",
+        "Concern about relationship stability",
+        "Desire for mutual understanding",
+        "Calm communication restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional attunement",
+    "Partnership skills",
+    "Cooperative nature",
+    "Empathy"
+  ],
+  "challenges": [
+    "Emotional dependence",
+    "Over-sensitivity",
+    "Conflict avoidance",
+    "Mood-driven reactions"
+  ],
+  "closing": "This transit emphasizes emotional partnership. Balance closeness with clear boundaries for harmony.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 7
+  }
+}

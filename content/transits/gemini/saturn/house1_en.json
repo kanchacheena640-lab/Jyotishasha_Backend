@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Saturn",
+  "house": 1,
+  "lang": "en",
+  "title": "Saturn Transit in the 1st House for Gemini Ascendant",
+  "summary": "Saturn transiting the first house brings a phase of self-discipline, maturity, and identity restructuring. Life feels serious, demanding responsibility and patience. You become more aware of limitations, leading to steady personal growth through effort rather than ease. While confidence may feel tested, this transit builds long-term resilience, clarity of purpose, and a grounded sense of self when consistency is maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Serious and responsible outlook increases",
+        "Strong focus on self-discipline",
+        "Reduced impulsiveness",
+        "Identity shaped through effort"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Slow but stable progress",
+        "Increased responsibility and accountability",
+        "Hard work gains long-term recognition",
+        "Avoid frustration with delays"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Reserved emotional expression",
+        "Boundaries become important",
+        "Relationships tested for durability",
+        "Fewer but meaningful connections"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Conservative financial approach",
+        "Focus on saving and stability",
+        "Delayed gains but lasting security",
+        "Avoid risky decisions"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Introspective and serious mindset",
+        "Periods of self-doubt",
+        "Mental endurance develops",
+        "Patience restores confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Self-discipline",
+    "Resilience",
+    "Long-term vision",
+    "Inner stability"
+  ],
+  "challenges": [
+    "Self-criticism",
+    "Low confidence phases",
+    "Isolation tendency",
+    "Impatience with results"
+  ],
+  "closing": "This transit reshapes identity through discipline and endurance. Consistent effort creates lasting personal strength.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Saturn",
+    "house": 1
+  }
+}

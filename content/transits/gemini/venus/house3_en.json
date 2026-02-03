@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 4,
+  "lang": "en",
+  "title": "Venus Transit in the 4th House for Gemini Ascendant",
+  "summary": "Venus transiting the fourth house enhances comfort, emotional harmony, and attachment to home and inner peace. This phase favors beautifying living spaces, nurturing family bonds, and restoring emotional balance. Domestic happiness and a sense of security increase. While pleasure and ease grow, overindulgence in comfort or emotional dependency can slow progress if moderation is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Stronger need for emotional comfort",
+        "Affectionate and nurturing demeanor",
+        "Desire for peaceful surroundings",
+        "Mood tied to domestic harmony"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Support for work-from-home or flexible roles",
+        "Creative planning thrives in calm environments",
+        "Property or hospitality themes favored",
+        "Avoid prioritizing comfort over deadlines"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Family bonds feel warmer and supportive",
+        "Emotional reassurance strengthens closeness",
+        "Romance finds expression in care and presence",
+        "Over-attachment may limit independence"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on home, décor, or vehicles increases",
+        "Favorable for property-related planning",
+        "Comfort-driven expenses need tracking",
+        "Balanced budgeting sustains peace"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks calm and emotional safety",
+        "Pleasure in familiar environments",
+        "Sensitivity to domestic tensions",
+        "Gratitude restores inner balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional harmony",
+    "Domestic comfort",
+    "Nurturing presence",
+    "Inner calm"
+  ],
+  "challenges": [
+    "Over-comfort",
+    "Emotional dependency",
+    "Complacency",
+    "Avoidance of effort"
+  ],
+  "closing": "This transit deepens comfort and emotional ease at home. Moderation ensures peace supports steady progress.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 4
+  }
+}

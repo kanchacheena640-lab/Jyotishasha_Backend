@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Sun",
+  "house": 7,
+  "lang": "en",
+  "title": "Sun Transit in the 7th House for Taurus Ascendant",
+  "summary": "The Sun transiting your 7th house shifts focus toward partnerships, marriage, and public interactions. This phase highlights authority dynamics within one-to-one relationships, increasing the desire to lead or be recognized through associations. Business partnerships and negotiations gain prominence, but ego clashes or dominance issues may surface if balance is ignored. You may expect respect and visibility through partners, while learning lessons around equality and cooperation. Conscious adjustment helps transform assertiveness into mutual growth rather than relational strain.",
+  "sections": [
+    {
+      "heading": "Marriage & Partnerships",
+      "points": [
+        "Strong need to assert identity within relationships",
+        "Expectation of respect and acknowledgment from partner",
+        "Authority dynamics become more visible",
+        "Balance prevents power struggles"
+      ]
+    },
+    {
+      "heading": "Business Alliances",
+      "points": [
+        "Focus on contracts and professional collaborations",
+        "Desire to lead joint ventures",
+        "Confidence in negotiations increases",
+        "Ego flexibility ensures smooth outcomes"
+      ]
+    },
+    {
+      "heading": "Public Image & Dealings",
+      "points": [
+        "Visibility rises through public interactions",
+        "Reputation shaped by partnerships",
+        "Confidence in handling clients or audiences",
+        "Courtesy strengthens professional rapport"
+      ]
+    },
+    {
+      "heading": "Equality & Cooperation",
+      "points": [
+        "Learning lessons around mutual respect",
+        "Need to balance self-interest with collaboration",
+        "Dominance disrupts harmony",
+        "Shared decision-making builds trust"
+      ]
+    },
+    {
+      "heading": "Expectations & Reflection",
+      "points": [
+        "Self-image reflected through others",
+        "Sensitivity to criticism from partners",
+        "Awareness of relational patterns grows",
+        "Self-reflection improves relationship quality"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong partnership visibility",
+    "Confident negotiation ability",
+    "Clear sense of relational identity",
+    "Leadership in collaborations"
+  ],
+  "challenges": [
+    "Ego clashes in relationships",
+    "Dominance over partners",
+    "Sensitivity to opposition",
+    "Imbalance in cooperation"
+  ],
+  "closing": "Sun in the 7th house tests authority within relationships. Balanced assertion turns partnerships into sources of strength and recognition.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Sun",
+    "house": 7
+  }
+}

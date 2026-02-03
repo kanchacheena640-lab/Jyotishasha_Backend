@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Ketu",
+  "house": 12,
+  "lang": "en",
+  "title": "Ketu Transit in the 12th House for Gemini Ascendant",
+  "summary": "Ketu transiting the twelfth house deepens withdrawal from the outer world and heightens inner awareness. Interest in solitude, spirituality, and release from attachments increases, while material ambitions fade. Sleep patterns and expenses may feel irregular. This phase favors introspection, healing, and letting go; grounding routines help maintain balance with daily life.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong inward focus",
+        "Detachment from material desires",
+        "Preference for solitude",
+        "Heightened spiritual curiosity"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Low interest in visibility-driven roles",
+        "Behind-the-scenes or research work favored",
+        "Detachment from competition",
+        "Avoid complete disengagement"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Need for personal space",
+        "Emotional distance without clarity",
+        "Quiet compassion increases",
+        "Gentle communication sustains bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Unplanned expenses possible",
+        "Reduced attachment to savings",
+        "Spending on healing or retreat",
+        "Basic budgeting remains important"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Deep introspection",
+        "Vivid dreams or restlessness",
+        "Desire for release",
+        "Grounding prevents escapism"
+      ]
+    }
+  ],
+  "strengths": [
+    "Spiritual depth",
+    "Compassion",
+    "Inner clarity",
+    "Ability to let go"
+  ],
+  "challenges": [
+    "Isolation",
+    "Escapist tendencies",
+    "Sleep irregularity",
+    "Financial leakage"
+  ],
+  "closing": "This transit completes a cycle of release. Inner clarity grows as attachments dissolve.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Ketu",
+    "house": 12
+  }
+}

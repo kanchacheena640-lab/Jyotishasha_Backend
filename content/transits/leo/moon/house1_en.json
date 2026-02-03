@@ -1,0 +1,76 @@
+{
+  "ascendant": "Leo",
+  "planet": "Moon",
+  "house": 1,
+  "lang": "en",
+  "title": "Moon Transit in the 1st House for Leo Ascendant",
+  "summary": "The Moon transiting your first house heightens emotional awareness, self-expression, and sensitivity around identity. Feelings become visible on the surface, influencing how you react and present yourself. There is a stronger need for emotional validation and reassurance, and moods can shift quickly. Intuition becomes sharper, guiding personal decisions. When handled consciously, this transit supports emotional authenticity, empathetic leadership, and a deeper connection between inner feelings and outward expression.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotions strongly influence behavior and presence.",
+        "Heightened sensitivity to surroundings and people.",
+        "Self-image fluctuates with mood.",
+        "Intuition guides personal choices."
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Public interactions feel emotionally charged.",
+        "Work decisions are influenced by mood.",
+        "Empathy improves leadership style.",
+        "Need for appreciation at work increases."
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Emotional expression becomes more direct.",
+        "Desire for reassurance from close ones.",
+        "Reactions can feel personal or intense.",
+        "Nurturing bonds strengthen trust."
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending reflects emotional state.",
+        "Comfort-related expenses increase.",
+        "Financial decisions feel instinctive.",
+        "Stability improves with emotional balance."
+      ]
+    },
+    {
+      "heading": "Mental & Inner State",
+      "points": [
+        "Mood awareness becomes central.",
+        "Strong emotional intuition.",
+        "Need for emotional grounding.",
+        "Calm returns with self-care."
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional intelligence",
+    "Strong intuition",
+    "Authentic self-expression",
+    "Empathetic presence",
+    "Adaptive sensitivity"
+  ],
+  "challenges": [
+    "Mood fluctuations",
+    "Emotional reactivity",
+    "Over-sensitivity",
+    "Need for validation",
+    "Subjective decision-making"
+  ],
+  "closing": "The Moon in the 1st house brings emotions to the forefront. When feelings are acknowledged with awareness, personal expression becomes balanced and genuine.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Leo",
+    "planet": "Moon",
+    "house": 1
+  }
+}

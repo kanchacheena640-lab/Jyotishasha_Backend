@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Sun",
+  "house": 4,
+  "lang": "en",
+  "title": "Sun Transit in the 4th House for Taurus Ascendant",
+  "summary": "The Sun transiting your 4th house shifts focus toward home, emotional foundations, and inner security. This phase highlights responsibility within domestic matters and a desire to lead or reorganize the home environment. Pride in family roots increases, though authority dynamics with parents—especially the mother—may surface. While the need for comfort and stability grows, inner restlessness can arise if emotional needs are unmet. Balanced leadership at home strengthens peace, grounding confidence without dominating personal spaces.",
+  "sections": [
+    {
+      "heading": "Home & Domestic Life",
+      "points": [
+        "Heightened focus on home environment",
+        "Desire to take charge of household matters",
+        "Reorganization or authority at home increases",
+        "Avoid control-driven decisions"
+      ]
+    },
+    {
+      "heading": "Emotional Security",
+      "points": [
+        "Need for emotional validation at home",
+        "Pride linked to personal foundations",
+        "Sensitivity when comfort feels challenged",
+        "Inner balance restores calm"
+      ]
+    },
+    {
+      "heading": "Parents & Family Dynamics",
+      "points": [
+        "Authority themes with parents emerge",
+        "Mother-related responsibilities increase",
+        "Opinions may clash over control",
+        "Respect sustains harmony"
+      ]
+    },
+    {
+      "heading": "Property & Assets",
+      "points": [
+        "Attention toward property or vehicles",
+        "Decisions driven by long-term security",
+        "Ownership pride strengthens motivation",
+        "Patience supports sound outcomes"
+      ]
+    },
+    {
+      "heading": "Inner Stability & Focus",
+      "points": [
+        "Turn inward to strengthen foundations",
+        "Private life gains importance over visibility",
+        "Restlessness if inner needs ignored",
+        "Grounding routines build stability"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong sense of responsibility at home",
+    "Protective leadership for family",
+    "Focus on long-term security",
+    "Grounded self-confidence"
+  ],
+  "challenges": [
+    "Control issues in domestic matters",
+    "Emotional sensitivity",
+    "Parental authority conflicts",
+    "Inner restlessness"
+  ],
+  "closing": "Sun in the 4th house strengthens inner foundations and domestic authority. Balanced leadership at home cultivates lasting emotional stability.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Sun",
+    "house": 4
+  }
+}

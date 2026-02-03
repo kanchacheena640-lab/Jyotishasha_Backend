@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Sun",
+  "house": 2,
+  "lang": "en",
+  "title": "Sun Transit in the 2nd House for Taurus Ascendant",
+  "summary": "The Sun transiting your 2nd house highlights themes of wealth, values, family responsibility, and self-worth. This phase strengthens the desire to secure financial stability through personal effort and authority. Speech becomes firm and impactful, though occasionally rigid. Focus shifts toward income, savings, and recognition for your contribution to family or resources. While confidence around finances improves, ego clashes over money or values are possible. Balanced communication and disciplined planning ensure that authority translates into lasting security.",
+  "sections": [
+    {
+      "heading": "Wealth & Finances",
+      "points": [
+        "Strong focus on income and savings",
+        "Desire to control financial decisions",
+        "Confidence in earning ability increases",
+        "Discipline needed to avoid rigidity"
+      ]
+    },
+    {
+      "heading": "Speech & Communication",
+      "points": [
+        "Authoritative and confident speech",
+        "Words carry strong influence",
+        "Tendency toward blunt expression",
+        "Awareness softens communication impact"
+      ]
+    },
+    {
+      "heading": "Family & Values",
+      "points": [
+        "Sense of responsibility toward family",
+        "Need to uphold personal value system",
+        "Leadership role within family matters",
+        "Avoid dominance in value discussions"
+      ]
+    },
+    {
+      "heading": "Self-Worth & Security",
+      "points": [
+        "Self-esteem linked to material stability",
+        "Recognition through contribution matters",
+        "Desire for respect around values",
+        "Inner worth should not rely only on assets"
+      ]
+    },
+    {
+      "heading": "Resource Management",
+      "points": [
+        "Focus on managing possessions",
+        "Structured approach to budgeting",
+        "Attachment to owned resources increases",
+        "Flexibility prevents possessiveness"
+      ]
+    }
+  ],
+  "strengths": [
+    "Strong financial focus",
+    "Authoritative communication",
+    "Clear value system",
+    "Responsible family approach"
+  ],
+  "challenges": [
+    "Rigid money attitudes",
+    "Blunt speech causing friction",
+    "Ego clashes over values",
+    "Over-identification with wealth"
+  ],
+  "closing": "Sun in the 2nd house strengthens financial authority and values. Balanced speech and flexibility turn confidence into lasting security.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Sun",
+    "house": 2
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 6,
+  "lang": "en",
+  "title": "Venus Transit in the 6th House for Gemini Ascendant",
+  "summary": "Venus transiting the sixth house brings harmony into daily routines, work environments, and health habits. Conflicts at work can soften through diplomacy, and cooperation improves in service-oriented roles. This phase supports balance in lifestyle and refined problem-solving. However, avoidance of difficult tasks or indulgence affecting discipline can reduce effectiveness if boundaries are not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Desire for peace in daily life",
+        "Diplomatic approach to problems",
+        "Sensitivity toward imbalance or stress",
+        "Preference for comfort in routines"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Improved harmony with coworkers",
+        "Service and support roles feel smoother",
+        "Creative solutions resolve conflicts",
+        "Avoid delaying tough responsibilities"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Desire to please partners through care",
+        "Minor disagreements resolved gently",
+        "Boundaries needed to avoid over-giving",
+        "Romance expressed through service"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on health, grooming, or comfort",
+        "Steady income through service work",
+        "Small expenses add up unnoticed",
+        "Track costs carefully"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind seeks balance and calm",
+        "Stress reduces with orderly routines",
+        "Aversion to conflict",
+        "Discipline restores clarity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Diplomacy",
+    "Workplace harmony",
+    "Service-oriented care",
+    "Refined routines"
+  ],
+  "challenges": [
+    "Avoidance of conflict",
+    "Over-comfort in habits",
+    "Hidden expenses",
+    "Weak boundaries"
+  ],
+  "closing": "This transit softens daily pressures through grace and balance. Discipline ensures harmony translates into progress.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 6
+  }
+}

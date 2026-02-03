@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 6,
+  "lang": "en",
+  "title": "Moon Transit in the 6th House for Cancer Ascendant",
+  "summary": "The Moon transiting the sixth house brings emotional focus to work routines, health, and problem-solving. Daily responsibilities feel heavier, and mood fluctuations can affect productivity. You may become more sensitive to criticism or workplace dynamics. This phase favors caring for health, organizing tasks, and addressing unresolved issues calmly rather than emotionally.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Emotionally driven sense of duty",
+        "Heightened sensitivity to stress",
+        "Service-oriented mindset",
+        "Need for practical control"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Focus on routine and service work",
+        "Responsibility increases",
+        "Team conflicts require emotional maturity",
+        "Consistency improves outcomes"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Irritability in daily interactions",
+        "Caretaker role may feel draining",
+        "Boundaries become important",
+        "Clear communication avoids friction"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Expenses related to health or work",
+        "Focus on clearing dues",
+        "Cautious financial decisions",
+        "Avoid stress-based spending"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Worry about responsibilities",
+        "Mental fatigue possible",
+        "Desire to fix problems",
+        "Routine restores stability"
+      ]
+    }
+  ],
+  "strengths": [
+    "Problem-solving ability",
+    "Service mindset",
+    "Health awareness",
+    "Practical focus"
+  ],
+  "challenges": [
+    "Emotional stress",
+    "Workplace sensitivity",
+    "Overthinking health matters",
+    "Burnout risk"
+  ],
+  "closing": "This transit demands emotional discipline in daily life. Order and routine turn pressure into progress.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 6
+  }
+}

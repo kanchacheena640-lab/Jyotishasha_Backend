@@ -1,0 +1,76 @@
+{
+  "ascendant": "Leo",
+  "planet": "Sun",
+  "house": 8,
+  "lang": "en",
+  "title": "Sun Transit in the 8th House for Leo Ascendant",
+  "summary": "The Sun transiting your eighth house shifts focus toward transformation, shared resources, and inner power dynamics. Matters related to control, trust, and vulnerability come into awareness. You may feel compelled to confront fears around loss or dependency, while interest in hidden systems, research, or healing deepens. Financial ties and joint responsibilities demand clarity. When handled consciously, this transit strengthens resilience, refines authority over inner change, and brings maturity in managing shared power.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Heightened awareness of inner power and control.",
+        "Desire to understand hidden motivations.",
+        "Ego confronts vulnerability and trust.",
+        "Personal transformation becomes central."
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Research, analysis, or confidential roles suit this phase.",
+        "Authority grows through depth rather than visibility.",
+        "Power dynamics at work require discretion.",
+        "Long-term strategy outweighs quick wins."
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Trust and intimacy themes intensify.",
+        "Possessiveness can surface if ego dominates.",
+        "Honesty deepens bonds when practiced.",
+        "Shared responsibilities need transparency."
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Joint finances and obligations come into focus.",
+        "Insurance, taxes, or inheritances need attention.",
+        "Control over shared assets is reassessed.",
+        "Stability improves with clear agreements."
+      ]
+    },
+    {
+      "heading": "Mental & Inner State",
+      "points": [
+        "Inner fears rise for resolution.",
+        "Psychological strength develops through insight.",
+        "Need for control softens with awareness.",
+        "Calm grows by accepting change."
+      ]
+    }
+  ],
+  "strengths": [
+    "Emotional resilience",
+    "Depth of insight",
+    "Strategic authority",
+    "Transformational leadership",
+    "Crisis management"
+  ],
+  "challenges": [
+    "Control issues",
+    "Trust struggles",
+    "Ego-driven possessiveness",
+    "Stress from shared obligations",
+    "Difficulty letting go"
+  ],
+  "closing": "The Sun in the 8th house refines power through transformation. When control gives way to awareness, true inner strength emerges.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Leo",
+    "planet": "Sun",
+    "house": 8
+  }
+}

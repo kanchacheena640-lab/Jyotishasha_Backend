@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Rahu",
+  "house": 1,
+  "lang": "en",
+  "title": "Rahu Transit in the 1st House for Gemini Ascendant",
+  "summary": "Rahu transiting the first house amplifies self-focus, ambition, and experimentation with identity. Curiosity and visibility increase, pushing you to redefine how you present yourself to the world. This phase fuels bold moves and rapid changes, but confusion, restlessness, or image-driven decisions can arise if grounding is ignored. Conscious self-awareness keeps growth purposeful.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong desire for recognition",
+        "Unconventional self-expression",
+        "Restless and curious mindset",
+        "Identity experimentation"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Ambition and risk-taking increase",
+        "Personal branding gains importance",
+        "Sudden opportunities through visibility",
+        "Avoid impulsive career shifts"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Self-priority affects partnerships",
+        "Attraction through uniqueness",
+        "Misunderstandings from mixed signals",
+        "Balance ego with empathy"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on self-image or innovation",
+        "Short-term gains possible",
+        "Speculative urges increase",
+        "Financial discipline needed"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mental restlessness",
+        "Strong desire to stand out",
+        "Anxiety from identity shifts",
+        "Grounding restores clarity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Bold self-expression",
+    "Innovative drive",
+    "Visibility",
+    "Adaptive identity"
+  ],
+  "challenges": [
+    "Confusion",
+    "Impulsiveness",
+    "Ego inflation",
+    "Restlessness"
+  ],
+  "closing": "This transit reshapes identity through experimentation and ambition. Grounded awareness turns chaos into confidence.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Rahu",
+    "house": 1
+  }
+}

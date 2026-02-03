@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Rahu",
+  "house": 10,
+  "lang": "en",
+  "title": "Rahu Transit in the 10th House for Gemini Ascendant",
+  "summary": "Rahu transiting the tenth house intensifies ambition, visibility, and hunger for achievement. Career becomes a central focus, with rapid rises possible through unconventional paths. Public image and recognition matter deeply, but shortcuts or image-driven decisions can backfire. Strategic planning, ethics, and consistency turn sudden opportunities into durable authority.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong ambition and drive",
+        "Need for recognition and status",
+        "Risk-taking mindset",
+        "Identity linked to success"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Fast visibility and exposure",
+        "Unconventional career moves",
+        "Leadership opportunities emerge",
+        "Avoid manipulative tactics"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Work priorities affect personal life",
+        "Power dynamics surface",
+        "Respect earned through results",
+        "Balance ambition with empathy"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income linked to status and role",
+        "Sudden gains possible",
+        "Pressure to maintain lifestyle",
+        "Plan finances conservatively"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Performance anxiety",
+        "Restlessness to climb higher",
+        "Fear of public failure",
+        "Grounding builds confidence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Career ambition",
+    "Public visibility",
+    "Strategic boldness",
+    "Leadership potential"
+  ],
+  "challenges": [
+    "Ethical risks",
+    "Burnout",
+    "Image obsession",
+    "Impatience"
+  ],
+  "closing": "This transit accelerates career ambition and visibility. Ethics and strategy convert speed into lasting success.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Rahu",
+    "house": 10
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Moon",
+  "house": 12,
+  "lang": "en",
+  "title": "Moon Transit in the 12th House for Cancer Ascendant",
+  "summary": "The Moon transiting the twelfth house draws emotions inward, increasing sensitivity, solitude, and subconscious processing. You may feel the need to withdraw, rest, or reflect, with heightened intuition and vivid dreams. Expenses can rise quietly, especially on comfort, travel, or healing. This phase supports emotional release and closure, provided isolation does not turn into avoidance.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Introverted emotional focus",
+        "Heightened subconscious awareness",
+        "Need for solitude and rest",
+        "Sensitive inner world"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Behind-the-scenes efforts favored",
+        "Low visibility but productive planning",
+        "Creative or healing work supported",
+        "Avoid forcing outward performance"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Desire for emotional privacy",
+        "Unspoken feelings surface",
+        "Distance without clear intent",
+        "Gentle reassurance maintains bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Hidden or unplanned expenses",
+        "Spending on comfort or travel",
+        "Less focus on gains",
+        "Track expenses carefully"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Emotional withdrawal",
+        "Vivid dreams or intuition",
+        "Need for emotional release",
+        "Rest restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Deep intuition",
+    "Emotional healing",
+    "Inner reflection",
+    "Compassion"
+  ],
+  "challenges": [
+    "Emotional isolation",
+    "Energy drain",
+    "Expense leakage",
+    "Avoidance tendencies"
+  ],
+  "closing": "This transit encourages emotional rest and release. Quiet reflection prepares you for a renewed cycle.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Moon",
+    "house": 12
+  }
+}

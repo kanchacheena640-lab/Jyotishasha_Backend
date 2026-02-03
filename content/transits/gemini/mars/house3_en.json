@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Mars",
+  "house": 3,
+  "lang": "en",
+  "title": "Mars Transit in the 3rd House for Gemini Ascendant",
+  "summary": "Mars transiting the 3rd house for Gemini Ascendant energizes communication, initiative, and self-effort. Courage to take risks increases, pushing you to act on ideas and assert opinions boldly. Short travels, networking, and skill-based pursuits become active, though impatience can trigger arguments with siblings or peers. Mental energy runs high, favoring action over contemplation. This transit tests restraint in speech and consistency in effort. When directed constructively, Mars strengthens confidence, persuasive ability, and momentum through disciplined, goal-focused action.",
+  "sections": [
+    {
+      "heading": "Communication & Courage",
+      "points": [
+        "Bold self-expression",
+        "Fearless sharing of ideas",
+        "Quick reactions in dialogue",
+        "Restraint avoids conflict"
+      ]
+    },
+    {
+      "heading": "Effort & Initiative",
+      "points": [
+        "Strong drive to initiate tasks",
+        "Hands-on problem solving",
+        "Preference for action",
+        "Consistency builds results"
+      ]
+    },
+    {
+      "heading": "Siblings & Peers",
+      "points": [
+        "Assertive interactions increase",
+        "Competitive tone possible",
+        "Arguments may arise",
+        "Patience preserves bonds"
+      ]
+    },
+    {
+      "heading": "Skills & Learning",
+      "points": [
+        "Focus on practical skills",
+        "Fast learning through practice",
+        "Restlessness in theory",
+        "Application sharpens mastery"
+      ]
+    },
+    {
+      "heading": "Travel & Movement",
+      "points": [
+        "Frequent short journeys",
+        "Purpose-driven movement",
+        "Risk of haste",
+        "Planning ensures safety"
+      ]
+    }
+  ],
+  "strengths": [
+    "Initiative and courage",
+    "Persuasive communication",
+    "High mental energy",
+    "Skill-driven momentum"
+  ],
+  "challenges": [
+    "Impatient speech",
+    "Sibling conflicts",
+    "Scattered efforts",
+    "Risk-taking without planning"
+  ],
+  "closing": "Mars in the 3rd house fuels action through words and effort. Disciplined communication turns courage into consistent progress.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Gemini",
+    "planet": "Mars",
+    "house": 3
+  }
+}

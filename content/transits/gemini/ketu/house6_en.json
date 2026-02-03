@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Ketu",
+  "house": 6,
+  "lang": "en",
+  "title": "Ketu Transit in the 6th House for Gemini Ascendant",
+  "summary": "Ketu transiting the sixth house brings detachment from conflicts, routines, and competitive struggles. You may feel less inclined to prove yourself or engage in daily friction, preferring efficient, low-drama solutions. This phase supports healing, service, and precise problem-solving, but neglecting health or duties can create imbalance. Conscious discipline keeps life orderly.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Low interest in conflict",
+        "Quiet resilience",
+        "Detached problem-solving",
+        "Preference for simplicity"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Efficient handling of tasks",
+        "Disinterest in office politics",
+        "Service-oriented roles favored",
+        "Avoid neglecting responsibilities"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Reduced reactivity to disputes",
+        "Calm boundaries with others",
+        "Distance from argumentative dynamics",
+        "Clear communication prevents gaps"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Stable but low-driven earnings",
+        "Reduced stress around money",
+        "Focus on essentials",
+        "Maintain basic budgeting"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mental neutrality",
+        "Detachment from stress",
+        "Risk of apathy",
+        "Routine restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Conflict avoidance",
+    "Healing focus",
+    "Efficient service",
+    "Mental calm"
+  ],
+  "challenges": [
+    "Neglect of duties",
+    "Health indifference",
+    "Low competitive drive",
+    "Passive avoidance"
+  ],
+  "closing": "This transit dissolves unnecessary struggles. Gentle discipline keeps daily life aligned.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Ketu",
+    "house": 6
+  }
+}

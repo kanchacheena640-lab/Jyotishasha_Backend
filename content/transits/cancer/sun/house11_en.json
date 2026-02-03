@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 11,
+  "lang": "en",
+  "title": "Sun Transit in the 11th House for Cancer Ascendant",
+  "summary": "The Sun transiting the eleventh house boosts ambition, networking, and goal fulfillment. Confidence rises in social circles, and you may take a leadership role among friends or teams. Gains through authority, influence, or government-linked channels are highlighted. However, ego within groups or unrealistic expectations can disrupt support if not managed wisely.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong goal orientation",
+        "Desire for recognition in groups",
+        "Leadership among peers",
+        "Expectation-driven mindset"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Gains through networks",
+        "Leadership in teams or communities",
+        "Visibility through influential contacts",
+        "Avoid dominance in collaborations"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Active social engagement",
+        "Expectation of respect from friends",
+        "Ego clashes in groups possible",
+        "Mutual appreciation sustains bonds"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Increase in income or gains",
+        "Benefits via authority figures",
+        "Goal-linked earnings",
+        "Avoid overestimating profits"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "High motivation for success",
+        "Restlessness to achieve",
+        "Satisfaction from recognition",
+        "Balance ambition with realism"
+      ]
+    }
+  ],
+  "strengths": [
+    "Goal achievement",
+    "Social influence",
+    "Leadership in networks",
+    "Optimism"
+  ],
+  "challenges": [
+    "Group ego clashes",
+    "Unrealistic expectations",
+    "Overdependence on approval",
+    "Burnout from over-ambition"
+  ],
+  "closing": "This transit amplifies gains through networks and ambition. Lead collaboratively to sustain success.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 11
+  }
+}

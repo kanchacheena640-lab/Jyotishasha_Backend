@@ -1,0 +1,74 @@
+{
+  "ascendant": "Cancer",
+  "planet": "Sun",
+  "house": 2,
+  "lang": "en",
+  "title": "Sun Transit in the 2nd House for Cancer Ascendant",
+  "summary": "The Sun transiting the second house sharpens focus on finances, values, and self-worth. Speech becomes firm and authoritative, and there is a desire to establish financial stability through personal effort. Family matters may revolve around control or responsibility. While income confidence rises, ego-driven decisions around money or speech should be moderated.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Strong sense of self-worth",
+        "Authoritative speech",
+        "Value-driven decisions",
+        "Desire for security"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Earnings linked to leadership",
+        "Confidence in negotiations",
+        "Focus on building assets",
+        "Avoid rigid stances"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Direct communication with family",
+        "Possessiveness around values",
+        "Pride in family identity",
+        "Soft tone preserves harmony"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Income through self-effort",
+        "Focus on savings and assets",
+        "Status-related spending",
+        "Avoid impulsive decisions"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Security-focused mindset",
+        "Confidence tied to resources",
+        "Stress if finances feel unstable",
+        "Balance pride with prudence"
+      ]
+    }
+  ],
+  "strengths": [
+    "Financial confidence",
+    "Clear values",
+    "Strong voice",
+    "Resource focus"
+  ],
+  "challenges": [
+    "Harsh speech",
+    "Money ego",
+    "Family dominance",
+    "Rigidity"
+  ],
+  "closing": "This transit strengthens self-worth through resources. Use authority wisely to build lasting security.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Cancer",
+    "planet": "Sun",
+    "house": 2
+  }
+}

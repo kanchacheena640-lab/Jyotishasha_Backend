@@ -1,0 +1,74 @@
+{
+  "ascendant": "Taurus",
+  "planet": "Moon",
+  "house": 6,
+  "lang": "en",
+  "title": "Moon Transit in the 6th House for Taurus Ascendant",
+  "summary": "The Moon transiting your 6th house brings emotional focus to work routines, health matters, and daily responsibilities. This phase heightens sensitivity toward stress, competition, and service-oriented roles. You may feel emotionally involved in solving problems or supporting others, though mood fluctuations can affect efficiency. Health responses become closely linked to emotional state, making balance essential. When emotions are managed constructively, this transit supports adaptability, compassionate service, and practical problem-solving without mental strain or burnout.",
+  "sections": [
+    {
+      "heading": "Work & Daily Routine",
+      "points": [
+        "Emotional involvement in daily tasks",
+        "Sensitivity to workload and pressure",
+        "Need for supportive work environment",
+        "Structure improves efficiency"
+      ]
+    },
+    {
+      "heading": "Health & Wellbeing",
+      "points": [
+        "Mind-body connection becomes prominent",
+        "Stress impacts physical energy",
+        "Need for rest and nourishment",
+        "Routine supports recovery"
+      ]
+    },
+    {
+      "heading": "Service & Responsibility",
+      "points": [
+        "Compassionate approach to helping others",
+        "Desire to be useful and needed",
+        "Emotional satisfaction through service",
+        "Boundaries prevent exhaustion"
+      ]
+    },
+    {
+      "heading": "Competition & Challenges",
+      "points": [
+        "Heightened emotional response to conflict",
+        "Motivation to resolve issues quickly",
+        "Sensitivity to criticism",
+        "Calm responses reduce friction"
+      ]
+    },
+    {
+      "heading": "Mental Stress & Balance",
+      "points": [
+        "Worry linked to unresolved tasks",
+        "Tendency to overthink small issues",
+        "Emotional drain from constant demands",
+        "Mindfulness restores balance"
+      ]
+    }
+  ],
+  "strengths": [
+    "Adaptability in problem-solving",
+    "Compassionate service mindset",
+    "Health awareness",
+    "Emotional responsiveness"
+  ],
+  "challenges": [
+    "Stress sensitivity",
+    "Emotional fatigue",
+    "Overinvolvement in problems",
+    "Difficulty detaching from work"
+  ],
+  "closing": "Moon in the 6th house ties emotions to work and wellbeing. Balanced routines transform sensitivity into steady competence.",
+  "cta_context": {
+    "type": "transit",
+    "ascendant": "Taurus",
+    "planet": "Moon",
+    "house": 6
+  }
+}

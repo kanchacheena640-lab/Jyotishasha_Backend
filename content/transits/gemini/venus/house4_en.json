@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Venus",
+  "house": 5,
+  "lang": "en",
+  "title": "Venus Transit in the 5th House for Gemini Ascendant",
+  "summary": "Venus transiting the fifth house heightens creativity, romance, and joy of self-expression. This phase favors artistic pursuits, learning through pleasure, and heartfelt connections. Confidence in creative intelligence increases, making it easier to attract appreciation and affection. While charm and enjoyment rise, excess indulgence or seeking constant validation can dilute focus if balance is not maintained.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Playful and expressive nature strengthens",
+        "Creative confidence and optimism rise",
+        "Desire to be admired for talents",
+        "Mood tied to appreciation and joy"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Favorable for creative, media, and teaching roles",
+        "Ideas gain recognition and positive response",
+        "Leadership through inspiration works well",
+        "Avoid ego-driven creative decisions"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Romantic attraction and warmth increase",
+        "Affection expressed through creativity and fun",
+        "Emotional openness strengthens bonds",
+        "Avoid drama for attention"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Spending on hobbies, art, or leisure increases",
+        "Calculated creative risks feel appealing",
+        "Pleasure-driven expenses need limits",
+        "Focus on value, not just enjoyment"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Mind feels joyful and inspired",
+        "Strong desire for creative fulfillment",
+        "Restlessness if appreciation is lacking",
+        "Inner balance restores clarity"
+      ]
+    }
+  ],
+  "strengths": [
+    "Creative charm",
+    "Romantic warmth",
+    "Expressive intelligence",
+    "Inspirational energy"
+  ],
+  "challenges": [
+    "Overindulgence",
+    "Need for validation",
+    "Emotional drama",
+    "Scattered focus"
+  ],
+  "closing": "This transit amplifies joy, creativity, and romance. Balanced expression keeps pleasure aligned with purpose.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Venus",
+    "house": 5
+  }
+}

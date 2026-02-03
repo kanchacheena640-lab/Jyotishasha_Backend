@@ -1,0 +1,74 @@
+{
+  "ascendant": "Gemini",
+  "planet": "Rahu",
+  "house": 5,
+  "lang": "en",
+  "title": "Rahu Transit in the 5th House for Gemini Ascendant",
+  "summary": "Rahu transiting the fifth house heightens creativity, romance, and risk-taking. Attraction toward unconventional love, speculative ideas, and standout self-expression increases. This phase favors innovation in arts, media, and performance, but impulsive decisions in romance or investments can create volatility. Strategic restraint helps convert excitement into lasting gains.",
+  "sections": [
+    {
+      "heading": "Core Personality",
+      "points": [
+        "Creative restlessness",
+        "Desire to stand out",
+        "Experimental self-expression",
+        "Thrill-seeking mindset"
+      ]
+    },
+    {
+      "heading": "Career",
+      "points": [
+        "Creative fields gain momentum",
+        "Speculative ideas attract attention",
+        "Risk-driven initiatives rise",
+        "Validate concepts before execution"
+      ]
+    },
+    {
+      "heading": "Relationships",
+      "points": [
+        "Unconventional romantic attraction",
+        "Intense but unstable emotions",
+        "Drama from secrecy or mixed signals",
+        "Clarity prevents misunderstandings"
+      ]
+    },
+    {
+      "heading": "Finance",
+      "points": [
+        "Speculation urges increase",
+        "Short-term wins possible",
+        "High volatility risk",
+        "Set strict limits"
+      ]
+    },
+    {
+      "heading": "Mental / Inner State",
+      "points": [
+        "Excitement mixed with anxiety",
+        "Obsession with outcomes",
+        "Mood swings",
+        "Grounding stabilizes focus"
+      ]
+    }
+  ],
+  "strengths": [
+    "Creative innovation",
+    "Magnetic attraction",
+    "Bold ideas",
+    "Expressive confidence"
+  ],
+  "challenges": [
+    "Impulsiveness",
+    "Emotional drama",
+    "Speculative losses",
+    "Attention-seeking patterns"
+  ],
+  "closing": "This transit fuels creative fire and desire. Disciplined focus turns thrill into achievement.",
+  "cta_context": {
+    "type": "transit_check",
+    "ascendant": "Gemini",
+    "planet": "Rahu",
+    "house": 5
+  }
+}
