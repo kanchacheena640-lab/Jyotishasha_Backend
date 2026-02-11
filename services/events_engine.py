@@ -146,32 +146,36 @@ def find_next_ekadashi(start_date, lat, lon, language="en", days_ahead=45):
 def get_pradosh_details(panchang_data):
     """
     Detect Pradosh Vrat:
-    Trayodashi (13 / 28) must be active at local sunset.
+    Trayodashi must be active at local sunset.
     """
 
     try:
         tithi = panchang_data.get("tithi", {})
         tithi_number = tithi.get("number")
 
-        # 13 = Shukla Trayodashi
-        # 28 = Krishna Trayodashi
         if tithi_number not in (13, 28):
             return None
 
         tithi_start = tithi.get("start_ist")
         tithi_end = tithi.get("end_ist")
-        sunset = panchang_data.get("sunset")
+        sunset_time = panchang_data.get("sunset")
+        date_str = panchang_data.get("date")
 
-        if not (tithi_start and tithi_end and sunset):
+        if not (tithi_start and tithi_end and sunset_time and date_str):
             return None
 
-        # Parse datetime safely
+        # Parse tithi start/end
         tithi_start_dt = datetime.strptime(tithi_start, "%Y-%m-%d %H:%M")
         tithi_end_dt   = datetime.strptime(tithi_end, "%Y-%m-%d %H:%M")
-        sunset_dt      = datetime.strptime(sunset, "%Y-%m-%d %H:%M")
 
-        # Sunset must fall inside Trayodashi window
-        if sunset_dt < tithi_start_dt or sunset_dt > tithi_end_dt:
+        # Attach date to sunset (since sunset is only HH:MM)
+        sunset_dt = datetime.strptime(
+            f"{date_str} {sunset_time}",
+            "%Y-%m-%d %H:%M"
+        )
+
+        # Check if sunset lies within Trayodashi window
+        if not (tithi_start_dt <= sunset_dt <= tithi_end_dt):
             return None
 
         paksha = tithi.get("paksha")
@@ -189,14 +193,13 @@ def get_pradosh_details(panchang_data):
             "name_en": name_en,
             "name_hi": name_hi,
             "slug": "pradosh-vrat",
-            "date": panchang_data.get("date"),
+            "date": date_str,
             "tithi_start": tithi_start,
             "tithi_end": tithi_end,
             "paksha": paksha,
         }
 
     except Exception:
-        # Never break API if parsing fails
         return None
 
 def find_next_pradosh(start_date, lat, lon, language="en", days_ahead=45):
