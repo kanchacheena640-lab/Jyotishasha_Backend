@@ -5,7 +5,7 @@ from services.panchang_engine import calculate_panchang
 
 routes_events = Blueprint("routes_events", __name__)
 
-@routes_events.route("/api/events/ekadashi", methods=["POST"])
+@routes_events.route("/ekadashi", methods=["POST"])
 def api_ekadashi():
     try:
         data = request.get_json() or {}
