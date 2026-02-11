@@ -139,3 +139,61 @@ def find_next_ekadashi(start_date, lat, lon, language="en", days_ahead=45):
             return ekadashi
 
     return None
+# ==========================================================
+# PRADOSH DETECTOR
+# ==========================================================
+
+def get_pradosh_details(panchang_data):
+    """
+    Detect Pradosh Vrat (Trayodashi during sunset)
+    """
+
+    tithi_number = panchang_data["tithi"]["number"]
+
+    # 13 = Shukla Trayodashi
+    # 28 = Krishna Trayodashi
+    if tithi_number not in (13, 28):
+        return None
+
+    tithi_start = panchang_data["tithi"]["start_ist"]
+    tithi_end = panchang_data["tithi"]["end_ist"]
+    sunset = panchang_data["sunset"]
+
+    # Simple safe condition (sunset exists within tithi window)
+    if not (tithi_start <= sunset <= tithi_end):
+        return None
+
+    paksha = panchang_data["tithi"]["paksha"]
+
+    if paksha in ("शुक्ल पक्ष",):
+        paksha = "Shukla"
+    elif paksha in ("कृष्ण पक्ष",):
+        paksha = "Krishna"
+
+    name_en = f"{paksha} Pradosh Vrat"
+    name_hi = f"{'शुक्ल' if paksha=='Shukla' else 'कृष्ण'} प्रदोष व्रत"
+
+    return {
+        "type": "pradosh",
+        "name_en": name_en,
+        "name_hi": name_hi,
+        "slug": "pradosh-vrat",
+        "date": panchang_data["date"],
+        "tithi_start": tithi_start,
+        "tithi_end": tithi_end,
+        "paksha": paksha,
+    }
+
+def find_next_pradosh(start_date, lat, lon, language="en", days_ahead=45):
+
+    for i in range(1, days_ahead + 1):
+        check_date = start_date + timedelta(days=i)
+
+        panchang = calculate_panchang(check_date, lat, lon, language)
+
+        pradosh = get_pradosh_details(panchang)
+
+        if pradosh:
+            return pradosh
+
+    return None
