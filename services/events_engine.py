@@ -144,46 +144,27 @@ def find_next_ekadashi(start_date, lat, lon, language="en", days_ahead=45):
 # ==========================================================
 
 def get_pradosh_details(panchang_data):
-    """
-    Detect Pradosh Vrat:
-    Trayodashi must be active at local sunset.
-    """
-
     try:
-        tithi = panchang_data.get("tithi", {})
-        tithi_number = tithi.get("number")
-
-        if tithi_number not in (13, 28):
-            return None
-
-        tithi_start = tithi.get("start_ist")
-        tithi_end = tithi.get("end_ist")
         sunset_time = panchang_data.get("sunset")
         date_str = panchang_data.get("date")
 
-        if not (tithi_start and tithi_end and sunset_time and date_str):
+        if not (sunset_time and date_str):
             return None
 
-        # Parse tithi start/end
-        tithi_start_dt = datetime.strptime(tithi_start, "%Y-%m-%d %H:%M")
-        tithi_end_dt   = datetime.strptime(tithi_end, "%Y-%m-%d %H:%M")
-
-        # Attach date to sunset (since sunset is only HH:MM)
+        # Create sunset datetime
         sunset_dt = datetime.strptime(
             f"{date_str} {sunset_time}",
             "%Y-%m-%d %H:%M"
         )
 
-        # Check if sunset lies within Trayodashi window
-        if not (tithi_start_dt <= sunset_dt <= tithi_end_dt):
+        # 🔥 Get tithi at sunset (NOT noon)
+        from services.panchang_engine import _tithi_number_at
+        tithi_at_sunset = _tithi_number_at(sunset_dt)
+
+        if tithi_at_sunset not in (13, 28):
             return None
 
-        paksha = tithi.get("paksha")
-
-        if paksha in ("शुक्ल पक्ष",):
-            paksha = "Shukla"
-        elif paksha in ("कृष्ण पक्ष",):
-            paksha = "Krishna"
+        paksha = "Shukla" if tithi_at_sunset <= 15 else "Krishna"
 
         name_en = f"{paksha} Pradosh Vrat"
         name_hi = "शुक्ल प्रदोष व्रत" if paksha == "Shukla" else "कृष्ण प्रदोष व्रत"
@@ -194,13 +175,12 @@ def get_pradosh_details(panchang_data):
             "name_hi": name_hi,
             "slug": "pradosh-vrat",
             "date": date_str,
-            "tithi_start": tithi_start,
-            "tithi_end": tithi_end,
             "paksha": paksha,
         }
 
     except Exception:
         return None
+
 
 def find_next_pradosh(start_date, lat, lon, language="en", days_ahead=45):
 
