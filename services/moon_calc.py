@@ -12,6 +12,7 @@ def get_moonrise(date_obj, lat, lon, tz_offset=5.5):
 
     rsmi = swe.CALC_RISE
 
+    # OLD SIGNATURE
     res, tret = swe.rise_trans(
         jd_ut,
         swe.MOON,
@@ -20,17 +21,19 @@ def get_moonrise(date_obj, lat, lon, tz_offset=5.5):
         (lon, lat, 0)
     )
 
-    if res != 0:
+    if res != 0 or not tret or tret[0] <= 0:
         return None
 
     jd_rise = tret[0]
 
     y, mo, d, ut = swe.revjul(jd_rise)
 
-    ut_sec = round(ut * 3600)
-    h = ut_sec // 3600
-    m = (ut_sec % 3600) // 60
-    s = ut_sec % 60
+    if ut is None:
+        return None
+
+    h = int(ut)
+    m = int((ut - h) * 60)
+    s = int((((ut - h) * 60) - m) * 60)
 
     utc_dt = datetime(y, mo, d, h, m, s)
 
