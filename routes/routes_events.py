@@ -84,10 +84,10 @@ def api_sankashti():
         else:
             current_date = datetime.now().date()
 
-        # Today's Panchang
         panchang = calculate_panchang(current_date, lat, lon, "en")
 
-        today_sankashti = get_sankashti_details(panchang)
+        # ✅ FIX HERE
+        today_sankashti = get_sankashti_details(panchang, lat, lon)
 
         next_sankashti = find_next_sankashti(current_date, lat, lon, "en")
 
@@ -98,4 +98,3 @@ def api_sankashti():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
