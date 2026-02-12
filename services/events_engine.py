@@ -207,35 +207,46 @@ def get_sankashti_details(panchang_data, lat, lon):
         date_str = panchang_data.get("date")
         event_date = datetime.strptime(date_str, "%Y-%m-%d")
 
+        print("\n==============================")
+        print("Checking Date:", date_str)
+
+        # 1️⃣ Moonrise
         moonrise_dt = get_moonrise(event_date, lat, lon)
+        print("Moonrise (IST):", moonrise_dt)
+
         if not moonrise_dt:
+            print("❌ Moonrise not found")
             return None
 
-        # DECISIVE CHECK
-        tithi_at_moonrise = _tithi_number_at(moonrise_dt)
+        # 2️⃣ Convert to UT for safety
+        moonrise_ut = moonrise_dt - timedelta(hours=5, minutes=30)
+        print("Moonrise (UT):", moonrise_ut)
+
+        # 3️⃣ Tithi at moonrise
+        tithi_at_moonrise = _tithi_number_at(moonrise_ut)
+        print("Tithi at Moonrise:", tithi_at_moonrise)
 
         # Krishna Chaturthi = 19
         if tithi_at_moonrise != 19:
+            print("❌ Not Krishna Chaturthi at Moonrise")
             return None
+
+        print("✅ Sankashti FOUND")
 
         is_angaraki = event_date.weekday() == 1
 
-        name_en = "Angaraki Sankashti Chaturthi" if is_angaraki else "Sankashti Chaturthi"
-        name_hi = "अंगारकी संकष्टी चतुर्थी" if is_angaraki else "संकष्टी चतुर्थी"
-
         return {
             "type": "sankashti",
-            "name_en": name_en,
-            "name_hi": name_hi,
-            "slug": "sankashti-chaturthi",
             "date": date_str,
-            "is_angaraki": is_angaraki,
             "moonrise_time": moonrise_dt.strftime("%H:%M"),
             "paran_time": moonrise_dt.strftime("%H:%M"),
+            "is_angaraki": is_angaraki,
         }
 
-    except Exception:
+    except Exception as e:
+        print("🔥 ERROR:", e)
         return None
+
 
 
 # ==========================================================
