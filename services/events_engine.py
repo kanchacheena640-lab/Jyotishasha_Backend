@@ -195,3 +195,72 @@ def find_next_pradosh(start_date, lat, lon, language="en", days_ahead=45):
             return pradosh
 
     return None
+
+# ==========================================================
+# SANKASHTI CHATURTHI DETECTOR
+# ==========================================================
+
+def get_sankashti_details(panchang_data):
+    """
+    Krishna Paksha Chaturthi
+    (Phase-1: Moonrise calculation not included)
+    """
+
+    try:
+        tithi_number = panchang_data["tithi"]["number"]
+        paksha = panchang_data["tithi"]["paksha"]
+        date_str = panchang_data.get("date")
+
+        # Normalize paksha if Hindi
+        if paksha in ("शुक्ल पक्ष",):
+            paksha = "Shukla"
+        elif paksha in ("कृष्ण पक्ष",):
+            paksha = "Krishna"
+
+        # Krishna Chaturthi = 4th tithi of Krishna paksha
+        # Tithi numbering system:
+        # 1-15 = Shukla
+        # 16-30 = Krishna
+        # So Krishna Chaturthi = 4 + 15 = 19
+        if tithi_number != 19 or paksha != "Krishna":
+            return None
+
+        # Check Angaraki (Tuesday)
+        event_date = datetime.strptime(date_str, "%Y-%m-%d")
+        is_angaraki = event_date.weekday() == 1  # Tuesday
+
+        name_en = "Angaraki Sankashti Chaturthi" if is_angaraki else "Sankashti Chaturthi"
+        name_hi = "अंगारकी संकष्टी चतुर्थी" if is_angaraki else "संकष्टी चतुर्थी"
+
+        return {
+            "type": "sankashti",
+            "name_en": name_en,
+            "name_hi": name_hi,
+            "slug": "sankashti-chaturthi",
+            "date": date_str,
+            "is_angaraki": is_angaraki,
+            "paran_note_en": "Paran after moon sighting (moonrise).",
+            "paran_note_hi": "पारण चंद्र दर्शन (चंद्र उदय) के बाद करें।",
+        }
+
+    except Exception:
+        return None
+
+
+# ==========================================================
+# FIND NEXT SANKASHTI
+# ==========================================================
+
+def find_next_sankashti(start_date, lat, lon, language="en", days_ahead=45):
+
+    for i in range(1, days_ahead + 1):
+        check_date = start_date + timedelta(days=i)
+
+        panchang = calculate_panchang(check_date, lat, lon, language)
+
+        sankashti = get_sankashti_details(panchang)
+
+        if sankashti:
+            return sankashti
+
+    return None

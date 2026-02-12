@@ -6,6 +6,8 @@ from services.events_engine import (
     find_next_ekadashi,
     get_pradosh_details,
     find_next_pradosh,
+    get_sankashti_details,       
+    find_next_sankashti,          
 )
 
 routes_events = Blueprint("routes_events", __name__)
@@ -67,3 +69,33 @@ def api_pradosh():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@routes_events.route("/sankashti", methods=["POST"])
+def api_sankashti():
+    try:
+        data = request.get_json() or {}
+
+        lat = float(data.get("latitude", 28.61))
+        lon = float(data.get("longitude", 77.23))
+        date_str = data.get("date")
+
+        if date_str:
+            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        else:
+            current_date = datetime.now().date()
+
+        # Today's Panchang
+        panchang = calculate_panchang(current_date, lat, lon, "en")
+
+        today_sankashti = get_sankashti_details(panchang)
+
+        next_sankashti = find_next_sankashti(current_date, lat, lon, "en")
+
+        return jsonify({
+            "today": today_sankashti,
+            "next": next_sankashti
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
