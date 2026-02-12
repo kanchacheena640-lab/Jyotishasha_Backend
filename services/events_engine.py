@@ -1,7 +1,8 @@
 # services/events_engine.py
 
 from datetime import datetime, timedelta
-from services.panchang_engine import calculate_panchang
+from services.panchang_engine import calculate_panchang, _tithi_number_at
+from services.moon_calc import get_moonrise
 
 # ==========================================================
 # EKADASHI MASTER MAP (English Primary, Hindi Secondary)
@@ -200,34 +201,43 @@ def find_next_pradosh(start_date, lat, lon, language="en", days_ahead=45):
 # SANKASHTI CHATURTHI DETECTOR
 # ==========================================================
 
-def get_sankashti_details(panchang_data):
+def get_sankashti_details(panchang_data, lat, lon):
     """
-    Krishna Paksha Chaturthi
-    (Phase-1: Moonrise calculation not included)
+    Drik Panchang Rule:
+    Sankashti = Krishna Chaturthi active at Moonrise
+    Paran = Moonrise time
     """
 
     try:
-        tithi_number = panchang_data["tithi"]["number"]
-        paksha = panchang_data["tithi"]["paksha"]
         date_str = panchang_data.get("date")
+        paksha = panchang_data["tithi"]["paksha"]
 
-        # Normalize paksha if Hindi
+        # Normalize paksha
         if paksha in ("शुक्ल पक्ष",):
             paksha = "Shukla"
         elif paksha in ("कृष्ण पक्ष",):
             paksha = "Krishna"
 
-        # Krishna Chaturthi = 4th tithi of Krishna paksha
-        # Tithi numbering system:
-        # 1-15 = Shukla
-        # 16-30 = Krishna
-        # So Krishna Chaturthi = 4 + 15 = 19
-        if tithi_number != 19 or paksha != "Krishna":
+        if paksha != "Krishna":
+            return None
+
+        event_date = datetime.strptime(date_str, "%Y-%m-%d")
+
+        # 🔥 Get moonrise using Swiss Ephemeris
+        moonrise_dt = get_moonrise(event_date, lat, lon)
+
+        if not moonrise_dt:
+            return None
+
+        # 🔥 Check tithi at moonrise
+        tithi_at_moonrise = _tithi_number_at(moonrise_dt)
+
+        # Krishna Chaturthi = 19
+        if tithi_at_moonrise != 19:
             return None
 
         # Check Angaraki (Tuesday)
-        event_date = datetime.strptime(date_str, "%Y-%m-%d")
-        is_angaraki = event_date.weekday() == 1  # Tuesday
+        is_angaraki = event_date.weekday() == 1
 
         name_en = "Angaraki Sankashti Chaturthi" if is_angaraki else "Sankashti Chaturthi"
         name_hi = "अंगारकी संकष्टी चतुर्थी" if is_angaraki else "संकष्टी चतुर्थी"
@@ -239,8 +249,10 @@ def get_sankashti_details(panchang_data):
             "slug": "sankashti-chaturthi",
             "date": date_str,
             "is_angaraki": is_angaraki,
-            "paran_note_en": "Paran after moon sighting (moonrise).",
-            "paran_note_hi": "पारण चंद्र दर्शन (चंद्र उदय) के बाद करें।",
+            "moonrise_time": moonrise_dt.strftime("%H:%M"),
+            "paran_time": moonrise_dt.strftime("%H:%M"),
+            "paran_note_en": "Paran after Moonrise.",
+            "paran_note_hi": "पारण चंद्र उदय के बाद करें।",
         }
 
     except Exception:
@@ -258,7 +270,7 @@ def find_next_sankashti(start_date, lat, lon, language="en", days_ahead=45):
 
         panchang = calculate_panchang(check_date, lat, lon, language)
 
-        sankashti = get_sankashti_details(panchang)
+        sankashti = get_sankashti_details(panchang, lat, lon)
 
         if sankashti:
             return sankashti
