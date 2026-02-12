@@ -2,31 +2,34 @@ import swisseph as swe
 from datetime import datetime, timedelta
 
 def get_moonrise(date_obj, lat, lon, tz_offset=5.5):
+    jd_ut = swe.utc_to_jd(
+        date_obj.year, date_obj.month, date_obj.day,
+        0, 0, 0.0, 1
+    )[1]
 
-    swe.set_sid_mode(swe.SIDM_LAHIRI)
-    swe.set_topo(lon, lat, 0)
-
-    jd_start = swe.julday(date_obj.year, date_obj.month, date_obj.day, 0.0)
+    rsmi = swe.CALC_RISE
 
     res, tret = swe.rise_trans(
-        jd_start,
+        jd_ut,
         swe.MOON,
-        lon,
-        lat,
-        swe.CALC_RISE
+        None,
+        swe.FLG_SWIEPH,
+        rsmi,
+        (lon, lat, 0),
+        1013.25,
+        15.0
     )
 
-    if res != 0:
+    if res != 0 or not tret or tret[0] <= 0:
         return None
 
     jd_rise = tret[0]
+    y, mo, d, ut = swe.revjul(jd_rise)
 
-    y, m, d, ut = swe.revjul(jd_rise)
+    ut_sec = round(ut * 3600)
+    h = ut_sec // 3600
+    m = (ut_sec % 3600) // 60
+    s = ut_sec % 60
 
-    hour = int(ut)
-    minute = int((ut - hour) * 60)
-
-    utc_dt = datetime(y, m, d, hour, minute)
-
+    utc_dt = datetime(y, mo, d, h, m, s)
     return utc_dt + timedelta(hours=tz_offset)
-
