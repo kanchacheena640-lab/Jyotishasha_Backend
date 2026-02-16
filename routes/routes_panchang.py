@@ -5,9 +5,23 @@ from services.panchang_engine import calculate_panchang, today_and_tomorrow
 from services.muhurth_engine import next_best_dates
 from datetime import datetime, timedelta
 from services.sun_calc import calculate_sunrise_sunset
+from services.moon_calc import get_moon_rise_set
 from datetime import date
 
 routes_panchang = Blueprint("routes_panchang", __name__)
+
+# ------------------- HELPER ------------------- #
+def validate_lat_lon(data):
+    lat = data.get("latitude")
+    lon = data.get("longitude")
+
+    if lat is None or lon is None:
+        return None, None, "latitude and longitude required"
+
+    try:
+        return float(lat), float(lon), None
+    except:
+        return None, None, "Invalid latitude/longitude format"
 
 # ------------------- PANCHANG (Today, Tomorrow, or Custom) ------------------- #
 @routes_panchang.route("/api/panchang", methods=["POST"])
@@ -105,39 +119,127 @@ def api_muhurth_list():
 def api_sunrise_sunset():
     """
     Returns sunrise and sunset for given date & coordinates.
-    Example body:
+
+    Expected JSON body:
     {
         "latitude": 28.6139,
         "longitude": 77.2090,
         "date": "2025-10-05"
     }
     """
-    try:
-        data = request.get_json() or {}
-        lat = float(data.get("latitude", 28.6139))
-        lon = float(data.get("longitude", 77.2090))
-        date_str = data.get("date")
 
+    try:
+        data = request.get_json(silent=True) or {}
+
+        # ✅ Latitude / Longitude Validation
+        lat, lon, error = validate_lat_lon(data)
+        if error:
+            return jsonify({
+                "success": False,
+                "error": error
+            }), 400
+
+        # ✅ Date Validation
+        date_str = data.get("date")
         if date_str:
-            y, m, d = map(int, date_str.split("-"))
-            target_date = date(y, m, d)
+            try:
+                target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({
+                    "success": False,
+                    "error": "Invalid date format. Use YYYY-MM-DD."
+                }), 400
         else:
             target_date = date.today()
-            
-        print(">> Calling for:", target_date, lat, lon)
+
+        # ✅ Calculation
         sunrise, sunset = calculate_sunrise_sunset(target_date, lat, lon)
-        print(">> Result:", sunrise, sunset)
 
         if not sunrise or not sunset:
-            return jsonify({"error": "Sunrise/sunset calculation failed."}), 500
+            return jsonify({
+                "success": False,
+                "error": "Sunrise/sunset calculation failed."
+            }), 500
 
+        # ✅ Success Response
         return jsonify({
-            "date": target_date.strftime("%Y-%m-%d"),
-            "latitude": lat,
-            "longitude": lon,
-            "sunrise": sunrise.strftime("%Y-%m-%d %H:%M:%S"),
-            "sunset": sunset.strftime("%Y-%m-%d %H:%M:%S")
-        })
+            "success": True,
+            "data": {
+                "date": target_date.strftime("%Y-%m-%d"),
+                "latitude": lat,
+                "longitude": lon,
+                "sunrise": sunrise.strftime("%H:%M:%S"),
+                "sunset": sunset.strftime("%H:%M:%S")
+            }
+        }), 200
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        return jsonify({
+            "success": False,
+            "error": "Internal server error"
+        }), 500
+    
+# ------------------- MOONRISE / MOONSET ------------------- #
+@routes_panchang.route("/api/panchang/moon", methods=["POST"])
+def api_moon_rise_set():
+    """
+    Returns moonrise and moonset for given date & coordinates.
+
+    Expected JSON body:
+    {
+        "latitude": 28.6139,
+        "longitude": 77.2090,
+        "date": "2025-10-05"
+    }
+    """
+
+    try:
+        data = request.get_json(silent=True) or {}
+
+        # ✅ Latitude / Longitude Validation
+        lat, lon, error = validate_lat_lon(data)
+        if error:
+            return jsonify({
+                "success": False,
+                "error": error
+            }), 400
+
+        # ✅ Date Validation
+        date_str = data.get("date")
+        if date_str:
+            try:
+                target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return jsonify({
+                    "success": False,
+                    "error": "Invalid date format. Use YYYY-MM-DD."
+                }), 400
+        else:
+            target_date = date.today()
+
+        # ✅ Calculation
+        moon_data = get_moon_rise_set(target_date, lat, lon)
+
+        if moon_data is None:
+            return jsonify({
+                "success": False,
+                "error": "Moon calculation failed."
+            }), 500
+
+        # ✅ Success Response
+        return jsonify({
+            "success": True,
+            "data": {
+                "date": target_date.strftime("%Y-%m-%d"),
+                "latitude": lat,
+                "longitude": lon,
+                "moonrise": moon_data.get("moonrise"),
+                "moonset": moon_data.get("moonset")
+            }
+        }), 200
+
+    except Exception:
+        return jsonify({
+            "success": False,
+            "error": "Internal server error"
+        }), 500

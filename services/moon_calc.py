@@ -1,10 +1,49 @@
+# ============================================================
+# File: services/moon_calc.py
+# Purpose: Moonrise and Moonset calculation service
+# Used in: Panchang API, Vrat logic, Event alerts
+# ============================================================
+
 import swisseph as swe
 from datetime import datetime, timedelta
 
+# ------------------------------------------------------------
+# SET EPHEMERIS PATH (Ensure ./ephe folder exists)
+# ------------------------------------------------------------
+swe.set_ephe_path("./ephe")
 
-def get_moonrise(date_obj, lat, lon, tz_offset=5.5):
+
+def _convert_jd_to_local_datetime(jd, tz_offset):
+    """Convert Julian Day to localized datetime."""
+    y, mo, d, ut = swe.revjul(jd)
+
+    hour = int(ut)
+    minute = int((ut - hour) * 60)
+    second = int((((ut - hour) * 60) - minute) * 60)
+
+    utc_dt = datetime(y, mo, d, hour, minute, second)
+    return utc_dt + timedelta(hours=tz_offset)
+
+
+def get_moon_rise_set(date_obj, lat, lon, tz_offset=5.5):
+    """
+    Production-ready Moonrise + Moonset calculator.
+
+    Args:
+        date_obj (datetime.date or datetime)
+        lat (float)
+        lon (float)
+        tz_offset (float) default IST = 5.5
+
+    Returns:
+        dict:
+        {
+            "moonrise": "05:57 AM" or None,
+            "moonset": "05:48 PM" or None
+        }
+    """
+
     try:
-        # 🔹 Julian Day at 00:00 UT
         jd_ut = swe.julday(
             date_obj.year,
             date_obj.month,
@@ -12,68 +51,49 @@ def get_moonrise(date_obj, lat, lon, tz_offset=5.5):
             0.0
         )
 
-        rsmi = swe.CALC_RISE
+        geopos = (lon, lat, 0)
 
-        # 🔹 Try old signature first
-        try:
-            result = swe.rise_trans(
-                jd_ut,
-                swe.MOON,
-                None,
-                rsmi,
-                (lon, lat, 0)
+        result = {
+            "moonrise": None,
+            "moonset": None
+        }
+
+        # 🌙 MOONRISE
+        retflag_rise, tret_rise = swe.rise_trans(
+            jd_ut,
+            swe.MOON,
+            swe.CALC_RISE,
+            geopos,
+            1013.25,
+            15
+        )
+
+        if retflag_rise >= 0:
+            rise_dt = _convert_jd_to_local_datetime(
+                tret_rise[0], tz_offset
             )
-        except TypeError:
-            # 🔹 Fallback to extended signature (newer versions)
-            result = swe.rise_trans(
-                jd_ut,
-                swe.MOON,
-                None,
-                swe.FLG_SWIEPH,
-                rsmi,
-                (lon, lat, 0),
-                1013.25,
-                15.0
+            result["moonrise"] = rise_dt.strftime("%I:%M %p")
+
+        # 🌙 MOONSET
+        retflag_set, tret_set = swe.rise_trans(
+            jd_ut,
+            swe.MOON,
+            swe.CALC_SET,
+            geopos,
+            1013.25,
+            15
+        )
+
+        if retflag_set >= 0:
+            set_dt = _convert_jd_to_local_datetime(
+                tret_set[0], tz_offset
             )
+            result["moonset"] = set_dt.strftime("%I:%M %p")
 
-        if not result:
-            return None
+        return result
 
-        # 🔹 Handle different return formats
-        if isinstance(result, tuple):
-            if len(result) == 2:
-                res, tret = result
-            elif len(result) >= 3:
-                res, tret = result[0], result[1]
-            else:
-                return None
-        else:
-            return None
-
-        if res != 0 or not tret or tret[0] <= 0:
-            return None
-
-        jd_rise = tret[0]
-
-        rev = swe.revjul(jd_rise)
-        if not rev or len(rev) < 4:
-            return None
-
-        y, mo, d, ut = rev
-
-        if ut is None:
-            return None
-
-        # 🔹 Convert decimal hours safely
-        h = int(ut)
-        m = int((ut - h) * 60)
-        s = int(round((((ut - h) * 60) - m) * 60))
-
-        utc_dt = datetime(y, mo, d, h, m, s)
-
-        # 🔹 Convert to IST (default)
-        return utc_dt + timedelta(hours=tz_offset)
-
-    except Exception as e:
-        print("Moonrise calculation error:", e)
-        return None
+    except Exception:
+        return {
+            "moonrise": None,
+            "moonset": None
+        }
