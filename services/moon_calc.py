@@ -44,12 +44,7 @@ def get_moon_rise_set(date_obj, lat, lon, tz_offset=5.5):
     """
 
     try:
-        jd_ut = swe.julday(
-            date_obj.year,
-            date_obj.month,
-            date_obj.day,
-            0.0
-        )
+        jd_ut = swe.julday(date_obj.year, date_obj.month, date_obj.day, 0.0) - (tz_offset / 24.0)
 
         geopos = (lon, lat, 0)
 
