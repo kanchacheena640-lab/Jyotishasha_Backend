@@ -203,57 +203,40 @@ def find_next_pradosh(start_date, lat, lon, language="en", days_ahead=45):
 
 def get_sankashti_details(panchang_data, lat, lon):
 
-    try:
-        date_str = panchang_data.get("date")
-        event_date = datetime.strptime(date_str, "%Y-%m-%d")
+    date_str = panchang_data.get("date")
+    event_date = datetime.strptime(date_str, "%Y-%m-%d")
 
-        print("\n==============================")
-        print("Checking Date:", date_str)
+    # 1️⃣ Get moonrise for THIS date
+    moon_data = get_moon_rise_set(event_date, lat, lon)
+    moonrise_str = moon_data.get("moonrise")
 
-        # 1️⃣ Moonrise
-        moon_data = get_moon_rise_set(event_date, lat, lon)
-        moonrise_str = moon_data.get("moonrise")
-
-        if not moonrise_str:
-            return None
-
-        moonrise_dt = datetime.strptime(
-            f"{date_str} {moonrise_str}",
-            "%Y-%m-%d %I:%M %p"
-        )
-
-        if not moonrise_dt:
-            print("❌ Moonrise not found")
-            return None
-
-        # 2️⃣ Convert to UT for safety
-        moonrise_ut = moonrise_dt - timedelta(hours=5, minutes=30)
-        print("Moonrise (UT):", moonrise_ut)
-
-        # 3️⃣ Tithi at moonrise
-        tithi_at_moonrise = _tithi_number_at(moonrise_ut)
-        print("Tithi at Moonrise:", tithi_at_moonrise)
-
-        # Krishna Chaturthi = 19
-        if tithi_at_moonrise != 19:
-            print("❌ Not Krishna Chaturthi at Moonrise")
-            return None
-
-        print("✅ Sankashti FOUND")
-
-        is_angaraki = event_date.weekday() == 1
-
-        return {
-            "type": "sankashti",
-            "date": date_str,
-            "moonrise_time": moonrise_dt.strftime("%H:%M"),
-            "paran_time": moonrise_dt.strftime("%H:%M"),
-            "is_angaraki": is_angaraki,
-        }
-
-    except Exception as e:
-        print("🔥 ERROR:", e)
+    if not moonrise_str:
         return None
+
+    moonrise_dt = datetime.strptime(
+        f"{date_str} {moonrise_str}",
+        "%Y-%m-%d %I:%M %p"
+    )
+
+    # 2️⃣ Convert to UT
+    moonrise_ut = moonrise_dt - timedelta(hours=5, minutes=30)
+
+    # 3️⃣ Check Tithi at moonrise
+    tithi_at_moonrise = _tithi_number_at(moonrise_ut)
+
+    if tithi_at_moonrise != 19:
+        return None
+
+    # 4️⃣ IMPORTANT: vrat date = moonrise date
+    vrat_date = moonrise_dt.date()
+
+    return {
+        "type": "sankashti",
+        "date": vrat_date.strftime("%Y-%m-%d"),
+        "moonrise_time": moonrise_dt.strftime("%H:%M"),
+        "paran_time": moonrise_dt.strftime("%H:%M"),
+        "is_angaraki": vrat_date.weekday() == 1,
+    }
 
 
 
