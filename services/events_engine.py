@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang, _tithi_number_at
-from services.moon_calc import get_moonrise
+from services.moon_calc import get_moon_rise_set
 
 # ==========================================================
 # EKADASHI MASTER MAP (English Primary, Hindi Secondary)
@@ -211,8 +211,16 @@ def get_sankashti_details(panchang_data, lat, lon):
         print("Checking Date:", date_str)
 
         # 1️⃣ Moonrise
-        moonrise_dt = get_moonrise(event_date, lat, lon)
-        print("Moonrise (IST):", moonrise_dt)
+        moon_data = get_moon_rise_set(event_date, lat, lon)
+        moonrise_str = moon_data.get("moonrise")
+
+        if not moonrise_str:
+            return None
+
+        moonrise_dt = datetime.strptime(
+            f"{date_str} {moonrise_str}",
+            "%Y-%m-%d %I:%M %p"
+        )
 
         if not moonrise_dt:
             print("❌ Moonrise not found")
