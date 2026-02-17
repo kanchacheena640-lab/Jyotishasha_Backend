@@ -440,16 +440,12 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         name_hi = "मासिक शिवरात्रि"
         slug = "masik-shivratri"
 
-        # Maha Shivratri = Last Krishna Chaturdashi before new lunar cycle
-        if tithi_night == 29:
-            next1 = _tithi_number_at(night_dt + timedelta(hours=18))
-            next2 = _tithi_number_at(night_dt + timedelta(hours=36))
-
-            if next1 == 30 and next2 == 1:
-                event_type = "maha_shivratri"
-                name_en = "Maha Shivratri"
-                name_hi = "महाशिवरात्रि"
-                slug = "maha-shivratri"
+        # Maha Shivratri = Phalguna Krishna Chaturdashi (night rule)
+        if night_month == "Phalguna":
+            event_type = "maha_shivratri"
+            name_en = "Maha Shivratri"
+            name_hi = "महाशिवरात्रि"
+            slug = "maha-shivratri"
 
         t = panchang_data.get("tithi") or {}
 
