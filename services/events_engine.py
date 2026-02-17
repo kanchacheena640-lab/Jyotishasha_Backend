@@ -350,3 +350,61 @@ def find_next_purnima(start_date, lat, lon, language="en", days_ahead=60):
             return purnima
 
     return None
+
+# ==========================================================
+# VINAYAKA / GANESH CHATURTHI DETECTOR
+# ==========================================================
+
+def get_vinayaka_chaturthi_details(panchang_data):
+    try:
+        t = panchang_data.get("tithi") or {}
+        tithi_number = int(t.get("number", 0))
+
+        # Shukla Chaturthi = 4
+        if tithi_number != 4:
+            return None
+
+        date_str = panchang_data.get("date")
+        if not date_str:
+            return None
+
+        month = panchang_data.get("month_name")
+
+        # 🔥 Special case: Bhadrapada Shukla Chaturthi
+        if month in ("Bhadrapada", "भाद्रपद"):
+            name_en = "Ganesh Chaturthi"
+            name_hi = "गणेश चतुर्थी"
+            slug = "ganesh-chaturthi"
+        else:
+            name_en = "Vinayaka Chaturthi"
+            name_hi = "विनायक चतुर्थी"
+            slug = "vinayaka-chaturthi"
+
+        return {
+            "type": "vinayaka_chaturthi",
+            "date": date_str,
+            "name_en": name_en,
+            "name_hi": name_hi,
+            "slug": slug,
+            "tithi_start": t.get("start_ist"),
+            "tithi_end": t.get("end_ist"),
+            "paksha": t.get("paksha"),
+            "month": month,
+        }
+
+    except Exception:
+        return None
+    
+def find_next_vinayaka_chaturthi(start_date, lat, lon, language="en", days_ahead=60):
+
+    for i in range(1, days_ahead + 1):
+        check_date = start_date + timedelta(days=i)
+
+        panchang = calculate_panchang(check_date, lat, lon, language)
+
+        chaturthi = get_vinayaka_chaturthi_details(panchang)
+
+        if chaturthi:
+            return chaturthi
+
+    return None

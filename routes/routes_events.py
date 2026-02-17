@@ -11,7 +11,9 @@ from services.events_engine import (
     get_amavasya_details,
     find_next_amavasya,
     get_purnima_details,
-    find_next_purnima      
+    find_next_purnima,
+    get_vinayaka_chaturthi_details,
+    find_next_vinayaka_chaturthi,   
 )
 
 routes_events = Blueprint("routes_events", __name__)
@@ -154,6 +156,36 @@ def api_purnima():
         return jsonify({
             "today": today_purnima,
             "next": next_purnima
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@routes_events.route("/vinayaka", methods=["POST"])
+def api_vinayaka_chaturthi():
+    try:
+        data = request.get_json() or {}
+
+        lat = float(data.get("latitude", 28.61))
+        lon = float(data.get("longitude", 77.23))
+        date_str = data.get("date")
+
+        if date_str:
+            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        else:
+            current_date = datetime.now().date()
+
+        panchang = calculate_panchang(current_date, lat, lon, "en")
+
+        today_vinayaka = get_vinayaka_chaturthi_details(panchang)
+
+        next_vinayaka = find_next_vinayaka_chaturthi(
+            current_date, lat, lon, "en"
+        )
+
+        return jsonify({
+            "today": today_vinayaka,
+            "next": next_vinayaka
         })
 
     except Exception as e:
