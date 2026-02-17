@@ -262,17 +262,23 @@ def api_adhik_maas():
         lon = float(data.get("longitude", 77.23))
 
         year = data.get("year")
-        if year:
-            year = int(year)
-        else:
-            year = datetime.now().year
+        year = int(year) if year else datetime.now().year
 
         items = detect_adhik_maas(year, lat, lon)
 
+        if items:
+            return jsonify({
+                "year": year,
+                "has_adhik_maas": True,
+                "items": items
+            })
+
         return jsonify({
             "year": year,
-            "items": items
+            "has_adhik_maas": False,
+            "message": f"No Adhik Maas in {year}"
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
