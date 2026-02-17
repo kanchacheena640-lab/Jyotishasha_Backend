@@ -466,6 +466,7 @@ def get_shivratri_details(panchang_data, lat, lon):
         return None
 
 
+
 def find_next_shivratri(start_date, lat, lon, language="en", days_ahead=60):
 
     for i in range(1, days_ahead + 1):
