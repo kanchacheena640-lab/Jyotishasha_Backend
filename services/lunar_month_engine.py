@@ -67,7 +67,7 @@ def get_shivratri_type(dt_ist):
 
     lunar_month = get_lunar_month(dt_ist)
 
-    if lunar_month == "Phalguna":
+    if lunar_month == "Magha":
         return "maha_shivratri", lunar_month
 
     return "masik_shivratri", lunar_month
