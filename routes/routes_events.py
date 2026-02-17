@@ -9,7 +9,9 @@ from services.events_engine import (
     get_sankashti_details,       
     find_next_sankashti,    
     get_amavasya_details,
-    find_next_amavasya       
+    find_next_amavasya,
+    get_purnima_details,
+    find_next_purnima      
 )
 
 routes_events = Blueprint("routes_events", __name__)
@@ -124,6 +126,34 @@ def api_amavasya():
         return jsonify({
             "today": today_amavasya,
             "next": next_amavasya
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@routes_events.route("/purnima", methods=["POST"])
+def api_purnima():
+    try:
+        data = request.get_json() or {}
+
+        lat = float(data.get("latitude", 28.61))
+        lon = float(data.get("longitude", 77.23))
+        date_str = data.get("date")
+
+        if date_str:
+            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        else:
+            current_date = datetime.now().date()
+
+        panchang = calculate_panchang(current_date, lat, lon, "en")
+
+        today_purnima = get_purnima_details(panchang)
+
+        next_purnima = find_next_purnima(current_date, lat, lon, "en")
+
+        return jsonify({
+            "today": today_purnima,
+            "next": next_purnima
         })
 
     except Exception as e:

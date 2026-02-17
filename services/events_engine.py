@@ -306,3 +306,47 @@ def find_next_amavasya(start_date, lat, lon, language="en", days_ahead=60):
             return amavasya
 
     return None
+
+# ==========================================================
+# PURNIMA DETECTOR
+# ==========================================================
+
+def get_purnima_details(panchang_data):
+    try:
+        t = panchang_data.get("tithi") or {}
+
+        # Shukla Purnima = 15
+        if int(t.get("number", 0)) != 15:
+            return None
+
+        date_str = panchang_data.get("date")
+        if not date_str:
+            return None
+
+        return {
+            "type": "purnima",
+            "date": date_str,
+            "name_en": "Purnima",
+            "name_hi": "पूर्णिमा",
+            "slug": "purnima",
+            "tithi_start": t.get("start_ist"),
+            "tithi_end": t.get("end_ist"),
+            "paksha": t.get("paksha"),
+        }
+
+    except Exception:
+        return None
+
+def find_next_purnima(start_date, lat, lon, language="en", days_ahead=60):
+
+    for i in range(1, days_ahead + 1):
+        check_date = start_date + timedelta(days=i)
+
+        panchang = calculate_panchang(check_date, lat, lon, language)
+
+        purnima = get_purnima_details(panchang)
+
+        if purnima:
+            return purnima
+
+    return None
