@@ -421,33 +421,28 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         if not date_str:
             return None
 
-        d = datetime.strptime(date_str, "%Y-%m-%d").date()
-        month_name = panchang_data.get("month_name")
+        tithi = panchang_data.get("tithi") or {}
+        tithi_number = int(tithi.get("number", 0))
+        paksha = tithi.get("paksha")
 
-        # 🔥 Check tithi during late night (Shivratri rule)
-        night_dt = datetime.strptime(f"{date_str} 23:30", "%Y-%m-%d %H:%M")
-        tithi_night = _tithi_number_at(night_dt)
-
-        if tithi_night != 29:
+        # Shivratri rule → Krishna Chaturdashi
+        if tithi_number != 29:
             return None
 
-        # 🔥 NEW: get month at night (not sunrise)
-        night_month = get_lunar_month(night_dt)
-
-        # Default = Masik Shivratri
+        # Default = Masik
         event_type = "masik_shivratri"
         name_en = "Masik Shivratri"
         name_hi = "मासिक शिवरात्रि"
         slug = "masik-shivratri"
 
-        # Maha Shivratri = Phalguna Krishna Chaturdashi (night rule)
-        if night_month == "Phalguna":
+        month_name = panchang_data.get("month_name")
+
+        # Maha Shivratri rule (official shastra rule)
+        if month_name == "Phalguna" and paksha == "Krishna":
             event_type = "maha_shivratri"
             name_en = "Maha Shivratri"
             name_hi = "महाशिवरात्रि"
             slug = "maha-shivratri"
-
-        t = panchang_data.get("tithi") or {}
 
         return {
             "type": event_type,
@@ -455,9 +450,9 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
             "name_en": name_en,
             "name_hi": name_hi,
             "slug": slug,
-            "month": night_month,
-            "tithi_start": t.get("start_ist"),
-            "tithi_end": t.get("end_ist"),
+            "month": month_name,
+            "tithi_start": tithi.get("start_ist"),
+            "tithi_end": tithi.get("end_ist"),
         }
 
     except Exception:
