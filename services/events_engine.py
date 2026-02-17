@@ -410,23 +410,27 @@ def find_next_vinayaka_chaturthi(start_date, lat, lon, language="en", days_ahead
     return None
 
 # ==========================================================
-# SHIVRATRI DETECTOR (Masik + Maha) - FIXED
+# SHIVRATRI DETECTOR (Masik + Maha) – NISHITA BASED
 # ==========================================================
 
 def get_shivratri_details(panchang_data):
     try:
-        t = panchang_data.get("tithi") or {}
-
-        if int(t.get("number", 0)) != 29:
-            return None
-
-        if t.get("paksha") != "Krishna":
-            return None
-
         date_str = panchang_data.get("date")
         month_name = panchang_data.get("month_name")
 
         if not date_str:
+            return None
+
+        # 🔥 Check tithi at midnight (00:00)
+        midnight_dt = datetime.strptime(
+            f"{date_str} 00:00",
+            "%Y-%m-%d %H:%M"
+        )
+
+        tithi_at_midnight = _tithi_number_at(midnight_dt)
+
+        # Krishna Chaturdashi = 29
+        if tithi_at_midnight != 29:
             return None
 
         event_type = "masik_shivratri"
@@ -434,7 +438,7 @@ def get_shivratri_details(panchang_data):
         name_hi = "मासिक शिवरात्रि"
         slug = "masik-shivratri"
 
-        # Maha Shivratri only if Phalguna month
+        # Maha Shivratri → Only Phalguna Krishna Chaturdashi at midnight
         if month_name == "Phalguna":
             event_type = "maha_shivratri"
             name_en = "Maha Shivratri"
@@ -447,8 +451,6 @@ def get_shivratri_details(panchang_data):
             "name_en": name_en,
             "name_hi": name_hi,
             "slug": slug,
-            "tithi_start": t.get("start_ist"),
-            "tithi_end": t.get("end_ist"),
             "month": month_name,
         }
 
