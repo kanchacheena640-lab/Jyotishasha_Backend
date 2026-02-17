@@ -439,11 +439,8 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         name_hi = "मासिक शिवरात्रि"
         slug = "masik-shivratri"
 
-        # Maha Shivratri = Krishna Chaturdashi just before Amavasya
-        next_day_dt = night_dt + timedelta(days=1)
-        next_tithi = _tithi_number_at(next_day_dt)
-
-        if next_tithi == 30:
+        # Maha Shivratri = Phalguna Krishna Chaturdashi (night based)
+        if night_month == "Phalguna":
             event_type = "maha_shivratri"
             name_en = "Maha Shivratri"
             name_hi = "महाशिवरात्रि"
