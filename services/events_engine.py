@@ -410,35 +410,43 @@ def find_next_vinayaka_chaturthi(start_date, lat, lon, language="en", days_ahead
     return None
 
 # ==========================================================
-# SHIVRATRI DETECTOR (Masik + Maha) – NISHITA BASED
+# SHIVRATRI DETECTOR (Masik + Maha) — Correct Rule
 # ==========================================================
 
-def get_shivratri_details(panchang_data):
+def get_shivratri_details(panchang_data, lat, lon):
+
     try:
         date_str = panchang_data.get("date")
         month_name = panchang_data.get("month_name")
+        sunset_str = panchang_data.get("sunset")
 
-        if not date_str:
+        if not (date_str and sunset_str):
             return None
 
-        # 🔥 Check tithi at midnight (00:00)
-        midnight_dt = datetime.strptime(
-            f"{date_str} 00:00",
+        # 🌙 Step 1 — Create sunset datetime
+        sunset_dt = datetime.strptime(
+            f"{date_str} {sunset_str}",
             "%Y-%m-%d %H:%M"
         )
 
-        tithi_at_midnight = _tithi_number_at(midnight_dt)
+        # 🌙 Step 2 — Approx Nishita (midnight window)
+        # Roughly 6 hours after sunset
+        nishita_dt = sunset_dt + timedelta(hours=6)
+
+        # 🌙 Step 3 — Check Tithi at Nishita
+        tithi_at_nishita = _tithi_number_at(nishita_dt)
 
         # Krishna Chaturdashi = 29
-        if tithi_at_midnight != 29:
+        if tithi_at_nishita != 29:
             return None
 
+        # Default → Masik
         event_type = "masik_shivratri"
         name_en = "Masik Shivratri"
         name_hi = "मासिक शिवरात्रि"
         slug = "masik-shivratri"
 
-        # Maha Shivratri → Only Phalguna Krishna Chaturdashi at midnight
+        # Maha Shivratri → Phalguna Krishna Chaturdashi
         if month_name == "Phalguna":
             event_type = "maha_shivratri"
             name_en = "Maha Shivratri"
