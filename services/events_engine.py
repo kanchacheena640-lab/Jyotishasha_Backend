@@ -408,3 +408,65 @@ def find_next_vinayaka_chaturthi(start_date, lat, lon, language="en", days_ahead
             return chaturthi
 
     return None
+
+# ==========================================================
+# SHIVRATRI DETECTOR (Masik + Maha)
+# ==========================================================
+
+def get_shivratri_details(panchang_data):
+    try:
+        t = panchang_data.get("tithi") or {}
+
+        # Krishna Chaturdashi = 29
+        if int(t.get("number", 0)) != 29:
+            return None
+
+        if t.get("paksha") != "Krishna":
+            return None
+
+        date_str = panchang_data.get("date")
+        month_name = panchang_data.get("month_name")
+
+        if not date_str:
+            return None
+
+        # Default = Masik Shivratri
+        event_type = "masik_shivratri"
+        name_en = "Masik Shivratri"
+        name_hi = "मासिक शिवरात्रि"
+        slug = "masik-shivratri"
+
+        # Special Case → Maha Shivratri
+        if month_name == "Phalguna":
+            event_type = "maha_shivratri"
+            name_en = "Maha Shivratri"
+            name_hi = "महाशिवरात्रि"
+            slug = "maha-shivratri"
+
+        return {
+            "type": event_type,
+            "date": date_str,
+            "name_en": name_en,
+            "name_hi": name_hi,
+            "slug": slug,
+            "tithi_start": t.get("start_ist"),
+            "tithi_end": t.get("end_ist"),
+            "month": month_name,
+        }
+
+    except Exception:
+        return None
+
+def find_next_shivratri(start_date, lat, lon, language="en", days_ahead=60):
+
+    for i in range(1, days_ahead + 1):
+        check_date = start_date + timedelta(days=i)
+
+        panchang = calculate_panchang(check_date, lat, lon, language)
+
+        shivratri = get_shivratri_details(panchang)
+
+        if shivratri:
+            return shivratri
+
+    return None
