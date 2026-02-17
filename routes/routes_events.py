@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 from services.panchang_engine import calculate_panchang
+from services.adhik_maas_engine import detect_adhik_maas
 from services.events_engine import (
     get_ekadashi_details,
     find_next_ekadashi,
@@ -251,31 +252,26 @@ def api_sankranti():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@routes_events.route("/sankranti", methods=["POST"])
-def api_sankranti():
+    
+@routes_events.route("/adhik-maas", methods=["POST"])
+def api_adhik_maas():
     try:
         data = request.get_json() or {}
 
         lat = float(data.get("latitude", 28.61))
         lon = float(data.get("longitude", 77.23))
-        date_str = data.get("date")
 
-        if date_str:
-            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        year = data.get("year")
+        if year:
+            year = int(year)
         else:
-            current_date = datetime.now().date()
+            year = datetime.now().year
 
-        today_sankranti = get_sankranti_details(
-            current_date, lat, lon, "en"
-        )
-
-        next_sankranti = find_next_sankranti(
-            current_date, lat, lon, "en"
-        )
+        items = detect_adhik_maas(year, lat, lon)
 
         return jsonify({
-            "today": today_sankranti,
-            "next": next_sankranti
+            "year": year,
+            "items": items
         })
 
     except Exception as e:
