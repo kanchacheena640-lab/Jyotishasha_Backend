@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang, _tithi_number_at
 from services.moon_calc import get_moon_rise_set
 from services.lunar_month_engine import get_lunar_month
+from services.lunar_month_engine import get_shivratri_type
+
 
 
 # ==========================================================
@@ -421,36 +423,31 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         if not date_str:
             return None
 
-        tithi = panchang_data.get("tithi") or {}
-        tithi_number = int(tithi.get("number", 0))
-        paksha = tithi.get("paksha")
+        night_dt = datetime.strptime(f"{date_str} 23:30", "%Y-%m-%d %H:%M")
 
-        # Shivratri rule → Krishna Chaturdashi
-        if tithi_number != 29:
+        shiv_type, lunar_month = get_shivratri_type(night_dt)
+
+        if not shiv_type:
             return None
 
-        # Default = Masik
-        event_type = "masik_shivratri"
-        name_en = "Masik Shivratri"
-        name_hi = "मासिक शिवरात्रि"
-        slug = "masik-shivratri"
+        tithi = panchang_data.get("tithi") or {}
 
-        month_name = panchang_data.get("month_name")
-
-        # Maha Shivratri rule (official shastra rule)
-        if month_name == "Phalguna" and paksha == "Krishna":
-            event_type = "maha_shivratri"
+        if shiv_type == "maha_shivratri":
             name_en = "Maha Shivratri"
             name_hi = "महाशिवरात्रि"
             slug = "maha-shivratri"
+        else:
+            name_en = "Masik Shivratri"
+            name_hi = "मासिक शिवरात्रि"
+            slug = "masik-shivratri"
 
         return {
-            "type": event_type,
+            "type": shiv_type,
             "date": date_str,
             "name_en": name_en,
             "name_hi": name_hi,
             "slug": slug,
-            "month": month_name,
+            "month": lunar_month,
             "tithi_start": tithi.get("start_ist"),
             "tithi_end": tithi.get("end_ist"),
         }
