@@ -422,12 +422,12 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         d = datetime.strptime(date_str, "%Y-%m-%d").date()
         month_name = panchang_data.get("month_name")
 
-        # ✅ Use tithi at midnight of this civil date
-        midnight_dt = datetime.strptime(f"{date_str} 00:00", "%Y-%m-%d %H:%M")
-        tithi_mid = _tithi_number_at(midnight_dt)
+        # 🔥 Check tithi during late night (Shivratri rule)
+        night_dt = datetime.strptime(f"{date_str} 23:30", "%Y-%m-%d %H:%M")
+        tithi_night = _tithi_number_at(night_dt)
 
         # Krishna Chaturdashi = 29
-        if tithi_mid != 29:
+        if tithi_night != 29:
             return None
 
         # Default = Masik Shivratri
@@ -436,13 +436,8 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         name_hi = "मासिक शिवरात्रि"
         slug = "masik-shivratri"
 
-        # ✅ Maha Shivratri = the Krishna Chaturdashi whose NEXT DAY is Amavasya (30)
-        next_date = d + timedelta(days=1)
-        p_next = calculate_panchang(next_date, lat, lon, (language or "en"))
-        next_midnight = datetime.combine(next_date, datetime.min.time())
-        tithi_next_mid = _tithi_number_at(next_midnight)
-
-        if tithi_next_mid == 30:
+        # Maha Shivratri = Phalguna Krishna Chaturdashi (night rule)
+        if month_name == "Phalguna":
             event_type = "maha_shivratri"
             name_en = "Maha Shivratri"
             name_hi = "महाशिवरात्रि"
