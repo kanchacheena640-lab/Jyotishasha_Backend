@@ -474,7 +474,7 @@ def find_next_shivratri(start_date, lat, lon, language="en", days_ahead=60):
 
         panchang = calculate_panchang(check_date, lat, lon, language)
 
-        shivratri = get_shivratri_details(panchang)
+        shivratri = get_shivratri_details(panchang, lat, lon)
 
         if shivratri:
             return shivratri

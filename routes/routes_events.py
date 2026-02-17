@@ -207,10 +207,9 @@ def api_shivratri():
         else:
             current_date = datetime.now().date()
 
-        # Today's Panchang
         panchang = calculate_panchang(current_date, lat, lon, "en")
 
-        today_shivratri = get_shivratri_details(panchang)
+        today_shivratri = get_shivratri_details(panchang, lat, lon)
 
         next_shivratri = find_next_shivratri(current_date, lat, lon, "en")
 
