@@ -492,4 +492,3 @@ def find_next_shivratri(start_date, lat, lon, language="en", days_ahead=90):
         if hit:
             return hit
     return None
-

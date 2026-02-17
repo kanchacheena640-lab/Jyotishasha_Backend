@@ -15,7 +15,11 @@ from services.events_engine import (
     get_vinayaka_chaturthi_details,
     find_next_vinayaka_chaturthi,
     get_shivratri_details,
-    find_next_shivratri,   
+    find_next_shivratri,
+)
+from services.sankranti_engine import (
+    get_sankranti_details,
+    find_next_sankranti
 )
 
 routes_events = Blueprint("routes_events", __name__)
@@ -213,6 +217,66 @@ def api_shivratri():
         next_shivratri = find_next_shivratri(current_date, lat, lon, "en")
 
         return jsonify({"today": today_shivratri, "next": next_shivratri})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@routes_events.route("/sankranti", methods=["POST"])
+def api_sankranti():
+    try:
+        data = request.get_json() or {}
+
+        lat = float(data.get("latitude", 28.61))
+        lon = float(data.get("longitude", 77.23))
+        date_str = data.get("date")
+
+        if date_str:
+            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        else:
+            current_date = datetime.now().date()
+
+        today_sankranti = get_sankranti_details(
+            current_date, lat, lon, "en"
+        )
+
+        next_sankranti = find_next_sankranti(
+            current_date, lat, lon, "en"
+        )
+
+        return jsonify({
+            "today": today_sankranti,
+            "next": next_sankranti
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@routes_events.route("/sankranti", methods=["POST"])
+def api_sankranti():
+    try:
+        data = request.get_json() or {}
+
+        lat = float(data.get("latitude", 28.61))
+        lon = float(data.get("longitude", 77.23))
+        date_str = data.get("date")
+
+        if date_str:
+            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        else:
+            current_date = datetime.now().date()
+
+        today_sankranti = get_sankranti_details(
+            current_date, lat, lon, "en"
+        )
+
+        next_sankranti = find_next_sankranti(
+            current_date, lat, lon, "en"
+        )
+
+        return jsonify({
+            "today": today_sankranti,
+            "next": next_sankranti
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
