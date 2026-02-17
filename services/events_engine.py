@@ -206,7 +206,7 @@ def get_sankashti_details(panchang_data, lat, lon):
     try:
         date_str = panchang_data.get("date")
         if not date_str:
-            return None
+            return None 
 
         event_date = datetime.strptime(date_str, "%Y-%m-%d")
 
@@ -260,5 +260,49 @@ def find_next_sankashti(start_date, lat, lon, language="en", days_ahead=45):
 
         if sankashti:
             return sankashti
+
+    return None
+
+# ==========================================================
+# AMAVASYA DETECTOR
+# ==========================================================
+
+def get_amavasya_details(panchang_data):
+    try:
+        t = panchang_data.get("tithi") or {}
+        if int(t.get("number", 0)) != 30:
+            return None
+
+        date_str = panchang_data.get("date")
+        if not date_str:
+            return None
+
+        return {
+            "type": "amavasya",
+            "date": date_str,
+            "name_en": "Amavasya",
+            "name_hi": "अमावस्या",
+            "slug": "amavasya",
+            "tithi_start": t.get("start_ist"),
+            "tithi_end": t.get("end_ist"),
+            "paksha": t.get("paksha"),
+        }
+    except Exception:
+        return None
+# ==========================================================
+# FIND NEXT AMAVASYA
+# ==========================================================
+
+def find_next_amavasya(start_date, lat, lon, language="en", days_ahead=60):
+
+    for i in range(1, days_ahead + 1):
+        check_date = start_date + timedelta(days=i)
+
+        panchang = calculate_panchang(check_date, lat, lon, language)
+
+        amavasya = get_amavasya_details(panchang)
+
+        if amavasya:
+            return amavasya
 
     return None
