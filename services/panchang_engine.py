@@ -232,9 +232,13 @@ def _karan_from_tithi(tithi_num):
         return KARANS_REPEATING[slot % 7], slot
     return KARANS_FIXED[min(slot - 57, 3)], slot
 
-def _approx_hindu_month(date):
-    """Approximate lunar month name based on Sun's sidereal longitude (for accuracy use solar transition)."""
-    jd_ut = swe.julday(date.year, date.month, date.day, 12)
+def _approx_hindu_month(date_or_dt):
+    if isinstance(date_or_dt, datetime):
+        dt = date_or_dt
+    else:
+        dt = datetime(date_or_dt.year, date_or_dt.month, date_or_dt.day, 12)
+
+    jd_ut = _to_ut_julday(dt)
     sun_long = swe.calc_ut(jd_ut, swe.SUN, FLAGS)[0][0] % 360
     idx = int((sun_long // 30) % 12)
     return HINDU_MONTHS[idx]
@@ -348,12 +352,12 @@ def _tithi_start_end_ist(date):
     return t_start, t_end, _tithi_number_at(d12)
 
 # --- Final Public API ---
-def calculate_panchang(date, lat, lon, language="en"):
+def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     language = (language or "en").lower()
     if language not in ("en", "hi"):
         language = "en"
 
-    ref = datetime(date.year, date.month, date.day, 12)
+    ref = ref_dt_ist or datetime(date.year, date.month, date.day, 12)
     sun, moon = _sidereal_longitudes(ref)
     t_num, paksha, t_name = _tithi_from_longitudes(sun, moon)
     n_name, n_idx, n_pada = _nakshatra_from_moon(moon)
@@ -374,7 +378,7 @@ def calculate_panchang(date, lat, lon, language="en"):
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     is_panchak = n_name in PANCHAK_NAKSHATRAS
 
-    month_name_en = _approx_hindu_month(date)
+    month_name_en = _approx_hindu_month(ref)
     weekday_en = date.strftime("%A")
 
     weekday_val = WEEKDAYS_HI.get(weekday_en, weekday_en) if language == "hi" else weekday_en

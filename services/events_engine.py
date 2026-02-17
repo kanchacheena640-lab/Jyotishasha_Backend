@@ -426,9 +426,12 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         night_dt = datetime.strptime(f"{date_str} 23:30", "%Y-%m-%d %H:%M")
         tithi_night = _tithi_number_at(night_dt)
 
-        # Krishna Chaturdashi = 29
         if tithi_night != 29:
             return None
+
+        # 🔥 NEW: get month at night (not sunrise)
+        night_panchang = calculate_panchang(d, lat, lon, language, ref_dt_ist=night_dt)
+        night_month = night_panchang.get("month_name")
 
         # Default = Masik Shivratri
         event_type = "masik_shivratri"
@@ -436,8 +439,8 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         name_hi = "मासिक शिवरात्रि"
         slug = "masik-shivratri"
 
-        # Maha Shivratri = Phalguna Krishna Chaturdashi (night rule)
-        if month_name == "Phalguna":
+        # Maha Shivratri rule (night month check)
+        if night_month == "Phalguna":
             event_type = "maha_shivratri"
             name_en = "Maha Shivratri"
             name_hi = "महाशिवरात्रि"
@@ -451,7 +454,7 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
             "name_en": name_en,
             "name_hi": name_hi,
             "slug": slug,
-            "month": month_name,
+            "month": night_month,
             "tithi_start": t.get("start_ist"),
             "tithi_end": t.get("end_ist"),
         }
