@@ -3,6 +3,8 @@
 from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang, _tithi_number_at
 from services.moon_calc import get_moon_rise_set
+from services.lunar_month_engine import get_lunar_month
+
 
 # ==========================================================
 # EKADASHI MASTER MAP (English Primary, Hindi Secondary)
@@ -430,8 +432,7 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
             return None
 
         # 🔥 NEW: get month at night (not sunrise)
-        night_panchang = calculate_panchang(d, lat, lon, language, ref_dt_ist=night_dt)
-        night_month = night_panchang.get("month_name")
+        night_month = get_lunar_month(night_dt)
 
         # Default = Masik Shivratri
         event_type = "masik_shivratri"
@@ -439,12 +440,16 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
         name_hi = "मासिक शिवरात्रि"
         slug = "masik-shivratri"
 
-        # Maha Shivratri = Phalguna Krishna Chaturdashi (night based)
-        if night_month == "Phalguna":
-            event_type = "maha_shivratri"
-            name_en = "Maha Shivratri"
-            name_hi = "महाशिवरात्रि"
-            slug = "maha-shivratri"
+        # Maha Shivratri = Last Krishna Chaturdashi before new lunar cycle
+        if tithi_night == 29:
+            next1 = _tithi_number_at(night_dt + timedelta(hours=18))
+            next2 = _tithi_number_at(night_dt + timedelta(hours=36))
+
+            if next1 == 30 and next2 == 1:
+                event_type = "maha_shivratri"
+                name_en = "Maha Shivratri"
+                name_hi = "महाशिवरात्रि"
+                slug = "maha-shivratri"
 
         t = panchang_data.get("tithi") or {}
 
