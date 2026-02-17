@@ -209,14 +209,10 @@ def api_shivratri():
 
         panchang = calculate_panchang(current_date, lat, lon, "en")
 
-        today_shivratri = get_shivratri_details(panchang, lat, lon)
-
+        today_shivratri = get_shivratri_details(panchang, lat, lon, "en")
         next_shivratri = find_next_shivratri(current_date, lat, lon, "en")
 
-        return jsonify({
-            "today": today_shivratri,
-            "next": next_shivratri
-        })
+        return jsonify({"today": today_shivratri, "next": next_shivratri})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
