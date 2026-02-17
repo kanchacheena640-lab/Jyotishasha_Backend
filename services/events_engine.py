@@ -281,6 +281,27 @@ def get_amavasya_details(panchang_data):
         if not date_str:
             return None
 
+        weekday = panchang_data.get("weekday")
+
+        special_type = None
+        special_name_en = None
+        special_name_hi = None
+
+        if weekday in ("Monday", "सोमवार"):
+            special_type = "somvati_amavasya"
+            special_name_en = "Somvati Amavasya"
+            special_name_hi = "सोमवती अमावस्या"
+
+        elif weekday in ("Saturday", "शनिवार"):
+            special_type = "shani_amavasya"
+            special_name_en = "Shani Amavasya"
+            special_name_hi = "शनि अमावस्या"
+
+        elif weekday in ("Tuesday", "मंगलवार"):
+            special_type = "bhaum_amavasya"
+            special_name_en = "Bhaum Amavasya"
+            special_name_hi = "भौम अमावस्या"
+
         return {
             "type": "amavasya",
             "date": date_str,
@@ -290,9 +311,16 @@ def get_amavasya_details(panchang_data):
             "tithi_start": t.get("start_ist"),
             "tithi_end": t.get("end_ist"),
             "paksha": t.get("paksha"),
+
+            # 🔥 New optional enrichment
+            "special_type": special_type,
+            "special_name_en": special_name_en,
+            "special_name_hi": special_name_hi,
         }
+
     except Exception:
         return None
+
 # ==========================================================
 # FIND NEXT AMAVASYA
 # ==========================================================
