@@ -1,74 +1,70 @@
 # services/festivals/holi_engine.py
 
 from datetime import datetime, timedelta
-from services.panchang_engine import calculate_panchang, _tithi_number_at
+from services.panchang_engine import calculate_panchang, _tithi_number_at, _karan_at
 from services.lunar_month_engine import get_lunar_month
 
 
 def detect_holi(year, lat, lon, language="en"):
     """
-    Detect Holi for given year.
-
-    Rule:
-    - Phalguna Shukla Purnima at SUNSET = Holika Dahan
+    Industry-standard rule (matching Drik-style behavior):
+    - Find day where Purnima tithi is present in Pradosh (sunset+~2h)
+    - Lunar month at that Pradosh moment must be Phalguna (Amanta)
+    - Bhadra (Vishti) must NOT be active in that Pradosh moment
+    - That evening = Holika Dahan
     - Next day = Dhulandi
-    - Based strictly on Tithi at sunset (Drik method)
     """
 
     start_date = datetime(year, 1, 1).date()
     end_date = datetime(year, 12, 31).date()
+    d = start_date
 
-    current_date = start_date
-
-    while current_date <= end_date:
-
-        panchang = calculate_panchang(
-            current_date, lat, lon, language
-        )
-
-        sunset_str = panchang.get("sunset")
-        weekday = panchang.get("weekday")
-
+    while d <= end_date:
+        p = calculate_panchang(d, lat, lon, language)
+        sunset_str = p.get("sunset")
         if not sunset_str:
-            current_date += timedelta(days=1)
+            d += timedelta(days=1)
             continue
 
-        sunset_dt = datetime.strptime(
-            f"{current_date} {sunset_str}",
-            "%Y-%m-%d %H:%M"
-        )
+        # Use a stable Pradosh-check moment (sunset + 60 minutes)
+        sunset_dt = datetime.strptime(f"{d} {sunset_str}", "%Y-%m-%d %H:%M")
+        pradosh_dt = sunset_dt + timedelta(minutes=60)
 
-        # 1️⃣ Tithi at sunset
-        tithi_at_sunset = _tithi_number_at(sunset_dt)
-
-        if tithi_at_sunset != 15:
-            current_date += timedelta(days=1)
+        # 1) Tithi must be Purnima at Pradosh
+        tithi_at_pradosh = _tithi_number_at(pradosh_dt)
+        if tithi_at_pradosh != 15:
+            d += timedelta(days=1)
             continue
 
-        # 2️⃣ Lunar month at sunset
-        lunar_month = get_lunar_month(sunset_dt)
-
+        # 2) Lunar month must be Phalguna at Pradosh moment
+        lunar_month = get_lunar_month(pradosh_dt)
         if lunar_month not in ("Phalguna", "फाल्गुन"):
-            current_date += timedelta(days=1)
+            d += timedelta(days=1)
             continue
 
-        # ✅ Valid Holika Dahan found
-        holika_dahan_date = current_date
-        holi_date = current_date + timedelta(days=1)
+        # 3) Bhadra avoidance (Vishti karan) at Pradosh moment
+        karan_name, _ = _karan_at(pradosh_dt)
+        if karan_name == "Vishti (Bhadra)":
+            d += timedelta(days=1)
+            continue
 
+        # ✅ Found Holika Dahan day
         return {
             "year": year,
             "holika_dahan": {
-                "date": holika_dahan_date.strftime("%Y-%m-%d"),
-                "weekday": weekday,
+                "date": d.strftime("%Y-%m-%d"),
+                "weekday": p.get("weekday"),
                 "sunset_time": sunset_str,
-                "tithi_at_sunset": 15,
+                "tithi_at_pradosh": 15,
+                "karan_at_pradosh": karan_name,
             },
             "holi_dhulandi": {
-                "date": holi_date.strftime("%Y-%m-%d"),
-            }
+                "date": (d + timedelta(days=1)).strftime("%Y-%m-%d"),
+            },
+            "lunar_details": {
+                "month": lunar_month,
+            },
         }
 
-        # (Loop naturally ends after return)
-
     return None
+

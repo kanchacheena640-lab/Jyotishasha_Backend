@@ -341,6 +341,32 @@ def _binary_change(t0, t1):
             t1 = mid
     return t1
 
+def _karan_at(dt_ist):
+    """
+    Exact Karan at specific IST datetime.
+    Used for festival-level precision (Holika Dahan etc).
+    """
+    sun, moon = _sidereal_longitudes(dt_ist)
+    diff = (moon - sun) % 360.0
+
+    # 1..60 karan slots (each = 6 degrees)
+    slot = int(diff // 6.0) + 1
+
+    if slot == 1:
+        return "Kimstughna", slot
+    if 2 <= slot <= 56:
+        return KARANS_REPEATING[(slot - 2) % 7], slot
+    if slot == 57:
+        return "Shakuni", slot
+    if slot == 58:
+        return "Chatushpada", slot
+    if slot == 59:
+        return "Naga", slot
+    if slot == 60:
+        return "Vishti (Bhadra)", slot
+
+    return "Unknown", slot
+
 def _tithi_start_end_ist(date):
     d0 = datetime(date.year, date.month, date.day, 0, 0)
     d12 = datetime(date.year, date.month, date.day, 12, 0)
