@@ -98,6 +98,25 @@ def detect_holi(year, lat, lon, language="en"):
         # 🔥 Bhadra full Pradosh → shift next day
         elif status == "bhadra_full_pradosh":
 
+            # 🔒 Safety: confirm Purnima really at this day's Pradosh start
+            p_current = calculate_panchang(d, lat, lon, language)
+            sunset_current = p_current.get("sunset")
+
+            if not sunset_current:
+                d += timedelta(days=1)
+                continue
+
+            sunset_dt_current = datetime.strptime(
+                f"{d} {sunset_current}",
+                "%Y-%m-%d %H:%M"
+            )
+
+            pradosh_start = sunset_dt_current
+
+            if _tithi_number_at(pradosh_start) != 15:
+                d += timedelta(days=1)
+                continue
+
             next_day = d + timedelta(days=1)
 
             # Only check Bhadra in next day's Pradosh
