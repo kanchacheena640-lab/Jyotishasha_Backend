@@ -37,7 +37,7 @@ def _get_all_amavasya_of_year(year, lat, lon):
 def _has_sankranti_between(start_date, end_date, lat, lon):
     check_date = start_date
 
-    while check_date <= end_date:
+    while check_date < end_date:
         sankranti = get_sankranti_details(check_date, lat, lon)
         if sankranti:
             return True
@@ -67,8 +67,13 @@ def detect_adhik_maas(year, lat, lon):
         if not _has_sankranti_between(start_amavasya, end_amavasya, lat, lon):
 
             # Get lunar month at mid-point
-            mid_date = start_amavasya + (end_amavasya - start_amavasya) / 2
-            lunar_month = get_lunar_month(datetime.combine(mid_date, datetime.min.time()))
+            mid_date = start_amavasya + timedelta(
+                days=(end_amavasya - start_amavasya).days // 2
+            )
+
+            mid_dt = datetime.combine(mid_date, datetime.min.time()).replace(hour=12)
+
+            lunar_month = get_lunar_month(mid_dt)
 
             adhik_months.append({
                 "year": year,

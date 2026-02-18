@@ -81,7 +81,10 @@ def get_ekadashi_details(panchang_data):
     Returns structured Ekadashi object or None
     """
 
-    tithi_number = panchang_data["tithi"]["number"]
+    date_str = panchang_data["date"]
+    tithi_number = _tithi_number_at(
+        datetime.strptime(f"{date_str} 06:00", "%Y-%m-%d %H:%M")
+    )
 
     # 11 = Shukla Ekadashi
     # 26 = Krishna Ekadashi (11 + 15)
@@ -181,6 +184,8 @@ def get_pradosh_details(panchang_data):
             "slug": "pradosh-vrat",
             "date": date_str,
             "paksha": paksha,
+            "sunset_time": sunset_time,
+            "tithi_at_sunset": tithi_at_sunset,
         }
 
     except Exception:
