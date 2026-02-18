@@ -45,11 +45,59 @@ def _is_valid_holika_day(date_obj, lat, lon, language):
 
     karan_name, _ = _karan_at(pradosh_match_time)
 
-    # Reject if Bhadra active
     if karan_name == "Vishti (Bhadra)":
-        return False, lunar_month, karan_name, weekday, sunset_str
+
+        # 🔍 Check if Bhadra ends inside Pradosh window
+        check_time = pradosh_match_time
+        bhadra_end_time = None
+
+        while check_time <= pradosh_end:
+            k_name, _ = _karan_at(check_time)
+            if k_name != "Vishti (Bhadra)":
+                bhadra_end_time = check_time
+                break
+            check_time += timedelta(minutes=5)
+
+        # Case 1: Bhadra ends inside Pradosh → same day allowed
+        if bhadra_end_time:
+            pradosh_match_time = bhadra_end_time
+            karan_name, _ = _karan_at(bhadra_end_time)
+
+        else:
+            # Case 2: Bhadra continues full Pradosh → shift to next day
+            next_day = d + timedelta(days=1)
+            next_p = calculate_panchang(next_day, lat, lon, language)
+            next_sunset = next_p.get("sunset")
+
+            if not next_sunset:
+                return False, lunar_month, karan_name, weekday, sunset_str
+
+            next_sunset_dt = datetime.strptime(
+                f"{next_day} {next_sunset}",
+                "%Y-%m-%d %H:%M"
+            )
+
+            # find first non-Bhadra time
+            check_time = next_sunset_dt
+            valid_time = None
+
+            while check_time <= next_sunset_dt + timedelta(hours=2):
+                k_name, _ = _karan_at(check_time)
+                if k_name != "Vishti (Bhadra)":
+                    valid_time = check_time
+                    break
+                check_time += timedelta(minutes=5)
+
+            if not valid_time:
+                return False, lunar_month, karan_name, weekday, sunset_str
+
+            # shift Dahan
+            d = next_day
+            sunset_str = next_sunset
+            karan_name, _ = _karan_at(valid_time)
 
     return True, lunar_month, karan_name, weekday, sunset_str
+
 
 
 def detect_holi(year, lat, lon, language="en"):
