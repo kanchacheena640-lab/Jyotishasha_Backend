@@ -1,7 +1,6 @@
 from datetime import datetime
 from services.festivals.holi_engine import detect_holi
-from transit_engine import get_moon_sign_at
-
+import transit_engine
 
 ZODIAC = [
     "Aries","Taurus","Gemini","Cancer",
@@ -55,7 +54,10 @@ def generate_holi_rashi_tips(year, lat, lon, language="en"):
     )
 
     # Moon sign from your transit engine
-    moon_sign = get_moon_sign_at(holi_dt)
+    moon_sign = transit_engine._planet_rashi_on_day("Moon", holi_dt)
+    if moon_sign not in ZODIAC:
+        return None
+
 
     tips = {}
 
