@@ -15,8 +15,8 @@ def detect_holi(year, lat, lon, language="en"):
     - Next day = Dhulandi
     """
 
-    start_date = datetime(year, 1, 1).date()
-    end_date = datetime(year, 12, 31).date()
+    start_date = datetime(year, 2, 15).date()
+    end_date = datetime(year, 4, 15).date()
     d = start_date
 
     while d <= end_date:
@@ -36,8 +36,18 @@ def detect_holi(year, lat, lon, language="en"):
             d += timedelta(days=1)
             continue
 
-        # 2) Lunar month must be Phalguna at Pradosh moment
+        # 🔍 DEBUG PRINT ADD HERE
         lunar_month = get_lunar_month(pradosh_dt)
+        karan_name, _ = _karan_at(pradosh_dt)
+
+        print(
+            d,
+            "Tithi:", tithi_at_pradosh,
+            "Month:", lunar_month,
+            "Karan:", karan_name
+        )
+
+        # 2) Lunar month check
         if lunar_month not in ("Phalguna", "फाल्गुन"):
             d += timedelta(days=1)
             continue
