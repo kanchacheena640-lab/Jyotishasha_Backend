@@ -24,16 +24,15 @@ def api_holi():
 
         response = holi_info or {}
 
-        # Website ke liye – full rashi data
         if rashi_data:
             response["moon_sign_on_holi"] = rashi_data["moon_sign_on_holi"]
-            response["rashi_tips"] = rashi_data["tips"]
 
-        # App ke liye – personalized only
-        if user_moon and rashi_data:
-            sign = user_moon.lower()
-            if sign in rashi_data["tips"]:
-                response["personal_rashi_tip"] = rashi_data["tips"][sign]
+            if user_moon:
+                sign = user_moon.lower()
+                if sign in rashi_data["tips"]:
+                    response["personal_rashi_tip"] = rashi_data["tips"][sign]
+            else:
+                response["rashi_tips"] = rashi_data["tips"]
 
         return jsonify(response)
 
