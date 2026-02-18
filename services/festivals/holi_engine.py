@@ -51,10 +51,21 @@ def detect_holi(year, lat, lon, language="en"):
             d += timedelta(days=1)
             continue
 
-        # ✅ Bhadra check at exact same moment
-        karan_name, _ = _karan_at(pradosh_match_time)
+        # Bhadra should NOT be active at Holika time
+        # If Bhadra present at start of pradosh, check if it ends within pradosh window
 
-        if karan_name == "Vishti (Bhadra)":
+        bhadra_present = False
+        check_time = pradosh_start
+
+        while check_time <= pradosh_end:
+            karan_name, _ = _karan_at(check_time)
+            if karan_name != "Vishti (Bhadra)":
+                bhadra_present = False
+                break
+            bhadra_present = True
+            check_time += timedelta(minutes=10)
+
+        if bhadra_present:
             d += timedelta(days=1)
             continue
 
