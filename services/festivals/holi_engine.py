@@ -1,19 +1,15 @@
-# services/festivals/holi_engine.py
-
 from datetime import datetime, timedelta
-from services.panchang_engine import (
-    calculate_panchang,
-    _tithi_number_at
-)
+from services.panchang_engine import calculate_panchang, _tithi_number_at
+from services.lunar_month_engine import get_lunar_month
 
 
 def detect_holi(year, lat, lon, language="en"):
     """
     Detect Holi for given year.
-    Based on:
-    - Phalguna Shukla Purnima (Holika Dahan)
-    - Next day = Dhulandi / Rangwali Holi
-    Uses Amanta month system.
+    Rule:
+    - Phalguna Shukla Purnima at SUNSET = Holika Dahan
+    - Next day = Dhulandi
+    Uses Amanta lunar system.
     """
 
     start_date = datetime(year, 1, 1).date()
@@ -27,56 +23,61 @@ def detect_holi(year, lat, lon, language="en"):
             current_date, lat, lon, language
         )
 
-        tithi = panchang.get("tithi", {})
-        month_name = panchang.get("month_name")
         sunset_str = panchang.get("sunset")
+        weekday = panchang.get("weekday")
 
-        if not (tithi and sunset_str):
+        if not sunset_str:
             current_date += timedelta(days=1)
             continue
 
-        # 🔥 Purnima check at SUNSET (not noon)
+        # Create sunset datetime
         sunset_dt = datetime.strptime(
             f"{current_date} {sunset_str}",
             "%Y-%m-%d %H:%M"
         )
 
+        # 1️⃣ Check Tithi at sunset
         tithi_at_sunset = _tithi_number_at(sunset_dt)
 
-        if (
-            tithi_at_sunset == 15
-            and month_name in ("Phalguna", "फाल्गुन")
-        ):
+        if tithi_at_sunset != 15:
+            current_date += timedelta(days=1)
+            continue
 
-            # Holika Dahan = same evening
-            holika_dahan_date = current_date
+        # 2️⃣ Get lunar month at sunset moment (SAFE way)
+        lunar_month = get_lunar_month(sunset_dt)
 
-            # Dhulandi = next day
-            holi_date = current_date + timedelta(days=1)
+        if lunar_month not in ("Phalguna", "फाल्गुन"):
+            current_date += timedelta(days=1)
+            continue
 
-            return {
-                "year": year,
+        # 3️⃣ Valid Holika Dahan found
+        holika_dahan_date = current_date
+        holi_date = current_date + timedelta(days=1)
 
-                "holika_dahan": {
-                    "date": holika_dahan_date.strftime("%Y-%m-%d"),
-                    "weekday": panchang.get("weekday"),
-                    "sunset_time": sunset_str,
-                    "tithi_at_sunset": 15,
-                },
+        # Recalculate panchang for proper tithi details
+        tithi = panchang.get("tithi", {})
 
-                "holi_dhulandi": {
-                    "date": holi_date.strftime("%Y-%m-%d"),
-                },
+        return {
+            "year": year,
 
-                "lunar_details": {
-                    "month": month_name,
-                    "paksha": tithi.get("paksha"),
-                    "tithi_name": tithi.get("name"),
-                    "tithi_start": tithi.get("start_ist"),
-                    "tithi_end": tithi.get("end_ist"),
-                }
+            "holika_dahan": {
+                "date": holika_dahan_date.strftime("%Y-%m-%d"),
+                "weekday": weekday,
+                "sunset_time": sunset_str,
+                "tithi_at_sunset": 15,
+            },
+
+            "holi_dhulandi": {
+                "date": holi_date.strftime("%Y-%m-%d"),
+            },
+
+            "lunar_details": {
+                "month": lunar_month,
+                "paksha": tithi.get("paksha"),
+                "tithi_name": tithi.get("name"),
+                "tithi_start": tithi.get("start_ist"),
+                "tithi_end": tithi.get("end_ist"),
             }
-
-        current_date += timedelta(days=1)
+        }
 
     return None
