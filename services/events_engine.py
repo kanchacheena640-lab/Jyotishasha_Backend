@@ -4,7 +4,6 @@ import re
 from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang, _tithi_number_at
 from services.moon_calc import get_moon_rise_set
-from services.lunar_month_engine import get_lunar_month
 from services.lunar_month_engine import get_shivratri_type
 
 
@@ -72,8 +71,6 @@ HINDI_MONTH_TO_EN = {
     "फाल्गुन": "Phalguna",
 }
 
-import re
-from datetime import datetime, timedelta
 
 # -----------------------------
 # Helpers
@@ -124,6 +121,8 @@ def _find_transition_time(dt_lo: datetime, dt_hi: datetime, tithi_target: int, w
 
     return dt_hi.replace(second=0, microsecond=0)
 
+
+
 def get_tithi_window_for_day(day_date: datetime, target_tithi: int):
     """
     Finds start/end time of target_tithi around a given civil date (IST naive datetime).
@@ -168,6 +167,14 @@ def get_tithi_window_for_day(day_date: datetime, target_tithi: int):
     end_dt = _find_transition_time(lo, hi, target_tithi, want_start=False)
     return start_dt, end_dt
 
+def _sunrise_dt_from_panchang(p):
+    d = p.get("date")
+    sr = p.get("sunrise_ist")
+    if not d or not sr:
+        return None
+    return datetime.strptime(f"{d} {sr}", "%Y-%m-%d %H:%M")
+
+
 def determine_ekadashi_observance(panchang_today, lat, lon, language="en"):
     """
     Returns:
@@ -177,37 +184,43 @@ def determine_ekadashi_observance(panchang_today, lat, lon, language="en"):
       "reason": "..."
     }
     """
+
     date_str = panchang_today.get("date")
-    sunrise_today_str = panchang_today.get("sunrise_ist")
-    if not date_str or not sunrise_today_str:
+    if not date_str:
+        return None
+
+    # --- Sunrise Today ---
+    sunrise_today = _sunrise_dt_from_panchang(panchang_today)
+    if not sunrise_today:
         return None
 
     today_date = datetime.strptime(date_str, "%Y-%m-%d")
-    sunrise_today = _parse_dt(sunrise_today_str)
     t_today = _tithi_at(sunrise_today)
 
+
+    # --- Sunrise Next Day ---
     next_date = today_date + timedelta(days=1)
-    p_next = calculate_panchang(next_date, lat, lon, language)
-    sunrise_next_str = p_next.get("sunrise_ist")
-    if not sunrise_next_str:
+    p_next = calculate_panchang(next_date.date(), lat, lon, language)
+
+    sunrise_next = _sunrise_dt_from_panchang(p_next)
+    if not sunrise_next:
         return None
-    sunrise_next = _parse_dt(sunrise_next_str)
+
     t_next = _tithi_at(sunrise_next)
 
-    # Smarta baseline: if Ekadashi at sunrise today -> today, else if at sunrise next -> next
-    smarta = None
+    # --- Smarta Rule ---
     if t_today in EKADASHI_NUMBERS:
         smarta = _fmt_date(today_date)
-        reason = "Ekadashi tithi is present at today’s sunrise, so fast is observed today (Smarta rule)."
+        reason = "Ekadashi tithi present at today's sunrise (Smarta rule)."
+
     elif t_next in EKADASHI_NUMBERS:
         smarta = _fmt_date(next_date)
-        reason = "Ekadashi tithi is present at next day’s sunrise, so fast is observed next day (Smarta rule)."
+        reason = "Ekadashi tithi present at next day's sunrise (Smarta rule)."
+
     else:
         return None
 
-    # Vaishnav: commonly prefers the day when Ekadashi is at sunrise and stronger overlap.
-    # Minimal safe: choose the day with Ekadashi at sunrise (same as above), but if both days have Ekadashi at sunrise,
-    # pick NEXT day as Vaishnav (common practice in overlap cases).
+    # --- Vaishnav Rule (overlap handling) ---
     if (t_today in EKADASHI_NUMBERS) and (t_next in EKADASHI_NUMBERS):
         vaishnav = _fmt_date(next_date)
     elif t_today in EKADASHI_NUMBERS:
@@ -215,7 +228,11 @@ def determine_ekadashi_observance(panchang_today, lat, lon, language="en"):
     else:
         vaishnav = _fmt_date(next_date)
 
-    return {"smarta_date": smarta, "vaishnav_date": vaishnav, "reason": reason}
+    return {
+        "smarta_date": smarta,
+        "vaishnav_date": vaishnav,
+        "reason": reason
+    }
 
 def calculate_parana_window(observed_date_str: str, lat, lon, language="en"):
     """
@@ -228,12 +245,12 @@ def calculate_parana_window(observed_date_str: str, lat, lon, language="en"):
     parana_date = obs_date + timedelta(days=1)
 
     # We need Dwadashi (12 or 27). Determine which based on paksha at sunrise.
-    p_next = calculate_panchang(parana_date, lat, lon, language)
-    sunrise_str = p_next.get("sunrise_ist")
-    if not sunrise_str:
+    p_next = calculate_panchang(parana_date.date(), lat, lon, language)
+    sunrise_dt = _sunrise_dt_from_panchang(p_next)
+    if not sunrise_dt:
         return None
-    sunrise_dt = _parse_dt(sunrise_str)
     t_sun = _tithi_at(sunrise_dt)
+    
 
     # choose correct Dwadashi number (12 for Shukla, 27 for Krishna)
     # We infer: if sunrise tithi is 12 or 27, use that. Otherwise, still try both and pick the one present that day.
@@ -271,7 +288,7 @@ def calculate_parana_window(observed_date_str: str, lat, lon, language="en"):
         "end": _fmt_dt(dw_end),
         "hari_vasara_end": _fmt_dt(hari_vasara_end),
         "dwadashi_tithi_number": dw_num,
-        "sunrise": sunrise_str,
+        "sunrise": _fmt_dt(sunrise_dt),
     }
 
 # -----------------------------
@@ -293,7 +310,7 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
 
     # Panchang for vrat date (for month/paksha mapping)
     vrat_dt = datetime.strptime(vrat_date, "%Y-%m-%d")
-    p_vrat = calculate_panchang(vrat_dt, lat, lon, language)
+    p_vrat = calculate_panchang(vrat_dt.date(), lat, lon, language)
 
     month = p_vrat.get("month_name")
     month = HINDI_MONTH_TO_EN.get(month, month)
