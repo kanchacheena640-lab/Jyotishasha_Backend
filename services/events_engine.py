@@ -72,150 +72,288 @@ HINDI_MONTH_TO_EN = {
     "फाल्गुन": "Phalguna",
 }
 
-# ----------------------------------------------------------
+import re
+from datetime import datetime, timedelta
+
+# -----------------------------
 # Helpers
-# ----------------------------------------------------------
-
-def slugify(text):
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-
+# -----------------------------
 
 EKADASHI_NUMBERS = (11, 26)
+DWADASHI_NUMBERS = (12, 27)
 
+def slugify(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
 
-# ----------------------------------------------------------
-# EKADASHI DETECTOR (Sunrise + 2-Day Smarta Safe)
-# ----------------------------------------------------------
+def _parse_dt(s: str) -> datetime:
+    return datetime.strptime(s, "%Y-%m-%d %H:%M")
 
-def get_ekadashi_details(panchang_data, lat, lon, language="en"):
+def _fmt_dt(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%d %H:%M")
+
+def _fmt_date(dt: datetime) -> str:
+    return dt.strftime("%Y-%m-%d")
+
+def _tithi_at(dt: datetime) -> int:
+    return _tithi_number_at(dt)
+
+def _find_transition_time(dt_lo: datetime, dt_hi: datetime, tithi_target: int, want_start: bool) -> datetime:
     """
-    Sunrise-based Ekadashi detection
-    Includes proper 2-day Smarta observance logic.
-    Safe for production.
+    Binary search minute-precision transition boundary between two datetimes where tithi changes.
+    want_start=True  -> find first minute where tithi==tithi_target
+    want_start=False -> find first minute where tithi!=tithi_target (i.e. end boundary)
     """
+    # assume dt_lo < dt_hi
+    while (dt_hi - dt_lo).total_seconds() > 60:
+        mid = dt_lo + (dt_hi - dt_lo) / 2
+        mid = mid.replace(second=0, microsecond=0)
 
-    if not panchang_data:
-        return None
+        t_mid = _tithi_at(mid)
+        if want_start:
+            # we want earliest time when tithi==target
+            if t_mid == tithi_target:
+                dt_hi = mid
+            else:
+                dt_lo = mid
+        else:
+            # we want earliest time when tithi!=target (end boundary)
+            if t_mid != tithi_target:
+                dt_hi = mid
+            else:
+                dt_lo = mid
 
-    date_str = panchang_data.get("date")
-    sunrise_today_str = panchang_data.get("sunrise_ist")
+    return dt_hi.replace(second=0, microsecond=0)
 
+def get_tithi_window_for_day(day_date: datetime, target_tithi: int):
+    """
+    Finds start/end time of target_tithi around a given civil date (IST naive datetime).
+    Uses coarse scan + binary refine. Returns (start_dt, end_dt) or (None, None) if not found.
+    """
+    day_start = day_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end = day_start + timedelta(days=1)
+
+    # Coarse scan every 10 minutes across [day_start-6h, day_end+6h] to catch boundary near edges
+    scan_start = day_start - timedelta(hours=6)
+    scan_end = day_end + timedelta(hours=6)
+    step = timedelta(minutes=10)
+
+    found_any = False
+    first_in = None
+    last_in = None
+
+    dt = scan_start
+    while dt <= scan_end:
+        if _tithi_at(dt) == target_tithi:
+            found_any = True
+            if first_in is None:
+                first_in = dt
+            last_in = dt
+        dt += step
+
+    if not found_any:
+        return None, None
+
+    # Refine start: search within [first_in-step, first_in+step]
+    lo = first_in - step
+    hi = first_in + step
+    start_dt = _find_transition_time(lo, hi, target_tithi, want_start=True)
+
+    # Refine end: search within [last_in, last_in+2*step] until it changes
+    # ensure we bracket the end
+    lo = last_in
+    hi = last_in + timedelta(minutes=60)
+    while _tithi_at(hi) == target_tithi and hi < scan_end + timedelta(hours=6):
+        hi += timedelta(minutes=60)
+
+    end_dt = _find_transition_time(lo, hi, target_tithi, want_start=False)
+    return start_dt, end_dt
+
+def determine_ekadashi_observance(panchang_today, lat, lon, language="en"):
+    """
+    Returns:
+    {
+      "smarta_date": "YYYY-MM-DD",
+      "vaishnav_date": "YYYY-MM-DD",
+      "reason": "..."
+    }
+    """
+    date_str = panchang_today.get("date")
+    sunrise_today_str = panchang_today.get("sunrise_ist")
     if not date_str or not sunrise_today_str:
         return None
 
-    try:
-        current_date = datetime.strptime(date_str, "%Y-%m-%d")
-        sunrise_today = datetime.strptime(sunrise_today_str, "%Y-%m-%d %H:%M")
-    except Exception:
+    today_date = datetime.strptime(date_str, "%Y-%m-%d")
+    sunrise_today = _parse_dt(sunrise_today_str)
+    t_today = _tithi_at(sunrise_today)
+
+    next_date = today_date + timedelta(days=1)
+    p_next = calculate_panchang(next_date, lat, lon, language)
+    sunrise_next_str = p_next.get("sunrise_ist")
+    if not sunrise_next_str:
         return None
+    sunrise_next = _parse_dt(sunrise_next_str)
+    t_next = _tithi_at(sunrise_next)
 
-    # ---- Tithi at today's sunrise ----
-    tithi_today = _tithi_number_at(sunrise_today)
-
-    # ---- Prepare next day sunrise ----
-    next_date = current_date + timedelta(days=1)
-
-    try:
-        next_panchang = calculate_panchang(next_date, lat, lon, language)
-        sunrise_next_str = next_panchang.get("sunrise_ist")
-
-        if not sunrise_next_str:
-            return None
-
-        sunrise_next = datetime.strptime(sunrise_next_str, "%Y-%m-%d %H:%M")
-        tithi_next = _tithi_number_at(sunrise_next)
-
-    except Exception:
-        return None
-
-    # ---- If neither day has Ekadashi at sunrise ----
-    if tithi_today not in EKADASHI_NUMBERS and tithi_next not in EKADASHI_NUMBERS:
-        return None
-
-    # ---- Smarta Rule ----
-    # If Ekadashi present at next sunrise → observe next day
-    if tithi_next in EKADASHI_NUMBERS:
-        observed_date = next_date.strftime("%Y-%m-%d")
-        observed_panchang = next_panchang
+    # Smarta baseline: if Ekadashi at sunrise today -> today, else if at sunrise next -> next
+    smarta = None
+    if t_today in EKADASHI_NUMBERS:
+        smarta = _fmt_date(today_date)
+        reason = "Ekadashi tithi is present at today’s sunrise, so fast is observed today (Smarta rule)."
+    elif t_next in EKADASHI_NUMBERS:
+        smarta = _fmt_date(next_date)
+        reason = "Ekadashi tithi is present at next day’s sunrise, so fast is observed next day (Smarta rule)."
     else:
-        observed_date = date_str
-        observed_panchang = panchang_data
-
-    # ---- Normalize month ----
-    month = observed_panchang.get("month_name")
-    if not month:
         return None
 
+    # Vaishnav: commonly prefers the day when Ekadashi is at sunrise and stronger overlap.
+    # Minimal safe: choose the day with Ekadashi at sunrise (same as above), but if both days have Ekadashi at sunrise,
+    # pick NEXT day as Vaishnav (common practice in overlap cases).
+    if (t_today in EKADASHI_NUMBERS) and (t_next in EKADASHI_NUMBERS):
+        vaishnav = _fmt_date(next_date)
+    elif t_today in EKADASHI_NUMBERS:
+        vaishnav = _fmt_date(today_date)
+    else:
+        vaishnav = _fmt_date(next_date)
+
+    return {"smarta_date": smarta, "vaishnav_date": vaishnav, "reason": reason}
+
+def calculate_parana_window(observed_date_str: str, lat, lon, language="en"):
+    """
+    Auto Parana on next civil day:
+      start = max(Dwadashi start, (Hari-vasara end))  [we'll compute Hari-vasara end]
+      end   = Dwadashi end
+    Returns dict or None.
+    """
+    obs_date = datetime.strptime(observed_date_str, "%Y-%m-%d")
+    parana_date = obs_date + timedelta(days=1)
+
+    # We need Dwadashi (12 or 27). Determine which based on paksha at sunrise.
+    p_next = calculate_panchang(parana_date, lat, lon, language)
+    sunrise_str = p_next.get("sunrise_ist")
+    if not sunrise_str:
+        return None
+    sunrise_dt = _parse_dt(sunrise_str)
+    t_sun = _tithi_at(sunrise_dt)
+
+    # choose correct Dwadashi number (12 for Shukla, 27 for Krishna)
+    # We infer: if sunrise tithi is 12 or 27, use that. Otherwise, still try both and pick the one present that day.
+    candidates = []
+    if t_sun in DWADASHI_NUMBERS:
+        candidates = [t_sun]
+    else:
+        candidates = list(DWADASHI_NUMBERS)
+
+    dw_start = dw_end = None
+    dw_num = None
+    for cand in candidates:
+        s, e = get_tithi_window_for_day(parana_date, cand)
+        if s and e:
+            dw_start, dw_end, dw_num = s, e, cand
+            break
+
+    if not dw_start or not dw_end:
+        return None
+
+    # Hari Vasara end = Dwadashi start + 1/4 of Dwadashi duration
+    dw_duration = dw_end - dw_start
+    hari_vasara_end = dw_start + (dw_duration / 4)
+
+    # Parana start should be after both Dwadashi start & Hari Vasara end.
+    parana_start = max(dw_start, hari_vasara_end)
+
+    # Practical safety: if parana_start >= dw_end -> no valid window
+    if parana_start >= dw_end:
+        return None
+
+    return {
+        "date": _fmt_date(parana_date),
+        "start": _fmt_dt(parana_start),
+        "end": _fmt_dt(dw_end),
+        "hari_vasara_end": _fmt_dt(hari_vasara_end),
+        "dwadashi_tithi_number": dw_num,
+        "sunrise": sunrise_str,
+    }
+
+# -----------------------------
+# FINAL: Single JSON builder
+# -----------------------------
+
+def build_ekadashi_json(panchang_today, lat, lon, language="en"):
+    """
+    Returns ONE JSON object:
+    - user essentials: vrat_date + parana window
+    - also includes tithi context + dual dates + reason
+    """
+    obs = determine_ekadashi_observance(panchang_today, lat, lon, language)
+    if not obs:
+        return None
+
+    # Use Smarta as primary vrat date for "next" output
+    vrat_date = obs["smarta_date"]
+
+    # Panchang for vrat date (for month/paksha mapping)
+    vrat_dt = datetime.strptime(vrat_date, "%Y-%m-%d")
+    p_vrat = calculate_panchang(vrat_dt, lat, lon, language)
+
+    month = p_vrat.get("month_name")
     month = HINDI_MONTH_TO_EN.get(month, month)
 
-    # ---- Normalize paksha ----
-    paksha = observed_panchang.get("tithi", {}).get("paksha")
-
+    paksha = p_vrat.get("tithi", {}).get("paksha")
     if paksha in ("शुक्ल पक्ष",):
         paksha = "Shukla"
     elif paksha in ("कृष्ण पक्ष",):
         paksha = "Krishna"
 
-    if not paksha:
+    if not month or not paksha:
         return None
 
     key = (month, paksha)
-
     if key not in EKADASHI_MAP:
         return None
 
     name_en, name_hi = EKADASHI_MAP[key]
+
+    parana = calculate_parana_window(vrat_date, lat, lon, language)
 
     return {
         "type": "ekadashi",
         "name_en": name_en,
         "name_hi": name_hi,
         "slug": slugify(name_en),
-        "date": observed_date,
-        "observed_on": observed_date,
-        "observance_type": "Smarta",
-        "tithi_start": observed_panchang.get("tithi", {}).get("start_ist"),
-        "tithi_end": observed_panchang.get("tithi", {}).get("end_ist"),
-        "sunrise": observed_panchang.get("sunrise_ist"),
-        "month": month,
-        "paksha": paksha,
+
+        # User essentials
+        "vrat_date": vrat_date,
+        "parana": None if not parana else {
+            "date": parana["date"],
+            "start": parana["start"],
+            "end": parana["end"],
+        },
+
+        # Optional transparency (still useful)
+        "observance": {
+            "smarta_date": obs["smarta_date"],
+            "vaishnav_date": obs["vaishnav_date"],
+            "reason": obs["reason"],
+        },
+
+        # Context (helps SSR + trust)
+        "tithi": {
+            "start": p_vrat.get("tithi", {}).get("start_ist"),
+            "end": p_vrat.get("tithi", {}).get("end_ist"),
+            "paksha": paksha,
+            "month": month,
+        },
+
+        "sunrise": p_vrat.get("sunrise_ist"),
+
+        # If you want to expose Hari Vasara without confusing user, keep it nested:
+        "internal": None if not parana else {
+            "hari_vasara_end": parana["hari_vasara_end"],
+            "dwadashi_tithi_number": parana["dwadashi_tithi_number"],
+            "parana_sunrise": parana["sunrise"],
+        }
     }
 
-
-# ----------------------------------------------------------
-# FIND NEXT EKADASHI
-# ----------------------------------------------------------
-
-def find_next_ekadashi(start_date, lat, lon, language="en", days_ahead=45):
-    """
-    Scan forward to find next Ekadashi.
-    Production-safe.
-    """
-
-    language = (language or "en").lower()
-    if language not in ("en", "hi"):
-        language = "en"
-
-    checked_observed_dates = set()
-
-    for i in range(1, days_ahead + 1):
-        check_date = start_date + timedelta(days=i)
-
-        try:
-            panchang = calculate_panchang(check_date, lat, lon, language)
-        except Exception:
-            continue
-
-        ekadashi = get_ekadashi_details(panchang, lat, lon, language)
-
-        if ekadashi:
-            observed_on = ekadashi.get("observed_on")
-
-            if observed_on not in checked_observed_dates:
-                checked_observed_dates.add(observed_on)
-                return ekadashi
-
-    return None
 
 # ==========================================================
 # PRADOSH DETECTOR
