@@ -325,12 +325,23 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
 
     tithi_start_dt = datetime.strptime(tithi_start_str, "%Y-%m-%d %H:%M")
 
-    # Use moon-based month logic
-    sun, moon = _sidereal_longitudes(tithi_start_dt)
-    month_index = int((moon // 30) % 12)
-    month = HINDU_MONTHS[month_index]
+    # 🔥 FINAL FIX — Ekadashi month comes from lunar month running
+    # We lock month from 15 days before Ekadashi start (safe lunar anchor)
+
+    p_month = calculate_panchang(
+        (tithi_start_dt - timedelta(days=15)).date(),
+        lat,
+        lon,
+        language
+    )
+
+    month = p_month.get("month_name")
     if not month:
         return None
+
+    # normalize Hindi → English
+    month = HINDI_MONTH_TO_EN.get(month, month)
+
 
     # normalize Hindi → English
     month = HINDI_MONTH_TO_EN.get(month, month)
