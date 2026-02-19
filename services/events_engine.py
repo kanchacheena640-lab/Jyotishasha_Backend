@@ -168,8 +168,10 @@ def get_tithi_window_for_day(day_date: datetime, target_tithi: int):
     return start_dt, end_dt
 
 def _sunrise_dt_from_panchang(p):
+    if not p:
+        return None
     d = p.get("date")
-    sr = p.get("sunrise_ist")
+    sr = p.get("sunrise")
     if not d or not sr:
         return None
     return datetime.strptime(f"{d} {sr}", "%Y-%m-%d %H:%M")
@@ -313,12 +315,23 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     p_vrat = calculate_panchang(vrat_dt.date(), lat, lon, language)
 
     month = p_vrat.get("month_name")
+    if not month:
+        return None
+
+    # normalize Hindi → English
     month = HINDI_MONTH_TO_EN.get(month, month)
 
     paksha = p_vrat.get("tithi", {}).get("paksha")
-    if paksha in ("शुक्ल पक्ष",):
+    if not paksha:
+        return None
+
+    if paksha.startswith("शुक्ल"):
         paksha = "Shukla"
-    elif paksha in ("कृष्ण पक्ष",):
+    elif paksha.startswith("कृष्ण"):
+        paksha = "Krishna"
+    elif paksha == "Shukla":
+        paksha = "Shukla"
+    elif paksha == "Krishna":
         paksha = "Krishna"
 
     if not month or not paksha:
@@ -326,6 +339,7 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
 
     key = (month, paksha)
     if key not in EKADASHI_MAP:
+        print("DEBUG EKADASHI KEY NOT FOUND:", key)
         return None
 
     name_en, name_hi = EKADASHI_MAP[key]
@@ -361,7 +375,7 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
             "month": month,
         },
 
-        "sunrise": p_vrat.get("sunrise_ist"),
+        "sunrise": p_vrat.get("sunrise"),
 
         # If you want to expose Hari Vasara without confusing user, keep it nested:
         "internal": None if not parana else {
