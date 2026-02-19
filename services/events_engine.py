@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang, _tithi_number_at
 from services.moon_calc import get_moon_rise_set
 from services.lunar_month_engine import get_shivratri_type
+from services.lunar_month_engine import get_lunar_month
+
 
 
 
@@ -309,13 +311,7 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     vrat_dt = datetime.strptime(vrat_date, "%Y-%m-%d")
     p_vrat = calculate_panchang(vrat_dt.date(), lat, lon, language)
 
-    # ✅ SAFE MONTH (reverted)
-    month = p_vrat.get("month_name")
-    if not month:
-        return None
-
-    month = HINDI_MONTH_TO_EN.get(month, month)
-
+    # --- Get Paksha FIRST ---
     paksha = p_vrat.get("tithi", {}).get("paksha")
     if not paksha:
         return None
@@ -325,6 +321,18 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     elif paksha.startswith("कृष्ण"):
         paksha = "Krishna"
 
+    # --- Get Lunar Month (Amanta) ---
+    tithi_start_str = p_vrat.get("tithi", {}).get("start_ist")
+    if not tithi_start_str:
+        return None
+
+    tithi_start_dt = datetime.strptime(tithi_start_str, "%Y-%m-%d %H:%M")
+
+    month = get_lunar_month(tithi_start_dt)
+    if not month:
+        return None
+
+    # --- Map Ekadashi Name ---
     key = (month, paksha)
     if key not in EKADASHI_MAP:
         print("DEBUG EKADASHI KEY NOT FOUND:", key)
@@ -359,7 +367,6 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
             "parana_sunrise": parana["sunrise"],
         }
     }
-
 
 # ==========================================================
 # PRADOSH DETECTOR
