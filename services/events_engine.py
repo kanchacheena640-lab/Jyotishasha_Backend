@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang, _tithi_number_at
 from services.moon_calc import get_moon_rise_set
 from services.lunar_month_engine import get_shivratri_type
-from services.panchang_engine import HINDU_MONTHS, _sidereal_longitudes
 
 
 
@@ -300,50 +299,21 @@ def calculate_parana_window(observed_date_str: str, lat, lon, language="en"):
 # -----------------------------
 
 def build_ekadashi_json(panchang_today, lat, lon, language="en"):
-    """
-    Returns ONE JSON object:
-    - user essentials: vrat_date + parana window
-    - also includes tithi context + dual dates + reason
-    """
+
     obs = determine_ekadashi_observance(panchang_today, lat, lon, language)
     if not obs:
         return None
 
-    # Use Smarta as primary vrat date for "next" output
     vrat_date = obs["smarta_date"]
 
-    # Panchang for vrat date (for month/paksha mapping)
     vrat_dt = datetime.strptime(vrat_date, "%Y-%m-%d")
     p_vrat = calculate_panchang(vrat_dt.date(), lat, lon, language)
 
-    ek_dt = datetime.strptime(vrat_date, "%Y-%m-%d")
-
-    # Ekadashi naming lunar month follows previous day's month
-    tithi_start_str = p_vrat.get("tithi", {}).get("start_ist")
-    if not tithi_start_str:
-        return None
-
-    tithi_start_dt = datetime.strptime(tithi_start_str, "%Y-%m-%d %H:%M")
-
-    # 🔥 FINAL FIX — Ekadashi month comes from lunar month running
-    # We lock month from 15 days before Ekadashi start (safe lunar anchor)
-
-    p_month = calculate_panchang(
-        (tithi_start_dt - timedelta(days=15)).date(),
-        lat,
-        lon,
-        language
-    )
-
-    month = p_month.get("month_name")
+    # ✅ SAFE MONTH (reverted)
+    month = p_vrat.get("month_name")
     if not month:
         return None
 
-    # normalize Hindi → English
-    month = HINDI_MONTH_TO_EN.get(month, month)
-
-
-    # normalize Hindi → English
     month = HINDI_MONTH_TO_EN.get(month, month)
 
     paksha = p_vrat.get("tithi", {}).get("paksha")
@@ -354,13 +324,6 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
         paksha = "Shukla"
     elif paksha.startswith("कृष्ण"):
         paksha = "Krishna"
-    elif paksha == "Shukla":
-        paksha = "Shukla"
-    elif paksha == "Krishna":
-        paksha = "Krishna"
-
-    if not month or not paksha:
-        return None
 
     key = (month, paksha)
     if key not in EKADASHI_MAP:
@@ -376,33 +339,20 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
         "name_en": name_en,
         "name_hi": name_hi,
         "slug": slugify(name_en),
-
-        # User essentials
         "vrat_date": vrat_date,
         "parana": None if not parana else {
             "date": parana["date"],
             "start": parana["start"],
             "end": parana["end"],
         },
-
-        # Optional transparency (still useful)
-        "observance": {
-            "smarta_date": obs["smarta_date"],
-            "vaishnav_date": obs["vaishnav_date"],
-            "reason": obs["reason"],
-        },
-
-        # Context (helps SSR + trust)
+        "observance": obs,
         "tithi": {
             "start": p_vrat.get("tithi", {}).get("start_ist"),
             "end": p_vrat.get("tithi", {}).get("end_ist"),
             "paksha": paksha,
             "month": month,
         },
-
         "sunrise": p_vrat.get("sunrise"),
-
-        # If you want to expose Hari Vasara without confusing user, keep it nested:
         "internal": None if not parana else {
             "hari_vasara_end": parana["hari_vasara_end"],
             "dwadashi_tithi_number": parana["dwadashi_tithi_number"],
