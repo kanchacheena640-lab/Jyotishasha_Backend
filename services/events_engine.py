@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang, _tithi_number_at
 from services.moon_calc import get_moon_rise_set
 from services.lunar_month_engine import get_shivratri_type
+from services.panchang_engine import HINDU_MONTHS, _sidereal_longitudes
+
 
 
 
@@ -314,7 +316,19 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     vrat_dt = datetime.strptime(vrat_date, "%Y-%m-%d")
     p_vrat = calculate_panchang(vrat_dt.date(), lat, lon, language)
 
-    month = p_vrat.get("month_name")
+    ek_dt = datetime.strptime(vrat_date, "%Y-%m-%d")
+
+    # Ekadashi naming lunar month follows previous day's month
+    tithi_start_str = p_vrat.get("tithi", {}).get("start_ist")
+    if not tithi_start_str:
+        return None
+
+    tithi_start_dt = datetime.strptime(tithi_start_str, "%Y-%m-%d %H:%M")
+
+    # Use moon-based month logic
+    sun, moon = _sidereal_longitudes(tithi_start_dt)
+    month_index = int((moon // 30) % 12)
+    month = HINDU_MONTHS[month_index]
     if not month:
         return None
 
