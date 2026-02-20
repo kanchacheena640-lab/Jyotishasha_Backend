@@ -397,7 +397,7 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     is_panchak = n_name in PANCHAK_NAKSHATRAS
 
-    month_name_en = _approx_hindu_month(ref)
+    month_name_en = get_lunar_month(ref)
     true_lunar_month_en = get_lunar_month(ref)
     weekday_en = date.strftime("%A")
 
