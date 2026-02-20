@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang
 from services.adhik_maas_engine import detect_adhik_maas
+from services.year_events.ekadashi_year import calculate_ekadashi_year
 from services.events_engine import (
     build_ekadashi_json,
     get_pradosh_details,
@@ -294,3 +295,26 @@ def api_adhik_maas():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@routes_events.route("/ekadashi-year", methods=["POST"])
+def api_ekadashi_year():
+    try:
+        data = request.get_json() or {}
+
+        lat = float(data.get("latitude", 28.61))
+        lon = float(data.get("longitude", 77.23))
+        year = int(data.get("year", datetime.now().year))
+
+        language = data.get("language", "en").lower()
+        if language not in ("en", "hi"):
+            language = "en"
+
+        result = calculate_ekadashi_year(year, lat, lon, language)
+
+        return jsonify({
+            "year": year,
+            "count": len(result),
+            "ekadashi_list": result
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
