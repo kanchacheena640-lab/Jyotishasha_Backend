@@ -337,7 +337,7 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     if not sunrise_dt:
         return None
 
-    month = get_lunar_month(sunrise_dt)
+    month = p_vrat.get("tithi", {}).get("month")
 
     # --- Map Ekadashi Name ---
     key = (month, paksha)
