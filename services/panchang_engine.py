@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 import swisseph as swe
 from services.sun_calc import calculate_sunrise_sunset  
+from services.astro_core import _tithi_number_at
 
 
 # --- Constants ---
@@ -316,11 +317,6 @@ def _brahma_muhurta(sunrise):
     start = sunrise - timedelta(minutes=96)
     end = start + timedelta(minutes=48)
     return start, end
-
-# --- Tithi timing utilities ---
-def _tithi_number_at(dt_ist):
-    s, m = _sidereal_longitudes(dt_ist)
-    return _tithi_from_longitudes(s, m)[0]
 
 def _scan_for_change(t0, t1, step_min=30):
     base = _tithi_number_at(t0)
