@@ -2,7 +2,8 @@
 
 from datetime import datetime, timedelta
 import swisseph as swe
-from services.panchang_engine import _to_ut_julday, _tithi_number_at
+from services.astro_core import _tithi_number_at
+from services.astro_core import sidereal_longitudes
 
 FLAGS = swe.FLG_SIDEREAL | swe.FLG_SWIEPH
 
@@ -14,9 +15,8 @@ HINDU_MONTHS = [
 
 
 def _sun_rashi_index(dt_ist):
-    jd_ut = _to_ut_julday(dt_ist)
-    sun_long = swe.calc_ut(jd_ut, swe.SUN, FLAGS)[0][0] % 360
-    return int(sun_long // 30) % 12
+    sun, _ = sidereal_longitudes(dt_ist)
+    return int(sun // 30) % 12
 
 
 def _find_last_amavasya(dt_ist):
