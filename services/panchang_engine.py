@@ -423,6 +423,73 @@ def _count_tithi_transitions(start_dt, end_dt):
 
     return transitions
 
+# -------------------------------
+# MULTI-TRANSITION EXTRACTOR (Exact IST times)
+# -------------------------------
+def _tithi_transition_times(start_dt, end_dt, step_min=20):
+    """
+    Returns a list of exact IST datetimes when tithi changes occur
+    between start_dt -> end_dt (sunrise to next sunrise).
+    Uses coarse scan + binary refine.
+    """
+    transitions = []
+    base = _tithi_number_at(start_dt)
+
+    step = timedelta(minutes=step_min)
+    t0 = start_dt
+    t1 = t0 + step
+
+    while t0 < end_dt:
+        if t1 > end_dt:
+            t1 = end_dt
+
+        t0_tithi = _tithi_number_at(t0)
+        t1_tithi = _tithi_number_at(t1)
+
+        # change detected in this bracket
+        if t1_tithi != t0_tithi:
+            # exact boundary
+            exact = _binary_change(t0, t1)
+            transitions.append(exact)
+
+            # move just after boundary to avoid re-detecting same transition
+            t0 = exact + timedelta(minutes=1)
+            t1 = t0 + step
+            continue
+
+        t0 = t1
+        t1 = t1 + step
+
+    return transitions
+
+
+def _build_tithi_segments(sunrise_today, sunrise_tomorrow):
+    """
+    Build continuous tithi segments within sunrise_today -> sunrise_tomorrow.
+    Each segment has tithi_number + start/end IST timestamps.
+    Works for normal, vriddhi, kshaya.
+    """
+    times = _tithi_transition_times(sunrise_today, sunrise_tomorrow, step_min=20)
+    points = [sunrise_today] + times + [sunrise_tomorrow]
+
+    segments = []
+    for i in range(len(points) - 1):
+        seg_start = points[i]
+        seg_end = points[i + 1]
+
+        # sample inside segment (safe midpoint) to get tithi number
+        mid = seg_start + (seg_end - seg_start) / 2
+        tnum = _tithi_number_at(mid)
+
+        segments.append({
+            "number": int(tnum),
+            "name_en": TITHI_NAMES[int(tnum) - 1],
+            "start_ist": seg_start.strftime("%Y-%m-%d %H:%M"),
+            "end_ist": seg_end.strftime("%Y-%m-%d %H:%M"),
+        })
+
+    return times, segments
+
 # --- Final Public API ---
 def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     language = (language or "en").lower()
@@ -445,17 +512,14 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     brahma_s, brahma_e = _brahma_muhurta(sunrise)
     t_start, t_end, t_num_at_sunrise = _tithi_start_end_ist(sunrise)
 
-    # --- Kshaya / Vriddhi Detection ---
+    # --- Kshaya / Vriddhi Detection (exact transitions + segments) ---
     sunrise_tomorrow, _ = calculate_sunrise_sunset(date + timedelta(days=1), lat, lon)
-    transition_count = _count_tithi_transitions(sunrise, sunrise_tomorrow)
 
-    is_kshaya = False
-    is_vriddhi = False
+    transition_times, tithi_segments = _build_tithi_segments(sunrise, sunrise_tomorrow)
+    transition_count = len(transition_times)
 
-    if transition_count == 0:
-        is_vriddhi = True
-    elif transition_count >= 2:
-        is_kshaya = True
+    is_kshaya = (transition_count >= 2)
+    is_vriddhi = (transition_count == 0)
 
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     is_panchak = n_name in PANCHAK_NAKSHATRAS
@@ -500,6 +564,12 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
             "kshaya": is_kshaya,
             "vriddhi": is_vriddhi,
             "transition_count": transition_count,
+
+            # exact boundary times (IST)
+            "transition_times_ist": [t.strftime("%Y-%m-%d %H:%M") for t in transition_times],
+
+            # full segments within sunrise->next sunrise
+            "segments": tithi_segments,
         },
 
         "nakshatra": {
