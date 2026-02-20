@@ -333,12 +333,11 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
         return None
 
     # Use midpoint of Ekadashi tithi
-    midpoint = ek_start + (ek_end - ek_start) / 2
-    midpoint = midpoint.replace(second=0, microsecond=0)
-
-    month = get_lunar_month(midpoint)
-    if not month:
+    sunrise_dt = _sunrise_dt_from_panchang(p_vrat)
+    if not sunrise_dt:
         return None
+
+    month = get_lunar_month(sunrise_dt)
 
     # --- Map Ekadashi Name ---
     key = (month, paksha)
