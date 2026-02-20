@@ -360,15 +360,20 @@ def _karan_at(dt_ist):
 
     return "Unknown", slot
 
-def _tithi_start_end_ist(date):
-    d0 = datetime(date.year, date.month, date.day, 0, 0)
-    d12 = datetime(date.year, date.month, date.day, 12, 0)
-    d23 = datetime(date.year, date.month, date.day, 23, 59)
-    prev = _scan_for_change(d0, d12)
-    nxt = _scan_for_change(d12, d23)
-    t_start = _binary_change(*prev) if prev else d0 - timedelta(seconds=1)
-    t_end = _binary_change(*nxt) if nxt else d23 + timedelta(seconds=1)
-    return t_start, t_end, _tithi_number_at(d12)
+def _tithi_start_end_ist(date, lat, lon):
+    sunrise_today, _ = calculate_sunrise_sunset(date, lat, lon)
+    sunrise_next, _ = calculate_sunrise_sunset(date + timedelta(days=1), lat, lon)
+
+    # Find previous boundary (before sunrise)
+    prev = _scan_for_change(sunrise_today - timedelta(hours=12), sunrise_today)
+
+    # Find next boundary (after sunrise)
+    nxt = _scan_for_change(sunrise_today, sunrise_next)
+
+    t_start = _binary_change(*prev) if prev else sunrise_today
+    t_end = _binary_change(*nxt) if nxt else sunrise_next
+
+    return t_start, t_end
 
 # --- Final Public API ---
 def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
@@ -390,7 +395,7 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     rahu_s, rahu_e = _rahu_kaal(date, sunrise, sunset)
     abhi_s, abhi_e = _abhijit(sunrise, sunset)
     brahma_s, brahma_e = _brahma_muhurta(sunrise)
-    t_start, t_end, _ = _tithi_start_end_ist(date)
+    t_start, t_end = _tithi_start_end_ist(date, lat, lon)
 
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     is_panchak = n_name in PANCHAK_NAKSHATRAS
