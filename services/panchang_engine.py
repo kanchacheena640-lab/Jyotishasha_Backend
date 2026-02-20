@@ -2,7 +2,16 @@
 
 from datetime import datetime, timedelta
 import swisseph as swe
-from services.sun_calc import calculate_sunrise_sunset  # ✅ Imported here
+from services.sun_calc import calculate_sunrise_sunset  
+from services.astro_core import (
+    _sidereal_longitudes,
+    _tithi_from_longitudes,
+    _nakshatra_from_moon,
+    _yoga_from_lons,
+    _karan_from_tithi,
+    _tithi_number_at,
+    _karan_slot_at,
+)
 
 # --- Constants ---
 NAKSHATRAS = [
@@ -385,10 +394,18 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
 
     ref = ref_dt_ist or datetime(date.year, date.month, date.day, 12)
     sun, moon = _sidereal_longitudes(ref)
-    t_num, paksha, t_name = _tithi_from_longitudes(sun, moon)
-    n_name, n_idx, n_pada = _nakshatra_from_moon(moon)
-    y_name, y_idx = _yoga_from_lons(sun, moon)
-    k_name, k_slot = _karan_from_tithi(t_num)
+
+    t_num, paksha = _tithi_from_longitudes(sun, moon)
+    t_name = TITHI_NAMES[t_num - 1]
+
+    n_idx, n_pada = _nakshatra_from_moon(moon)
+    n_name = NAKSHATRAS[n_idx - 1]
+
+    y_idx = _yoga_from_lons(sun, moon)
+    y_name = YOGAS[y_idx - 1]
+
+    k_slot = _karan_from_tithi(t_num)
+    k_name = _karan_at(ref)[0]
 
     # ✅ Sunrise/Sunset from external function
     sunrise, sunset = calculate_sunrise_sunset(date, lat, lon)
