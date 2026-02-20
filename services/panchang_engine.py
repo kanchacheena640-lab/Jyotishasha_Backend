@@ -217,6 +217,15 @@ def _nakshatra_from_moon(moon):
     pada = int(((moon % span) // (span / 4.0)) + 1)
     return NAKSHATRAS[idx], idx + 1, pada
 
+def _nakshatra_number_at(dt_ist):
+    """
+    Returns nakshatra number (1–27) at given IST datetime.
+    """
+    sun, moon = sidereal_longitudes(dt_ist)
+    span = 360.0 / 27.0
+    idx = int(moon // span)
+    return idx + 1
+
 def _yoga_from_lons(sun, moon):
     total = (sun + moon) % 360
     idx = int(total // (360 / 27))
@@ -333,6 +342,50 @@ def _binary_change(t0, t1):
         else:
             t1 = mid
     return t1
+
+def _binary_nakshatra_change(t0, t1):
+    base = _nakshatra_number_at(t0)
+    for _ in range(24):
+        mid = t0 + (t1 - t0) / 2
+        if _nakshatra_number_at(mid) == base:
+            t0 = mid
+        else:
+            t1 = mid
+    return t1
+
+def _nakshatra_transition_times(start_dt, end_dt, step_min=30):
+    """
+    Returns exact IST datetimes when nakshatra changes
+    between sunrise_today → sunrise_tomorrow.
+    """
+
+    transitions = []
+
+    step = timedelta(minutes=step_min)
+    t0 = start_dt
+    t1 = t0 + step
+
+    while t0 < end_dt:
+
+        if t1 > end_dt:
+            t1 = end_dt
+
+        n0 = _nakshatra_number_at(t0)
+        n1 = _nakshatra_number_at(t1)
+
+        if n1 != n0:
+            exact = _binary_nakshatra_change(t0, t1)
+            transitions.append(exact)
+
+            # move slightly forward to avoid double-detection
+            t0 = exact + timedelta(minutes=1)
+            t1 = t0 + step
+            continue
+
+        t0 = t1
+        t1 = t1 + step
+
+    return transitions
 
 def _karan_at(dt_ist):
     """
@@ -514,6 +567,11 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
 
     # --- Kshaya / Vriddhi Detection (exact transitions + segments) ---
     sunrise_tomorrow, _ = calculate_sunrise_sunset(date + timedelta(days=1), lat, lon)
+    
+    # ---- TEMP SANITY TEST (remove later) ----
+    print("DATE:", date)
+    print("NAKSHATRA TRANSITIONS:",
+        _nakshatra_transition_times(sunrise, sunrise_tomorrow))
 
     transition_times, tithi_segments = _build_tithi_segments(sunrise, sunrise_tomorrow)
     transition_count = len(transition_times)
