@@ -324,12 +324,19 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     # --- First calculate Parana ---
     parana = calculate_parana_window(vrat_date, lat, lon, language)
 
-    # Month must be taken from Ekadashi sunrise (Shastriya rule)
-    sunrise_dt = _sunrise_dt_from_panchang(p_vrat)
-    if not sunrise_dt:
+    # Get exact Ekadashi window
+    ek_start, ek_end = get_tithi_window_for_day(vrat_dt, 11)
+    if not ek_start or not ek_end:
+        ek_start, ek_end = get_tithi_window_for_day(vrat_dt, 26)
+
+    if not ek_start or not ek_end:
         return None
 
-    month = get_lunar_month(sunrise_dt)
+    # Use midpoint of Ekadashi tithi
+    midpoint = ek_start + (ek_end - ek_start) / 2
+    midpoint = midpoint.replace(second=0, microsecond=0)
+
+    month = get_lunar_month(midpoint)
     if not month:
         return None
 
