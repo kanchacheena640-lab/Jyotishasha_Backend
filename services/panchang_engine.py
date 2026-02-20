@@ -398,6 +398,31 @@ def _tithi_start_end_ist(sunrise_dt):
 
     return start, end, base
 
+# -------------------------------
+# KSHAYA / VRIDDHI DETECTION
+# -------------------------------
+def _count_tithi_transitions(start_dt, end_dt):
+    """
+    Count how many tithi transitions happen
+    between sunrise_today → sunrise_tomorrow
+    """
+    current_tithi = _tithi_number_at(start_dt)
+    transitions = 0
+
+    step = timedelta(minutes=10)
+    check_dt = start_dt + step
+
+    while check_dt <= end_dt:
+        tithi_now = _tithi_number_at(check_dt)
+
+        if tithi_now != current_tithi:
+            transitions += 1
+            current_tithi = tithi_now
+
+        check_dt += step
+
+    return transitions
+
 # --- Final Public API ---
 def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     language = (language or "en").lower()
@@ -419,6 +444,18 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     abhi_s, abhi_e = _abhijit(sunrise, sunset)
     brahma_s, brahma_e = _brahma_muhurta(sunrise)
     t_start, t_end, t_num_at_sunrise = _tithi_start_end_ist(sunrise)
+
+    # --- Kshaya / Vriddhi Detection ---
+    sunrise_tomorrow, _ = calculate_sunrise_sunset(date + timedelta(days=1), lat, lon)
+    transition_count = _count_tithi_transitions(sunrise, sunrise_tomorrow)
+
+    is_kshaya = False
+    is_vriddhi = False
+
+    if transition_count == 0:
+        is_vriddhi = True
+    elif transition_count >= 2:
+        is_kshaya = True
 
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     is_panchak = n_name in PANCHAK_NAKSHATRAS
@@ -458,6 +495,13 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
             "start_ist": t_start.strftime("%Y-%m-%d %H:%M"),
             "end_ist": t_end.strftime("%Y-%m-%d %H:%M"),
         },
+
+        "tithi_special": {
+            "kshaya": is_kshaya,
+            "vriddhi": is_vriddhi,
+            "transition_count": transition_count,
+        },
+
         "nakshatra": {
             "name": nakshatra_name_val,
             "index": n_idx,
