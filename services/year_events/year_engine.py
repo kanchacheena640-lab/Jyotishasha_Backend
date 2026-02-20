@@ -26,7 +26,7 @@ def calculate_event_for_year(year, lat, lon, builder_function, language="en"):
                     results.append(event)
 
                     # Jump ~ half lunar cycle
-                    current += timedelta(days=13)
+                    current += timedelta(days=12)
                     continue
 
         current += timedelta(days=1)
