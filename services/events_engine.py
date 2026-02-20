@@ -321,6 +321,9 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     elif paksha.startswith("कृष्ण"):
         paksha = "Krishna"
 
+    # --- First calculate Parana ---
+    parana = calculate_parana_window(vrat_date, lat, lon, language)
+
    # Month must be taken from Dwadashi sunrise (Parana day sunrise)
     if parana:
         parana_sunrise_dt = datetime.strptime(parana["sunrise"], "%Y-%m-%d %H:%M")
@@ -337,8 +340,6 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
         return None
 
     name_en, name_hi = EKADASHI_MAP[key]
-
-    parana = calculate_parana_window(vrat_date, lat, lon, language)
 
     return {
         "type": "ekadashi",
