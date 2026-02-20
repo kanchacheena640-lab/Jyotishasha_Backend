@@ -5,6 +5,7 @@ import swisseph as swe
 from services.sun_calc import calculate_sunrise_sunset  
 from services.astro_core import _tithi_number_at
 from services.astro_core import sidereal_longitudes
+from services.lunar_month_engine import get_lunar_month
 
 
 # --- Constants ---
@@ -397,6 +398,7 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     is_panchak = n_name in PANCHAK_NAKSHATRAS
 
     month_name_en = _approx_hindu_month(ref)
+    true_lunar_month_en = get_lunar_month(ref)
     weekday_en = date.strftime("%A")
 
     weekday_val = WEEKDAYS_HI.get(weekday_en, weekday_en) if language == "hi" else weekday_en
@@ -453,6 +455,8 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
             "end": abhi_e.strftime("%H:%M"),
         },
         "ayanamsa": "Lahiri",
+        # TEMP DEBUG
+        "debug_lunar_month": true_lunar_month_en,
 
         # ✅ New non-breaking field
         "chaughadiya": chaughadiya,
