@@ -360,20 +360,43 @@ def _karan_at(dt_ist):
 
     return "Unknown", slot
 
-def _tithi_start_end_ist(date, lat, lon):
-    sunrise_today, _ = calculate_sunrise_sunset(date, lat, lon)
-    sunrise_next, _ = calculate_sunrise_sunset(date + timedelta(days=1), lat, lon)
+def _tithi_start_end_ist(sunrise_dt):
+    """
+    True Vedic-day tithi window:
+    - base tithi at sunrise
+    - start = exact previous change (search backward)
+    - end   = exact next change (search forward)
+    """
+    base = _tithi_number_at(sunrise_dt)
 
-    # Find previous boundary (before sunrise)
-    prev = _scan_for_change(sunrise_today - timedelta(hours=12), sunrise_today)
+    # --- find START (backward bracket) ---
+    step = timedelta(minutes=30)
+    t1 = sunrise_dt
+    t0 = t1 - step
+    # search up to ~36h back safely
+    for _ in range(72):
+        if _tithi_number_at(t0) != base:
+            start = _binary_change(t0, t1)   # boundary between t0..t1
+            break
+        t1 = t0
+        t0 = t0 - step
+    else:
+        start = sunrise_dt  # fallback (rare)
 
-    # Find next boundary (after sunrise)
-    nxt = _scan_for_change(sunrise_today, sunrise_next)
+    # --- find END (forward bracket) ---
+    t0 = sunrise_dt
+    t1 = t0 + step
+    # search up to ~36h forward safely
+    for _ in range(72):
+        if _tithi_number_at(t1) != base:
+            end = _binary_change(t0, t1)
+            break
+        t0 = t1
+        t1 = t1 + step
+    else:
+        end = sunrise_dt + timedelta(hours=24)  # fallback
 
-    t_start = _binary_change(*prev) if prev else sunrise_today
-    t_end = _binary_change(*nxt) if nxt else sunrise_next
-
-    return t_start, t_end
+    return start, end, base
 
 # --- Final Public API ---
 def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
@@ -395,7 +418,7 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     rahu_s, rahu_e = _rahu_kaal(date, sunrise, sunset)
     abhi_s, abhi_e = _abhijit(sunrise, sunset)
     brahma_s, brahma_e = _brahma_muhurta(sunrise)
-    t_start, t_end = _tithi_start_end_ist(date, lat, lon)
+    t_start, t_end, t_num_at_sunrise = _tithi_start_end_ist(sunrise)
 
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
     is_panchak = n_name in PANCHAK_NAKSHATRAS
