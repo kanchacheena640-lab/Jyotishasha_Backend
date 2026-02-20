@@ -45,7 +45,7 @@ def calculate_event_for_year(year, lat, lon, builder_function, language="en"):
                         current += timedelta(days=12)
                         continue
 
-        current += timedelta(days=1)
+        current += timedelta(days=15)
 
         if len(results) >= 26:
             break
