@@ -18,14 +18,21 @@ def calculate_event_for_year(year, lat, lon, builder_function, language="en"):
         if event:
             vrat_date = event.get("vrat_date")
 
-            if vrat_date not in seen:
-                seen.add(vrat_date)
-                results.append(event)
+            # Safety: ensure date exists and belongs to same year
+            if vrat_date and vrat_date.startswith(str(year)):
 
-                # 🔥 Jump 13 days
-                current += timedelta(days=13)
-                continue
+                if vrat_date not in seen:
+                    seen.add(vrat_date)
+                    results.append(event)
+
+                    # Jump ~ half lunar cycle
+                    current += timedelta(days=13)
+                    continue
 
         current += timedelta(days=1)
+
+        # Hard safety cap (Ekadashi max 26 in extreme Adhik case)
+        if len(results) >= 26:
+            break
 
     return sorted(results, key=lambda x: x["vrat_date"])
