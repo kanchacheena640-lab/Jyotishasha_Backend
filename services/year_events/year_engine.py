@@ -2,6 +2,18 @@ from datetime import date, timedelta
 from services.panchang_engine import calculate_sunrise_sunset
 from services.astro_core import _tithi_number_at
 
+
+def _get_sunrise(d, lat, lon):
+    ss = calculate_sunrise_sunset(d, lat, lon)
+
+    # If tuple like (sunrise, sunset)
+    if isinstance(ss, tuple):
+        return ss[0]
+
+    # If dict like {"sunrise": ..., "sunset": ...}
+    return ss["sunrise"]
+
+
 def calculate_event_for_year(year, lat, lon, builder_function, language="en"):
 
     start_date = date(year, 1, 1)
@@ -13,11 +25,10 @@ def calculate_event_for_year(year, lat, lon, builder_function, language="en"):
 
     while current <= end_date:
 
-        # 🔹 Lightweight sunrise + tithi only
-        sunrise = calculate_sunrise_sunset(current, lat, lon)["sunrise"]
+        sunrise = _get_sunrise(current, lat, lon)
         tithi_num = _tithi_number_at(sunrise)
 
-        # 🔹 Only check possible Ekadashi days
+        # Ekadashi possible numbers
         if tithi_num in (11, 26):
 
             event = builder_function(current, lat, lon, language)
@@ -30,7 +41,7 @@ def calculate_event_for_year(year, lat, lon, builder_function, language="en"):
                         seen.add(vrat_date)
                         results.append(event)
 
-                        # Jump 12 days to avoid heavy looping
+                        # Skip ahead to reduce heavy computation
                         current += timedelta(days=12)
                         continue
 
