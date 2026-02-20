@@ -300,18 +300,21 @@ def calculate_parana_window(observed_date_str: str, lat, lon, language="en"):
 # FINAL: Single JSON builder
 # -----------------------------
 
-def build_ekadashi_json(panchang_today, lat, lon, language="en"):
+def build_ekadashi_json(date_obj, lat, lon, language="en"):
 
-    obs = determine_ekadashi_observance(panchang_today, lat, lon, language)
+    # 🔹 Determine observance from civil date
+    p_today = calculate_panchang(date_obj, lat, lon, language)
+    obs = determine_ekadashi_observance(p_today, lat, lon, language)
+
     if not obs:
         return None
 
     vrat_date = obs["smarta_date"]
+    vrat_dt = datetime.strptime(vrat_date, "%Y-%m-%d").date()
 
-    vrat_dt = datetime.strptime(vrat_date, "%Y-%m-%d")
-    p_vrat = calculate_panchang(vrat_dt.date(), lat, lon, language)
+    # 🔹 Panchang only for vrat date (not whole year loop)
+    p_vrat = calculate_panchang(vrat_dt, lat, lon, language)
 
-    # --- Get Paksha FIRST ---
     paksha = p_vrat.get("tithi", {}).get("paksha")
     if not paksha:
         return None
@@ -321,31 +324,25 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     elif paksha.startswith("कृष्ण"):
         paksha = "Krishna"
 
-    # --- First calculate Parana ---
-    parana = calculate_parana_window(vrat_date, lat, lon, language)
-
-    # Get exact Ekadashi window
-    ek_start, ek_end = get_tithi_window_for_day(vrat_dt, 11)
-    if not ek_start or not ek_end:
-        ek_start, ek_end = get_tithi_window_for_day(vrat_dt, 26)
-
-    if not ek_start or not ek_end:
-        return None
-
-    # Use midpoint of Ekadashi tithi
+    # 🔹 Get lunar month safely
     sunrise_dt = _sunrise_dt_from_panchang(p_vrat)
     if not sunrise_dt:
         return None
 
-    month = p_vrat.get("tithi", {}).get("month")
+    month = get_lunar_month(sunrise_dt)
+    if not month:
+        print("DEBUG EKADASHI MONTH NONE:", vrat_date)
+        return None
 
-    # --- Map Ekadashi Name ---
     key = (month, paksha)
     if key not in EKADASHI_MAP:
         print("DEBUG EKADASHI KEY NOT FOUND:", key)
         return None
 
     name_en, name_hi = EKADASHI_MAP[key]
+
+    # 🔹 Parana calculation
+    parana = calculate_parana_window(vrat_date, lat, lon, language)
 
     return {
         "type": "ekadashi",

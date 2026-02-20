@@ -1,5 +1,6 @@
 from datetime import date, timedelta
-from services.panchang_engine import calculate_panchang
+from services.panchang_engine import calculate_sunrise_sunset
+from services.astro_core import _tithi_number_at
 
 def calculate_event_for_year(year, lat, lon, builder_function, language="en"):
 
@@ -12,26 +13,29 @@ def calculate_event_for_year(year, lat, lon, builder_function, language="en"):
 
     while current <= end_date:
 
-        panchang = calculate_panchang(current, lat, lon, language)
-        event = builder_function(panchang, lat, lon, language)
+        # 🔹 Lightweight sunrise + tithi only
+        sunrise = calculate_sunrise_sunset(current, lat, lon)["sunrise"]
+        tithi_num = _tithi_number_at(sunrise)
 
-        if event:
-            vrat_date = event.get("vrat_date")
+        # 🔹 Only check possible Ekadashi days
+        if tithi_num in (11, 26):
 
-            # Safety: ensure date exists and belongs to same year
-            if vrat_date and vrat_date.startswith(str(year)):
+            event = builder_function(current, lat, lon, language)
 
-                if vrat_date not in seen:
-                    seen.add(vrat_date)
-                    results.append(event)
+            if event:
+                vrat_date = event.get("vrat_date")
 
-                    # Jump ~ half lunar cycle
-                    current += timedelta(days=12)
-                    continue
+                if vrat_date and vrat_date.startswith(str(year)):
+                    if vrat_date not in seen:
+                        seen.add(vrat_date)
+                        results.append(event)
+
+                        # Jump 12 days to avoid heavy looping
+                        current += timedelta(days=12)
+                        continue
 
         current += timedelta(days=1)
 
-        # Hard safety cap (Ekadashi max 26 in extreme Adhik case)
         if len(results) >= 26:
             break
 
