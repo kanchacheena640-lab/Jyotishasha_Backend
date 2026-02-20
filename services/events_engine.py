@@ -321,14 +321,12 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     elif paksha.startswith("कृष्ण"):
         paksha = "Krishna"
 
-    # --- Get Lunar Month (Amanta) ---
-    tithi_start_str = p_vrat.get("tithi", {}).get("start_ist")
-    if not tithi_start_str:
+    # --- Get Lunar Month (Amanta) - Sunrise Based ---
+    sunrise_dt = _sunrise_dt_from_panchang(p_vrat)
+    if not sunrise_dt:
         return None
 
-    tithi_start_dt = datetime.strptime(tithi_start_str, "%Y-%m-%d %H:%M")
-
-    month = get_lunar_month(tithi_start_dt)
+    month = get_lunar_month(sunrise_dt)
     if not month:
         return None
 
