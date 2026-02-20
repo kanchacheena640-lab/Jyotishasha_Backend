@@ -281,7 +281,7 @@ def calculate_parana_window(observed_date_str: str, lat, lon, language="en"):
     hari_vasara_end = dw_start + (dw_duration / 4)
 
     # Parana start should be after both Dwadashi start & Hari Vasara end.
-    parana_start = max(dw_start, hari_vasara_end)
+    parana_start = max(dw_start, hari_vasara_end, sunrise_dt)
 
     # Practical safety: if parana_start >= dw_end -> no valid window
     if parana_start >= dw_end:
@@ -321,14 +321,14 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     elif paksha.startswith("कृष्ण"):
         paksha = "Krishna"
 
-    # --- Get Lunar Month (Amanta) - Sunrise Based ---
-    sunrise_dt = _sunrise_dt_from_panchang(p_vrat)
-    if not sunrise_dt:
-        return None
-
-    month = get_lunar_month(sunrise_dt)
-    if not month:
-        return None
+   # Month must be taken from Dwadashi sunrise (Parana day sunrise)
+    if parana:
+        parana_sunrise_dt = datetime.strptime(parana["sunrise"], "%Y-%m-%d %H:%M")
+        month = get_lunar_month(parana_sunrise_dt)
+    else:
+        # fallback
+        sunrise_dt = _sunrise_dt_from_panchang(p_vrat)
+        month = get_lunar_month(sunrise_dt)
 
     # --- Map Ekadashi Name ---
     key = (month, paksha)
