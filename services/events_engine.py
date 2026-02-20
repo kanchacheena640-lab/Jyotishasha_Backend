@@ -324,14 +324,14 @@ def build_ekadashi_json(panchang_today, lat, lon, language="en"):
     # --- First calculate Parana ---
     parana = calculate_parana_window(vrat_date, lat, lon, language)
 
-   # Month must be taken from Dwadashi sunrise (Parana day sunrise)
-    if parana:
-        parana_sunrise_dt = datetime.strptime(parana["sunrise"], "%Y-%m-%d %H:%M")
-        month = get_lunar_month(parana_sunrise_dt)
-    else:
-        # fallback
-        sunrise_dt = _sunrise_dt_from_panchang(p_vrat)
-        month = get_lunar_month(sunrise_dt)
+    # Month must be taken from Ekadashi sunrise (Shastriya rule)
+    sunrise_dt = _sunrise_dt_from_panchang(p_vrat)
+    if not sunrise_dt:
+        return None
+
+    month = get_lunar_month(sunrise_dt)
+    if not month:
+        return None
 
     # --- Map Ekadashi Name ---
     key = (month, paksha)
