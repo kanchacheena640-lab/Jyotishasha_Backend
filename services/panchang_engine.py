@@ -376,15 +376,13 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     if language not in ("en", "hi"):
         language = "en"
 
-    ref = ref_dt_ist or datetime(date.year, date.month, date.day, 12)
+    sunrise, sunset = calculate_sunrise_sunset(date, lat, lon)
+    ref = ref_dt_ist or sunrise
     sun, moon = sidereal_longitudes(ref)
     t_num, paksha, t_name = _tithi_from_longitudes(sun, moon)
     n_name, n_idx, n_pada = _nakshatra_from_moon(moon)
     y_name, y_idx = _yoga_from_lons(sun, moon)
     k_name, k_slot = _karan_from_tithi(t_num)
-
-    # ✅ Sunrise/Sunset from external function
-    sunrise, sunset = calculate_sunrise_sunset(date, lat, lon)
 
     # ✅ Chaughadiya derived from sunrise/sunset + weekday
     chaughadiya = _calculate_chaughadiya(date, sunrise, sunset, language)
@@ -398,7 +396,7 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     is_panchak = n_name in PANCHAK_NAKSHATRAS
 
     month_name_en = get_lunar_month(ref)
-    true_lunar_month_en = get_lunar_month(ref)
+    
     weekday_en = date.strftime("%A")
 
     weekday_val = WEEKDAYS_HI.get(weekday_en, weekday_en) if language == "hi" else weekday_en
@@ -455,8 +453,6 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
             "end": abhi_e.strftime("%H:%M"),
         },
         "ayanamsa": "Lahiri",
-        # TEMP DEBUG
-        "debug_lunar_month": true_lunar_month_en,
 
         # ✅ New non-breaking field
         "chaughadiya": chaughadiya,
