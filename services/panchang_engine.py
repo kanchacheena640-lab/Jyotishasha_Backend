@@ -565,10 +565,16 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
             "vriddhi": is_vriddhi,
             "transition_count": transition_count,
 
-            # exact boundary times (IST)
-            "transition_times_ist": [t.strftime("%Y-%m-%d %H:%M") for t in transition_times],
+            # Sunrise-level validation (critical for festival engine)
+            "sunrise_tithi_number": int(_tithi_number_at(sunrise)),
+            "next_sunrise_tithi_number": int(_tithi_number_at(sunrise_tomorrow)),
 
-            # full segments within sunrise->next sunrise
+            # Exact boundary times
+            "transition_times_ist": [
+                t.strftime("%Y-%m-%d %H:%M") for t in transition_times
+            ],
+
+            # Full sunrise→next sunrise segments
             "segments": tithi_segments,
         },
 
