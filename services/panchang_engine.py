@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import swisseph as swe
 from services.sun_calc import calculate_sunrise_sunset  
 from services.astro_core import _tithi_number_at
+from services.astro_core import sidereal_longitudes
 
 
 # --- Constants ---
@@ -202,12 +203,6 @@ def _to_ut_julday(dt_ist):
         utc.hour + utc.minute / 60 + utc.second / 3600,
     )
 
-def _sidereal_longitudes(dt_ist):
-    jd_ut = _to_ut_julday(dt_ist)
-    sun = swe.calc_ut(jd_ut, swe.SUN, FLAGS)[0][0] % 360
-    moon = swe.calc_ut(jd_ut, swe.MOON, FLAGS)[0][0] % 360
-    return sun, moon
-
 # --- Panchang limbs ---
 def _tithi_from_longitudes(sun, moon):
     diff = (moon - sun) % 360
@@ -343,7 +338,7 @@ def _karan_at(dt_ist):
     Exact Karan at specific IST datetime.
     Used for festival-level precision (Holika Dahan etc).
     """
-    sun, moon = _sidereal_longitudes(dt_ist)
+    sun, moon = sidereal_longitudes(dt_ist)
     diff = (moon - sun) % 360.0
 
     # 1..60 karan slots (each = 6 degrees)
@@ -381,7 +376,7 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
         language = "en"
 
     ref = ref_dt_ist or datetime(date.year, date.month, date.day, 12)
-    sun, moon = _sidereal_longitudes(ref)
+    sun, moon = sidereal_longitudes(ref)
     t_num, paksha, t_name = _tithi_from_longitudes(sun, moon)
     n_name, n_idx, n_pada = _nakshatra_from_moon(moon)
     y_name, y_idx = _yoga_from_lons(sun, moon)

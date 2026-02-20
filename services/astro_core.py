@@ -70,3 +70,9 @@ def _karan_slot_at(dt_ist):
     sun, moon = _sidereal_longitudes(dt_ist)
     diff = (moon - sun) % 360
     return int(diff // 6) + 1
+
+def sidereal_longitudes(dt_ist):
+    jd_ut = _to_ut_julday(dt_ist)
+    sun = swe.calc_ut(jd_ut, swe.SUN, FLAGS)[0][0] % 360
+    moon = swe.calc_ut(jd_ut, swe.MOON, FLAGS)[0][0] % 360
+    return sun, moon
