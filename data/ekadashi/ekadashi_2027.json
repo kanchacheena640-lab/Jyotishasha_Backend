@@ -1,0 +1,723 @@
+{
+  "year": 2027,
+  "count": 25,
+  "ekadashi_list": [
+    {
+      "type": "ekadashi",
+      "name_en": "Utpanna Ekadashi",
+      "name_hi": "उत्पन्ना एकादशी",
+      "slug": "utpanna-ekadashi",
+      "vrat_date": "2027-01-03",
+      "parana": {
+        "date": "2027-01-04",
+        "start": "2027-01-04 06:55",
+        "end": "2027-01-04 18:17"
+      },
+      "observance": {
+        "smarta_date": "2027-01-03",
+        "vaishnav_date": "2027-01-03",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-01-02 14:24",
+        "end": "2027-01-03 16:08",
+        "paksha": "Krishna",
+        "month": "Margashirsha"
+      },
+      "sunrise": "06:55",
+      "internal": {
+        "hari_vasara_end": "2027-01-03 23:57",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-01-04 06:55"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Mokshada Ekadashi",
+      "name_hi": "मोक्षदा एकादशी",
+      "slug": "mokshada-ekadashi",
+      "vrat_date": "2027-01-19",
+      "parana": null,
+      "observance": {
+        "smarta_date": "2027-01-19",
+        "vaishnav_date": "2027-01-19",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-01-18 10:27",
+        "end": "2027-01-19 07:50",
+        "paksha": "Shukla",
+        "month": "Margashirsha"
+      },
+      "sunrise": "06:56",
+      "internal": null
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Saphala Ekadashi",
+      "name_hi": "सफला एकादशी",
+      "slug": "saphala-ekadashi",
+      "vrat_date": "2027-02-02",
+      "parana": {
+        "date": "2027-02-03",
+        "start": "2027-02-03 06:51",
+        "end": "2027-02-03 13:51"
+      },
+      "observance": {
+        "smarta_date": "2027-02-02",
+        "vaishnav_date": "2027-02-02",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-02-01 08:41",
+        "end": "2027-02-02 11:10",
+        "paksha": "Krishna",
+        "month": "Pausha"
+      },
+      "sunrise": "06:51",
+      "internal": {
+        "hari_vasara_end": "2027-02-02 22:51",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-02-03 06:51"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Putrada Ekadashi (Pausha)",
+      "name_hi": "पुत्रदा एकादशी",
+      "slug": "putrada-ekadashi-pausha",
+      "vrat_date": "2027-02-17",
+      "parana": {
+        "date": "2027-02-18",
+        "start": "2027-02-18 06:40",
+        "end": "2027-02-18 14:29"
+      },
+      "observance": {
+        "smarta_date": "2027-02-17",
+        "vaishnav_date": "2027-02-17",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-02-16 20:19",
+        "end": "2027-02-17 17:32",
+        "paksha": "Shukla",
+        "month": "Pausha"
+      },
+      "sunrise": "06:42",
+      "internal": {
+        "hari_vasara_end": "2027-02-17 23:00",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-02-18 06:40"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Saphala Ekadashi",
+      "name_hi": "सफला एकादशी",
+      "slug": "saphala-ekadashi",
+      "vrat_date": "2027-03-03",
+      "parana": {
+        "date": "2027-03-04",
+        "start": "2027-03-04 14:02",
+        "end": "2027-03-05 09:55"
+      },
+      "observance": {
+        "smarta_date": "2027-03-03",
+        "vaishnav_date": "2027-03-04",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-03-03 04:44",
+        "end": "2027-03-04 07:24",
+        "paksha": "Krishna",
+        "month": "Pausha"
+      },
+      "sunrise": "06:28",
+      "internal": {
+        "hari_vasara_end": "2027-03-04 14:02",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-03-04 06:28"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Shattila Ekadashi",
+      "name_hi": "षटतिला एकादशी",
+      "slug": "shattila-ekadashi",
+      "vrat_date": "2027-03-04",
+      "parana": {
+        "date": "2027-03-05",
+        "start": "2027-03-05 06:27",
+        "end": "2027-03-05 09:55"
+      },
+      "observance": {
+        "smarta_date": "2027-03-04",
+        "vaishnav_date": "2027-03-04",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-03-03 04:44",
+        "end": "2027-03-04 07:24",
+        "paksha": "Krishna",
+        "month": "Magha"
+      },
+      "sunrise": "06:28",
+      "internal": {
+        "hari_vasara_end": "2027-03-04 21:52",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-03-05 06:27"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Jaya Ekadashi",
+      "name_hi": "जया एकादशी",
+      "slug": "jaya-ekadashi",
+      "vrat_date": "2027-03-18",
+      "parana": {
+        "date": "2027-03-19",
+        "start": "2027-03-19 07:13",
+        "end": "2027-03-19 23:18"
+      },
+      "observance": {
+        "smarta_date": "2027-03-18",
+        "vaishnav_date": "2027-03-18",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-03-18 04:21",
+        "end": "2027-03-19 01:51",
+        "paksha": "Shukla",
+        "month": "Magha"
+      },
+      "sunrise": "06:13",
+      "internal": {
+        "hari_vasara_end": "2027-03-19 07:13",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-03-19 06:12"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Shattila Ekadashi",
+      "name_hi": "षटतिला एकादशी",
+      "slug": "shattila-ekadashi",
+      "vrat_date": "2027-04-02",
+      "parana": {
+        "date": "2027-04-03",
+        "start": "2027-04-03 09:16",
+        "end": "2027-04-04 04:28"
+      },
+      "observance": {
+        "smarta_date": "2027-04-02",
+        "vaishnav_date": "2027-04-02",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-04-02 00:45",
+        "end": "2027-04-03 02:52",
+        "paksha": "Krishna",
+        "month": "Magha"
+      },
+      "sunrise": "05:57",
+      "internal": {
+        "hari_vasara_end": "2027-04-03 09:16",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-04-03 05:55"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Amalaki Ekadashi",
+      "name_hi": "आमलकी एकादशी",
+      "slug": "amalaki-ekadashi",
+      "vrat_date": "2027-04-17",
+      "parana": {
+        "date": "2027-04-18",
+        "start": "2027-04-18 05:40",
+        "end": "2027-04-18 07:43"
+      },
+      "observance": {
+        "smarta_date": "2027-04-17",
+        "vaishnav_date": "2027-04-17",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-04-16 11:22",
+        "end": "2027-04-17 09:28",
+        "paksha": "Shukla",
+        "month": "Phalguna"
+      },
+      "sunrise": "05:41",
+      "internal": {
+        "hari_vasara_end": "2027-04-17 21:19",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-04-18 05:40"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Papmochini Ekadashi",
+      "name_hi": "पापमोचिनी एकादशी",
+      "slug": "papmochini-ekadashi",
+      "vrat_date": "2027-05-02",
+      "parana": {
+        "date": "2027-05-03",
+        "start": "2027-05-03 05:27",
+        "end": "2027-05-03 20:05"
+      },
+      "observance": {
+        "smarta_date": "2027-05-02",
+        "vaishnav_date": "2027-05-02",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-05-02 19:52",
+        "end": "2027-05-03 20:04",
+        "paksha": "Krishna",
+        "month": "Chaitra"
+      },
+      "sunrise": "05:27",
+      "internal": {
+        "hari_vasara_end": "2027-05-03 01:56",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-05-03 05:27"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Kamada Ekadashi",
+      "name_hi": "कामदा एकादशी",
+      "slug": "kamada-ekadashi",
+      "vrat_date": "2027-05-16",
+      "parana": {
+        "date": "2027-05-17",
+        "start": "2027-05-17 05:18",
+        "end": "2027-05-17 16:29"
+      },
+      "observance": {
+        "smarta_date": "2027-05-16",
+        "vaishnav_date": "2027-05-16",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-05-16 17:13",
+        "end": "2027-05-17 16:28",
+        "paksha": "Shukla",
+        "month": "Chaitra"
+      },
+      "sunrise": "05:18",
+      "internal": {
+        "hari_vasara_end": "2027-05-16 23:30",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-05-17 05:18"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Varuthini Ekadashi",
+      "name_hi": "वरूथिनी एकादशी",
+      "slug": "varuthini-ekadashi",
+      "vrat_date": "2027-06-01",
+      "parana": {
+        "date": "2027-06-02",
+        "start": "2027-06-02 05:12",
+        "end": "2027-06-02 08:30"
+      },
+      "observance": {
+        "smarta_date": "2027-06-01",
+        "vaishnav_date": "2027-06-01",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-06-01 09:40",
+        "end": "2027-06-02 08:29",
+        "paksha": "Krishna",
+        "month": "Vaishakha"
+      },
+      "sunrise": "05:12",
+      "internal": {
+        "hari_vasara_end": "2027-06-01 21:30",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-06-02 05:12"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Mohini Ekadashi",
+      "name_hi": "मोहिनी एकादशी",
+      "slug": "mohini-ekadashi",
+      "vrat_date": "2027-06-14",
+      "parana": {
+        "date": "2027-06-15",
+        "start": "2027-06-15 08:14",
+        "end": "2027-06-16 02:32"
+      },
+      "observance": {
+        "smarta_date": "2027-06-14",
+        "vaishnav_date": "2027-06-14",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-06-15 02:08",
+        "end": "2027-06-16 02:31",
+        "paksha": "Shukla",
+        "month": "Vaishakha"
+      },
+      "sunrise": "05:12",
+      "internal": {
+        "hari_vasara_end": "2027-06-15 08:14",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-06-15 05:12"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Apara Ekadashi",
+      "name_hi": "अपरा एकादशी",
+      "slug": "apara-ekadashi",
+      "vrat_date": "2027-06-30",
+      "parana": {
+        "date": "2027-07-01",
+        "start": "2027-07-01 05:15",
+        "end": "2027-07-01 18:16"
+      },
+      "observance": {
+        "smarta_date": "2027-06-30",
+        "vaishnav_date": "2027-06-30",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-06-30 20:31",
+        "end": "2027-07-01 18:15",
+        "paksha": "Krishna",
+        "month": "Jyeshtha"
+      },
+      "sunrise": "05:15",
+      "internal": {
+        "hari_vasara_end": "2027-07-01 01:58",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-07-01 05:15"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Nirjala Ekadashi",
+      "name_hi": "निर्जला एकादशी",
+      "slug": "nirjala-ekadashi",
+      "vrat_date": "2027-07-14",
+      "parana": {
+        "date": "2027-07-15",
+        "start": "2027-07-15 05:21",
+        "end": "2027-07-15 14:41"
+      },
+      "observance": {
+        "smarta_date": "2027-07-14",
+        "vaishnav_date": "2027-07-14",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-07-14 13:10",
+        "end": "2027-07-15 14:41",
+        "paksha": "Shukla",
+        "month": "Jyeshtha"
+      },
+      "sunrise": "05:21",
+      "internal": {
+        "hari_vasara_end": "2027-07-14 23:03",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-07-15 05:21"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Devshayani Ekadashi",
+      "name_hi": "देवशयनी एकादशी",
+      "slug": "devshayani-ekadashi",
+      "vrat_date": "2027-08-12",
+      "parana": {
+        "date": "2027-08-13",
+        "start": "2027-08-13 09:36",
+        "end": "2027-08-14 05:22"
+      },
+      "observance": {
+        "smarta_date": "2027-08-12",
+        "vaishnav_date": "2027-08-12",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-08-12 00:59",
+        "end": "2027-08-13 03:00",
+        "paksha": "Shukla",
+        "month": "Ashadha"
+      },
+      "sunrise": "05:36",
+      "internal": {
+        "hari_vasara_end": "2027-08-13 09:36",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-08-13 05:36"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Kamika Ekadashi",
+      "name_hi": "कामिका एकादशी",
+      "slug": "kamika-ekadashi",
+      "vrat_date": "2027-08-28",
+      "parana": {
+        "date": "2027-08-29",
+        "start": "2027-08-29 05:44",
+        "end": "2027-08-29 09:37"
+      },
+      "observance": {
+        "smarta_date": "2027-08-28",
+        "vaishnav_date": "2027-08-28",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-08-27 15:25",
+        "end": "2027-08-28 12:42",
+        "paksha": "Krishna",
+        "month": "Shravana"
+      },
+      "sunrise": "05:43",
+      "internal": {
+        "hari_vasara_end": "2027-08-28 21:47",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-08-29 05:44"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Putrada Ekadashi (Shravana)",
+      "name_hi": "पुत्रदा एकादशी",
+      "slug": "putrada-ekadashi-shravana",
+      "vrat_date": "2027-09-11",
+      "parana": {
+        "date": "2027-09-12",
+        "start": "2027-09-12 05:50",
+        "end": "2027-09-12 22:14"
+      },
+      "observance": {
+        "smarta_date": "2027-09-11",
+        "vaishnav_date": "2027-09-11",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-09-10 17:00",
+        "end": "2027-09-11 19:36",
+        "paksha": "Shukla",
+        "month": "Shravana"
+      },
+      "sunrise": "05:49",
+      "internal": {
+        "hari_vasara_end": "2027-09-12 02:16",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-09-12 05:50"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Aja Ekadashi",
+      "name_hi": "अजा एकादशी",
+      "slug": "aja-ekadashi",
+      "vrat_date": "2027-09-26",
+      "parana": {
+        "date": "2027-09-27",
+        "start": "2027-09-27 05:57",
+        "end": "2027-09-27 16:56"
+      },
+      "observance": {
+        "smarta_date": "2027-09-26",
+        "vaishnav_date": "2027-09-26",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-09-25 22:31",
+        "end": "2027-09-26 19:49",
+        "paksha": "Krishna",
+        "month": "Bhadrapada"
+      },
+      "sunrise": "05:56",
+      "internal": {
+        "hari_vasara_end": "2027-09-27 01:06",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-09-27 05:57"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Parivartini Ekadashi",
+      "name_hi": "परिवर्तिनी एकादशी",
+      "slug": "parivartini-ekadashi",
+      "vrat_date": "2027-10-11",
+      "parana": {
+        "date": "2027-10-12",
+        "start": "2027-10-12 06:04",
+        "end": "2027-10-12 16:15"
+      },
+      "observance": {
+        "smarta_date": "2027-10-11",
+        "vaishnav_date": "2027-10-11",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-10-10 11:41",
+        "end": "2027-10-11 14:09",
+        "paksha": "Shukla",
+        "month": "Bhadrapada"
+      },
+      "sunrise": "06:03",
+      "internal": {
+        "hari_vasara_end": "2027-10-11 23:27",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-10-12 06:04"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Aja Ekadashi",
+      "name_hi": "अजा एकादशी",
+      "slug": "aja-ekadashi",
+      "vrat_date": "2027-10-25",
+      "parana": {
+        "date": "2027-10-26",
+        "start": "2027-10-26 08:48",
+        "end": "2027-10-27 01:04"
+      },
+      "observance": {
+        "smarta_date": "2027-10-25",
+        "vaishnav_date": "2027-10-25",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-10-25 05:40",
+        "end": "2027-10-26 03:22",
+        "paksha": "Krishna",
+        "month": "Bhadrapada"
+      },
+      "sunrise": "06:11",
+      "internal": {
+        "hari_vasara_end": "2027-10-26 08:48",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-10-26 06:12"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Papankusha Ekadashi",
+      "name_hi": "पापांकुशा एकादशी",
+      "slug": "papankusha-ekadashi",
+      "vrat_date": "2027-11-10",
+      "parana": {
+        "date": "2027-11-11",
+        "start": "2027-11-11 06:22",
+        "end": "2027-11-11 10:08"
+      },
+      "observance": {
+        "smarta_date": "2027-11-10",
+        "vaishnav_date": "2027-11-10",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-11-09 07:35",
+        "end": "2027-11-10 09:11",
+        "paksha": "Shukla",
+        "month": "Ashwin"
+      },
+      "sunrise": "06:22",
+      "internal": {
+        "hari_vasara_end": "2027-11-10 21:55",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-11-11 06:22"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Rama Ekadashi",
+      "name_hi": "रमा एकादशी",
+      "slug": "rama-ekadashi",
+      "vrat_date": "2027-11-24",
+      "parana": {
+        "date": "2027-11-25",
+        "start": "2027-11-25 06:33",
+        "end": "2027-11-25 10:52"
+      },
+      "observance": {
+        "smarta_date": "2027-11-24",
+        "vaishnav_date": "2027-11-24",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-11-23 13:45",
+        "end": "2027-11-24 12:11",
+        "paksha": "Krishna",
+        "month": "Kartik"
+      },
+      "sunrise": "06:32",
+      "internal": {
+        "hari_vasara_end": "2027-11-24 22:06",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-11-25 06:33"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Devutthana Ekadashi",
+      "name_hi": "देवोत्थान (देवउठनी) एकादशी",
+      "slug": "devutthana-ekadashi",
+      "vrat_date": "2027-12-09",
+      "parana": {
+        "date": "2027-12-10",
+        "start": "2027-12-10 09:14",
+        "end": "2027-12-11 02:54"
+      },
+      "observance": {
+        "smarta_date": "2027-12-09",
+        "vaishnav_date": "2027-12-09",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-12-09 02:59",
+        "end": "2027-12-10 03:20",
+        "paksha": "Shukla",
+        "month": "Kartik"
+      },
+      "sunrise": "06:43",
+      "internal": {
+        "hari_vasara_end": "2027-12-10 09:14",
+        "dwadashi_tithi_number": 12,
+        "parana_sunrise": "2027-12-10 06:43"
+      }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Rama Ekadashi",
+      "name_hi": "रमा एकादशी",
+      "slug": "rama-ekadashi",
+      "vrat_date": "2027-12-23",
+      "parana": {
+        "date": "2027-12-24",
+        "start": "2027-12-24 06:52",
+        "end": "2027-12-24 23:09"
+      },
+      "observance": {
+        "smarta_date": "2027-12-23",
+        "vaishnav_date": "2027-12-23",
+        "reason": "Ekadashi tithi present at today's sunrise (Smarta rule)."
+      },
+      "tithi": {
+        "start": "2027-12-22 23:41",
+        "end": "2027-12-23 23:12",
+        "paksha": "Krishna",
+        "month": "Kartik"
+      },
+      "sunrise": "06:51",
+      "internal": {
+        "hari_vasara_end": "2027-12-24 05:12",
+        "dwadashi_tithi_number": 27,
+        "parana_sunrise": "2027-12-24 06:52"
+      }
+    }
+  ]
+}

@@ -35,15 +35,30 @@ def _get_all_amavasya_of_year(year, lat, lon):
 # ---------------------------------------------------------
 
 def _has_sankranti_between(start_date, end_date, lat, lon):
-    check_date = start_date
+    """
+    Naam purana, Kaam naya! 
+    Check if Sun entered a new Rashi between two Amavasya dates.
+    """
+    # 1. Start aur End ko datetime objects mein convert karo (agar string hain)
+    # Hum dopahar 12 baje ka reference le rahe hain safety ke liye 
+    # kyuki Amavasya ka exact time calculate_panchang ke bina milna mushkil hai yahan.
+    if isinstance(start_date, str):
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d") + timedelta(hours=12)
+    else:
+        start_dt = datetime.combine(start_date, datetime.min.time()) + timedelta(hours=12)
+        
+    if isinstance(end_date, str):
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(hours=12)
+    else:
+        end_dt = datetime.combine(end_date, datetime.min.time()) + timedelta(hours=12)
 
-    while check_date < end_date:
-        sankranti = get_sankranti_details(check_date, lat, lon)
-        if sankranti:
-            return True
-        check_date += timedelta(days=1)
+    # 2. Loop ki jagah direct Rashi compare karo (Fast & Accurate)
+    rashi_start = _sun_rashi_index(start_dt)
+    rashi_end = _sun_rashi_index(end_dt)
 
-    return False
+    # Agar Rashi change hui hai toh True (Sankranti exists)
+    # Agar Rashi same hai toh False (No Sankranti = Adhik Maas condition)
+    return rashi_start != rashi_end
 
 
 # ---------------------------------------------------------
@@ -52,33 +67,48 @@ def _has_sankranti_between(start_date, end_date, lat, lon):
 
 def detect_adhik_maas(year, lat, lon):
     """
-    Returns list of Adhik Maas in given year.
+    Returns list of Adhik Maas in given year by checking 
+    Solar Ingress (Sankranti) between two consecutive Amavasya end times.
     """
-
     adhik_months = []
 
-    amavasya_dates = _get_all_amavasya_of_year(year, lat, lon)
+    # 1. Poore saal ki Amavasya ki details nikalna
+    # Note: ensure karein ki _get_all_amavasya_of_year ab full objects return kare (jisme tithi_end ho)
+    amavasya_data_list = []
+    current_date = datetime(year, 1, 1).date()
+    while current_date.year == year:
+        hit = find_next_amavasya(current_date, lat, lon)
+        if not hit or datetime.strptime(hit["date"], "%Y-%m-%d").year > year:
+            break
+        amavasya_data_list.append(hit)
+        current_date = datetime.strptime(hit["date"], "%Y-%m-%d").date() + timedelta(days=1)
 
-    for i in range(len(amavasya_dates) - 1):
+    # 2. Consecutive Amavasya ke beech Rashi check karna
+    for i in range(len(amavasya_data_list) - 1):
+        hit_start = amavasya_data_list[i]
+        hit_end = amavasya_data_list[i + 1]
 
-        start_amavasya = amavasya_dates[i]
-        end_amavasya = amavasya_dates[i + 1]
+        # Exact transition times (Amavasya kab khatam hui)
+        # Format assumed from your amavasya_details: "YYYY-MM-DD HH:MM"
+        tithi_end_start = datetime.strptime(hit_start["tithi_end"], "%Y-%m-%d %H:%M")
+        tithi_end_next = datetime.strptime(hit_end["tithi_end"], "%Y-%m-%d %H:%M")
 
-        start_dt = datetime.combine(start_amavasya, datetime.min.time()).replace(hour=12)
-        end_dt = datetime.combine(end_amavasya, datetime.min.time()).replace(hour=12)
+        # Scientific Check: Amavasya khatam hone ke thik baad aur agli khatam hone ke thik pehle
+        # Agar Sun ki Rashi nahi badli, matlab beech mein koi Sankranti nahi hui = Adhik Maas
+        rashi_at_start = _sun_rashi_index(tithi_end_start + timedelta(minutes=5))
+        rashi_at_next = _sun_rashi_index(tithi_end_next - timedelta(minutes=5))
 
-        rashi_start = _sun_rashi_index(start_dt)
-        rashi_end = _sun_rashi_index(end_dt)
-
-        if rashi_start == rashi_end:
-
-            lunar_month = get_lunar_month(start_dt)
+        if rashi_at_start == rashi_at_next:
+            # Ye confirm ho gaya ki ye mahina Adhik hai
+            # Lunar month name nikalne ke liye get_lunar_month use karein
+            month_info = get_lunar_month(tithi_end_start + timedelta(days=5)) # Middle of month check
 
             adhik_months.append({
                 "year": year,
-                "adhik_month": lunar_month,
-                "start_date": start_amavasya.strftime("%Y-%m-%d"),
-                "end_date": end_amavasya.strftime("%Y-%m-%d"),
+                "adhik_month": month_info["name"],
+                "start_date": hit_start["date"],
+                "end_date": hit_end["date"],
+                "rashi_index": rashi_at_start
             })
 
     return adhik_months
