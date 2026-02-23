@@ -45,7 +45,7 @@ from routes.relationship_premium import relationship_premium_bp
 from routes.transit_content import transit_content_bp
 from routes.routes_events import routes_events
 from routes.routes_festivals import routes_festivals
-
+from routes.routes_ekadashi import ekadashi_bp
 
 
 
@@ -84,7 +84,7 @@ app.register_blueprint(relationship_premium_bp)
 app.register_blueprint(transit_content_bp)
 app.register_blueprint(routes_events, url_prefix="/api/events")
 app.register_blueprint(routes_festivals, url_prefix="/api/festivals")
-
+app.register_blueprint(ekadashi_bp)
 
 # ------------------- ROOT ------------------- #
 @app.route("/")
