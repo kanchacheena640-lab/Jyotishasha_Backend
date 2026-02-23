@@ -12,40 +12,23 @@ DATA_DIR = os.path.join(BASE_DIR, "data", "ekadashi")
 
 @ekadashi_bp.route('/api/ekadashi/find-by-slug/<slug>', methods=['GET'])
 def get_ekadashi_by_slug(slug):
-    """
-    Ye route slug ke basis par JSON files scan karta hai aur accurate data deta hai.
-    """
-    current_year = datetime.now().year
+    # Hum check karenge ki kya query mein 'year' bheja gaya hai? 
+    # Example: /api/ekadashi/find-by-slug/amalaki?year=2027
+    from flask import request
+    requested_year = request.args.get('year', type=int) or datetime.now().year
     
-    # Hum 2026 aur 2027 dono years ki files check karenge
-    for year in [current_year, current_year + 1]:
-        file_path = os.path.join(DATA_DIR, f"ekadashi_{year}.json")
+    file_path = os.path.join(DATA_DIR, f"ekadashi_{requested_year}.json")
+    
+    if os.path.exists(file_path):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+        # Slug check (flexible matching)
+        matched = next((item for item in data.get('ekadashi_list', []) 
+                        if item.get('slug') == slug or 
+                        item.get('slug') == slug.replace("-ekadashi", "")), None)
         
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                # 'ekadashi_list' mein se wo item dhundo jiska slug match kare
-                matched_event = next(
-                    (item for item in data.get('ekadashi_list', []) 
-                     if item.get('slug') == slug), 
-                    None
-                )
-                
-                if matched_event:
-                    # Success: Data mil gaya!
-                    return jsonify({
-                        "status": "success",
-                        "year": year,
-                        "data": matched_event
-                    })
-            except Exception as e:
-                # Agar kisi file mein error ho, toh use skip karke agli check karo
-                continue 
-
-    # Agar poori files scan karne ke baad bhi slug nahi mila
-    return jsonify({
-        "status": "error", 
-        "message": f"Ekadashi with slug '{slug}' not found in {current_year} or {current_year+1}"
-    }), 404
+        if matched:
+            return jsonify({"status": "success", "year": requested_year, "data": matched})
+            
+    return jsonify({"status": "error", "message": f"Data not found for {requested_year}"}), 404
