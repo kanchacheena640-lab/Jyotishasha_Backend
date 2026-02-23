@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang
 from services.adhik_maas_engine import detect_adhik_maas
 from services.events_engine import (
-    build_ekadashi_json,
     get_pradosh_details,
     find_next_pradosh,
     get_sankashti_details,       
@@ -23,47 +22,6 @@ from services.sankranti_engine import (
 )
 
 routes_events = Blueprint("routes_events", __name__)
-
-@routes_events.route("/ekadashi", methods=["POST"])
-def api_ekadashi():
-    try:
-        data = request.get_json() or {}
-
-        lat = float(data.get("latitude", 28.61))
-        lon = float(data.get("longitude", 77.23))
-        date_str = data.get("date")
-
-        # ✅ YAHAN ADD KARO
-        language = data.get("language", "en").lower()
-        if language not in ("en", "hi"):
-            language = "en"
-
-        if date_str:
-            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        else:
-            current_date = datetime.now().date()
-
-        # Today's Panchang
-        panchang_today = calculate_panchang(current_date, lat, lon, language)
-
-        today = build_ekadashi_json(panchang_today, lat, lon, language)
-
-        next_event = None
-        for i in range(1, 61):
-            check_date = current_date + timedelta(days=i)
-            panchang = calculate_panchang(check_date, lat, lon, language)
-            result = build_ekadashi_json(panchang, lat, lon, language)
-            if result:
-                next_event = result
-                break
-
-        return jsonify({
-            "today": today,
-            "next": next_event
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 @routes_events.route("/pradosh", methods=["POST"])
