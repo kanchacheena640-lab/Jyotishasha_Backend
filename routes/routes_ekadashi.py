@@ -66,3 +66,44 @@ def get_ekadashi_by_slug(slug):
             "status": "error", 
             "message": f"Internal server error: {str(e)}"
         }), 500
+    
+@ekadashi_bp.route('/api/ekadashi/all', methods=['GET'])
+def get_all_ekadashi():
+    """
+    Ye naya route saari Ekadashis ki list bhejega.
+    Example: /api/ekadashi/all?year=2026
+    """
+    from flask import request
+    
+    # 1. Year determine karein
+    requested_year = request.args.get('year', type=int) or datetime.now().year
+    
+    # 2. File path setup
+    file_path = os.path.join(DATA_DIR, f"ekadashi_{requested_year}.json")
+    
+    # 3. Check if file exists
+    if not os.path.exists(file_path):
+        return jsonify({
+            "status": "error", 
+            "message": f"Data file for year {requested_year} not found"
+        }), 404
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+        # Hum 'ekadashi_list' key ke andar ka saara data bhej rahe hain
+        ekadashi_data = data.get('ekadashi_list', [])
+        
+        return jsonify({
+            "status": "success", 
+            "year": requested_year, 
+            "count": len(ekadashi_data),
+            "data": ekadashi_data
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "message": f"Internal server error: {str(e)}"
+        }), 500
