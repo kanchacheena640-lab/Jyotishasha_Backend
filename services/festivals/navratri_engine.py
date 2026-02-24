@@ -4,61 +4,60 @@ from services.astro_core import _tithi_number_at
 
 
 def detect_navratri(year, lat, lon, navratri_type="chaitra"):
-
     if navratri_type == "chaitra":
-        search_start = datetime(year, 3, 1).date()
-        search_end = datetime(year, 4, 15).date()
+        # Chaitra Navratri range
+        d = datetime(year, 3, 1).date()
+        search_end = datetime(year, 4, 20).date()
     else:
-        search_start = datetime(year, 9, 1).date()
-        search_end = datetime(year, 10, 20).date()
+        # Ashwin Navratri range
+        d = datetime(year, 9, 1).date()
+        search_end = datetime(year, 10, 30).date()
 
     navratri_days = []
     started = False
-    previous_tithi = None
-
-    d = search_start
-
+    
     while d <= search_end:
-
         dt_input = datetime.combine(d, datetime.min.time())
         sunrise_dt, _ = calculate_sunrise_sunset(dt_input, lat, lon)
-
         tithi = _tithi_number_at(sunrise_dt)
 
-        # ---- START CONDITION (Shukla Pratipada at Sunrise) ----
         if not started:
+            # PURE LOGIC: Navratri Day 1 tab shuru hoga jab Sunrise par Tithi 1 ho
             if tithi == 1:
-                started = True
-                navratri_days.append({
-                    "day_number": 1,
-                    "date": d.strftime("%Y-%m-%d"),
-                    "tithi": 1,
-                    "label": "Kalash Sthapana"
-                })
-                previous_tithi = 1
-
-        # ---- CONTINUE TILL NAVAMI ----
+                # Confirming it's Shukla Paksha: 
+                # Kal ki tithi 28, 29 ya 30 honi chahiye (Amavasya phase)
+                yesterday_sunrise = sunrise_dt - timedelta(days=1)
+                tithi_yesterday = _tithi_number_at(yesterday_sunrise)
+                
+                if tithi_yesterday in [28, 29, 30]:
+                    started = True
+                    navratri_days.append({
+                        "day_number": 1,
+                        "date": d.strftime("%Y-%m-%d"),
+                        "tithi": 1,
+                        "label": "Kalash Sthapana"
+                    })
         else:
+            # Continuation (Day 2 to 9)
+            # Jab tak tithi 1 se 9 ke beech hai, tab tak count badhao
             if 1 <= tithi <= 9:
-
-                if tithi == previous_tithi:
-                    # Vriddhi case
-                    day_number = navratri_days[-1]["day_number"] + 1
-                else:
-                    day_number = tithi
-
+                # Har naye din ke liye total count + 1
+                current_day_count = len(navratri_days) + 1
+                
                 navratri_days.append({
-                    "day_number": day_number,
+                    "day_number": current_day_count,
                     "date": d.strftime("%Y-%m-%d"),
                     "tithi": tithi,
-                    "label": f"Navratri Day {day_number}"
+                    "label": f"Navratri Day {current_day_count}"
                 })
-
-                previous_tithi = tithi
-
+                
                 if tithi == 9:
-                    break
+                    # Check: Kya agle din sunrise par bhi 9 hai? (Vriddhi Case)
+                    next_day_sunrise = sunrise_dt + timedelta(days=1)
+                    if _tithi_number_at(next_day_sunrise) != 9:
+                        break
             else:
+                # Dashami (10) aa gayi, Navratri over
                 break
 
         d += timedelta(days=1)
