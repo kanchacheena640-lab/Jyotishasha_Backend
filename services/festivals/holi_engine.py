@@ -58,9 +58,12 @@ def detect_holi(year, lat, lon, language="en"):
 
     while d <= end_search:
         # Step 1: Month filter
-        l_month = get_lunar_month(datetime.combine(d, datetime.min.time()))
-        if l_month not in ("Phalguna", "फाल्गुन"):
-            d += timedelta(days=1); continue
+        lunar_data = get_lunar_month(datetime.combine(d, datetime.min.time()))
+        l_month = lunar_data["name"]
+
+        if l_month != "Phalguna":
+            d += timedelta(days=1)
+            continue
 
         p = calculate_panchang(d, lat, lon, language)
         sunset_str = p.get("sunset")
