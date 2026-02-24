@@ -5,11 +5,6 @@ from services.lunar_month_engine import get_lunar_month
 
 
 def detect_navratri(year, lat, lon, navratri_type="chaitra"):
-    """
-    navratri_type: "chaitra" or "sharadiya"
-    Sunrise based Shukla Paksha Pratipada → Navami detection
-    Handles Vriddhi & Kshaya automatically
-    """
 
     if navratri_type == "chaitra":
         target_month = "Chaitra"
@@ -28,14 +23,14 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
 
     while d <= end_range:
 
-        sunrise_dt, _ = calculate_sunrise_sunset(d, lat, lon)
+        dt_input = datetime.combine(d, datetime.min.time())
+        sunrise_dt, _ = calculate_sunrise_sunset(dt_input, lat, lon)
 
         lunar_data = get_lunar_month(sunrise_dt)
         lunar_month = lunar_data["name"]
-
         tithi = _tithi_number_at(sunrise_dt)
 
-        # START CONDITION
+        # -------- START DETECTION --------
         if not started:
             if lunar_month == target_month and tithi == 1:
                 started = True
@@ -47,12 +42,12 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                 })
                 previous_tithi = 1
 
+        # -------- CONTINUE NAVRATRI --------
         else:
-            # Continue till Navami
-            if 1 <= tithi <= 9:
+            if lunar_month == target_month and 1 <= tithi <= 9:
 
-                # Vriddhi case (same tithi repeat)
                 if tithi == previous_tithi:
+                    # Vriddhi case (same tithi repeat)
                     day_number = navratri_days[-1]["day_number"] + 1
                 else:
                     day_number = tithi
@@ -69,6 +64,7 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                 if tithi == 9:
                     break
             else:
+                # Month changed or tithi out of range
                 break
 
         d += timedelta(days=1)
