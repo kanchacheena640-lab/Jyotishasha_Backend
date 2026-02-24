@@ -52,18 +52,25 @@ def format_response(year, d_date, p_data, method, muhurta, extra):
     }
 
 def detect_holi(year, lat, lon, language="en"):
-    # Feb 20 se start zaroor karenge safety ke liye
+    # Range safe rakhte hain
     d = datetime(year, 2, 20).date()
     end_search = datetime(year, 4, 15).date()
 
     while d <= end_search:
-        # 🔥 Sabse Pehle Month Check Karo
-        # Holi sirf 'Phalguna' (Purnimanta system mein) ya uske aas-pass hoti hai
-        month_info = get_lunar_month(d, lat, lon)
-        lunar_month = month_info.get("month_name", "")
+        # 1. Lunar Month Check (Aapke engine ke keys ke hisab se)
+        # DHAYAN DEIN: Yahan sirf (d) bheja hai taaki crash na ho
+        try:
+            month_info = get_lunar_month(d) 
+            # Aapka engine "name" key bhej raha hai
+            lunar_month = month_info.get("name", "") 
+        except Exception as e:
+            print(f"Lunar Engine Error: {e}")
+            d += timedelta(days=1)
+            continue
 
-        # Agar Phalguna month nahi hai, toh skip karo (Magha Purnima ko Holi mat banao)
-        if "Phalguna" not in lunar_month:
+        # 2. Filter: Holi Phalguna mein hoti hai, par safety ke liye 
+        # 2027 jaise cases mein Chaitra boundary ko bhi allow karte hain filter ke liye
+        if "Phalguna" not in lunar_month and "Chaitra" not in lunar_month:
             d += timedelta(days=1)
             continue
 
@@ -75,7 +82,8 @@ def detect_holi(year, lat, lon, language="en"):
 
         sunset_dt = datetime.strptime(f"{d} {sunset_str}", "%Y-%m-%d %H:%M")
         
-        # Rule: Pradosh mein Purnima honi chahiye
+        # 3. Exact Tithi Check (Holi hamesha Purnima yaani 15 ko hoti hai)
+        # Pradosh window (sunset ke baad 2.5 ghante) mein check karein
         is_purnima_in_pradosh = False
         for mins in range(0, 150, 5):
             if _tithi_number_at(sunset_dt + timedelta(minutes=mins)) == 15:
@@ -86,7 +94,7 @@ def detect_holi(year, lat, lon, language="en"):
             d += timedelta(days=1)
             continue
 
-        # Baaki logic same...
+        # --- Yahan se Muhurta aur Bhadra ka logic shuru hota hai ---
         p_end = sunset_dt
         for mins in range(0, 2000, 10):
             if _tithi_number_at(sunset_dt + timedelta(minutes=mins)) != 15:
@@ -96,7 +104,7 @@ def detect_holi(year, lat, lon, language="en"):
         b_end = _get_bhadra_end_time(sunset_dt, limit_hours=30)
         pradosh_limit = sunset_dt + timedelta(minutes=144)
 
-        # 2026 Special Case: Bhadra covers full night
+        # Special Case 2026: Bhadra covers full night
         if b_end > pradosh_limit and b_end.date() > d:
             next_day = d + timedelta(days=1)
             p_next = calculate_panchang(next_day, lat, lon, language)
