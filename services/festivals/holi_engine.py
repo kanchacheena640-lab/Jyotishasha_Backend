@@ -69,9 +69,24 @@ def detect_holi(year, lat, lon, language="en"):
 
         # 🔥 MAIN SHASTRIYA RULE:
         # Purnima must exist at sunset
-        if _tithi_number_at(sunset_dt) != 15:
-            d += timedelta(days=1)
-            continue
+        if _tithi_number_at(sunset_dt) == 15:
+
+            # Check next day sunset also
+            next_day = d + timedelta(days=1)
+            p_next = calculate_panchang(next_day, lat, lon, language)
+            sunset_next = p_next.get("sunset")
+
+            if sunset_next:
+                sunset_next_dt = datetime.strptime(
+                    f"{next_day} {sunset_next}",
+                    "%Y-%m-%d %H:%M"
+                )
+
+                # If Purnima also at next sunset → choose next day
+                if _tithi_number_at(sunset_next_dt) == 15:
+                    d = next_day
+                    p = p_next
+                    sunset_dt = sunset_next_dt
 
         # Find Purnima end time
         p_end = sunset_dt
