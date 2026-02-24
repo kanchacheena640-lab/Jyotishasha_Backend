@@ -52,13 +52,12 @@ def format_response(year, d_date, p_data, method, muhurta, extra):
     }
 
 def detect_holi(year, lat, lon, language="en"):
-
-    d = datetime(year, 2, 20).date()
+    # Holi hamesha Phalguna Purnima ko hoti hai
+    # Hum March 1 se April 10 tak search karenge
+    d = datetime(year, 3, 1).date()
     end_search = datetime(year, 4, 10).date()
 
     while d <= end_search:
-
-        # Panchang fetch first (sunset based logic)
         p = calculate_panchang(d, lat, lon, language)
         sunset_str = p.get("sunset")
         if not sunset_str:
@@ -66,122 +65,58 @@ def detect_holi(year, lat, lon, language="en"):
             continue
 
         sunset_dt = datetime.strptime(f"{d} {sunset_str}", "%Y-%m-%d %H:%M")
+        
+        # Pradosh Kaal: Sunset se 2 ghante 24 min tak
+        pradosh_end = sunset_dt + timedelta(minutes=144)
+        
+        # 🔥 FIX 1: Sirf sunset nahi, Pradosh ke kisi bhi hisse mein Purnima honi chahiye
+        # Check if Purnima (15) exists during Pradosh
+        is_purnima_in_pradosh = False
+        purnima_entry_time = None
+        
+        for m in range(0, 145, 15):
+            if _tithi_number_at(sunset_dt + timedelta(minutes=m)) == 15:
+                is_purnima_in_pradosh = True
+                if not purnima_entry_time:
+                    purnima_entry_time = sunset_dt + timedelta(minutes=m)
+                break
+        
+        if not is_purnima_in_pradosh:
+            d += timedelta(days=1)
+            continue
 
-        # 🔥 MAIN SHASTRIYA RULE:
-        # Purnima must exist at sunset
-        if _tithi_number_at(sunset_dt) == 15:
-
-            # Check next day sunset also
-            next_day = d + timedelta(days=1)
-            p_next = calculate_panchang(next_day, lat, lon, language)
-            sunset_next = p_next.get("sunset")
-
-            if sunset_next:
-                sunset_next_dt = datetime.strptime(
-                    f"{next_day} {sunset_next}",
-                    "%Y-%m-%d %H:%M"
-                )
-
-                # If Purnima also at next sunset → choose next day
-                if _tithi_number_at(sunset_next_dt) == 15:
-                    d = next_day
-                    p = p_next
-                    sunset_dt = sunset_next_dt
-
-        # Find Purnima end time
+        # Find exact Purnima end time
         p_end = sunset_dt
-        for mins in range(0, 1440, 15):
+        for mins in range(0, 2000, 15):
             check_t = sunset_dt + timedelta(minutes=mins)
             if _tithi_number_at(check_t) != 15:
                 p_end = check_t
                 break
 
-        pradosh_limit = sunset_dt + timedelta(minutes=144)
+        # 🔥 BHADRA CHECK
+        b_end = _get_bhadra_end_time(sunset_dt)
+        
+        # Bhadra active logic
+        bhadra_in_pradosh = False
+        if b_end > sunset_dt:
+            bhadra_in_pradosh = True
 
-        # Check if Bhadra active ANYWHERE in Pradosh window
-        bhadra_active = False
-        check_time = sunset_dt
-
-        while check_time <= pradosh_limit:
-            k_name, _ = _karan_at(check_time)
-            if k_name == "Vishti (Bhadra)":
-                bhadra_active = True
-                break
-            check_time += timedelta(minutes=5)
-
-        if bhadra_active:
-
-            b_end = _get_bhadra_end_time(sunset_dt)
-            pradosh_limit = sunset_dt + timedelta(minutes=144)
-
-            # 🔥 If Bhadra covers full Pradosh → shift to next day
-            if b_end > pradosh_limit:
-
-                next_day = d + timedelta(days=1)
-                p_next = calculate_panchang(next_day, lat, lon, language)
-                sunset_next = p_next.get("sunset")
-
-                if sunset_next:
-                    sunset_next_dt = datetime.strptime(
-                        f"{next_day} {sunset_next}",
-                        "%Y-%m-%d %H:%M"
-                    )
-
-                    # Purnima must exist at next sunset
-                    if _tithi_number_at(sunset_next_dt) == 15:
-
-                        p_end_next = sunset_next_dt
-                        for m in range(0, 300, 5):
-                            if _tithi_number_at(sunset_next_dt + timedelta(minutes=m)) != 15:
-                                p_end_next = sunset_next_dt + timedelta(minutes=m)
-                                break
-
-                        muhurta = calculate_muhurta_window(
-                            sunset_next_dt,
-                            p_end_next
-                        )
-
-                        return format_response(
-                            year,
-                            next_day,
-                            p_next,
-                            "Day 2 (Bhadra During Pradosh)",
-                            muhurta,
-                            "Holi shifted to next day as Bhadra covered Pradosh."
-                        )
-
-            # 🔹 Otherwise Bhadra ends inside Pradosh → same day allowed
-            muhurta = calculate_muhurta_window(
-                sunset_dt,
-                p_end,
-                b_end
-            )
-
-            return format_response(
-                year,
-                d,
-                p,
-                "Day 1 Night (Post-Bhadra)",
-                muhurta,
-                f"Bhadra ended at {b_end.strftime('%H:%M')}, hence night dahan."
-            )
-
+        # Decision Logic
+        if bhadra_in_pradosh and b_end > pradosh_end:
+            # Bhadra poore pradosh ko cover kar rahi hai
+            # Check if Purnima is still there after Bhadra
+            if _tithi_number_at(b_end + timedelta(minutes=1)) == 15:
+                # Dahan after Bhadra late night
+                muhurta = calculate_muhurta_window(sunset_dt, p_end, b_end)
+                return format_response(year, d, p, "Late Night (Post-Bhadra)", muhurta, "Bhadra covered Pradosh, so Dahan performed after Bhadra end.")
+            else:
+                # Purnima khatam ho gayi, shift to next day (agar next day sunset pe Purnima ho)
+                # Ye tabhi hota hai jab Purnima 2 din split ho
+                d += timedelta(days=1)
+                continue
         else:
-            # No Bhadra
-            muhurta = calculate_muhurta_window(
-                sunset_dt,
-                p_end
-            )
-
-            return format_response(
-                year,
-                d,
-                p,
-                "Standard Pradosh",
-                muhurta,
-                "Dahan during standard Pradosh Kaal."
-            )
-
-        d += timedelta(days=1)
+            # Best Case: No Bhadra or Bhadra ends within Pradosh
+            muhurta = calculate_muhurta_window(sunset_dt, p_end, b_end if bhadra_in_pradosh else None)
+            return format_response(year, d, p, "Standard Pradosh", muhurta, "Holika Dahan during auspicious Pradosh Kaal.")
 
     return None
