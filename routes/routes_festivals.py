@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime
 from services.festivals.holi_engine import detect_holi
 from services.festivals.holi_rashi_tips import generate_holi_rashi_tips
+from services.festivals.navratri_engine import detect_navratri
+
 
 routes_festivals = Blueprint("routes_festivals", __name__)
 
@@ -35,6 +37,26 @@ def api_holi():
                 response["rashi_tips"] = rashi_data["tips"]
 
         return jsonify(response)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ---------------- NAVRATRI ---------------- #
+
+@routes_festivals.route("/navratri", methods=["POST"])
+def api_navratri():
+    try:
+        data = request.get_json() or {}
+
+        lat = float(data.get("latitude", 28.61))
+        lon = float(data.get("longitude", 77.23))
+
+        year = int(data.get("year")) if data.get("year") else datetime.now().year
+        navratri_type = data.get("type", "chaitra")  # chaitra / sharadiya
+
+        result = detect_navratri(year, lat, lon, navratri_type)
+
+        return jsonify(result)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
