@@ -3,47 +3,38 @@ from services.panchang_engine import calculate_sunrise_sunset
 from services.astro_core import _tithi_number_at
 from services.lunar_month_engine import get_lunar_month
 
-
 def detect_navratri(year, lat, lon, navratri_type="chaitra"):
-    # Sirf wide range di hai search ke liye, logic andar hai
+    # 1. Vedic Boundary Logic
     if navratri_type == "chaitra":
         target_month = "Chaitra"
-        start_range = datetime(year, 3, 1).date()
-        end_range = datetime(year, 4, 30).date()
+        # 18 March 2026 ko pakadne ke liye March 1 se start
+        search_start = datetime(year, 3, 1).date()
     else:
         target_month = "Ashwin"
-        start_range = datetime(year, 9, 1).date()
-        end_range = datetime(year, 10, 31).date()
+        search_start = datetime(year, 9, 1).date()
 
     navratri_days = []
     started = False
-    
-    d = start_range
-    while d <= end_range:
+    d = search_start
+
+    # Max 60 days scan for safety (Adhik Maas handling)
+    for _ in range(60):
         dt_input = datetime.combine(d, datetime.min.time())
-        # 1. Sunrise nikalna astronomical logic ke liye zaroori hai
+        # Sunrise ownership rule
         sunrise_dt, _ = calculate_sunrise_sunset(dt_input, lat, lon)
         
-        # 2. Sunrise ke waqt ki Tithi
         tithi = _tithi_number_at(sunrise_dt)
-        
-        # 3. Lunar Month Engine se Month Name
         lunar_data = get_lunar_month(sunrise_dt)
-        lunar_month = lunar_data["name"]
-        
-        # 4. PURE LOGIC: Navratri Day 1 tabhi shuru hoga jab:
-        # Month sahi ho AUR Tithi 1 ho AUR wo SHUKLA PAKSHA ho.
-        # Shukla Paksha check karne ka pure logic: 
-        # Tithi 1 at Sunrise after an Amavasya (Tithi 30).
-        
+        l_month = lunar_data.get("name")
+
+        # --- START LOGIC (Kalash Sthapana) ---
         if not started:
-            if lunar_month == target_month and tithi == 1:
-                # Check pichli raat ki tithi (to confirm it's Shukla Pratipada)
-                # Shukla Pratipada ke theek pehle Amavasya (30) honi chahiye
+            # Rule: Month must match and it must be Shukla Pratipada (Tithi 1 after 30)
+            if l_month == target_month and tithi == 1:
+                # Expert Check: Pichle sunrise par Amavasya (30) honi chahiye
                 yesterday_sunrise = sunrise_dt - timedelta(days=1)
                 tithi_yesterday = _tithi_number_at(yesterday_sunrise)
                 
-                # Agar kal 30 thi ya aaj sunrise se thoda pehle 30 khatam hui hai
                 if tithi_yesterday == 30 or tithi_yesterday == 29:
                     started = True
                     navratri_days.append({
@@ -52,21 +43,18 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                         "tithi": 1,
                         "label": "Kalash Sthapana"
                     })
-        
-        # 5. CONTINUE NAVRATRI (Sunrise Ownership Rule)
-        elif started:
-            # Navratri tab tak chalegi jab tak Sunrise par Tithi 9 khatam na ho jaye
-            # Ya phir mahina na badal jaye (extreme case)
-            if 1 <= tithi <= 9:
-                # Vriddhi/Kshaya Logic
-                last_day = navratri_days[-1]
-                if tithi == last_day["tithi"]:
-                    # Tithi Vriddhi: Tithi repeat ho rahi hai
-                    day_num = last_day["day_number"] + 1
-                else:
-                    # Normal flow ya Tithi Kshaya (ek skip ho gayi toh bhi count agla hi hoga)
-                    day_num = last_day["day_number"] + 1
 
+        # --- CONTINUATION LOGIC ---
+        elif started:
+            # Navratri Day 2 to 9
+            # Rule: Jab tak Sunrise par Tithi 9 khatam na ho jaye
+            if 1 <= tithi <= 9:
+                last_day = navratri_days[-1]
+                
+                # Logic to handle Tithi Vriddhi (Same tithi on two sunrises)
+                # Day count will always increase to ensure 9 nights
+                day_num = len(navratri_days) + 1
+                
                 navratri_days.append({
                     "day_number": day_num,
                     "date": d.strftime("%Y-%m-%d"),
@@ -74,22 +62,22 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                     "label": f"Navratri Day {day_num}"
                 })
                 
-                # Stop if we reached Tithi 9 (but check if next day is 10)
                 if tithi == 9:
-                    # Double check: Kya agle sunrise par 10 hai? 
-                    # Agar agle sunrise par bhi 9 rahi, toh loop chalne denge (Vriddhi)
-                    next_sunrise = sunrise_dt + timedelta(days=1)
-                    if _tithi_number_at(next_sunrise) != 9:
+                    # Agar agle sunrise par tithi 9 nahi hai, toh aaj hi akhri din hai
+                    if _tithi_number_at(sunrise_dt + timedelta(days=1)) != 9:
                         break
             else:
-                # Agar Tithi 10 aa gayi, Navratri khatam
+                # Agar sunrise par tithi 10 (Dashami) aa gayi, toh Navratri over
                 break
 
         d += timedelta(days=1)
+        if len(navratri_days) >= 10: # Safety break for max days
+            break
 
     return {
         "type": navratri_type,
         "year": year,
         "total_days": len(navratri_days),
+        "kalash_sthapana": navratri_days[0]["date"] if navratri_days else None,
         "days": navratri_days
     }
