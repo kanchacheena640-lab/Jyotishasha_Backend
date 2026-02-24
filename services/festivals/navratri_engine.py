@@ -28,8 +28,7 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
 
     while d <= end_range:
 
-        sunrise_data = calculate_sunrise_sunset(d, lat, lon)
-        sunrise_dt = sunrise_data["sunrise"]
+        sunrise_dt, _ = calculate_sunrise_sunset(d, lat, lon)
 
         lunar_data = get_lunar_month(sunrise_dt)
         lunar_month = lunar_data["name"]
