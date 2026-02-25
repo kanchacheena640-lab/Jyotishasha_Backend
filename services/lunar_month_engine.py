@@ -85,19 +85,20 @@ def get_shivratri_type(dt_ist):
     return "masik_shivratri", lunar_month
 
 def get_amanta_month(dt_ist):
-    # Boundary nikalna zaroori hai Adhik Maas ke liye
     last_amavasya = _find_amavasya_boundary(dt_ist, "past")
     next_amavasya = _find_amavasya_boundary(dt_ist, "future")
 
-    # Sun Rashi at start and end of this Lunar Cycle
     rashi_start = _sun_rashi_index(last_amavasya + timedelta(minutes=5))
     rashi_end = _sun_rashi_index(next_amavasya - timedelta(minutes=5))
     
-    # AGAR RASHI CHANGE NAHI HUI = ADHIK MAAS
     is_adhik = (rashi_start == rashi_end)
+    
+    # FIX: Surya ki Meena rashi (11) Chaitra (0) banani hai
+    # Iske liye hum (rashi + 1) % 12 use karte hain
+    month_index = (rashi_start + 1) % 12
 
     return {
-        "name": HINDU_MONTHS[rashi_start],
-        "index": rashi_start,
-        "is_adhik": is_adhik
+        "name": HINDU_MONTHS[month_index],
+        "is_adhik": is_adhik,
+        "index": month_index
     }
