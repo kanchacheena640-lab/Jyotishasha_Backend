@@ -1,5 +1,6 @@
+
 from datetime import datetime, timedelta
-from services.sun_calc import calculate_sunrise_sunset
+from services.panchang_engine import calculate_sunrise_sunset
 from services.astro_core import _tithi_number_at
 from services.lunar_month_engine import get_amanta_month
 
@@ -29,28 +30,37 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
         tithi = _tithi_number_at(sunrise_dt)
         month = get_amanta_month(sunrise_dt)["name"]
 
+        # Previous sunrise
+        prev_date = d - timedelta(days=1)
+        prev_dt = datetime.combine(prev_date, datetime.min.time())
+        prev_sunrise, _ = calculate_sunrise_sunset(prev_dt, lat, lon)
+        prev_tithi = _tithi_number_at(prev_sunrise)
+
         # -------- START CONDITION --------
         if not started:
 
-            prev_date = d - timedelta(days=1)
-            prev_dt = datetime.combine(prev_date, datetime.min.time())
-            prev_sunrise, _ = calculate_sunrise_sunset(prev_dt, lat, lon)
-            prev_tithi = _tithi_number_at(prev_sunrise)
+            if month == target_month:
 
-            if (
-                month == target_month and
-                tithi == 1 and
-                prev_tithi in (29, 30)
-            ):
-                started = True
+                # Case 1: Pratipada at sunrise
+                if tithi == 1 and prev_tithi in (29, 30):
+                    started = True
 
+                # Case 2: Pratipada starts after sunrise
+                elif tithi in (29, 30):
+                    check_time = sunrise_dt
+                    for minutes in range(0, 1440, 10):
+                        t = sunrise_dt + timedelta(minutes=minutes)
+                        if _tithi_number_at(t) == 1:
+                            started = True
+                            break
+
+            if started:
                 navratri_days.append({
                     "day_number": 1,
                     "date": d.strftime("%Y-%m-%d"),
                     "tithi": 1,
                     "label": "Kalash Sthapana"
                 })
-
                 previous_tithi = 1
 
         # -------- COUNTING PHASE --------
