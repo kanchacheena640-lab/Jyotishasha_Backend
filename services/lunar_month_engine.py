@@ -83,3 +83,20 @@ def get_shivratri_type(dt_ist):
         return "maha_shivratri", lunar_month
 
     return "masik_shivratri", lunar_month
+
+def get_amanta_month(dt_ist):
+    """
+    Returns pure Amanta lunar month (no Purnimanta shift).
+    Safe helper for festival engines like Navratri.
+    Does NOT modify existing get_lunar_month() behavior.
+    """
+
+    last_amavasya = _find_amavasya_boundary(dt_ist, "past")
+
+    # Sun rashi at Amavasya start defines Amanta month
+    rashi_start = _sun_rashi_index(last_amavasya + timedelta(minutes=5))
+
+    return {
+        "name": HINDU_MONTHS[rashi_start],
+        "index": rashi_start
+    }
