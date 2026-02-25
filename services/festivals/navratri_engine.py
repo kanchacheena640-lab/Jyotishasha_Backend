@@ -1,67 +1,89 @@
 from datetime import datetime, timedelta
 from services.panchang_engine import calculate_sunrise_sunset
-from services.astro_core import _tithi_number_at, sidereal_longitudes # <--- Ye line update karni hai
+from services.astro_core import _tithi_number_at
+from services.lunar_month_engine import get_lunar_month
+
 
 def detect_navratri(year, lat, lon, navratri_type="chaitra"):
-    # 1. Search window set karte hain
+
     if navratri_type == "chaitra":
-        d = datetime(year, 3, 1).date()
+        search_start = datetime(year, 3, 1).date()
         search_end = datetime(year, 4, 25).date()
-        target_rashi = 12  # Meena Rashi (Must for Chaitra Navratri)
+        target_month = "Chaitra"
     else:
-        d = datetime(year, 9, 1).date()
+        search_start = datetime(year, 9, 1).date()
         search_end = datetime(year, 10, 30).date()
-        target_rashi = 6   # Kanya Rashi (Must for Ashwin Navratri)
+        target_month = "Ashwin"
 
     navratri_days = []
     started = False
-    
-    while d <= search_end:
-        dt_input = datetime.combine(d, datetime.min.time())
-        # Aapke existing engine se sunrise aur tithi nikalte hain
-        sunrise_dt, _ = calculate_sunrise_sunset(d, lat, lon)
-        tithi = _tithi_number_at(sunrise_dt)
-        
-        # 2. Sun Rashi check (Swiss Eph ka use karke sidereal_longitudes se)
-        sun_long, _ = sidereal_longitudes(sunrise_dt)
-        sun_rashi = int(sun_long // 30) + 1
+    previous_tithi = None
 
+    d = search_start
+
+    while d <= search_end:
+
+        dt_input = datetime.combine(d, datetime.min.time())
+        sunrise_dt, _ = calculate_sunrise_sunset(dt_input, lat, lon)
+
+        tithi = _tithi_number_at(sunrise_dt)
+
+        # 🔹 Month check via lunar month (sunrise based)
+        lunar_data = get_lunar_month(sunrise_dt)
+        lunar_month = lunar_data["name"]
+
+        # ---- START CONDITION ----
         if not started:
-            # Condition: Sahi Rashi honi chahiye aur Tithi 1
-            if tithi == 1 and sun_rashi == target_rashi:
-                # Confirming Shukla Paksha (Amavasya phase check)
-                yesterday_sunrise = sunrise_dt - timedelta(days=1)
-                if _tithi_number_at(yesterday_sunrise) in [29, 30]:
+
+            if lunar_month == target_month and tithi == 1:
+
+                # previous sunrise must be Krishna Paksha end
+                prev_date = d - timedelta(days=1)
+                prev_dt = datetime.combine(prev_date, datetime.min.time())
+                prev_sunrise, _ = calculate_sunrise_sunset(prev_dt, lat, lon)
+                prev_tithi = _tithi_number_at(prev_sunrise)
+
+                if prev_tithi in (29, 30):
                     started = True
-        
-        if started:
-            # Counting days (1 to 9)
-            day_num = len(navratri_days) + 1
-            
-            # Agar tithi 10 aa gayi sunrise par, toh Navratri over
-            if tithi == 10:
-                break
-                
-            navratri_days.append({
-                "day_number": day_num,
-                "date": d.strftime("%Y-%m-%d"),
-                "tithi": tithi,
-                "label": "Kalash Sthapana" if day_num == 1 else f"Navratri Day {day_num}"
-            })
-            
-            # Stop condition: 9 din pure hone par check
-            if day_num >= 9:
-                # Check for Tithi Vriddhi (next sunrise must not be Tithi 9)
-                next_sunrise = sunrise_dt + timedelta(days=1)
-                if _tithi_number_at(next_sunrise) != 9:
+                    navratri_days.append({
+                        "day_number": 1,
+                        "date": d.strftime("%Y-%m-%d"),
+                        "tithi": 1,
+                        "label": "Kalash Sthapana"
+                    })
+                    previous_tithi = 1
+
+        # ---- CONTINUE ----
+        else:
+
+            if 1 <= tithi <= 9 and lunar_month == target_month:
+
+                if tithi == previous_tithi:
+                    day_number = navratri_days[-1]["day_number"] + 1  # Vriddhi
+                else:
+                    day_number = tithi
+
+                navratri_days.append({
+                    "day_number": day_number,
+                    "date": d.strftime("%Y-%m-%d"),
+                    "tithi": tithi,
+                    "label": f"Navratri Day {day_number}"
+                })
+
+                previous_tithi = tithi
+
+                if tithi == 9:
                     break
+
+            else:
+                break
 
         d += timedelta(days=1)
 
     return {
-        "days": navratri_days,
-        "kalash_sthapana_date": navratri_days[0]["date"] if navratri_days else None,
-        "total_days": len(navratri_days),
         "type": navratri_type,
-        "year": year
+        "year": year,
+        "total_days": len(navratri_days),
+        "kalash_sthapana_date": navratri_days[0]["date"] if navratri_days else None,
+        "days": navratri_days
     }
