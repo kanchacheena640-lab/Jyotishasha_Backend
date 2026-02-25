@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from services.panchang_engine import calculate_sunrise_sunset
 from services.astro_core import _tithi_number_at
-from services.lunar_month_engine import get_lunar_month
 
 
 def detect_navratri(year, lat, lon, navratri_type="chaitra"):
@@ -9,11 +8,9 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
     if navratri_type == "chaitra":
         search_start = datetime(year, 3, 1).date()
         search_end = datetime(year, 4, 25).date()
-        target_month = "Chaitra"
     else:
         search_start = datetime(year, 9, 1).date()
         search_end = datetime(year, 10, 30).date()
-        target_month = "Ashwin"
 
     navratri_days = []
     started = False
@@ -25,19 +22,13 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
 
         dt_input = datetime.combine(d, datetime.min.time())
         sunrise_dt, _ = calculate_sunrise_sunset(dt_input, lat, lon)
-
         tithi = _tithi_number_at(sunrise_dt)
-
-        # 🔹 Month check via lunar month (sunrise based)
-        lunar_data = get_lunar_month(sunrise_dt)
-        lunar_month = lunar_data["name"]
 
         # ---- START CONDITION ----
         if not started:
 
-            if lunar_month == target_month and tithi == 1:
+            if tithi == 1:
 
-                # previous sunrise must be Krishna Paksha end
                 prev_date = d - timedelta(days=1)
                 prev_dt = datetime.combine(prev_date, datetime.min.time())
                 prev_sunrise, _ = calculate_sunrise_sunset(prev_dt, lat, lon)
@@ -53,13 +44,12 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                     })
                     previous_tithi = 1
 
-        # ---- CONTINUE ----
         else:
 
-            if 1 <= tithi <= 9 and lunar_month == target_month:
+            if 1 <= tithi <= 9:
 
                 if tithi == previous_tithi:
-                    day_number = navratri_days[-1]["day_number"] + 1  # Vriddhi
+                    day_number = navratri_days[-1]["day_number"] + 1
                 else:
                     day_number = tithi
 
