@@ -81,14 +81,16 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
         lunar_info = get_amanta_month(sunrise_dt)
 
         if not started:
-            if lunar_info["name"] == target_month_name and not lunar_info["is_adhik"]:
-                tithi_sunrise = tithi  # rename optional
+            # 2026 fix: Phalguna के आखिरी दिन (Amavasya) पर भी चेक करो
+            if (lunar_info["name"] == target_month_name or 
+                (lunar_info["name"] == "Phalguna" and tithi == 30)) and not lunar_info["is_adhik"]:
+
+                tithi_sunrise = tithi
 
                 if tithi_sunrise == 1:
                     started = True
                 
                 elif tithi_sunrise == 30:
-                    # Robust scan for Pratipada anywhere in the day (up to 18 hours)
                     check_dt = sunrise_dt
                     found = False
                     while check_dt < sunrise_dt + timedelta(hours=18):
@@ -102,7 +104,7 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                 if started:
                     navratri_days.append({
                         "day_number": 1,
-                        "date": d.strftime("%Y-%m-%d"),  # बेहतर format
+                        "date": d.strftime("%Y-%m-%d"),
                         "tithi": 1,
                         "label": "Kalash Sthapana"
                     })
