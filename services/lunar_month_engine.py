@@ -55,7 +55,7 @@ def get_amanta_month(dt_ist):
     # Month Name Logic: 
     # Mesha (0) ingress makes the lunar month Chaitra.
     # So the month is defined by the Rashi the Sun enters AFTER the last Amavasya.
-    month_index = (rashi_start + 1) % 12 
+    month_index = 0 if rashi_start == 11 else (rashi_start + 1) % 12 
 
     return {
         "name": HINDU_MONTHS[month_index],
