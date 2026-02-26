@@ -22,40 +22,38 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
 
         if not started:
 
+            prev_date = d - timedelta(days=1)
+            prev_sunrise, _ = calculate_sunrise_sunset(
+                datetime.combine(prev_date, datetime.min.time()),
+                lat, lon
+            )
+
+            prev_month = get_amanta_month(prev_sunrise)["name"]
+
+            # 🌙 Check tithi in full day window
             tithi_sunrise = _tithi_number_at(sunrise_dt)
-            tithi_later = _tithi_number_at(sunrise_dt + timedelta(hours=8))
+            tithi_midday = _tithi_number_at(sunrise_dt + timedelta(hours=6))
+            tithi_evening = _tithi_number_at(sunrise_dt + timedelta(hours=12))
 
-            # 🔍 DEBUG
-            if d.month in (3, 4):
-                print(
-                    f"{d} | "
-                    f"Month={lunar_info['name']} | "
-                    f"Adhik={lunar_info['is_adhik']} | "
-                    f"SunriseTithi={tithi_sunrise} | "
-                    f"+8hTithi={tithi_later}"
-                )
+            pratipada_present = (
+                tithi_sunrise == 1
+                or tithi_midday == 1
+                or tithi_evening == 1
+            )
 
-            if lunar_info["name"] == target_month_name and not lunar_info["is_adhik"]:
-
-                # Case 1: Pratipada at sunrise
-                if tithi_sunrise == 1:
-                    start_trigger = True
-
-                # Case 2: Pratipada starts after sunrise
-                elif tithi_sunrise == 30 and tithi_later == 1:
-                    start_trigger = True
-
-                else:
-                    start_trigger = False
-
-                if start_trigger:
-                    started = True
-                    navratri_days.append({
-                        "day_number": 1,
-                        "date": d.strftime("%Y-%m-%d"),
-                        "tithi": 1,
-                        "label": "Kalash Sthapana"
-                    })
+            # 🔥 Final start rule
+            if (
+                lunar_info["name"] == target_month_name
+                and prev_month != target_month_name
+                and pratipada_present
+            ):
+                started = True
+                navratri_days.append({
+                    "day_number": 1,
+                    "date": d.strftime("%Y-%m-%d"),
+                    "tithi": 1,
+                    "label": "Kalash Sthapana"
+                })
         else:
             if 1 <= tithi <= 10:
                 if str(d) not in [x['date'] for x in navratri_days]:
