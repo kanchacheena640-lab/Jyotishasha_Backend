@@ -42,34 +42,22 @@ def _find_amavasya_boundary(dt_ist, direction="past"):
     return high
 
 def get_amanta_month(dt_ist):
-    """
-    Refined logic for 2026 Adhik Maas compatibility.
-    No changes to function signature or return keys.
-    """
     last_amavasya = _find_amavasya_boundary(dt_ist, "past")
     next_amavasya = _find_amavasya_boundary(dt_ist, "future")
 
-    # Amavasya ke theek baad aur theek pehle ki Rashi
-    rashi_start = _sun_rashi_index(last_amavasya + timedelta(minutes=5))
-    rashi_end   = _sun_rashi_index(next_amavasya - timedelta(minutes=5))
+    # Yahan hum check karenge ki kya do Amavasya ke beech Surya ne Rashi badli?
+    # Precision ke liye boundary se 2 ghante door check karenge
+    rashi_start = _sun_rashi_index(last_amavasya + timedelta(hours=2))
+    rashi_end   = _sun_rashi_index(next_amavasya - timedelta(hours=2))
     
-    # RULE: Agar do Amavasya ke beech Surya ne Rashi change NAHI ki = Adhik Maas
+    # Sankranti Check: 2026 mein 14 April ko Sankranti hai, 
+    # jo 18 March aur 17 April ke beech aati hai.
+    # Isliye is_adhik 'False' aana chahiye.
     is_adhik = (rashi_start == rashi_end)
     
-    # MONTH NAMING RULE: 
-    # Normal saal mein: Jo Rashi next amavasya tak aane wali hai (rashi_end)
-    # Adhik saal mein: Jis Rashi mein Surya sankranti nahi kar paya
-    # 2026 Fix: Phalguna (11) ke baad agar sankranti nahi hui toh wo Adhik Phalguna hai.
+    # Month Name: Amanta system mein next Rashi hi mahina batati hai
     month_index = rashi_end 
 
-    # Agar engine 19 March 2026 ko rashi_end = 0 (Mesha) aur is_adhik = True de raha hai,
-    # toh wo usey 'Adhik Chaitra' bol raha hai.
-    # Jabki 19 March 2026 se 'Shuddha Chaitra' shuru hona chahiye.
-    
-    # 2026 ka logic fix: Surya 14 April 2026 ko Mesha mein jayega.
-    # 18 Feb - 18 March: Surya Kumbha(10) mein raha -> Adhik Phalguna (11)
-    # 19 March - 17 April: Surya Meena(11) -> Mesha(0) transition -> Shuddha Chaitra (0)
-    
     return {
         "name": HINDU_MONTHS[month_index],
         "is_adhik": is_adhik,
