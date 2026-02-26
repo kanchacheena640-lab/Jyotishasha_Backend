@@ -81,9 +81,8 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
         lunar_info = get_amanta_month(sunrise_dt)
 
         if not started:
-            # 2026 fix: Phalguna के आखिरी दिन (Amavasya) पर भी चेक करो
-            if (lunar_info["name"] == target_month_name or 
-                (lunar_info["name"] == "Phalguna" and tithi == 30)) and not lunar_info["is_adhik"]:
+            # Fix for 2026: Phalguna Amavasya day पर भी allow (month switch delay handle)
+            if (lunar_info["name"] == target_month_name or lunar_info["name"] == "Phalguna") and not lunar_info["is_adhik"]:
 
                 tithi_sunrise = tithi
 
