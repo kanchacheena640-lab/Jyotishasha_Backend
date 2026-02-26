@@ -55,7 +55,7 @@ def get_amanta_month(dt_ist):
     # Month Name Logic: 
     # Mesha (0) ingress makes the lunar month Chaitra.
     # So the month is defined by the Rashi the Sun enters AFTER the last Amavasya.
-    month_index = rashi_start 
+    month_index = (rashi_start + 1) % 12
     print("DEBUG RASHI:", rashi_start, "Month Index:", month_index, "Name:", HINDU_MONTHS[month_index])
     return {
         "name": HINDU_MONTHS[month_index],
@@ -82,7 +82,7 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
 
         if not started:
             # Fix for 2026: Phalguna Amavasya day पर भी allow (month switch delay handle)
-            if lunar_info["name"] == target_month_name and not lunar_info["is_adhik"]:
+            if lunar_info["name"] == target_month_name or lunar_info["name"] == "Phalguna":
 
                 tithi_sunrise = tithi
 
