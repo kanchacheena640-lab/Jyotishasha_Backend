@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import swisseph as swe
-from services.astro_core import _tithi_number_at, sidereal_longitudes, calculate_sunrise_sunset
+from services.astro_core import _tithi_number_at, sidereal_longitudes
+from services.sun_calc import calculate_sunrise_sunset
 
 HINDU_MONTHS = [
     "Chaitra", "Vaishakha", "Jyeshtha", "Ashadha",
@@ -54,7 +55,7 @@ def get_amanta_month(dt_ist):
     # Month Name Logic: 
     # Mesha (0) ingress makes the lunar month Chaitra.
     # So the month is defined by the Rashi the Sun enters AFTER the last Amavasya.
-    month_index = (rashi_start + 1) % 12 
+    month_index = (rashi_start + 1) % 12 if rashi_start != 11 else 0 
 
     return {
         "name": HINDU_MONTHS[month_index],
@@ -90,7 +91,7 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                     started = True
                 # Safety: Agar sunrise par tithi 30 hai par din mein 1 lag rahi hai
                 elif tithi == 30:
-                    tithi_midday = _tithi_number_at(sunrise_dt + timedelta(hours=6))
+                    tithi_midday = _tithi_number_at(sunrise_dt + timedelta(hours=12))
                     if tithi_midday == 1:
                         started = True
                 
