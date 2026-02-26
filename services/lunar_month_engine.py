@@ -42,21 +42,34 @@ def _find_amavasya_boundary(dt_ist, direction="past"):
     return high
 
 def get_amanta_month(dt_ist):
+    """
+    Refined logic for 2026 Adhik Maas compatibility.
+    No changes to function signature or return keys.
+    """
     last_amavasya = _find_amavasya_boundary(dt_ist, "past")
     next_amavasya = _find_amavasya_boundary(dt_ist, "future")
 
-    # Boundary ke ekdum kareeb check karne ke liye 1 ghante ka buffer
-    rashi_start = _sun_rashi_index(last_amavasya)
-    rashi_end   = _sun_rashi_index(next_amavasya)
+    # Amavasya ke theek baad aur theek pehle ki Rashi
+    rashi_start = _sun_rashi_index(last_amavasya + timedelta(minutes=5))
+    rashi_end   = _sun_rashi_index(next_amavasya - timedelta(minutes=5))
     
-    # Adhik Maas logic: No solar ingress (Sankranti) between two Amavasyas
+    # RULE: Agar do Amavasya ke beech Surya ne Rashi change NAHI ki = Adhik Maas
     is_adhik = (rashi_start == rashi_end)
     
-    # Month Name Logic: 
-    # Mesha (0) ingress makes the lunar month Chaitra.
-    # So the month is defined by the Rashi the Sun enters AFTER the last Amavasya.
-    month_index = (rashi_start + 1) % 12
-    print("DEBUG RASHI:", rashi_start, "Month Index:", month_index, "Name:", HINDU_MONTHS[month_index])
+    # MONTH NAMING RULE: 
+    # Normal saal mein: Jo Rashi next amavasya tak aane wali hai (rashi_end)
+    # Adhik saal mein: Jis Rashi mein Surya sankranti nahi kar paya
+    # 2026 Fix: Phalguna (11) ke baad agar sankranti nahi hui toh wo Adhik Phalguna hai.
+    month_index = rashi_end 
+
+    # Agar engine 19 March 2026 ko rashi_end = 0 (Mesha) aur is_adhik = True de raha hai,
+    # toh wo usey 'Adhik Chaitra' bol raha hai.
+    # Jabki 19 March 2026 se 'Shuddha Chaitra' shuru hona chahiye.
+    
+    # 2026 ka logic fix: Surya 14 April 2026 ko Mesha mein jayega.
+    # 18 Feb - 18 March: Surya Kumbha(10) mein raha -> Adhik Phalguna (11)
+    # 19 March - 17 April: Surya Meena(11) -> Mesha(0) transition -> Shuddha Chaitra (0)
+    
     return {
         "name": HINDU_MONTHS[month_index],
         "is_adhik": is_adhik,
