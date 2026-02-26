@@ -55,7 +55,7 @@ def get_amanta_month(dt_ist):
     # Month Name Logic: 
     # Mesha (0) ingress makes the lunar month Chaitra.
     # So the month is defined by the Rashi the Sun enters AFTER the last Amavasya.
-    month_index = (rashi_start + 1) % 12 
+    month_index = rashi_start 
     print("DEBUG RASHI:", rashi_start, "Month Index:", month_index, "Name:", HINDU_MONTHS[month_index])
     return {
         "name": HINDU_MONTHS[month_index],
@@ -146,8 +146,8 @@ def get_lunar_month(dt_ist):
 
     # 2. Solar Rashi at both ends (Adhik Maas Detection)
     # Agar dono Amavasya ke waqt Sun ki Rashi same hai = ADHIK MAAS
-    rashi_start = _sun_rashi_index(last_amavasya + timedelta(minutes=5))
-    rashi_end = _sun_rashi_index(next_amavasya - timedelta(minutes=5))
+    rashi_start = _sun_rashi_index(last_amavasya + timedelta(minutes=1))
+    rashi_end   = _sun_rashi_index(next_amavasya - timedelta(minutes=1))
     
     is_adhik = (rashi_start == rashi_end)
     
