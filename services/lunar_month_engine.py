@@ -45,18 +45,13 @@ def get_amanta_month(dt_ist):
     last_amavasya = _find_amavasya_boundary(dt_ist, "past")
     next_amavasya = _find_amavasya_boundary(dt_ist, "future")
 
-    # Yahan hum check karenge ki kya do Amavasya ke beech Surya ne Rashi badli?
-    # Precision ke liye boundary se 2 ghante door check karenge
     rashi_start = _sun_rashi_index(last_amavasya + timedelta(hours=2))
     rashi_end   = _sun_rashi_index(next_amavasya - timedelta(hours=2))
     
-    # Sankranti Check: 2026 mein 14 April ko Sankranti hai, 
-    # jo 18 March aur 17 April ke beech aati hai.
-    # Isliye is_adhik 'False' aana chahiye.
     is_adhik = (rashi_start == rashi_end)
     
-    # Month Name: Amanta system mein next Rashi hi mahina batati hai
-    month_index = rashi_start
+    # Correct Amanta naming
+    month_index = rashi_end
 
     return {
         "name": HINDU_MONTHS[month_index],
