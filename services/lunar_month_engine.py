@@ -82,44 +82,25 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
         lunar_info = get_amanta_month(sunrise_dt)
 
         if not started:
-            # Normal case for most years
+            # Simple Rule: Agar mahina 'Chaitra' hai aur 'Adhik' nahi hai (Shuddha hai)
             if lunar_info["name"] == target_month_name and not lunar_info["is_adhik"]:
-                tithi_sunrise = tithi
-
-                if tithi_sunrise == 1:
+                # Agar sunrise par Tithi 1 hai (Standard)
+                # YA agar sunrise par Tithi 30 hai par din mein Tithi 1 lag rahi hai
+                if tithi == 1:
                     started = True
-                
-                elif tithi_sunrise == 30:
-                    check_dt = sunrise_dt
-                    found = False
-                    while check_dt < sunrise_dt + timedelta(hours=18):
-                        if _tithi_number_at(check_dt) == 1:
-                            found = True
-                            break
-                        check_dt += timedelta(minutes=30)
-                    if found:
+                elif tithi == 30:
+                    # 2026 Precision: 19 March ko sunrise ke waqt Amavasya (30) ho sakti hai
+                    # Isliye next 6-10 ghante mein check karna zaroori hai
+                    if _tithi_number_at(sunrise_dt + timedelta(hours=6)) == 1:
                         started = True
 
-            # === SPECIAL CASE FOR 2026 (Tight Amavasya-Pratipada timing) ===
-            elif lunar_info["name"] == "Phalguna" and tithi == 30 and not lunar_info["is_adhik"]:
-                check_dt = sunrise_dt
-                found = False
-                while check_dt < sunrise_dt + timedelta(hours=18):
-                    if _tithi_number_at(check_dt) == 1:
-                        found = True
-                        break
-                    check_dt += timedelta(minutes=30)
-                if found:
-                    started = True
-
-            # If started, add Day 1
-            if started:
-                navratri_days.append({
-                    "day_number": 1,
-                    "date": d.strftime("%Y-%m-%d"),
-                    "tithi": 1,
-                    "label": "Kalash Sthapana"
-                })
+                if started:
+                    navratri_days.append({
+                        "day_number": 1,
+                        "date": d.strftime("%Y-%m-%d"),
+                        "tithi": 1,
+                        "label": "Kalash Sthapana"
+                    })
         else:
             if 1 <= tithi <= 10:
                 if str(d) not in [x['date'] for x in navratri_days]:
