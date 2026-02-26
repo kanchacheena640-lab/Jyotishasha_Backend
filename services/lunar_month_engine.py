@@ -55,7 +55,7 @@ def get_amanta_month(dt_ist):
     # Month Name Logic: 
     # Mesha (0) ingress makes the lunar month Chaitra.
     # So the month is defined by the Rashi the Sun enters AFTER the last Amavasya.
-    month_index = (rashi_start + 1) % 12 if rashi_start != 11 else 0 
+    month_index = rashi_start 
 
     return {
         "name": HINDU_MONTHS[month_index],
@@ -64,33 +64,31 @@ def get_amanta_month(dt_ist):
     }
 
 def detect_navratri(year, lat, lon, navratri_type="chaitra"):
-    # 1. Target settings
     target_month_name = "Chaitra" if navratri_type == "chaitra" else "Ashwin"
     
-    # Start scanning: March for Chaitra, Sept/Oct for Ashwin
     start_date = datetime(year, 3, 1).date() if navratri_type == "chaitra" else datetime(year, 9, 1).date()
     d = start_date
-    search_end = d + timedelta(days=65) # Extra buffer for late Navratris
+    search_end = d + timedelta(days=80)  # बढ़ाया buffer rare late cases के लिए
 
     navratri_days = []
     started = False
 
     while d <= search_end:
         dt_input = datetime.combine(d, datetime.min.time())
-        # Sunrise precision is key for Tithi
         sunrise_dt, _ = calculate_sunrise_sunset(dt_input, lat, lon)
         
         tithi = _tithi_number_at(sunrise_dt)
         lunar_info = get_amanta_month(sunrise_dt)
 
         if not started:
-            # SHASTRIYA RULE: Shukla Pratipada (1) of the Shuddha (not Adhik) month
             if lunar_info["name"] == target_month_name and not lunar_info["is_adhik"]:
-                # If Tithi 1 is active at sunrise, we start
-                if tithi == 1:
+                tithi_sunrise = tithi  # rename optional
+
+                if tithi_sunrise == 1:
                     started = True
-                # Safety: Agar sunrise par tithi 30 hai par din mein 1 lag rahi hai
-                elif tithi == 30:
+                
+                elif tithi_sunrise == 30:
+                    # Robust scan for Pratipada anywhere in the day (up to 18 hours)
                     check_dt = sunrise_dt
                     found = False
                     while check_dt < sunrise_dt + timedelta(hours=18):
@@ -104,25 +102,23 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                 if started:
                     navratri_days.append({
                         "day_number": 1,
-                        "date": str(d),
+                        "date": d.strftime("%Y-%m-%d"),  # बेहतर format
                         "tithi": 1,
                         "label": "Kalash Sthapana"
                     })
         else:
-            # Once started, collect 9 days
-            # We use a list check to avoid duplicate entries on same date
-            if 1 <= tithi <= 10: # Allow up to 10 to catch Dashami/Navami overlap
+            if 1 <= tithi <= 10:
                 if str(d) not in [x['date'] for x in navratri_days]:
                     day_num = len(navratri_days) + 1
                     navratri_days.append({
                         "day_number": day_num, 
-                        "date": str(d), 
+                        "date": d.strftime("%Y-%m-%d"), 
                         "tithi": tithi, 
                         "label": f"Navratri Day {day_num}"
                     })
             
-            # Stop once we have 9 days or we hit Tithi 10 (Dashami)
-            if len(navratri_days) >= 9 or tithi == 10:
+            # बेहतर stop: 9 days collect होने पर या tithi 10 पर
+            if len(navratri_days) >= 9 or tithi >= 10:
                 break
 
         d += timedelta(days=1)

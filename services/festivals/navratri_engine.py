@@ -21,6 +21,7 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
         if not started:
             # Rule: Shuddha Month + Tithi 1
             if lunar_info["name"] == target_month and not lunar_info["is_adhik"]:
+                print(f"{d} | Month: {lunar_info['name']} | Tithi sunrise: {tithi} | +12h Tithi: {_tithi_number_at(sunrise_dt + timedelta(hours=12))}")
                 tithi_sunrise = _tithi_number_at(sunrise_dt)  # पहले से है, rename कर सकते हो
 
                 if tithi_sunrise == 1:
