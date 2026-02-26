@@ -35,21 +35,27 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                     f"+8hTithi={tithi_later}"
                 )
 
-            if (
-                lunar_info["name"] == target_month_name
-                and not lunar_info["is_adhik"]
-                and (
-                    tithi_sunrise == 1 or
-                    (tithi_sunrise == 30 and tithi_later == 1)
-                )
-            ):
-                started = True
-                navratri_days.append({
-                    "day_number": 1,
-                    "date": str(d),
-                    "tithi": 1,
-                    "label": "Kalash Sthapana"
-                })
+            if lunar_info["name"] == target_month_name and not lunar_info["is_adhik"]:
+
+                # Case 1: Pratipada at sunrise
+                if tithi_sunrise == 1:
+                    start_trigger = True
+
+                # Case 2: Pratipada starts after sunrise
+                elif tithi_sunrise == 30 and tithi_later == 1:
+                    start_trigger = True
+
+                else:
+                    start_trigger = False
+
+                if start_trigger:
+                    started = True
+                    navratri_days.append({
+                        "day_number": 1,
+                        "date": d.strftime("%Y-%m-%d"),
+                        "tithi": 1,
+                        "label": "Kalash Sthapana"
+                    })
         else:
             if 1 <= tithi <= 10:
                 if str(d) not in [x['date'] for x in navratri_days]:
