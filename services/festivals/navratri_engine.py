@@ -21,14 +21,27 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
         if not started:
             # Rule: Shuddha Month + Tithi 1
             if lunar_info["name"] == target_month and not lunar_info["is_adhik"]:
-                if tithi == 1:
+                tithi_sunrise = _tithi_number_at(sunrise_dt)  # पहले से है, rename कर सकते हो
+
+                if tithi_sunrise == 1:
                     started = True
-                elif tithi == 30: # Check if Tithi 1 starts post-sunrise
-                    if _tithi_number_at(sunrise_dt + timedelta(hours=6)) == 1:
+                
+                elif tithi_sunrise == 30:
+                    # +12 hours पर चेक (2026 fix + future safe)
+                    if _tithi_number_at(sunrise_dt + timedelta(hours=12)) == 1:
                         started = True
                 
+                # Optional extra safety: अगर +12h पर miss हो (बहुत rare), +15h तक extend
+                # elif _tithi_number_at(sunrise_dt + timedelta(hours=15)) == 1:
+                #     started = True
+
                 if started:
-                    navratri_days.append({"day_number": 1, "date": str(d), "tithi": tithi, "label": "Kalash Sthapana"})
+                    navratri_days.append({
+                        "day_number": 1,
+                        "date": str(d),
+                        "tithi": 1,          # effective tithi day के लिए 1 hardcode करो
+                        "label": "Kalash Sthapana"
+                    })
         else:
             if 1 <= tithi <= 9:
                 # Avoid duplicates on the same Tithi if it's a Vriddhi day
