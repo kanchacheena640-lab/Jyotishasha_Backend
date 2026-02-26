@@ -22,18 +22,16 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
 
         if not started:
             # Simple Rule: Agar mahina 'Chaitra' hai aur 'Adhik' nahi hai (Shuddha hai)
-            prev_date = d - timedelta(days=1)
-            prev_sunrise, _ = calculate_sunrise_sunset(
-                datetime.combine(prev_date, datetime.min.time()),
-                lat, lon
-            )
-            prev_tithi = _tithi_number_at(prev_sunrise)
+            tithi_sunrise = _tithi_number_at(sunrise_dt)
+            tithi_later = _tithi_number_at(sunrise_dt + timedelta(hours=8))
 
             if (
                 lunar_info["name"] == target_month_name
                 and not lunar_info["is_adhik"]
-                and tithi == 1
-                and prev_tithi in (29, 30)
+                and (
+                    tithi_sunrise == 1 or
+                    (tithi_sunrise == 30 and tithi_later == 1)
+                )
             ):
                 started = True
                 navratri_days.append({
