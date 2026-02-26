@@ -81,9 +81,8 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
         lunar_info = get_amanta_month(sunrise_dt)
 
         if not started:
-            # Fix for 2026: Phalguna Amavasya day पर भी allow (month switch delay handle)
-            if lunar_info["name"] == target_month_name or lunar_info["name"] == "Phalguna":
-
+            # Normal case for most years
+            if lunar_info["name"] == target_month_name and not lunar_info["is_adhik"]:
                 tithi_sunrise = tithi
 
                 if tithi_sunrise == 1:
@@ -99,14 +98,27 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                         check_dt += timedelta(minutes=30)
                     if found:
                         started = True
-                
-                if started:
-                    navratri_days.append({
-                        "day_number": 1,
-                        "date": d.strftime("%Y-%m-%d"),
-                        "tithi": 1,
-                        "label": "Kalash Sthapana"
-                    })
+
+            # === SPECIAL CASE FOR 2026 (Tight Amavasya-Pratipada timing) ===
+            elif lunar_info["name"] == "Phalguna" and tithi == 30 and not lunar_info["is_adhik"]:
+                check_dt = sunrise_dt
+                found = False
+                while check_dt < sunrise_dt + timedelta(hours=18):
+                    if _tithi_number_at(check_dt) == 1:
+                        found = True
+                        break
+                    check_dt += timedelta(minutes=30)
+                if found:
+                    started = True
+
+            # If started, add Day 1
+            if started:
+                navratri_days.append({
+                    "day_number": 1,
+                    "date": d.strftime("%Y-%m-%d"),
+                    "tithi": 1,
+                    "label": "Kalash Sthapana"
+                })
         else:
             if 1 <= tithi <= 10:
                 if str(d) not in [x['date'] for x in navratri_days]:
