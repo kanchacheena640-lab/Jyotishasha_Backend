@@ -91,8 +91,14 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                     started = True
                 # Safety: Agar sunrise par tithi 30 hai par din mein 1 lag rahi hai
                 elif tithi == 30:
-                    tithi_midday = _tithi_number_at(sunrise_dt + timedelta(hours=12))
-                    if tithi_midday == 1:
+                    check_dt = sunrise_dt
+                    found = False
+                    while check_dt < sunrise_dt + timedelta(hours=18):
+                        if _tithi_number_at(check_dt) == 1:
+                            found = True
+                            break
+                        check_dt += timedelta(minutes=30)
+                    if found:
                         started = True
                 
                 if started:
