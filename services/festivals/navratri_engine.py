@@ -64,12 +64,13 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
 
         if not started:
 
+            # -------- NORMAL RULE --------
+            # Sunrise पर Pratipada मिले
             if (
                 lunar_info["name"] == target_month_name
-                and prev_month != target_month_name
-                and pratipada_present
+                and tithi_sunrise == 1
             ):
-                print("  >>>>>> NAVRATRI START DETECTED <<<<<<")
+                print("  >>> NORMAL NAVRATRI START DETECTED")
                 started = True
 
                 navratri_days.append({
@@ -78,6 +79,46 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                     "tithi": 1,
                     "label": "Kalash Sthapana"
                 })
+
+            # -------- RARE EDGE CASE (Like 2026) --------
+            else:
+
+                # Check if TODAY sunrise = 30 (Amavasya end)
+                if tithi_sunrise == 30:
+
+                    # Check if during today Pratipada occurred
+                    tithi_6h = _tithi_number_at(sunrise_dt + timedelta(hours=6))
+                    tithi_12h = _tithi_number_at(sunrise_dt + timedelta(hours=12))
+
+                    pratipada_inside_day = (
+                        tithi_6h == 1 or tithi_12h == 1
+                    )
+
+                    # Check next day sunrise
+                    next_date = d + timedelta(days=1)
+                    next_sunrise, _ = calculate_sunrise_sunset(
+                        datetime.combine(next_date, datetime.min.time()),
+                        lat, lon
+                    )
+
+                    next_tithi = _tithi_number_at(next_sunrise)
+                    next_month = get_amanta_month(next_sunrise)["name"]
+
+                    if (
+                        pratipada_inside_day
+                        and next_tithi == 2
+                        and next_month == target_month_name
+                    ):
+                        print("  >>> EDGE CASE NAVRATRI START DETECTED (Pratipada between sunrises)")
+
+                        started = True
+
+                        navratri_days.append({
+                            "day_number": 1,
+                            "date": d.strftime("%Y-%m-%d"),
+                            "tithi": 1,
+                            "label": "Kalash Sthapana"
+                        })
 
         else:
             if 1 <= tithi_sunrise <= 10:
