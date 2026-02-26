@@ -56,7 +56,7 @@ def get_amanta_month(dt_ist):
     is_adhik = (rashi_start == rashi_end)
     
     # Month Name: Amanta system mein next Rashi hi mahina batati hai
-    month_index = rashi_end 
+    month_index = rashi_start
 
     return {
         "name": HINDU_MONTHS[month_index],
@@ -64,70 +64,6 @@ def get_amanta_month(dt_ist):
         "index": month_index
     }
 
-def detect_navratri(year, lat, lon, navratri_type="chaitra"):
-    target_month_name = "Chaitra" if navratri_type == "chaitra" else "Ashwin"
-    
-    start_date = datetime(year, 3, 1).date() if navratri_type == "chaitra" else datetime(year, 9, 1).date()
-    d = start_date
-    search_end = d + timedelta(days=80)  # बढ़ाया buffer rare late cases के लिए
-
-    navratri_days = []
-    started = False
-
-    while d <= search_end:
-        dt_input = datetime.combine(d, datetime.min.time())
-        sunrise_dt, _ = calculate_sunrise_sunset(dt_input, lat, lon)
-        
-        tithi = _tithi_number_at(sunrise_dt)
-        lunar_info = get_amanta_month(sunrise_dt)
-
-        if not started:
-            # Simple Rule: Agar mahina 'Chaitra' hai aur 'Adhik' nahi hai (Shuddha hai)
-            if lunar_info["name"] == target_month_name and not lunar_info["is_adhik"]:
-                # Agar sunrise par Tithi 1 hai (Standard)
-                # YA agar sunrise par Tithi 30 hai par din mein Tithi 1 lag rahi hai
-                if tithi == 1:
-                    started = True
-                elif tithi == 30:
-                    # 2026 Precision: 19 March ko sunrise ke waqt Amavasya (30) ho sakti hai
-                    # Isliye next 6-10 ghante mein check karna zaroori hai
-                    if _tithi_number_at(sunrise_dt + timedelta(hours=6)) == 1:
-                        started = True
-
-                if started:
-                    navratri_days.append({
-                        "day_number": 1,
-                        "date": d.strftime("%Y-%m-%d"),
-                        "tithi": 1,
-                        "label": "Kalash Sthapana"
-                    })
-        else:
-            if 1 <= tithi <= 10:
-                if str(d) not in [x['date'] for x in navratri_days]:
-                    day_num = len(navratri_days) + 1
-                    navratri_days.append({
-                        "day_number": day_num, 
-                        "date": d.strftime("%Y-%m-%d"), 
-                        "tithi": tithi, 
-                        "label": f"Navratri Day {day_num}"
-                    })
-            
-            # बेहतर stop: 9 days collect होने पर या tithi 10 पर
-            if len(navratri_days) >= 9 or tithi >= 10:
-                break
-
-        d += timedelta(days=1)
-    
-    if not navratri_days:
-        return {"error": f"{navratri_type} Navratri not found for {year}", "year": year}
-
-    return {
-        "type": navratri_type,
-        "year": year,
-        "total_days": len(navratri_days),
-        "kalash_sthapana_date": navratri_days[0]["date"],
-        "days": navratri_days
-    }
 
 def get_lunar_month(dt_ist):
     """
@@ -168,7 +104,7 @@ def get_shivratri_type(dt_ist):
 
     lunar_month = get_lunar_month(dt_ist)
     # Maha Shivratri Phalguna Krishna Chaturdashi ko hoti hai (Purnimanta context)
-    if lunar_month == "Phalguna":
+    if lunar_month["name"] == "Phalguna":
         return "maha_shivratri", lunar_month
 
     return "masik_shivratri", lunar_month

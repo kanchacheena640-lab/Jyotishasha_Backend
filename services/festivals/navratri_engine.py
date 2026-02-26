@@ -4,10 +4,11 @@ from services.astro_core import _tithi_number_at
 from services.lunar_month_engine import get_amanta_month
 
 def detect_navratri(year, lat, lon, navratri_type="chaitra"):
-    target_month = "Chaitra" if navratri_type == "chaitra" else "Ashwin"
-    # Search window adjusted for March start
-    d = datetime(year, 3, 1).date() if navratri_type == "chaitra" else datetime(year, 9, 1).date()
-    search_end = d + timedelta(days=60)
+    target_month_name = "Chaitra" if navratri_type == "chaitra" else "Ashwin"
+    
+    start_date = datetime(year, 3, 1).date() if navratri_type == "chaitra" else datetime(year, 9, 1).date()
+    d = start_date
+    search_end = d + timedelta(days=80)  # बढ़ाया buffer rare late cases के लिए
 
     navratri_days = []
     started = False
@@ -15,48 +16,51 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
     while d <= search_end:
         dt_input = datetime.combine(d, datetime.min.time())
         sunrise_dt, _ = calculate_sunrise_sunset(dt_input, lat, lon)
-        lunar_info = get_amanta_month(sunrise_dt)
+        
         tithi = _tithi_number_at(sunrise_dt)
+        lunar_info = get_amanta_month(sunrise_dt)
 
         if not started:
-            # Rule: Shuddha Month + Tithi 1
-            if lunar_info["name"] == target_month and not lunar_info["is_adhik"]:
-                print(f"{d} | Month: {lunar_info['name']} | Tithi sunrise: {tithi} | +12h Tithi: {_tithi_number_at(sunrise_dt + timedelta(hours=12))}")
-                tithi_sunrise = _tithi_number_at(sunrise_dt)  # पहले से है, rename कर सकते हो
+            # Simple Rule: Agar mahina 'Chaitra' hai aur 'Adhik' nahi hai (Shuddha hai)
+            prev_date = d - timedelta(days=1)
+            prev_sunrise, _ = calculate_sunrise_sunset(
+                datetime.combine(prev_date, datetime.min.time()),
+                lat, lon
+            )
+            prev_tithi = _tithi_number_at(prev_sunrise)
 
-                if tithi_sunrise == 1:
-                    started = True
-                
-                elif tithi_sunrise == 30:
-                    # +12 hours पर चेक (2026 fix + future safe)
-                    if _tithi_number_at(sunrise_dt + timedelta(hours=12)) == 1:
-                        started = True
-                
-                # Optional extra safety: अगर +12h पर miss हो (बहुत rare), +15h तक extend
-                # elif _tithi_number_at(sunrise_dt + timedelta(hours=15)) == 1:
-                #     started = True
-
-                if started:
-                    navratri_days.append({
-                        "day_number": 1,
-                        "date": str(d),
-                        "tithi": 1,          # effective tithi day के लिए 1 hardcode करो
-                        "label": "Kalash Sthapana"
-                    })
+            if (
+                lunar_info["name"] == target_month_name
+                and not lunar_info["is_adhik"]
+                and tithi == 1
+                and prev_tithi in (29, 30)
+            ):
+                started = True
+                navratri_days.append({
+                    "day_number": 1,
+                    "date": str(d),
+                    "tithi": 1,
+                    "label": "Kalash Sthapana"
+                })
         else:
-            if 1 <= tithi <= 9:
-                # Avoid duplicates on the same Tithi if it's a Vriddhi day
+            if 1 <= tithi <= 10:
                 if str(d) not in [x['date'] for x in navratri_days]:
                     day_num = len(navratri_days) + 1
-                    navratri_days.append({"day_number": day_num, "date": str(d), "tithi": tithi, "label": f"Navratri Day {day_num}"})
+                    navratri_days.append({
+                        "day_number": day_num, 
+                        "date": d.strftime("%Y-%m-%d"), 
+                        "tithi": tithi, 
+                        "label": f"Navratri Day {day_num}"
+                    })
             
-            if tithi >= 10 or len(navratri_days) >= 10:
+            # बेहतर stop: 9 days collect होने पर या tithi 10 पर
+            if len(navratri_days) >= 9 or tithi >= 10:
                 break
 
         d += timedelta(days=1)
-
+    
     if not navratri_days:
-        return {"error": "Navratri dates not found for this year", "year": year}
+        return {"error": f"{navratri_type} Navratri not found for {year}", "year": year}
 
     return {
         "type": navratri_type,
