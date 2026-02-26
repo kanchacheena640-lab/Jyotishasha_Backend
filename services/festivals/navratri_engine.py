@@ -21,9 +21,19 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
         lunar_info = get_amanta_month(sunrise_dt)
 
         if not started:
-            # Simple Rule: Agar mahina 'Chaitra' hai aur 'Adhik' nahi hai (Shuddha hai)
+
             tithi_sunrise = _tithi_number_at(sunrise_dt)
             tithi_later = _tithi_number_at(sunrise_dt + timedelta(hours=8))
+
+            # 🔍 DEBUG
+            if d.month in (3, 4):
+                print(
+                    f"{d} | "
+                    f"Month={lunar_info['name']} | "
+                    f"Adhik={lunar_info['is_adhik']} | "
+                    f"SunriseTithi={tithi_sunrise} | "
+                    f"+8hTithi={tithi_later}"
+                )
 
             if (
                 lunar_info["name"] == target_month_name
