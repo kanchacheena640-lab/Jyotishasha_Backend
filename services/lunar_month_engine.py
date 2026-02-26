@@ -46,8 +46,8 @@ def get_amanta_month(dt_ist):
     next_amavasya = _find_amavasya_boundary(dt_ist, "future")
 
     # Boundary ke ekdum kareeb check karne ke liye 1 ghante ka buffer
-    rashi_start = _sun_rashi_index(last_amavasya + timedelta(hours=1))
-    rashi_end = _sun_rashi_index(next_amavasya - timedelta(hours=1))
+    rashi_start = _sun_rashi_index(last_amavasya)
+    rashi_end   = _sun_rashi_index(next_amavasya)
     
     # Adhik Maas logic: No solar ingress (Sankranti) between two Amavasyas
     is_adhik = (rashi_start == rashi_end)
@@ -55,7 +55,7 @@ def get_amanta_month(dt_ist):
     # Month Name Logic: 
     # Mesha (0) ingress makes the lunar month Chaitra.
     # So the month is defined by the Rashi the Sun enters AFTER the last Amavasya.
-    month_index = rashi_start 
+    month_index = (rashi_start + 1) % 12 
 
     return {
         "name": HINDU_MONTHS[month_index],
