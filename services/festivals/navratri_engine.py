@@ -205,7 +205,7 @@ def build_full_navratri(year, lat, lon, navratri_type="chaitra"):
         sandhi_end = navami_start + timedelta(minutes=24)
 
         sandhi_puja = {
-            "date": navami["date"],
+            "date": navami_start.strftime("%Y-%m-%d"),  # ✅ FIXED
             "start": sandhi_start.strftime("%H:%M"),
             "end": sandhi_end.strftime("%H:%M")
         }
