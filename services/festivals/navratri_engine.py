@@ -191,16 +191,23 @@ def build_full_navratri(year, lat, lon, navratri_type="chaitra"):
     }
 
     # ---------------------------------
-    # Sandhi Puja (Ashtami → Navami Boundary)
+    # Sandhi Puja (Ashtami → Navami)
     # ---------------------------------
     sandhi_puja = None
-    ashtami = next((x for x in enriched_days if x["day_number"] == 8), None)
 
-    if ashtami:
-        transitions = ashtami["tithi_window"].get("start_ist")
+    navami = next((x for x in enriched_days if x["day_number"] == 9), None)
+
+    if navami:
+        navami_start_str = navami["tithi_window"]["start_ist"]
+        navami_start = datetime.strptime(navami_start_str, "%Y-%m-%d %H:%M")
+
+        sandhi_start = navami_start - timedelta(minutes=24)
+        sandhi_end = navami_start + timedelta(minutes=24)
+
         sandhi_puja = {
-            "date": ashtami["date"],
-            "note": "Use exact Navami transition from tithi_special.transition_times_ist if needed"
+            "date": navami["date"],
+            "start": sandhi_start.strftime("%H:%M"),
+            "end": sandhi_end.strftime("%H:%M")
         }
 
     # ---------------------------------
