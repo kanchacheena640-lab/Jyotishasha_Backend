@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from services.panchang_engine import calculate_sunrise_sunset
 from services.astro_core import _tithi_number_at
 from services.lunar_month_engine import get_amanta_month
+from services.panchang_engine import calculate_panchang
+
 
 NAVRATRI_DAY_MAP = {
     1: "Shailputri",
@@ -154,88 +156,93 @@ def build_full_navratri(year, lat, lon, navratri_type="chaitra"):
     days = base["days"]
 
     # ---------------------------------
-    # Attach Mata Names
+    # Attach Mata Names + Panchang Data
     # ---------------------------------
+    enriched_days = []
+
     for d in days:
+        date_obj = datetime.strptime(d["date"], "%Y-%m-%d").date()
+
+        panchang = calculate_panchang(date_obj, lat, lon, "en")
+
         d["mata_name"] = NAVRATRI_DAY_MAP.get(d["day_number"])
+        d["sunrise"] = panchang["sunrise"]
+        d["sunset"] = panchang["sunset"]
+        d["abhijit_muhurta"] = panchang["abhijit_muhurta"]
+        d["brahma_muhurta"] = panchang["brahma_muhurta"]
+        d["rahu_kaal"] = panchang["rahu_kaal"]
+        d["tithi_window"] = panchang["tithi"]
+        d["kshaya"] = panchang["tithi_special"]["kshaya"]
+        d["vriddhi"] = panchang["tithi_special"]["vriddhi"]
+
+        enriched_days.append(d)
 
     # ---------------------------------
-    # Kalash Sthapana Muhurta
+    # Kalash Sthapana = Day 1 Panchang
     # ---------------------------------
-    kalash_date = base["kalash_sthapana_date"]
-    kalash_obj = datetime.strptime(kalash_date, "%Y-%m-%d").date()
-
-    sunrise, sunset = calculate_sunrise_sunset(
-        datetime.combine(kalash_obj, datetime.min.time()),
-        lat, lon
-    )
-
-    day_seconds = (sunset - sunrise).total_seconds()
-
-    # Abhijit approx middle of day
-    abhijit_start = sunrise + timedelta(seconds=day_seconds * 0.4)
-    abhijit_end = sunrise + timedelta(seconds=day_seconds * 0.5)
+    kalash_day = enriched_days[0]
 
     kalash_muhurta = {
-        "date": kalash_date,
-        "sunrise": sunrise.strftime("%H:%M"),
-        "abhijit_start": abhijit_start.strftime("%H:%M"),
-        "abhijit_end": abhijit_end.strftime("%H:%M")
+        "date": kalash_day["date"],
+        "sunrise": kalash_day["sunrise"],
+        "abhijit_muhurta": kalash_day["abhijit_muhurta"],
+        "brahma_muhurta": kalash_day["brahma_muhurta"],
+        "rahu_kaal": kalash_day["rahu_kaal"],
     }
 
     # ---------------------------------
-    # Ashtami Sandhi (Day 8)
+    # Sandhi Puja (Ashtami → Navami Boundary)
     # ---------------------------------
-    ashtami_info = next((x for x in days if x["day_number"] == 8), None)
-
     sandhi_puja = None
-    if ashtami_info:
-        ashtami_date = datetime.strptime(ashtami_info["date"], "%Y-%m-%d").date()
-        ashtami_sunrise, _ = calculate_sunrise_sunset(
-            datetime.combine(ashtami_date, datetime.min.time()),
-            lat, lon
-        )
+    ashtami = next((x for x in enriched_days if x["day_number"] == 8), None)
 
-        sandhi_start = ashtami_sunrise + timedelta(hours=10)
-        sandhi_end = sandhi_start + timedelta(minutes=48)
-
+    if ashtami:
+        transitions = ashtami["tithi_window"].get("start_ist")
         sandhi_puja = {
-            "date": ashtami_info["date"],
-            "start": sandhi_start.strftime("%H:%M"),
-            "end": sandhi_end.strftime("%H:%M")
+            "date": ashtami["date"],
+            "note": "Use exact Navami transition from tithi_special.transition_times_ist if needed"
         }
 
     # ---------------------------------
-    # Vijayadashami Aparahna
+    # Vijayadashami (Day 9 Panchang Based Aparahna)
     # ---------------------------------
-    last_day = days[-1]
-    dashami_date = datetime.strptime(last_day["date"], "%Y-%m-%d").date()
+    dashami = enriched_days[-1]
 
-    dashami_sunrise, dashami_sunset = calculate_sunrise_sunset(
-        datetime.combine(dashami_date, datetime.min.time()),
-        lat, lon
+    dashami_date_obj = datetime.strptime(dashami["date"], "%Y-%m-%d").date()
+    dashami_panchang = calculate_panchang(dashami_date_obj, lat, lon, "en")
+
+    sunrise = datetime.strptime(
+        dashami["date"] + " " + dashami_panchang["sunrise"],
+        "%Y-%m-%d %H:%M"
+    )
+    sunset = datetime.strptime(
+        dashami["date"] + " " + dashami_panchang["sunset"],
+        "%Y-%m-%d %H:%M"
     )
 
-    dashami_day_seconds = (dashami_sunset - dashami_sunrise).total_seconds()
+    day_duration = sunset - sunrise
+    one_part = day_duration / 5
 
-    aparahna_start = dashami_sunrise + timedelta(seconds=dashami_day_seconds * 0.5)
-    aparahna_end = dashami_sunrise + timedelta(seconds=dashami_day_seconds * 0.75)
+    aparahna_start = sunrise + one_part * 2
+    aparahna_end = sunrise + one_part * 3
 
     vijayadashami = {
-        "date": dashami_date.strftime("%Y-%m-%d"),
+        "date": dashami["date"],
         "aparahna_start": aparahna_start.strftime("%H:%M"),
         "aparahna_end": aparahna_end.strftime("%H:%M")
     }
 
     # ---------------------------------
-    # Final Combined Response
+    # Final Response
     # ---------------------------------
     return {
         "type": navratri_type,
         "year": year,
-        "total_days": len(days),
+        "start_date": enriched_days[0]["date"],
+        "end_date": enriched_days[-1]["date"],
+        "total_days": len(enriched_days),
         "kalash_sthapana": kalash_muhurta,
         "sandhi_puja": sandhi_puja,
         "vijayadashami": vijayadashami,
-        "days": days
+        "days": enriched_days
     }
