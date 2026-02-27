@@ -2,8 +2,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime
 from services.festivals.holi_engine import detect_holi
 from services.festivals.holi_rashi_tips import generate_holi_rashi_tips
-from services.festivals.navratri_engine import detect_navratri
-
+from services.festivals.navratri_engine import detect_navratri, build_full_navratri
 
 routes_festivals = Blueprint("routes_festivals", __name__)
 
@@ -54,7 +53,7 @@ def api_navratri():
         year = int(data.get("year")) if data.get("year") else datetime.now().year
         navratri_type = data.get("type", "chaitra")  # chaitra / sharadiya
 
-        result = detect_navratri(year, lat, lon, navratri_type)
+        result = build_full_navratri(year, lat, lon, navratri_type)
 
         return jsonify(result)
 
