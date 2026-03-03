@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime
+import pytz
 from scripts.daily_rotation_engine import run_daily_rotation_runtime
 
 daily_bp = Blueprint("daily_bp", __name__)
@@ -68,3 +69,44 @@ def get_daily_horoscope():
             )
 
     return jsonify(response), 200
+
+@daily_bp.route("/api/daily-horoscope-summary", methods=["GET"])
+def get_daily_summary():
+    lang = request.args.get("lang", "en").lower()
+
+    # 🔁 Run rotation once
+    data_en, data_hi = run_daily_rotation_runtime()
+    data = data_hi if lang == "hi" else data_en
+
+    # 🇮🇳 Always use IST
+    ist = pytz.timezone("Asia/Kolkata")
+    now = datetime.now(ist)
+    today_date = now.strftime("%d %B %Y")
+
+    summary = {}
+
+    for sign in ZODIACS:
+        item = data.get(sign)
+        if not item:
+            continue
+
+        sign_name = SIGN_HI.get(sign, sign.capitalize()) if lang == "hi" else sign.capitalize()
+
+        preview = item.get("intro", "")
+        preview = preview.replace("{SIGN}", sign_name).replace("{DATE}", today_date)
+
+        summary[sign] = {
+            "preview": preview[:140],
+            "lucky_color": item.get("lucky_color"),
+            "lucky_number": item.get("lucky_number"),
+        }
+
+    response = jsonify({
+        "date": today_date,
+        "data": summary
+    })
+
+    # ⚡ 30 min cache (daily content stable)
+    response.headers["Cache-Control"] = "public, max-age=1800"
+
+    return response, 200
