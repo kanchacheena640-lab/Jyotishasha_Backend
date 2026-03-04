@@ -252,3 +252,105 @@ def api_adhik_maas():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+import os
+import json
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+EKADASHI_DIR = os.path.join(BASE_DIR, "data", "ekadashi")
+
+
+def find_next_ekadashi_from_json(today):
+    year = today.year
+
+    for y in [year, year + 1]:
+        file_path = os.path.join(EKADASHI_DIR, f"ekadashi_{y}.json")
+
+        if not os.path.exists(file_path):
+            continue
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        ekadashi_list = data.get("ekadashi_list", [])
+
+        future = [
+            e for e in ekadashi_list
+            if datetime.strptime(e["vrat_date"], "%Y-%m-%d").date() >= today
+        ]
+
+        if future:
+            future.sort(
+                key=lambda x: datetime.strptime(x["vrat_date"], "%Y-%m-%d")
+            )
+
+            next_item = future[0]
+
+            return {
+                "name": next_item.get("name") or next_item.get("ekadashi_name"),
+                "date": next_item["vrat_date"],
+                "slug": f"/ekadashi/{next_item['slug']}"
+            }
+
+    return None
+
+
+@routes_events.route("/home-upcoming", methods=["POST"])
+def api_home_upcoming():
+    try:
+        data = request.get_json() or {}
+
+        lat = float(data.get("latitude", 28.61))
+        lon = float(data.get("longitude", 77.23))
+        today = datetime.now().date()
+
+        events = []
+
+        # 🔹 Helper: normalize engine response safely
+        def extract_next(engine_response):
+            if not engine_response:
+                return None
+
+            next_data = engine_response.get("next")
+            if not next_data:
+                return None
+
+            name = next_data.get("name_en") or next_data.get("name")
+            date_value = next_data.get("date")
+            slug_value = next_data.get("slug")
+
+            if not name or not date_value or not slug_value:
+                return None
+
+            return {
+                "name": name,
+                "date": date_value,
+                "slug": f"/{slug_value}"
+            }
+
+        # 🔹 Engine-based events
+        events.append(extract_next(find_next_pradosh(today, lat, lon, "en")))
+        events.append(extract_next(find_next_sankashti(today, lat, lon, "en")))
+        events.append(extract_next(find_next_amavasya(today, lat, lon, "en")))
+        events.append(extract_next(find_next_purnima(today, lat, lon, "en")))
+        events.append(extract_next(find_next_shivratri(today, lat, lon, "en")))
+        events.append(extract_next(find_next_sankranti(today, lat, lon, "en")))
+
+        # 🔹 Ekadashi (JSON-based)
+        ekadashi_event = find_next_ekadashi_from_json(today)
+        if ekadashi_event:
+            events.append(ekadashi_event)
+
+        # 🔹 Remove invalid
+        events = [e for e in events if e and e.get("date")]
+
+        # 🔹 Safe date sorting
+        events.sort(
+            key=lambda x: datetime.strptime(x["date"], "%Y-%m-%d")
+        )
+
+        return jsonify({
+            "events": events[:5]
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
