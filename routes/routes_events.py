@@ -286,7 +286,7 @@ def find_next_ekadashi_from_json(today):
             next_item = future[0]
 
             return {
-                "name": next_item.get("name") or next_item.get("ekadashi_name"),
+                "name": next_item.get("name_en"),  # ✅ correct key
                 "date": next_item["vrat_date"],
                 "slug": f"/ekadashi/{next_item['slug']}"
             }
