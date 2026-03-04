@@ -310,7 +310,13 @@ def api_home_upcoming():
             if not engine_response:
                 return None
 
-            next_data = engine_response.get("next")
+            # 🔹 Case 1: wrapped {"today":..., "next": {...}}
+            if isinstance(engine_response, dict) and "next" in engine_response:
+                next_data = engine_response.get("next")
+            else:
+                # 🔹 Case 2: direct event object
+                next_data = engine_response
+
             if not next_data:
                 return None
 
