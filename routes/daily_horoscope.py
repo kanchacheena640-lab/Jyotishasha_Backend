@@ -24,6 +24,31 @@ MONTH_HI = {
 }
 
 
+# ---------------------------
+# Daily Rotation Cache
+# ---------------------------
+
+ROTATION_CACHE = None
+ROTATION_DATE = None
+
+
+def get_cached_rotation():
+    global ROTATION_CACHE, ROTATION_DATE
+
+    ist = pytz.timezone("Asia/Kolkata")
+    today = datetime.now(ist).date()
+
+    if ROTATION_CACHE is None or ROTATION_DATE != today:
+        ROTATION_CACHE = run_daily_rotation_runtime()
+        ROTATION_DATE = today
+
+    return ROTATION_CACHE
+
+
+# ---------------------------
+# Full Horoscope API
+# ---------------------------
+
 @daily_bp.route("/api/daily-horoscope", methods=["GET"])
 def get_daily_horoscope():
     sign = request.args.get("sign", "").lower()
@@ -32,8 +57,8 @@ def get_daily_horoscope():
     if sign not in ZODIACS:
         return jsonify({"error": "Invalid zodiac sign"}), 400
 
-    # 🔁 Runtime rotation (DB-based)
-    data_en, data_hi = run_daily_rotation_runtime()
+    # 🔁 Cached rotation
+    data_en, data_hi = get_cached_rotation()
     data = data_hi if lang == "hi" else data_en
 
     result = data.get(sign)
@@ -51,7 +76,6 @@ def get_daily_horoscope():
         sign_name = sign.capitalize()
         heading = f"Today's Daily Horoscope for {sign_name} – {today_date}"
 
-    # Final response
     response = {
         **result,
         "heading": heading,
@@ -70,15 +94,19 @@ def get_daily_horoscope():
 
     return jsonify(response), 200
 
+
+# ---------------------------
+# Horoscope Summary API (Home Page)
+# ---------------------------
+
 @daily_bp.route("/api/daily-horoscope-summary", methods=["GET"])
 def get_daily_summary():
     lang = request.args.get("lang", "en").lower()
 
-    # 🔁 Run rotation once
-    data_en, data_hi = run_daily_rotation_runtime()
+    # 🔁 Cached rotation
+    data_en, data_hi = get_cached_rotation()
     data = data_hi if lang == "hi" else data_en
 
-    # 🇮🇳 Always use IST
     ist = pytz.timezone("Asia/Kolkata")
     now = datetime.now(ist)
     today_date = now.strftime("%d %B %Y")
@@ -106,7 +134,7 @@ def get_daily_summary():
         "data": summary
     })
 
-    # ⚡ 30 min cache (daily content stable)
+    # ⚡ 30 min cache
     response.headers["Cache-Control"] = "public, max-age=1800"
 
     return response, 200
