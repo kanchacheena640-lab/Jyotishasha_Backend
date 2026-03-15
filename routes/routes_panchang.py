@@ -1,5 +1,6 @@
 # routes/routes_panchang.py
 
+import traceback
 from flask import Blueprint, request, jsonify
 from services.panchang_engine import calculate_panchang, today_and_tomorrow
 from services.muhurth_engine import next_best_dates
@@ -60,7 +61,8 @@ def api_panchang():
         return jsonify(result)
 
     except Exception as e:
-        print(">> Panchang Error:", e)
+        print(">> Panchang Error:")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 # ------------------- MUHURTH TOOL (30-day scan) ------------------- #
