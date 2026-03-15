@@ -583,6 +583,9 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     is_panchak = n_name in PANCHAK_NAKSHATRAS
 
     month_name_en = get_lunar_month(ref)
+    # FIX: lunar_month_engine returns dict
+    if isinstance(month_name_en, dict):
+        month_name_en = month_name_en.get("name", "")
     
     weekday_en = date.strftime("%A")
 
