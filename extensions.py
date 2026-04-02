@@ -20,4 +20,4 @@ if not firebase_admin._apps:
         cred = credentials.Certificate(json.loads(firebase_json))
         firebase_admin.initialize_app(cred)
     else:
-        raise RuntimeError("FCM_SERVICE_ACCOUNT_JSON env variable not set")
+        print("⚠️ FCM not initialized (env missing)")

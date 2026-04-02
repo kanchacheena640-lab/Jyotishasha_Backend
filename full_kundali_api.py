@@ -22,8 +22,27 @@ from services.rajya_sambandh_rajyog import evaluate_rajya_sambandh_rajyog
 from services.shubh_kartari_yog import evaluate_shubh_kartari_yog
 from services.vipreet_rajyog import evaluate_vipreet_rajyog
 from services.gemstone_recommender import recommend_gemstone_from_lagna_9th
+from modules.models_user import UserDashaTimeline
+from extensions import db
 
+def save_dasha_to_db(user_id, mahadashas):
+    # duplicate avoid
+    exists = UserDashaTimeline.query.filter_by(user_id=user_id).first()
+    if exists:
+        return
 
+    for md in mahadashas:
+        for ad in md["antardashas"]:
+            row = UserDashaTimeline(
+                user_id=user_id,
+                mahadasha=md["mahadasha"],
+                antardasha=ad["planet"],
+                start_date=ad["start"],
+                end_date=ad["end"]
+            )
+            db.session.add(row)
+
+    db.session.commit()
 
 
 import json
@@ -247,7 +266,7 @@ def get_current_dasha(mahadashas):
     return current_maha, current_antar
 
 # ----------------- MAIN KUNDALI FUNCTION -----------------
-def calculate_full_kundali(name, dob, tob, lat, lon, language='en'):
+def calculate_full_kundali(user_id, name, dob, tob, lat, lon, language='en'):
     planets = calculate_planet_positions(dob, tob, lat, lon)
 
     drishti_info = calculate_drishti_for_planets(planets)
@@ -262,6 +281,8 @@ def calculate_full_kundali(name, dob, tob, lat, lon, language='en'):
     birth_date = datetime.strptime(f"{dob} {tob}", "%Y-%m-%d %H:%M")
     mahadashas = calculate_vimshottari_dasha(moon_deg, birth_date)
     current_maha, current_antar = get_current_dasha(mahadashas)
+
+    save_dasha_to_db(user_id, mahadashas)
 
     moon_sign = next((p['sign'] for p in planets if p["name"] == "Moon"), None)
     lagna_sign = next((p['sign'] for p in planets if "Ascendant" in p["name"]), None)

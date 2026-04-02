@@ -7,8 +7,31 @@ from services.lunar_month_engine import get_shivratri_type
 
 
 
+def parse_datetime_safe(dt_str):
+    if not dt_str:
+        return None
 
+    dt_str = str(dt_str).strip()
 
+    # 🔥 FIX corrupt patterns
+    dt_str = dt_str.replace("  ", " ")
+    dt_str = dt_str.replace("20 026", "2026")
+    dt_str = dt_str.replace("22026", "2026")
+    dt_str = dt_str.replace(" 5-", "-")
+
+    formats = [
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d%H:%M",
+        "%Y-%m-%d %H:%M:%S"
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(dt_str, fmt)
+        except ValueError:
+            continue
+
+    return None
 
 
 # ==========================================================
@@ -30,7 +53,6 @@ def get_pradosh_details(panchang_data):
         )
 
         # 🔥 Get tithi at sunset (NOT noon)
-        from services.panchang_engine import _tithi_number_at
         tithi_at_sunset = _tithi_number_at(sunset_dt)
 
         if tithi_at_sunset not in (13, 28):
@@ -46,13 +68,14 @@ def get_pradosh_details(panchang_data):
             "name_en": name_en,
             "name_hi": name_hi,
             "slug": "pradosh-vrat",
-            "date": date_str,
+            "date": datetime.strptime(date_str, "%Y-%m-%d").strftime("%Y-%m-%d"),
             "paksha": paksha,
             "sunset_time": sunset_time,
             "tithi_at_sunset": tithi_at_sunset,
         }
 
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error in {__name__}: {str(e)}")
         return None
 
 
@@ -78,6 +101,9 @@ def get_sankashti_details(panchang_data, lat, lon):
 
     try:
         date_str = panchang_data.get("date")
+        # 🔥 SAFE FIX
+        date_str = str(date_str).replace("20   026", "2026").replace("20 026", "2026")
+        
         if not date_str:
             return None 
 
@@ -114,7 +140,8 @@ def get_sankashti_details(panchang_data, lat, lon):
             "is_angaraki": vrat_date.weekday() == 1,
         }
 
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error in {__name__}: {str(e)}")
         return None
 
 
@@ -143,7 +170,14 @@ def find_next_sankashti(start_date, lat, lon, language="en", days_ahead=45):
 def get_amavasya_details(panchang_data):
     try:
         t = panchang_data.get("tithi") or {}
-        if int(t.get("number", 0)) != 30:
+
+        # 🔥 Safe int conversion
+        try:
+            tithi_number = int(t.get("number", 0))
+        except (TypeError, ValueError):
+            return None
+
+        if tithi_number != 30:
             return None
 
         date_str = panchang_data.get("date")
@@ -177,8 +211,8 @@ def get_amavasya_details(panchang_data):
             "name_en": "Amavasya",
             "name_hi": "अमावस्या",
             "slug": "amavasya",
-            "tithi_start": t.get("start_ist"),
-            "tithi_end": t.get("end_ist"),
+            "tithi_start": parse_datetime_safe(t.get("start_ist")),
+            "tithi_end": parse_datetime_safe(t.get("end_ist")),
             "paksha": t.get("paksha"),
 
             # 🔥 New optional enrichment
@@ -187,7 +221,8 @@ def get_amavasya_details(panchang_data):
             "special_name_hi": special_name_hi,
         }
 
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error in {__name__}: {str(e)}")
         return None
 
 # ==========================================================
@@ -217,7 +252,12 @@ def get_purnima_details(panchang_data):
         t = panchang_data.get("tithi") or {}
 
         # Shukla Purnima = 15
-        if int(t.get("number", 0)) != 15:
+        try:
+            tithi_number = int(t.get("number", 0))
+        except (TypeError, ValueError):
+            return None
+
+        if tithi_number != 15:   # (Vinayaka me 4)
             return None
 
         date_str = panchang_data.get("date")
@@ -230,12 +270,13 @@ def get_purnima_details(panchang_data):
             "name_en": "Purnima",
             "name_hi": "पूर्णिमा",
             "slug": "purnima",
-            "tithi_start": t.get("start_ist"),
-            "tithi_end": t.get("end_ist"),
+            "tithi_start": parse_datetime_safe(t.get("start_ist")),
+            "tithi_end": parse_datetime_safe(t.get("end_ist")),
             "paksha": t.get("paksha"),
         }
 
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error in {__name__}: {str(e)}")
         return None
 
 def find_next_purnima(start_date, lat, lon, language="en", days_ahead=60):
@@ -259,7 +300,10 @@ def find_next_purnima(start_date, lat, lon, language="en", days_ahead=60):
 def get_vinayaka_chaturthi_details(panchang_data):
     try:
         t = panchang_data.get("tithi") or {}
-        tithi_number = int(t.get("number", 0))
+        try:
+            tithi_number = int(t.get("number", 0))
+        except (TypeError, ValueError):
+            return None
 
         # Shukla Chaturthi = 4
         if tithi_number != 4:
@@ -287,13 +331,14 @@ def get_vinayaka_chaturthi_details(panchang_data):
             "name_en": name_en,
             "name_hi": name_hi,
             "slug": slug,
-            "tithi_start": t.get("start_ist"),
-            "tithi_end": t.get("end_ist"),
+            "tithi_start": parse_datetime_safe(t.get("start_ist")),
+            "tithi_end": parse_datetime_safe(t.get("end_ist")),
             "paksha": t.get("paksha"),
             "month": month,
         }
 
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error in {__name__}: {str(e)}")
         return None
     
 def find_next_vinayaka_chaturthi(start_date, lat, lon, language="en", days_ahead=60):
@@ -345,11 +390,12 @@ def get_shivratri_details(panchang_data, lat, lon, language="en"):
             "name_hi": name_hi,
             "slug": slug,
             "month": lunar_month,
-            "tithi_start": tithi.get("start_ist"),
-            "tithi_end": tithi.get("end_ist"),
+            "tithi_start": parse_datetime_safe(tithi.get("start_ist")),
+            "tithi_end": parse_datetime_safe(tithi.get("end_ist")),
         }
 
-    except Exception:
+    except Exception as e:
+        print(f"❌ Error in {__name__}: {str(e)}")
         return None
 
 

@@ -1,4 +1,4 @@
-# transit_engine_v3.py
+# transit_engine.py
 # Current + next 12 rashi transits with motion, IST based
 
 import swisseph as swe
@@ -125,3 +125,33 @@ def get_next_12_rashi_segments(planet_name: str):
 def get_all_planets_next_12():
     planets = ["Sun","Moon","Mercury","Venus","Mars","Jupiter","Saturn","Rahu","Ketu"]
     return {p: get_next_12_rashi_segments(p) for p in planets}
+
+# -------------------------------
+# 🔹 ASTRO EVENT WRAPPER
+# -------------------------------
+def get_transit_events(date):
+    planets = ["Sun","Mercury","Venus","Mars","Jupiter","Saturn","Rahu","Ketu"]
+
+    events = []
+
+    for planet in planets:
+        transitions = get_next_12_rashi_segments(planet)
+
+        for t in transitions:
+            if t["entering_date"] != date.strftime("%Y-%m-%d"):
+                continue
+
+            events.append({
+                "name": f"{planet} enters {t['to_rashi']}",
+                "type": "transit",
+                "date": date,
+                "priority": 2,
+                "notify_before_days": 1,
+                "notify_same_day": True,
+                "meta": {
+                    "planet": planet,
+                    "rashi": t["to_rashi"].lower()
+                }
+            })
+
+    return events

@@ -1,2 +1,1 @@
-ALTER TABLE orders
-ADD COLUMN partner_payload JSONB;
+SELECT start_date FROM user_dasha_timeline WHERE user_id = 263;
