@@ -26,7 +26,7 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run Notification Job
+            - name: Run Notification Job
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
@@ -34,16 +34,16 @@ jobs:
           FIREBASE_CREDENTIALS: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
 
         run: |
-          python -c "
-from cron_app import app
-from notifications.daily_runner import run_daily_notifications
-from notifications.notification_service import process_due_jobs
-from notifications.notification_fcm import send_fcm
-from services.event_scheduler import run_daily_event_job
+          python - <<EOF
+          from cron_app import app
+          from notifications.daily_runner import run_daily_notifications
+          from notifications.notification_service import process_due_jobs
+          from notifications.notification_fcm import send_fcm
+          from services.event_scheduler import run_daily_event_job
 
-app.app_context().push()
+          app.app_context().push()
 
-run_daily_notifications()
-run_daily_event_job()
-process_due_jobs(send_fcm)
-"
+          run_daily_notifications()
+          run_daily_event_job()
+          process_due_jobs(send_fcm)
+          EOF
