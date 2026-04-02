@@ -1,0 +1,49 @@
+name: Run Notification Cron
+
+on:
+  schedule:
+    # 🕒 6:00 AM IST
+    - cron: "30 0 * * *"
+    # 🕒 6:00 PM IST
+    - cron: "30 12 * * *"
+
+  workflow_dispatch:
+
+jobs:
+  run-cron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Notification Job
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          FIREBASE_CREDENTIALS: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+
+        run: |
+          python -c "
+from cron_app import app
+from notifications.daily_runner import run_daily_notifications
+from notifications.notification_service import process_due_jobs
+from notifications.notification_fcm import send_fcm
+from services.event_scheduler import run_daily_event_job
+
+app.app_context().push()
+
+run_daily_notifications()
+run_daily_event_job()
+process_due_jobs(send_fcm)
+"
