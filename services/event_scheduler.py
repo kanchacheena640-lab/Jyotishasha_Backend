@@ -22,7 +22,10 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # -------------------------------
 # 🔹 TIME SLOT (IST)
 # -------------------------------
-def get_time_slot():
+def get_time_slot(force_run=True):   # 🔥 add flag
+    if force_run:
+        return "morning"
+
     now = datetime.now(IST)
     hour = now.hour
 
@@ -35,7 +38,7 @@ def get_time_slot():
 
 
 def run_daily_event_job():
-    slot = get_time_slot()
+    slot = get_time_slot(force_run=True)
     print("🚀 Running daily event job...")
 
     if slot == "skip":
@@ -232,7 +235,7 @@ def run_daily_event_job():
                                 data=data
                             )
 
-                        if success:
+                        if success or token is None:
                             total_sent += 1
 
                             try:
