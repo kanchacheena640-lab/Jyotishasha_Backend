@@ -95,3 +95,23 @@ class NotificationJob(db.Model):
 
     def is_due(self, now: datetime) -> bool:
         return self.status == "pending" and self.scheduled_at <= now
+    
+# ===============================
+# USER NOTIFICATION (BELL SYSTEM)
+# ===============================
+class UserNotification(db.Model):
+    __tablename__ = "user_notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, nullable=False, index=True)
+
+    title = db.Column(db.String(255))
+    body = db.Column(db.Text)
+
+    is_read = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
