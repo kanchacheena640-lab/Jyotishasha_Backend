@@ -46,6 +46,8 @@ from routes.transit_content import transit_content_bp
 from routes.routes_events import routes_events
 from routes.routes_festivals import routes_festivals
 from routes.routes_ekadashi import ekadashi_bp
+from notifications.user_notification_routes import user_notification_bp
+
 
 
 
@@ -78,6 +80,7 @@ app.register_blueprint(routes_smartchat)
 app.register_blueprint(routes_auth)
 app.register_blueprint(routes_admin_tokens)
 app.register_blueprint(notification_bp)
+app.register_blueprint(user_notification_bp)
 app.register_blueprint(love_bp)
 app.register_blueprint(yearly_bp)
 app.register_blueprint(relationship_premium_bp)
