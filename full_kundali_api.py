@@ -266,7 +266,13 @@ def get_current_dasha(mahadashas):
     return current_maha, current_antar
 
 # ----------------- MAIN KUNDALI FUNCTION -----------------
-def calculate_full_kundali(user_id, name, dob, tob, lat, lon, language='en'):
+def calculate_full_kundali(name, dob, tob, lat, lon, user_id=None, language='en'):
+    if user_id:
+        # 🔮 personalized kundali
+        print(f"User based kundali for {user_id}")
+    else:
+        # 🌐 normal kundali (website)
+        print("Guest kundali")
     planets = calculate_planet_positions(dob, tob, lat, lon)
 
     drishti_info = calculate_drishti_for_planets(planets)
@@ -282,7 +288,8 @@ def calculate_full_kundali(user_id, name, dob, tob, lat, lon, language='en'):
     mahadashas = calculate_vimshottari_dasha(moon_deg, birth_date)
     current_maha, current_antar = get_current_dasha(mahadashas)
 
-    save_dasha_to_db(user_id, mahadashas)
+    if user_id:
+        save_dasha_to_db(user_id, mahadashas)
 
     moon_sign = next((p['sign'] for p in planets if p["name"] == "Moon"), None)
     lagna_sign = next((p['sign'] for p in planets if "Ascendant" in p["name"]), None)
