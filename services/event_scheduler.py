@@ -5,6 +5,7 @@ from datetime import timedelta
 
 # Models
 from modules.models_user import AppUser
+from models import AstroEvent
 
 # Services
 from services.event_master import generate_events_for_date, save_events_to_db
@@ -12,6 +13,7 @@ from services.notification_engine import build_notifications, send_push_notifica
 from services.notification_builder import get_user_notifications   # 🔥 NEW
 from models_notification_log import NotificationLog
 from services.notification_engine import send_topic_notification
+from modules.models_notification import UserNotification
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -50,16 +52,30 @@ def run_daily_event_job():
         # 🔹 STEP 1: Generate Events
         # ---------------------------
         today = datetime.now(IST).date()
+        # 🔥 NEW
+        if slot == "morning":
+            target_date = today
+        elif slot == "evening":
+            target_date = today + timedelta(days=1)
 
         DEFAULT_LAT = 26.8467
         DEFAULT_LON = 80.9462
 
         try:
-            events = generate_events_for_date(today, DEFAULT_LAT, DEFAULT_LON)
+            # 🔥 STEP 1: Check DB first
+            events = AstroEvent.query.filter_by(date=target_date).all()
 
             if events:
-                save_events_to_db(events)
-                print(f"✅ {len(events)} events saved")
+                print(f"✅ Events already in DB: {len(events)}")
+
+            else:
+                print("⚠️ No events in DB, generating...")
+
+                new_events = generate_events_for_date(target_date, DEFAULT_LAT, DEFAULT_LON)
+
+                if new_events:
+                    save_events_to_db(new_events)
+                    print(f"✅ {len(new_events)} events saved")
 
         except Exception as e:
             print(f"❌ Event generation failed: {str(e)}")
@@ -69,7 +85,7 @@ def run_daily_event_job():
         # 🔹 STEP 2: Build Notifications
         # ---------------------------
         try:
-            global_notifications = build_notifications()
+            global_notifications = build_notifications(target_date=target_date)
 
             if not global_notifications:
                 print("⚠️ No global notifications, checking personalized...")
@@ -220,6 +236,7 @@ def run_daily_event_job():
                             total_sent += 1
 
                             try:
+                                # 🔹 LOG (existing)
                                 log = NotificationLog(
                                     user_id=user.id,
                                     event_id=event_id,
@@ -227,11 +244,20 @@ def run_daily_event_job():
                                 )
                                 db.session.add(log)
 
+                                # 🔥 SAVE USER NOTIFICATION
+
+                                notif = UserNotification(
+                                    user_id=user.id,
+                                    title=title,
+                                    body=body,
+                                    data=data
+                                )
+                                db.session.add(notif)
+
                                 sent_event_ids.add(event_id)
 
                             except Exception as e:
-                                print(f"❌ Log add failed: {str(e)}")
-
+                                print(f"❌ Log/Save failed: {str(e)}")
                 except Exception as e:
                     print(f"❌ Failed for user {user.id}: {str(e)}")
 

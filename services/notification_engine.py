@@ -21,44 +21,51 @@ def get_today_notifications():
     today = get_today_date()
 
     return AstroEvent.query.filter(
-        AstroEvent.date == str(today)
+        AstroEvent.date == today
     ).all()
-
-
-# -------------------------------
-# 🔹 PRE-EVENT
-# -------------------------------
-def get_pre_notifications():
-    today = get_today_date()
-
-    events = AstroEvent.query.all()
-    notify_list = []
-
-    for event in events:
-        if not event.notify_before_days:
-            continue
-
-        try:
-            notify_date = event.date - timedelta(days=event.notify_before_days)
-
-            if notify_date == today:
-                notify_list.append(event)
-
-        except Exception as e:
-            print(f"❌ Pre-event calc error (event {event.id}): {str(e)}")
-
-    return notify_list
 
 
 # -------------------------------
 # 🔹 BUILD NOTIFICATIONS
 # -------------------------------
-def build_notifications():
+def build_notifications(target_date=None):
     notifications = []
 
-    # 🔹 GET EVENTS
-    today_events = get_today_notifications()
-    pre_events = get_pre_notifications()
+    # 🔹 TARGET DATE
+    if not target_date:
+        target_date = get_today_date()
+
+    # 🔹 GET TODAY EVENTS
+    today_events = AstroEvent.query.filter(
+        AstroEvent.date == target_date
+    ).all()
+
+    # 🔹 GET PRE-EVENTS (SAFE)
+    all_db_events = AstroEvent.query.filter(
+        AstroEvent.date >= target_date,
+        AstroEvent.date <= target_date + timedelta(days=2)
+    ).all()
+
+    pre_events = []
+
+    for event in all_db_events:
+        if event.notify_before_days is None:
+            continue
+
+        try:
+            event_date = event.date
+
+            # 🔥 SAFETY (important)
+            if isinstance(event_date, str):
+                event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
+
+            notify_date = event_date - timedelta(days=event.notify_before_days)
+
+            if notify_date == target_date:
+                pre_events.append(event)
+
+        except Exception as e:
+            print(f"❌ Pre-event error (event {event.id}): {str(e)}")
 
     # 🔹 MERGE + DEDUP
     all_events = today_events + pre_events
@@ -67,35 +74,29 @@ def build_notifications():
     # 🔹 SORT BY PRIORITY
     all_events = sort_by_priority(all_events)
 
-    # 🔹 BUILD
-    today = get_today_date()
-
+    # 🔹 BUILD NOTIFICATIONS
     for e in all_events:
 
         if e.type not in ["festival", "transit", "vrat", "muhurat"]:
             continue
 
-        # SAME DAY
-        if e.date == today:
-            notifications.append({
-                "title": f"{e.name} Today 🪔",
-                "body": f"{e.name} का आज विशेष महत्व है",
-                "data": {
-                    "type": e.type,
-                    "event_id": str(e.id)
-                }
-            })
+        event_date = e.date
 
-        # PRE EVENT
-        else:
-            notifications.append({
-                "title": f"{e.name} Tomorrow 🔔",
-                "body": f"{e.name} कल है, अभी तैयारी करें",
-                "data": {
-                    "type": e.type,
-                    "event_id": str(e.id)
-                }
-            })
+        # 🔥 FINAL SAFETY FIX
+        if isinstance(event_date, str):
+            event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
+
+        is_today = (event_date == target_date)
+
+        notifications.append({
+            "title": f"{e.name} {'Today 🪔' if is_today else 'Tomorrow 🔔'}",
+            "body": f"{e.name} का {'आज विशेष महत्व है' if is_today else 'कल है, अभी तैयारी करें'}",
+            "data": {
+                "type": e.type,
+                "event_id": str(e.id),
+                "date": str(event_date)  # 🔥 CLEAN DATE
+            }
+        })
 
     return notifications
 
