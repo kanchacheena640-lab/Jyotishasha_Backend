@@ -13,7 +13,7 @@ from services.notification_engine import build_notifications, send_push_notifica
 from services.notification_builder import get_user_notifications   # 🔥 NEW
 from models_notification_log import NotificationLog
 from services.notification_engine import send_topic_notification
-from modules.models_notification import UserNotification
+from notifications.notification_models import UserNotification
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -22,10 +22,8 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # -------------------------------
 # 🔹 TIME SLOT (IST)
 # -------------------------------
-def get_time_slot(force_run=True):   # 🔥 add flag
-    if force_run:
-        return "morning"
-
+def get_time_slot():   # 🔥 add flag
+    
     now = datetime.now(IST)
     hour = now.hour
 
@@ -38,7 +36,7 @@ def get_time_slot(force_run=True):   # 🔥 add flag
 
 
 def run_daily_event_job():
-    slot = get_time_slot(force_run=True)
+    slot = get_time_slot()
     print("🚀 Running daily event job...")
 
     if slot == "skip":
@@ -235,11 +233,11 @@ def run_daily_event_job():
                                 data=data
                             )
 
-                        if success or token is None:
+                        if success or not token:  # 🔥 FINAL PRODUCTION LOGIC
                             total_sent += 1
 
                             try:
-                                # 🔹 LOG (existing)
+                                # 🔹 LOG
                                 log = NotificationLog(
                                     user_id=user.id,
                                     event_id=event_id,
@@ -247,8 +245,7 @@ def run_daily_event_job():
                                 )
                                 db.session.add(log)
 
-                                # 🔥 SAVE USER NOTIFICATION
-
+                                # 🔹 SAVE USER NOTIFICATION
                                 notif = UserNotification(
                                     user_id=user.id,
                                     title=title,
