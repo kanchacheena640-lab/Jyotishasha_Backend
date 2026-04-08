@@ -171,12 +171,14 @@ def send_push_notification(token, title, body, data=None):
 # -------------------------------
 def send_topic_notification(topic, title, body, data=None):
     try:
+        safe_data = {k: str(v) for k, v in (data or {}).items()}
+        
         message = messaging.Message(
             notification=messaging.Notification(
                 title=title,
                 body=body
             ),
-            data=data or {},
+            data=safe_data,
             topic=topic
         )
 

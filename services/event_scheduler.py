@@ -249,8 +249,7 @@ def run_daily_event_job():
                                 notif = UserNotification(
                                     user_id=user.id,
                                     title=title,
-                                    body=body,
-                                    data=data
+                                    body=body
                                 )
                                 db.session.add(notif)
 
