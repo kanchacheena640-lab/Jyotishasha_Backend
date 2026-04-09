@@ -1,3 +1,2 @@
-SELECT column_name 
-FROM information_schema.columns 
-WHERE table_name = 'app_users';
+ALTER TABLE app_users
+ADD COLUMN firebase_uid VARCHAR(255);
