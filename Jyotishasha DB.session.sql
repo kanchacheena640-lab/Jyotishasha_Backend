@@ -1,1 +1,3 @@
-SELECT start_date FROM user_dasha_timeline WHERE user_id = 263;
+SELECT column_name 
+FROM information_schema.columns 
+WHERE table_name = 'app_users';

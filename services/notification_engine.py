@@ -77,24 +77,28 @@ def build_notifications(target_date=None):
     # 🔹 BUILD NOTIFICATIONS
     for e in all_events:
 
-        if e.type not in ["festival", "transit", "vrat", "muhurat"]:
+        # 🔥 normalize type
+        event_type = (e.type or "").lower().strip()
+
+        if event_type not in ["festival", "transit", "vrat", "muhurat"]:
+            print(f"⛔ Skipping event due to type mismatch: {e.type}")
             continue
 
+        # 🔥 safe date handling
         event_date = e.date
-
-        # 🔥 FINAL SAFETY FIX
         if isinstance(event_date, str):
             event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
 
         is_today = (event_date == target_date)
 
+        # 🔥 build notification
         notifications.append({
             "title": f"{e.name} {'Today 🪔' if is_today else 'Tomorrow 🔔'}",
             "body": f"{e.name} का {'आज विशेष महत्व है' if is_today else 'कल है, अभी तैयारी करें'}",
             "data": {
-                "type": e.type,
+                "type": event_type,
                 "event_id": str(e.id),
-                "date": str(event_date)  # 🔥 CLEAN DATE
+                "date": str(event_date)
             }
         })
 
