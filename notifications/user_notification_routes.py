@@ -5,11 +5,28 @@ from extensions import db
 from notifications.notification_models import UserNotification
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+# 🔥 IMPORTANT: correct import path adjust if needed
+from models import AppUser  
+
 user_notification_bp = Blueprint(
     "user_notifications",
     __name__,
     url_prefix="/api/user-notifications"
 )
+
+
+# 🔥 COMMON HELPER (DRY CODE)
+def get_current_user_id():
+    firebase_uid = get_jwt_identity()
+
+    user = db.session.query(AppUser)\
+        .filter_by(firebase_uid=firebase_uid)\
+        .first()
+
+    if not user:
+        return None
+
+    return user.id
 
 
 # ===============================
@@ -18,13 +35,20 @@ user_notification_bp = Blueprint(
 @user_notification_bp.route("/unread-count", methods=["GET"])
 @jwt_required()
 def get_unread_count():
-    user_id = get_jwt_identity()
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
 
     count = db.session.query(UserNotification)\
-        .filter_by(user_id=user_id, is_read=False)\
+        .filter(
+            UserNotification.user_id == user_id,
+            UserNotification.is_read == False
+        )\
         .count()
 
     return jsonify({"unread_count": count})
+
 
 # ===============================
 # 2. GET LIST
@@ -32,10 +56,13 @@ def get_unread_count():
 @user_notification_bp.route("", methods=["GET"])
 @jwt_required()
 def get_notifications():
-    user_id = get_jwt_identity()
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
 
     notifications = db.session.query(UserNotification)\
-        .filter_by(user_id=user_id)\
+        .filter(UserNotification.user_id == user_id)\
         .order_by(UserNotification.created_at.desc())\
         .limit(50)\
         .all()
@@ -58,16 +85,22 @@ def get_notifications():
 @user_notification_bp.route("/mark-read", methods=["POST"])
 @jwt_required()
 def mark_read():
-    user_id = get_jwt_identity()
-    data = request.json
+    user_id = get_current_user_id()
 
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json or {}
     notif_id = data.get("notification_id")
 
     if not notif_id:
         return jsonify({"error": "notification_id required"}), 400
 
     notif = db.session.query(UserNotification)\
-        .filter_by(id=notif_id, user_id=user_id)\
+        .filter(
+            UserNotification.id == notif_id,
+            UserNotification.user_id == user_id
+        )\
         .first()
 
     if notif:
@@ -83,11 +116,17 @@ def mark_read():
 @user_notification_bp.route("/mark-all-read", methods=["POST"])
 @jwt_required()
 def mark_all_read():
-    user_id = get_jwt_identity()
+    user_id = get_current_user_id()
+
+    if not user_id:
+        return jsonify({"error": "User not found"}), 404
 
     db.session.query(UserNotification)\
-        .filter_by(user_id=user_id, is_read=False)\
-        .update({"is_read": True})
+        .filter(
+            UserNotification.user_id == user_id,
+            UserNotification.is_read == False
+        )\
+        .update({"is_read": True}, synchronize_session=False)
 
     db.session.commit()
 
