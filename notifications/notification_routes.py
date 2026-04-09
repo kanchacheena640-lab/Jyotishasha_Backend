@@ -96,21 +96,29 @@ def list_notification_jobs():
 # ---------------------------------------------------
 @notification_bp.route("/<int:job_id>/send-now", methods=["POST"])
 def send_notification_now(job_id):
-    job = NotificationJob.query.get(job_id)
-    if not job:
-        return jsonify({"error": "Job not found"}), 404
-
-    # Mark time as now (optional)
-    job.scheduled_at = datetime.utcnow()
-    db.session.commit()
-
     try:
-        success, failed = send_job_now(job, send_fcm)
+        job = NotificationJob.query.get(job_id)
+
+        if not job:
+            return jsonify({"error": "Job not found"}), 404
+
+        # Mark time as now (optional)
+        job.scheduled_at = datetime.utcnow()
+        db.session.commit()
+
+        try:
+            success, failed = send_job_now(job, send_fcm)
+        except Exception as e:
+            print("❌ Send job error:", e)
+            success, failed = 0, 0
+
         return jsonify({
-            "message": "Notification sent",
+            "message": "Notification processed",
             "job_id": job.id,
             "success": success,
             "failed": failed
         }), 200
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print("❌ Route error:", e)
+        return jsonify({"error": "Internal Server Error"}), 500
