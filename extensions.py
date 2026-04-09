@@ -6,7 +6,10 @@ from firebase_admin import credentials
 import os
 import json
 
-db = SQLAlchemy()
+db = SQLAlchemy(engine_options={
+    "pool_pre_ping": True,
+    "pool_recycle": 300
+})
 jwt = JWTManager()
 
 # -------------------------------------------------
