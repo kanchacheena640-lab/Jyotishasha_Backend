@@ -1,2 +1,1 @@
-ALTER TABLE app_users
-ADD COLUMN firebase_uid VARCHAR(255);
+SELECT id, firebase_uid, fcm_token FROM users;

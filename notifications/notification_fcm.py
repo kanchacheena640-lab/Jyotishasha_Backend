@@ -68,7 +68,7 @@ def send_fcm(token: str, title: str, body: str, data: dict = None):
                 "title": title,
                 "body": body
             },
-            "data": data or {}
+            "data": {k: str(v) for k, v in (data or {}).items()}
         }
     }
 
