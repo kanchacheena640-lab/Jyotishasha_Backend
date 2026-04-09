@@ -3,6 +3,7 @@
 from flask import Blueprint, request, jsonify
 from extensions import db
 from notifications.notification_models import UserNotification
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 user_notification_bp = Blueprint(
     "user_notifications",
@@ -15,11 +16,9 @@ user_notification_bp = Blueprint(
 # 1. UNREAD COUNT
 # ===============================
 @user_notification_bp.route("/unread-count", methods=["GET"])
+@jwt_required()
 def get_unread_count():
-    user_id = request.args.get("user_id")
-
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = get_jwt_identity()
 
     count = db.session.query(UserNotification)\
         .filter_by(user_id=user_id, is_read=False)\
@@ -27,16 +26,13 @@ def get_unread_count():
 
     return jsonify({"unread_count": count})
 
-
 # ===============================
 # 2. GET LIST
 # ===============================
 @user_notification_bp.route("", methods=["GET"])
+@jwt_required()
 def get_notifications():
-    user_id = request.args.get("user_id")
-
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = get_jwt_identity()
 
     notifications = db.session.query(UserNotification)\
         .filter_by(user_id=user_id)\
@@ -60,13 +56,15 @@ def get_notifications():
 # 3. MARK SINGLE READ
 # ===============================
 @user_notification_bp.route("/mark-read", methods=["POST"])
+@jwt_required()
 def mark_read():
+    user_id = get_jwt_identity()
     data = request.json
-    user_id = data.get("user_id")
+
     notif_id = data.get("notification_id")
 
-    if not user_id or not notif_id:
-        return jsonify({"error": "user_id & notification_id required"}), 400
+    if not notif_id:
+        return jsonify({"error": "notification_id required"}), 400
 
     notif = db.session.query(UserNotification)\
         .filter_by(id=notif_id, user_id=user_id)\
@@ -83,11 +81,9 @@ def mark_read():
 # 4. MARK ALL READ
 # ===============================
 @user_notification_bp.route("/mark-all-read", methods=["POST"])
+@jwt_required()
 def mark_all_read():
-    user_id = request.json.get("user_id")
-
-    if not user_id:
-        return jsonify({"error": "user_id required"}), 400
+    user_id = get_jwt_identity()
 
     db.session.query(UserNotification)\
         .filter_by(user_id=user_id, is_read=False)\

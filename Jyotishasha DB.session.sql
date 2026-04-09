@@ -1,1 +1,1 @@
-SELECT id, firebase_uid, fcm_token FROM users;
+SELECT * FROM user_notifications LIMIT 5;
