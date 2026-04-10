@@ -109,7 +109,12 @@ class UserNotification(db.Model):
     title = db.Column(db.String(255))
     body = db.Column(db.Text)
 
-    is_read = db.Column(db.Boolean, default=False)
+    is_read = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False,
+        index=True
+    )
 
     created_at = db.Column(
         db.DateTime,

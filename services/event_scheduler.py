@@ -177,15 +177,14 @@ def run_daily_event_job():
                 break
 
             for user in users:
-
-                # 🔥 preload logs (performance + safety)
-                existing_logs = db.session.query(NotificationLog)\
-                    .filter_by(user_id=user.id, slot=slot)\
-                    .all()
-
-                sent_event_ids = set(r.event_id for r in existing_logs)
-
                 try:
+                    # 🔹 preload logs (performance + safety)
+                    existing_logs = db.session.query(NotificationLog)\
+                        .filter_by(user_id=user.id, slot=slot)\
+                        .all()
+
+                    sent_event_ids = set(r.event_id for r in existing_logs)
+
                     user_notifications = get_user_notifications(
                         user,
                         global_notifications,
@@ -199,7 +198,7 @@ def run_daily_event_job():
 
                         data = n.get("data", {})
 
-                        # 🔥 SAFE EVENT ID (FINAL)
+                        # 🔹 SAFE EVENT ID
                         raw_event_id = data.get("event_id")
 
                         try:
@@ -215,53 +214,45 @@ def run_daily_event_job():
                         title = n.get("title")
                         body = n.get("body")
 
-                        # 🔥 DEBUG
-                        #print(f"🔥 NOTIF → {title} | {body}")
+                        # ---------------------------
+                        # 🔥 SAVE FIRST (DB)
+                        # ---------------------------
+                        total_sent += 1
+
+                        log = NotificationLog(
+                            user_id=user.id,
+                            event_id=event_id,
+                            slot=slot
+                        )
+                        db.session.add(log)
+
+                        notif = UserNotification(
+                            user_id=user.id,
+                            title=title,
+                            body=body,
+                            is_read=False
+                        )
+                        db.session.add(notif)
+
+                        sent_event_ids.add(event_id)
 
                         # ---------------------------
-                        # 🔥 REAL SEND (FINAL)
+                        # 🔔 PUSH (OPTIONAL)
                         # ---------------------------
-                        success = False
-
                         token = getattr(user, "fcm_token", None)
 
                         if token:
-                            success = send_push_notification(
+                            send_push_notification(
                                 token=token,
                                 title=title,
                                 body=body,
                                 data=data
                             )
 
-                        if success or not token:  # 🔥 FINAL PRODUCTION LOGIC
-                            total_sent += 1
-
-                            try:
-                                # 🔹 LOG
-                                log = NotificationLog(
-                                    user_id=user.id,
-                                    event_id=event_id,
-                                    slot=slot
-                                )
-                                db.session.add(log)
-
-                                # 🔹 SAVE USER NOTIFICATION
-                                notif = UserNotification(
-                                    user_id=user.id,
-                                    title=title,
-                                    body=body
-                                )
-                                db.session.add(notif)
-
-                                sent_event_ids.add(event_id)
-
-                            except Exception as e:
-                                print(f"❌ Log/Save failed: {str(e)}")
                 except Exception as e:
                     print(f"❌ Failed for user {user.id}: {str(e)}")
 
             offset += BATCH_SIZE
-
         # ---------------------------
         # 🔹 FINAL COMMIT
         # ---------------------------

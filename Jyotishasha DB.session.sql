@@ -1,1 +1,3 @@
-SELECT * FROM user_notifications LIMIT 5;
+SELECT * FROM user_notifications
+WHERE user_id = 1
+ORDER BY created_at DESC;
