@@ -4,6 +4,7 @@ from extensions import db
 from modules.auth.models import User
 from modules.subscription.utils import subscription_required
 from firebase_admin import auth as firebase_auth
+from modules.models_user import AppUser
 
 
 
@@ -124,6 +125,12 @@ def update_fcm_token():
 
         user.fcm_token = fcm_token
         db.session.commit()
+
+        app_user = AppUser.query.filter_by(firebase_uid=firebase_uid).first()
+
+        if app_user:
+            app_user.fcm_token = fcm_token
+            db.session.commit()
 
         return jsonify({
             "status": "success",

@@ -38,6 +38,8 @@ class AppUser(db.Model):
     asknow_tokens = db.Column(db.Integer, nullable=False, default=0)
     fcm_token = db.Column(db.String(255), nullable=True)
 
+    firebase_uid = db.Column(db.String(255), nullable=True)
+
 
     created_at = db.Column(
         db.DateTime,

@@ -87,10 +87,11 @@ def send_fcm(token: str, title: str, body: str, data: dict = None):
         if response.status_code == 404 and "UNREGISTERED" in response.text:
             print("❌ Removing invalid token")
 
-            from modules.auth.models import User
+            from modules.auth.models import AppUser
+
             from extensions import db
 
-            user = User.query.filter_by(fcm_token=token).first()
+            user = AppUser.query.filter_by(fcm_token=token).first()         
             if user:
                 user.fcm_token = None
                 db.session.commit()

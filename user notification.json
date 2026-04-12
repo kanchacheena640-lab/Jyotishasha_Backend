@@ -1,0 +1,38 @@
+[
+  {
+    "id": 4,
+    "user_id": 181,
+    "title": "Mars Dasha Update 🔮",
+    "body": "Mars - Rahu phase शुरू हो गया है",
+    "data": null,
+    "is_read": false,
+    "created_at": "2026-04-09 14:19:45.135088"
+  },
+  {
+    "id": 3,
+    "user_id": 181,
+    "title": "Mars Dasha Update 🔮",
+    "body": "Mars - Rahu phase शुरू हो गया है",
+    "data": null,
+    "is_read": false,
+    "created_at": "2026-04-09 03:37:37.902453"
+  },
+  {
+    "id": 2,
+    "user_id": 181,
+    "title": "Mars Dasha Update 🔮",
+    "body": "Mars - Rahu phase शुरू हो गया है",
+    "data": null,
+    "is_read": false,
+    "created_at": "2026-04-09 03:18:00.483979"
+  },
+  {
+    "id": 1,
+    "user_id": 181,
+    "title": "Mars Dasha Update 🔮",
+    "body": "Mars - Rahu phase शुरू हो गया है",
+    "data": null,
+    "is_read": false,
+    "created_at": "2026-04-08 19:14:58.914135"
+  }
+]
