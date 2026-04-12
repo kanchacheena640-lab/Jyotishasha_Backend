@@ -113,29 +113,33 @@ def update_fcm_token():
         if not firebase_uid:
             return jsonify({"error": "Invalid Firebase token"}), 401
 
-        user = User.query.filter_by(firebase_uid=firebase_uid).first()
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-
         data = request.get_json() or {}
         fcm_token = data.get("fcm_token")
 
         if not fcm_token:
             return jsonify({"error": "Missing fcm_token"}), 400
 
-        user.fcm_token = fcm_token
-        db.session.commit()
+        # 🔥 EXISTING SYSTEM (SAFE)
+        user = User.query.filter_by(firebase_uid=firebase_uid).first()
+        if user:
+            user.fcm_token = fcm_token
 
+        # 🔥 NEW SYSTEM (ALWAYS ENSURE)
         app_user = AppUser.query.filter_by(firebase_uid=firebase_uid).first()
 
-        if app_user:
-            app_user.fcm_token = fcm_token
-            db.session.commit()
+        if not app_user:
+            app_user = AppUser(firebase_uid=firebase_uid)
+            db.session.add(app_user)
+
+        app_user.fcm_token = fcm_token
+
+        # 🔥 SINGLE COMMIT (IMPORTANT)
+        db.session.commit()
 
         return jsonify({
             "status": "success",
             "message": "FCM token updated",
-            "user_id": user.id
+            "user_id": user.id if user else None
         }), 200
 
     except Exception as e:
