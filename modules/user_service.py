@@ -16,19 +16,29 @@ from modules.models_user import AppUser
 
 # ---------- Register or Update ----------
 def register_or_update_user(data: dict) -> AppUser:
-    """
-    Create or update an AppUser record.
-    Used when app sends name, dob, pob etc. from profile form.
-    """
-    user_id = data.get("id")
-    if user_id:
-        user = AppUser.query.get(user_id)
-        if not user:
-            raise ValueError("User not found")
-    else:
+    firebase_uid = data.get("firebase_uid")
+
+    # 🔥 1. FIRST: try find by firebase_uid
+    user = None
+    if firebase_uid:
+        user = AppUser.query.filter_by(firebase_uid=firebase_uid).first()
+
+    # 🔥 2. fallback by id
+    if not user:
+        user_id = data.get("id")
+        if user_id:
+            user = AppUser.query.get(user_id)
+
+    # 🔥 3. create new if not found
+    if not user:
         user = AppUser()
         db.session.add(user)
 
+    # 🔥 4. SAVE firebase_uid (MOST IMPORTANT)
+    if firebase_uid:
+        user.firebase_uid = firebase_uid
+
+    # 🔥 5. बाकी fields (same)
     user.name = data.get("name", user.name)
     user.email = data.get("email", user.email)
     user.phone = data.get("phone", user.phone)
@@ -40,9 +50,12 @@ def register_or_update_user(data: dict) -> AppUser:
     user.tz = data.get("tz", user.tz or "+05:30")
     user.subscription = data.get("subscription", user.subscription or "free")
 
+    # 🔥 6. FCM also handle here (extra safety)
+    if data.get("fcm_token"):
+        user.fcm_token = data["fcm_token"]
+
     db.session.commit()
     return user
-
 
 # ---------- Fetch by ID ----------
 def get_user_by_id(user_id: int) -> AppUser | None:
