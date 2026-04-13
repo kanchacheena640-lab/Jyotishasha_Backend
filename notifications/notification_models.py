@@ -120,3 +120,19 @@ class UserNotification(db.Model):
         db.DateTime,
         default=datetime.utcnow
     )
+# ===============================
+# NOTIFICATION LOG (DUPLICATE CONTROL)
+# ===============================
+class NotificationLog(db.Model):
+    __tablename__ = "notification_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, nullable=False)
+    event_id = db.Column(db.Integer, nullable=False)
+    slot = db.Column(db.String(20), nullable=False)
+
+    sent_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
