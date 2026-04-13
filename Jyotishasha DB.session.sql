@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM user_notifications WHERE created_at > NOW() - INTERVAL '5 minutes';

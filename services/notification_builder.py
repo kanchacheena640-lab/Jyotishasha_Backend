@@ -23,22 +23,27 @@ def get_user_notifications(user, events, global_notifications):
 
     # 🔹 Build map (1 DB call per event)
     for event in events:
-        if event.type != "transit" or not event.id:
+        event_type = event.get("type")
+        event_id = event.get("id")
+
+        if event_type != "transit" or not event_id:
             continue
 
         try:
-            transit_map[event.id] = get_users_for_transit(event)
+            transit_map[event_id] = get_users_for_transit(event)
         except Exception as e:
-            print(f"❌ Transit map error for event {event.id}: {str(e)}")
+            print(f"❌ Transit map error for event {event_id}: {str(e)}")
             continue
-
 
     # 🔹 Assign to current user
     for event in events:
-        if event.type != "transit" or not event.id:
+        event_type = event.get("type")
+        event_id = event.get("id")
+
+        if event_type != "transit" or not event_id:
             continue
 
-        for u in transit_map.get(event.id, []):
+        for u in transit_map.get(event_id, []):
             try:
                 if u["user"].id != user.id:
                     continue
@@ -48,7 +53,7 @@ def get_user_notifications(user, events, global_notifications):
                     "body": f"{u['planet']} आपके {u['house']} भाव में प्रवेश कर चुका है",
                     "data": {
                         "type": "transit",
-                        "event_id": str(event.id),
+                        "event_id": str(event_id),
                         "planet": u["planet"],
                         "house": str(u["house"])
                     }
@@ -59,7 +64,7 @@ def get_user_notifications(user, events, global_notifications):
                 continue
 
     # ---------------------------
-    # 🔹 DASHA (placeholder)
+    # 🔹 DASHA
     # ---------------------------
     dasha_users = get_users_for_dasha_change()
 

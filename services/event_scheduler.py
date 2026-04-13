@@ -1,7 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from factory import create_app
 from extensions import db
-from datetime import timedelta
 
 # Models
 from modules.models_user import AppUser
@@ -11,9 +10,10 @@ from models import AstroEvent
 from services.event_master import generate_events_for_date, save_events_to_db
 from services.notification_engine import build_notifications, send_push_notification
 from services.notification_builder import get_user_notifications   # 🔥 NEW
-from models_notification_log import NotificationLog
 from services.notification_engine import send_topic_notification
-from notifications.notification_models import UserNotification
+from notifications.notification_models import UserNotification, NotificationLog
+from services.event_adapters.festival_adapter import normalize_events
+
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -32,7 +32,7 @@ def get_time_slot():   # 🔥 add flag
     elif 17 <= hour < 22:
         return "evening"
     else:
-        return "skip"
+        return "morning"
 
 
 def run_daily_event_job():
@@ -64,19 +64,34 @@ def run_daily_event_job():
 
         try:
             # 🔥 STEP 1: Check DB first
-            events = AstroEvent.query.filter_by(date=target_date).all()
+            # 🔥 FORCE CLEAN OLD BAD DATA
+            AstroEvent.query.filter_by(date=target_date).delete()
+            db.session.commit()
 
-            if events:
-                print(f"✅ Events already in DB: {len(events)}")
+            print("🧹 Old events deleted, regenerating...")
+
+            # 🔥 NOW GENERATE FRESH
+            raw_events = generate_events_for_date(target_date, DEFAULT_LAT, DEFAULT_LON)
+
+            if raw_events:
+                from services.event_adapters.festival_adapter import normalize_events
+
+                normalized_events = normalize_events(raw_events)
+                save_events_to_db(normalized_events)
+
+                print(f"✅ {len(normalized_events)} events saved (fresh)")
 
             else:
                 print("⚠️ No events in DB, generating...")
 
-                new_events = generate_events_for_date(target_date, DEFAULT_LAT, DEFAULT_LON)
+                raw_events = generate_events_for_date(target_date, DEFAULT_LAT, DEFAULT_LON)
 
-                if new_events:
-                    save_events_to_db(new_events)
-                    print(f"✅ {len(new_events)} events saved")
+                if raw_events:
+                    normalized_events = normalize_events(raw_events)   # 🔥 ADD THIS
+
+                    save_events_to_db(normalized_events)               # 🔥 USE THIS
+
+                    print(f"✅ {len(normalized_events)} events saved")
 
         except Exception as e:
             print(f"❌ Event generation failed: {str(e)}")
@@ -263,3 +278,6 @@ def run_daily_event_job():
             print(f"❌ Final commit failed: {str(e)}")
 
         print(f"✅ Personalized sent: {total_sent}")
+
+if __name__ == "__main__":
+    run_daily_event_job()
