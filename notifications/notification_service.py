@@ -10,60 +10,65 @@ from sqlalchemy import and_
 # 1) USER FILTERING LOGIC
 # ================================================================
 def get_recipients(audience: dict):
+    from modules.models_user import AppUser
     from modules.auth.models import User
+
     """
-    Converts audience filters into SQL queries.
-    Returns list of User objects (with fcm_token).
-    
-    Audience example:
-    {
-        "mode": "mixed",
-        "zodiac": ["aries"],
-        "lagna": ["scorpio"],
-        "age_group": ["young_adult"],
-        "interest": ["love"],
-        "subscription": ["monthly"]
-    }
+    Hybrid recipients with filters:
+    - app_users (priority)
+    - users (fallback)
     """
 
-    query = User.query.filter(User.fcm_token.isnot(None))
+    # -------------------- NEW SYSTEM --------------------
+    app_query = AppUser.query.filter(AppUser.fcm_token.isnot(None))
 
-    # -------------------- ZODIAC filter --------------------
+    # -------------------- OLD SYSTEM --------------------
+    user_query = User.query.filter(User.fcm_token.isnot(None))
+
+    # -------------------- APPLY FILTERS --------------------
+
+    # ZODIAC
     zodiac = audience.get("zodiac")
     if zodiac:
-        query = query.filter(User.zodiac.in_(zodiac))
+        user_query = user_query.filter(User.zodiac.in_(zodiac))
+        app_query = app_query.filter(AppUser.moon_sign.in_(zodiac))  # mapping
 
-    # -------------------- LAGNA filter --------------------
+    # LAGNA
     lagna = audience.get("lagna")
     if lagna:
-        query = query.filter(User.ascendant.in_(lagna))
+        user_query = user_query.filter(User.ascendant.in_(lagna))
+        app_query = app_query.filter(AppUser.lagna.in_(lagna))
 
-    # -------------------- AGE GROUP filter --------------------
-    age_group = audience.get("age_group")
-    if age_group:
-        query = query.filter(User.age_group.in_(age_group))
-
-    # -------------------- INTEREST filter --------------------
-    interest = audience.get("interest")
-    if interest:
-        query = query.filter(User.primary_interest.in_(interest))
-
-    # -------------------- SUBSCRIPTION filter --------------------
+    # SUBSCRIPTION
     subscription = audience.get("subscription")
     if subscription:
-        query = query.filter(User.subscription_status.in_(subscription))
+        user_query = user_query.filter(User.subscription_status.in_(subscription))
+        app_query = app_query.filter(AppUser.subscription.in_(subscription))
 
-    # -------------------- LANGUAGE filter --------------------
+    # LANGUAGE
     language = audience.get("language")
     if language:
-        query = query.filter(User.language.in_(language))
+        user_query = user_query.filter(User.language.in_(language))
+        # app_users me अभी language नहीं है → skip
 
-    # -------------------- ALL USERS --------------------
-    if audience.get("mode") == "all":
-        return User.query.filter(User.fcm_token.isnot(None)).all()
+    # -------------------- FETCH --------------------
+    app_users = app_query.all()
+    legacy_users = user_query.all()
 
-    return query.all()
+    all_users = []
 
+    # 🔥 Add app_users first
+    for u in app_users:
+        all_users.append(u)
+
+    # 🔥 Avoid duplicate (same firebase_uid)
+    app_user_uids = {u.firebase_uid for u in app_users if u.firebase_uid}
+
+    for u in legacy_users:
+        if not u.firebase_uid or u.firebase_uid not in app_user_uids:
+            all_users.append(u)
+
+    return all_users
 
 # ================================================================
 # 2) SEND ONE JOB (no celery for now — hybrid mode)

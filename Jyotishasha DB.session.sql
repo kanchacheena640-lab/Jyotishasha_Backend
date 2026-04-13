@@ -1,1 +1,4 @@
-SELECT * FROM user_notifications ORDER BY id DESC LIMIT 20;
+SELECT id, name, firebase_uid, created_at
+FROM app_users
+WHERE created_at >= NOW() - INTERVAL '3 days'
+ORDER BY created_at DESC;
