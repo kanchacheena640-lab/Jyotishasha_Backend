@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM app_users WHERE fcm_token IS NOT NULL;
+SELECT * FROM user_notifications LIMIT 5;

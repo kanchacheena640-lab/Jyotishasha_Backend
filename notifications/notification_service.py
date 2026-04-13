@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from extensions import db
-from notifications.notification_models import NotificationJob
+from notifications.notification_models import NotificationJob, NotificationLog
 from sqlalchemy import and_
 
 
@@ -73,6 +73,7 @@ def send_job_now(job: NotificationJob, fcm_sender):
     Process one notification job (send immediately).
     Hindi / English per-user supported.
     Backward compatible with existing jobs.
+    Duplicate-safe via notification_logs.
     """
 
     recipients = get_recipients(job.audience)
@@ -82,6 +83,16 @@ def send_job_now(job: NotificationJob, fcm_sender):
 
     for u in recipients:
         if not u.fcm_token:
+            continue
+
+        # 🔥 DUPLICATE CHECK
+        existing = NotificationLog.query.filter_by(
+            user_id=u.id,
+            event_id=job.id,
+            slot="general"
+        ).first()
+
+        if existing:
             continue
 
         # 🔤 Language resolution (safe fallback)
@@ -101,13 +112,24 @@ def send_job_now(job: NotificationJob, fcm_sender):
 
         if ok:
             success += 1
+
+            # 🔥 SAVE LOG (IMPORTANT)
+            log = NotificationLog(
+                user_id=u.id,
+                event_id=job.id,
+                slot="general"
+            )
+            db.session.add(log)
+
         else:
             failed += 1
 
+    # 🔥 FINAL UPDATE
     job.total_recipients = success + failed
     job.mark_sent(success, failed)
 
     db.session.commit()
+
     return success, failed
 
 
