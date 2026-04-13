@@ -83,21 +83,35 @@ def send_fcm(token: str, title: str, body: str, data: dict = None):
         if response.status_code == 200:
             return True
 
-        # 🔥 Handle invalid token (UNREGISTERED)
+       # 🔥 Handle invalid token (UNREGISTERED)
         if response.status_code == 404 and "UNREGISTERED" in response.text:
             print("❌ Removing invalid token")
 
-            from modules.auth.models import AppUser
-
             from extensions import db
+            from modules.models_user import AppUser
+            from modules.auth.models import User
 
-            user = AppUser.query.filter_by(fcm_token=token).first()         
+            removed = False
+
+            # 🔥 PRIMARY: app_users (NEW SYSTEM)
+            app_user = AppUser.query.filter_by(fcm_token=token).first()
+            if app_user:
+                app_user.fcm_token = None
+                removed = True
+
+            # 🔥 FALLBACK: users (LEGACY SYSTEM)
+            user = User.query.filter_by(fcm_token=token).first()
             if user:
                 user.fcm_token = None
+                removed = True
+
+            if removed:
                 db.session.commit()
 
             return False
 
+
+        # 🔥 OTHER ERRORS
         print(f"⚠️ FCM v1 error ({response.status_code}): {response.text}")
         return False
 
