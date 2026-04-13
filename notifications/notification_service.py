@@ -11,64 +11,33 @@ from sqlalchemy import and_
 # ================================================================
 def get_recipients(audience: dict):
     from modules.models_user import AppUser
-    from modules.auth.models import User
 
     """
-    Hybrid recipients with filters:
-    - app_users (priority)
-    - users (fallback)
+    FINAL SYSTEM:
+    Only app_users (fully migrated system)
     """
 
-    # -------------------- NEW SYSTEM --------------------
-    app_query = AppUser.query.filter(AppUser.fcm_token.isnot(None))
+    query = AppUser.query.filter(AppUser.fcm_token.isnot(None))
 
-    # -------------------- OLD SYSTEM --------------------
-    user_query = User.query.filter(User.fcm_token.isnot(None))
+    # -------------------- FILTERS --------------------
 
-    # -------------------- APPLY FILTERS --------------------
-
-    # ZODIAC
+    # ZODIAC (moon_sign)
     zodiac = audience.get("zodiac")
     if zodiac:
-        user_query = user_query.filter(User.zodiac.in_(zodiac))
-        app_query = app_query.filter(AppUser.moon_sign.in_(zodiac))  # mapping
+        query = query.filter(AppUser.moon_sign.in_(zodiac))
 
     # LAGNA
     lagna = audience.get("lagna")
     if lagna:
-        user_query = user_query.filter(User.ascendant.in_(lagna))
-        app_query = app_query.filter(AppUser.lagna.in_(lagna))
+        query = query.filter(AppUser.lagna.in_(lagna))
 
     # SUBSCRIPTION
     subscription = audience.get("subscription")
     if subscription:
-        user_query = user_query.filter(User.subscription_status.in_(subscription))
-        app_query = app_query.filter(AppUser.subscription.in_(subscription))
+        query = query.filter(AppUser.subscription.in_(subscription))
 
-    # LANGUAGE
-    language = audience.get("language")
-    if language:
-        user_query = user_query.filter(User.language.in_(language))
-        # app_users me अभी language नहीं है → skip
-
-    # -------------------- FETCH --------------------
-    app_users = app_query.all()
-    legacy_users = user_query.all()
-
-    all_users = []
-
-    # 🔥 Add app_users first
-    for u in app_users:
-        all_users.append(u)
-
-    # 🔥 Avoid duplicate (same firebase_uid)
-    app_user_uids = {u.firebase_uid for u in app_users if u.firebase_uid}
-
-    for u in legacy_users:
-        if not u.firebase_uid or u.firebase_uid not in app_user_uids:
-            all_users.append(u)
-
-    return all_users
+    # -------------------- ALL USERS --------------------
+    return query.all()
 
 # ================================================================
 # 2) SEND ONE JOB (no celery for now — hybrid mode)
@@ -103,7 +72,9 @@ def send_job_now(job: NotificationJob, fcm_sender):
             continue
 
         # 🔤 Language resolution
-        if getattr(u, "language", None) == "hi":
+        lang = getattr(u, "language", "en")
+
+        if lang == "hi":
             title = getattr(job, "title_hi", None) or job.title
             body = getattr(job, "body_hi", None) or job.body
         else:
