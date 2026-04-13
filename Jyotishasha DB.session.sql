@@ -1,1 +1,1 @@
-SELECT * FROM user_notifications LIMIT 5;
+SELECT * FROM user_notifications ORDER BY id DESC LIMIT 20;

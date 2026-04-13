@@ -72,9 +72,11 @@ def send_job_now(job: NotificationJob, fcm_sender):
     """
     Process one notification job (send immediately).
     Hindi / English per-user supported.
-    Backward compatible with existing jobs.
     Duplicate-safe via notification_logs.
+    User UI-safe via user_notifications (no duplicate).
     """
+
+    from notifications.notification_models import UserNotification
 
     recipients = get_recipients(job.audience)
 
@@ -85,23 +87,23 @@ def send_job_now(job: NotificationJob, fcm_sender):
         if not u.fcm_token:
             continue
 
-        # 🔥 DUPLICATE CHECK
-        existing = NotificationLog.query.filter_by(
+        # 🔥 DUPLICATE CHECK (SEND LEVEL)
+        existing_log = NotificationLog.query.filter_by(
             user_id=u.id,
             event_id=job.id,
             slot="general"
         ).first()
 
-        if existing:
+        if existing_log:
             continue
 
-        # 🔤 Language resolution (safe fallback)
+        # 🔤 Language resolution
         if getattr(u, "language", None) == "hi":
             title = getattr(job, "title_hi", None) or job.title
-            body  = getattr(job, "body_hi", None) or job.body
+            body = getattr(job, "body_hi", None) or job.body
         else:
             title = job.title
-            body  = job.body
+            body = job.body
 
         ok = fcm_sender(
             token=u.fcm_token,
@@ -113,7 +115,7 @@ def send_job_now(job: NotificationJob, fcm_sender):
         if ok:
             success += 1
 
-            # 🔥 SAVE LOG (IMPORTANT)
+            # 🔥 1. SAVE LOG (BACKEND TRACKING)
             log = NotificationLog(
                 user_id=u.id,
                 event_id=job.id,
@@ -121,10 +123,25 @@ def send_job_now(job: NotificationJob, fcm_sender):
             )
             db.session.add(log)
 
+            # 🔥 2. SAVE USER NOTIFICATION (UI) WITH DUPLICATE CHECK
+            existing_notif = UserNotification.query.filter_by(
+                user_id=u.id,
+                title=title,
+                body=body
+            ).first()
+
+            if not existing_notif:
+                notif = UserNotification(
+                    user_id=u.id,
+                    title=title,
+                    body=body
+                )
+                db.session.add(notif)
+
         else:
             failed += 1
 
-    # 🔥 FINAL UPDATE
+    # 🔥 FINAL JOB UPDATE
     job.total_recipients = success + failed
     job.mark_sent(success, failed)
 
