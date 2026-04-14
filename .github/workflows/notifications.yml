@@ -35,15 +35,11 @@ jobs:
 
         run: |
           python - <<EOF
-          from cron_app import app
-          from notifications.daily_runner import run_daily_notifications
-          from notifications.notification_service import process_due_jobs
-          from notifications.notification_fcm import send_fcm
+          from factory import create_app
           from services.event_scheduler import run_daily_event_job
 
-          app.app_context().push()
+          app = create_app()
 
-          run_daily_notifications()
-          run_daily_event_job()
-          process_due_jobs(send_fcm)
+          with app.app_context():
+              run_daily_event_job()
           EOF
