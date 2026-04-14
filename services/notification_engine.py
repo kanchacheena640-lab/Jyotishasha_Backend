@@ -31,20 +31,21 @@ def get_today_notifications():
 def build_notifications(target_date=None):
     notifications = []
 
-    # 🔹 TARGET DATE
     if not target_date:
         target_date = get_today_date()
+
+    print(f"\n🧪 TARGET DATE: {target_date}")
 
     # 🔹 GET TODAY EVENTS
     today_events = AstroEvent.query.filter(
         AstroEvent.date == target_date
     ).all()
 
-    # 🔹 GET PRE-EVENTS (SAFE)
-    all_db_events = AstroEvent.query.filter(
-        AstroEvent.date >= target_date,
-        AstroEvent.date <= target_date + timedelta(days=2)
-    ).all()
+    print(f"🧪 Today events count: {len(today_events)}")
+
+    # 🔹 GET PRE-EVENTS
+    all_db_events = AstroEvent.query.all()
+    print(f"🧪 Total DB events: {len(all_db_events)}")
 
     pre_events = []
 
@@ -55,33 +56,38 @@ def build_notifications(target_date=None):
         try:
             event_date = event.date
 
-            # 🔥 SAFETY (important)
             if isinstance(event_date, str):
                 event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
 
             notify_date = event_date - timedelta(days=event.notify_before_days)
 
             if notify_date == target_date:
+                print(f"📅 Pre-event matched: {event.name}")
                 pre_events.append(event)
 
         except Exception as e:
             print(f"❌ Pre-event error (event {event.id}): {str(e)}")
 
-    # 🔹 MERGE + DEDUP
-    all_events = today_events + pre_events
-    all_events = deduplicate_events(all_events)
+    print(f"🧪 Pre events count: {len(pre_events)}")
 
-    # 🔹 SORT BY PRIORITY
+    # 🔹 MERGE
+    all_events = today_events + pre_events
+    print(f"🧪 Total events after merge: {len(all_events)}")
+
+    all_events = deduplicate_events(all_events)
+    print(f"🧪 After dedup: {len(all_events)}")
+
     all_events = sort_by_priority(all_events)
 
     # 🔹 BUILD NOTIFICATIONS
     for e in all_events:
-
-        # 🔥 normalize type
         event_type = (e.type or "").lower().strip()
 
-        if event_type not in ["festival", "transit", "vrat", "muhurat"]:
-            print(f"⛔ Skipping event due to type mismatch: {e.type}")
+        print(f"🔍 Processing: {e.name} | type={event_type}")
+
+        # 🔥 ONLY VALIDATION (no normalization here)
+        if event_type not in ["festival", "vrat", "transit", "muhurat"]:
+            print(f"⛔ Skipped (invalid type): {e.type}")
             continue
 
         # 🔥 safe date handling
@@ -91,7 +97,8 @@ def build_notifications(target_date=None):
 
         is_today = (event_date == target_date)
 
-        # 🔥 build notification
+        print(f"✅ Adding notification: {e.name} | type={event_type} | is_today={is_today}")
+
         notifications.append({
             "title": f"{e.name} {'Today 🪔' if is_today else 'Tomorrow 🔔'}",
             "body": f"{e.name} का {'आज विशेष महत्व है' if is_today else 'कल है, अभी तैयारी करें'}",
@@ -102,8 +109,9 @@ def build_notifications(target_date=None):
             }
         })
 
-    return notifications
+    print(f"🧪 FINAL notifications built: {len(notifications)}\n")
 
+    return notifications
 # -------------------------------
 # 🔹 DEDUPLICATION
 # -------------------------------
@@ -132,8 +140,13 @@ PRIORITY_ORDER = {
 }
 
 def sort_by_priority(events):
-    return sorted(events, key=lambda e: PRIORITY_ORDER.get(e.type, 99))
-
+    return sorted(
+        events,
+        key=lambda e: PRIORITY_ORDER.get(
+            (e.type or "").lower().strip(), 
+            99
+        )
+    )
 
 # -------------------------------
 # 🔹 SEND PUSH

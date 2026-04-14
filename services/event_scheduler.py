@@ -9,21 +9,18 @@ from models import AstroEvent
 # Services
 from services.event_master import generate_events_for_date, save_events_to_db
 from services.notification_engine import build_notifications, send_push_notification
-from services.notification_builder import get_user_notifications   # 🔥 NEW
+from services.notification_builder import get_user_notifications
 from services.notification_engine import send_topic_notification
 from notifications.notification_models import UserNotification, NotificationLog
 from services.event_adapters.festival_adapter import normalize_events
 
-
 IST = timezone(timedelta(hours=5, minutes=30))
-
 
 
 # -------------------------------
 # 🔹 TIME SLOT (IST)
 # -------------------------------
-def get_time_slot():   # 🔥 add flag
-    
+def get_time_slot():
     now = datetime.now(IST)
     hour = now.hour
 
@@ -32,9 +29,12 @@ def get_time_slot():   # 🔥 add flag
     elif 17 <= hour < 22:
         return "evening"
     else:
-        return "morning"
+        return "skip"
 
 
+# -------------------------------
+# 🔹 MAIN JOB
+# -------------------------------
 def run_daily_event_job():
     slot = get_time_slot()
     print("🚀 Running daily event job...")
@@ -50,81 +50,97 @@ def run_daily_event_job():
     with app.app_context():
 
         # ---------------------------
-        # 🔹 STEP 1: Generate Events
+        # 🔹 STEP 1: DATE LOGIC
         # ---------------------------
         today = datetime.now(IST).date()
-        # 🔥 NEW
+
         if slot == "morning":
             target_date = today
-        elif slot == "evening":
+        else:
             target_date = today + timedelta(days=1)
 
         DEFAULT_LAT = 26.8467
         DEFAULT_LON = 80.9462
 
+        # ---------------------------
+        # 🔹 STEP 2: GENERATE EVENTS
+        # ---------------------------
         try:
-            # 🔥 STEP 1: Check DB first
-            # 🔥 FORCE CLEAN OLD BAD DATA
-            AstroEvent.query.filter_by(date=target_date).delete()
-            db.session.commit()
-
-            print("🧹 Old events deleted, regenerating...")
-
-            # 🔥 NOW GENERATE FRESH
             raw_events = generate_events_for_date(target_date, DEFAULT_LAT, DEFAULT_LON)
+            if not raw_events:
+                print("⚠️ No raw events generated")
 
-            if raw_events:
-                from services.event_adapters.festival_adapter import normalize_events
+            # 🔥 FIX: fallback if no exact date match
+            filtered = [
+                e for e in raw_events
+                if e and e.get("date") and str(e.get("date"))[:10] == str(target_date)
+            ]
 
-                normalized_events = normalize_events(raw_events)
+            if not filtered:
+                filtered = [e for e in raw_events if e]  # fallback
+
+            if filtered:
+                normalized_events = normalize_events(filtered)
                 save_events_to_db(normalized_events)
-
-                print(f"✅ {len(normalized_events)} events saved (fresh)")
-
-            else:
-                print("⚠️ No events in DB, generating...")
-
-                raw_events = generate_events_for_date(target_date, DEFAULT_LAT, DEFAULT_LON)
-
-                if raw_events:
-                    normalized_events = normalize_events(raw_events)   # 🔥 ADD THIS
-
-                    save_events_to_db(normalized_events)               # 🔥 USE THIS
-
-                    print(f"✅ {len(normalized_events)} events saved")
+                print(f"✅ {len(normalized_events)} events saved")
 
         except Exception as e:
             print(f"❌ Event generation failed: {str(e)}")
             return
 
         # ---------------------------
-        # 🔹 STEP 2: Build Notifications
+        # 🔹 STEP 3: BUILD NOTIFICATIONS
         # ---------------------------
         try:
             global_notifications = build_notifications(target_date=target_date)
-
-            if not global_notifications:
-                print("⚠️ No global notifications, checking personalized...")
-                global_notifications = []
-
         except Exception as e:
             print(f"❌ Notification build failed: {str(e)}")
             return
 
         # ---------------------------
-        # 🔹 SLOT FILTER
+        # 🔹 STEP 4: SLOT FILTER
         # ---------------------------
         filtered_global = []
 
         for n in global_notifications:
-            title = n.get("title", "").lower()
+            data = n.get("data", {})
+            event_date = data.get("date")
 
-            if slot == "morning" and "today" in title:
-                filtered_global.append(n)
+            if not event_date:
+                continue
 
-            elif slot == "evening" and "tomorrow" in title:
-                filtered_global.append(n)
+            try:
+                event_date = datetime.strptime(event_date, "%Y-%m-%d").date()
+            except:
+                continue
 
+            if slot == "morning":
+                if event_date == target_date:
+                    filtered_global.append(n)
+
+            elif slot == "evening":
+                if event_date == target_date + timedelta(days=1):
+                    filtered_global.append(n)
+
+        # 🔥 FALLBACK (IMPORTANT)
+        if not filtered_global:
+            print("⚠️ No events → sending fallback")
+
+            fallback = {
+                "title": "📿 Aaj ka Din Mahatvapurn Hai",
+                "body": "Shubh kaam karne jaa rahe hain to shubh muhurat zarur dekhiye. Aaj ka rashifal bhi check karein.",
+                "data": {
+                    "type": "general",
+                    "event_id": "0",
+                    "date": str(target_date)
+                }
+            }
+
+            filtered_global = [fallback]
+
+        # ---------------------------
+        # 🔹 PRIORITY SORT
+        # ---------------------------
         PRIORITY = {
             "festival": 1,
             "vrat": 2,
@@ -135,15 +151,10 @@ def run_daily_event_job():
         filtered_global = sorted(
             filtered_global,
             key=lambda x: PRIORITY.get(x.get("data", {}).get("type"), 99)
-        )
-
-        filtered_global = filtered_global[:3]
-
-        if not filtered_global:
-            print("⚠️ No global notifications for this slot, continuing personalized...")
+        )[:3]
 
         # ---------------------------
-        # 🔹 STEP 3A: GLOBAL (TOPIC)
+        # 🔹 STEP 5A: GLOBAL SEND
         # ---------------------------
         print("🚀 Sending GLOBAL via TOPICS...")
 
@@ -172,105 +183,42 @@ def run_daily_event_job():
                 sent_topics.add(topic)
 
         # ---------------------------
-        # 🔹 STEP 3B: PERSONALIZED
+        # 🔹 STEP 5B: PERSONALIZED
         # ---------------------------
+        total_sent = 0
         BATCH_SIZE = 500
         offset = 0
-        total_sent = 0
 
         print("📡 Sending personalized notifications...")
 
         while True:
-            users = (
-                db.session.query(AppUser)
-                .limit(BATCH_SIZE)
-                .offset(offset)
-                .all()
-            )
-
+            users = db.session.query(AppUser).limit(BATCH_SIZE).offset(offset).all()
             if not users:
                 break
 
             for user in users:
                 try:
-                    # 🔹 preload logs (performance + safety)
-                    existing_logs = db.session.query(NotificationLog)\
-                        .filter_by(user_id=user.id, slot=slot)\
-                        .all()
-
-                    sent_event_ids = set(r.event_id for r in existing_logs)
-
                     user_notifications = get_user_notifications(
                         user,
                         global_notifications,
                         filtered_global
                     )
 
-                    if not user_notifications:
-                        continue
-
                     for n in user_notifications:
-
-                        data = n.get("data", {})
-
-                        # 🔹 SAFE EVENT ID
-                        raw_event_id = data.get("event_id")
-
-                        try:
-                            event_id = int(raw_event_id)
-                        except (TypeError, ValueError):
-                            event_id = abs(hash(
-                                f"{raw_event_id}_{user.id}_{data.get('mahadasha')}_{data.get('antardasha')}"
-                            )) % (10**9)
-
-                        if event_id in sent_event_ids:
-                            continue
-
-                        title = n.get("title")
-                        body = n.get("body")
-
-                        # ---------------------------
-                        # 🔥 SAVE FIRST (DB)
-                        # ---------------------------
-                        total_sent += 1
-
-                        log = NotificationLog(
+                        db.session.add(UserNotification(
                             user_id=user.id,
-                            event_id=event_id,
-                            slot=slot
-                        )
-                        db.session.add(log)
-
-                        notif = UserNotification(
-                            user_id=user.id,
-                            title=title,
-                            body=body,
+                            title=n.get("title"),
+                            body=n.get("body"),
                             is_read=False
-                        )
-                        db.session.add(notif)
+                        ))
 
-                        sent_event_ids.add(event_id)
-
-                        # ---------------------------
-                        # 🔔 PUSH (OPTIONAL)
-                        # ---------------------------
-                        token = getattr(user, "fcm_token", None)
-
-                        if token:
-                            send_push_notification(
-                                token=token,
-                                title=title,
-                                body=body,
-                                data=data
-                            )
+                        total_sent += 1
 
                 except Exception as e:
                     print(f"❌ Failed for user {user.id}: {str(e)}")
 
             offset += BATCH_SIZE
-        # ---------------------------
-        # 🔹 FINAL COMMIT
-        # ---------------------------
+
         try:
             db.session.commit()
         except Exception as e:
@@ -278,6 +226,7 @@ def run_daily_event_job():
             print(f"❌ Final commit failed: {str(e)}")
 
         print(f"✅ Personalized sent: {total_sent}")
+
 
 if __name__ == "__main__":
     run_daily_event_job()

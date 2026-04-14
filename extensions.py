@@ -12,15 +12,17 @@ db = SQLAlchemy(engine_options={
 })
 jwt = JWTManager()
 
-# -------------------------------------------------
-# 🔥 Firebase Admin Initialization (ONCE)
-# -------------------------------------------------
-if not firebase_admin._apps:
-    # Render me JSON string env me hota hai
-    firebase_json = os.environ.get("FCM_SERVICE_ACCOUNT_JSON")
 
-    if firebase_json:
-        cred = credentials.Certificate(json.loads(firebase_json))
-        firebase_admin.initialize_app(cred)
-    else:
-        print("⚠️ FCM not initialized (env missing)")
+# -------------------------------------------------
+# 🔥 Firebase Init Function (FINAL FIX)
+# -------------------------------------------------
+def init_firebase():
+    if not firebase_admin._apps:
+        firebase_json = os.environ.get("FCM_SERVICE_ACCOUNT_JSON")
+
+        if firebase_json:
+            cred = credentials.Certificate(json.loads(firebase_json))
+            firebase_admin.initialize_app(cred)
+            print("🔥 Firebase initialized")
+        else:
+            print("⚠️ FCM not initialized (env missing)")

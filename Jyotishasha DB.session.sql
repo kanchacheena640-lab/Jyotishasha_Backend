@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM user_notifications WHERE created_at > NOW() - INTERVAL '5 minutes';
+SELECT date, name, type FROM astro_events ORDER BY date;
