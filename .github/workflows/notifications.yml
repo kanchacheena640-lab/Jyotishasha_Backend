@@ -43,7 +43,5 @@ jobs:
 
           app.app_context().push()
 
-          run_daily_notifications()
           run_daily_event_job()
-          process_due_jobs(send_fcm)
           EOF
