@@ -1,1 +1,1 @@
-SELECT date, name, type FROM astro_events ORDER BY date;
+SELECT COUNT(*) FROM user_notifications;

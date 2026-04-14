@@ -61,20 +61,52 @@ def get_users_for_transit(event):
 # 🔹 Dasha (placeholder)
 # -------------------------------
 def get_users_for_dasha_change():
-    IST = timezone(timedelta(hours=5, minutes=30))
     today = datetime.now(IST).date()
 
+    start_window = today - timedelta(days=5)
+    end_window = today + timedelta(days=5)
+
     rows = UserDashaTimeline.query.filter(
-        UserDashaTimeline.start_date == today
+        UserDashaTimeline.start_date >= start_window,
+        UserDashaTimeline.start_date <= end_window
     ).all()
 
     result = []
 
     for r in rows:
+        if not r.user:
+            continue
+
         result.append({
             "user": r.user,
             "mahadasha": r.mahadasha,
-            "antardasha": r.antardasha
+            "antardasha": r.antardasha,
+            "type": "start_window"
         })
 
     return result
+
+
+def get_current_dasha_users():
+    today = datetime.now(IST).date()
+
+    rows = UserDashaTimeline.query.filter(
+        UserDashaTimeline.start_date <= today,
+        UserDashaTimeline.end_date >= today
+    ).all()
+
+    result = []
+
+    for r in rows:
+        if not r.user:
+            continue
+
+        result.append({
+            "user": r.user,
+            "mahadasha": r.mahadasha,
+            "antardasha": r.antardasha,
+            "type": "running"
+        })
+
+    return result
+

@@ -21,15 +21,7 @@ IST = timezone(timedelta(hours=5, minutes=30))
 # 🔹 TIME SLOT (IST)
 # -------------------------------
 def get_time_slot():
-    now = datetime.now(IST)
-    hour = now.hour
-
-    if 6 <= hour < 12:
-        return "morning"
-    elif 17 <= hour < 22:
-        return "evening"
-    else:
-        return "skip"
+    return "morning"
 
 
 # -------------------------------
@@ -66,18 +58,20 @@ def run_daily_event_job():
         # 🔹 STEP 2: GENERATE EVENTS
         # ---------------------------
         try:
-            raw_events = generate_events_for_date(target_date, DEFAULT_LAT, DEFAULT_LON)
+            raw_events = []
+
+            for d in [target_date, target_date + timedelta(days=1)]:
+                events = generate_events_for_date(d, DEFAULT_LAT, DEFAULT_LON)
+                if events:
+                    raw_events.extend(events)
             if not raw_events:
                 print("⚠️ No raw events generated")
 
             # 🔥 FIX: fallback if no exact date match
             filtered = [
                 e for e in raw_events
-                if e and e.get("date") and str(e.get("date"))[:10] == str(target_date)
-            ]
-
-            if not filtered:
-                filtered = [e for e in raw_events if e]  # fallback
+                if e and e.get("date")
+            ]  # fallback
 
             if filtered:
                 normalized_events = normalize_events(filtered)
@@ -182,7 +176,7 @@ def run_daily_event_job():
             if success:
                 sent_topics.add(topic)
 
-        # ---------------------------
+       # ---------------------------
         # 🔹 STEP 5B: PERSONALIZED
         # ---------------------------
         total_sent = 0
@@ -200,22 +194,61 @@ def run_daily_event_job():
                 try:
                     user_notifications = get_user_notifications(
                         user,
-                        global_notifications,
-                        filtered_global
+                        filtered_global,       # events
+                        global_notifications   # global
                     )
 
                     for n in user_notifications:
-                        db.session.add(UserNotification(
-                            user_id=user.id,
-                            title=n.get("title"),
-                            body=n.get("body"),
-                            is_read=False
-                        ))
+                        data = n.get("data", {}) or {}
 
-                        total_sent += 1
+                        event_id = str(data.get("event_id", "general"))
+
+                        # 🔥 DEDUP USING LOG
+                        existing_log = NotificationLog.query.filter_by(
+                            user_id=user.id,
+                            event_id=event_id,
+                            slot=slot
+                        ).first()
+
+                        if existing_log:
+                            continue
+
+                        success = False
+                        token = getattr(user, "fcm_token", None)
+
+                        if token:
+                            success = send_push_notification(
+                                token=token,
+                                title=n.get("title"),
+                                body=n.get("body"),
+                                data=data
+                            )
+
+                        if success:
+                            total_sent += 1
+
+                            # 🔹 SAVE LOG (DEDUP)
+                            db.session.add(NotificationLog(
+                                user_id=user.id,
+                                event_id=event_id,
+                                slot=slot
+                            ))
+
+                            # 🔹 SAVE USER NOTIFICATION (for bell UI)
+                            db.session.add(UserNotification(
+                                user_id=user.id,
+                                title=n.get("title"),
+                                body=n.get("body"),
+                                data=data,
+                                is_read=False
+                            ))
 
                 except Exception as e:
+                    db.session.rollback() 
                     print(f"❌ Failed for user {user.id}: {str(e)}")
+
+            if total_sent > 0 and total_sent % 500 == 0:
+                db.session.commit()
 
             offset += BATCH_SIZE
 
@@ -224,6 +257,9 @@ def run_daily_event_job():
         except Exception as e:
             db.session.rollback()
             print(f"❌ Final commit failed: {str(e)}")
+
+        if total_sent == 0:
+            print("⚠️ ALERT: No notifications sent")
 
         print(f"✅ Personalized sent: {total_sent}")
 

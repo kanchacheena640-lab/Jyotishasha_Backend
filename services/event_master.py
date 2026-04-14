@@ -1,8 +1,8 @@
 from datetime import datetime
-from models import db, AstroEvent
+from extensions import db     
+from models import AstroEvent
 
-
-# 🔹 Existing astro detectors (logic layer)
+# 🔹 Existing astro detectors
 from services.events_engine import (
     find_next_pradosh,
     find_next_sankashti,
@@ -12,72 +12,69 @@ from services.events_engine import (
     find_next_shivratri,
 )
 
-# 🔹 Adapter
+# 🔹 Adapter (ONLY used in SAVE)
 from services.event_adapters.festival_adapter import normalize_event
 
 
+# =====================================================
+# 🔹 GENERATE (RAW ONLY — NO NORMALIZATION HERE)
+# =====================================================
 def generate_events_for_date(date, lat, lon, language="en"):
     events = []
 
-    # 🔸 PRADOSH
-    pradosh = find_next_pradosh(date, lat, lon, language)
-    if pradosh:
-        events.append(normalize_event(pradosh))
+    def add(e):
+        if e:
+            events.append(e)
 
-    # 🔸 SANKASHTI
-    sankashti = find_next_sankashti(date, lat, lon, language)
-    if sankashti:
-        events.append(normalize_event(sankashti))
-
-    # 🔸 AMAVASYA
-    amavasya = find_next_amavasya(date, lat, lon, language)
-    if amavasya:
-        events.append(normalize_event(amavasya))
-
-    # 🔸 PURNIMA
-    purnima = find_next_purnima(date, lat, lon, language)
-    if purnima:
-        events.append(normalize_event(purnima))
-
-    # 🔸 CHATURTHI
-    chaturthi = find_next_vinayaka_chaturthi(date, lat, lon, language)
-    if chaturthi:
-        events.append(normalize_event(chaturthi))
-
-    # 🔸 SHIVRATRI
-    shivratri = find_next_shivratri(date, lat, lon, language)
-    if shivratri:
-        events.append(normalize_event(shivratri))
+    add(find_next_pradosh(date, lat, lon, language))
+    add(find_next_sankashti(date, lat, lon, language))
+    add(find_next_amavasya(date, lat, lon, language))
+    add(find_next_purnima(date, lat, lon, language))
+    add(find_next_vinayaka_chaturthi(date, lat, lon, language))
+    add(find_next_shivratri(date, lat, lon, language))
 
     return events
 
 
+# =====================================================
+# 🔹 SAVE (NORMALIZE ONLY ONCE HERE)
+# =====================================================
 def save_events_to_db(events):
-    for event in events:
+    saved_count = 0
+
+    for raw_event in events:
+
+        # 🔥 normalize ONLY ONCE
+        event = normalize_event(raw_event)
+        if not event:
+            continue
+
+        # 🔹 date safety (string)
+        event_date = event.get("date")
+        if hasattr(event_date, "strftime"):
+            event_date = event_date.strftime("%Y-%m-%d")
+        else:
+            event_date = str(event_date)[:10]
+
+        event_name = event.get("name")
+        event_type = event.get("type")
+
+        if not event_name or not event_date:
+            continue
 
         # 🔹 duplicate check
         existing = AstroEvent.query.filter_by(
-            name=event["name"],
-            date=event["date"],
-            type=event.get("type")
+            name=event_name,
+            date=event_date,
+            type=event_type
         ).first()
 
         if existing:
             continue
 
-        # 🔥 META SAFETY
-        meta = event.get("meta")
+        # 🔹 meta safety
+        meta = event.get("meta") or {}
 
-        if not meta:
-            if event.get("type") == "transit":
-                meta = {
-                    "planet": event.get("planet"),
-                    "rashi": event.get("rashi")
-                }
-            else:
-                meta = {}
-
-        # 🔥 CLEAN DIRTY DATE (defensive)
         if isinstance(meta, dict) and "date" in meta:
             meta["date"] = (
                 str(meta["date"])
@@ -86,22 +83,25 @@ def save_events_to_db(events):
                 .replace("22026", "2026")
             )
 
-        # 🔥 EXTRA SAFETY (important)
-        if event.get("type") == "transit":
-            if not meta.get("planet") or not meta.get("rashi"):
-                print(f"⚠️ Skipping invalid transit event: {event}")
-                continue
-
+        # 🔹 save
         new_event = AstroEvent(
-            name=event.get("name"),
-            date=event.get("date"),
-            type=event.get("type"),
-            priority=event.get("priority", 1),
-            notify_before_days=event.get("notify_before_days", 0),
+            name=event_name,
+            date=event_date,
+            type=event_type,
+            priority=event.get("priority", 3),
+            notify_before_days=event.get("notify_before_days", 1),
             notify_same_day=event.get("notify_same_day", True),
             meta=meta
         )
 
-        db.session.add(new_event)
+        print(f"👉 Saving: {event_name} | {event_date}")
 
-    db.session.commit()
+        db.session.add(new_event)
+        saved_count += 1
+
+    try:
+        db.session.commit()
+        print(f"✅ {saved_count} events saved to DB")
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ DB ERROR: {e}")

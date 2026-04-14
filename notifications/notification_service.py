@@ -102,15 +102,15 @@ def send_job_now(job: NotificationJob, fcm_sender):
             # 🔥 2. SAVE USER NOTIFICATION (UI) WITH DUPLICATE CHECK
             existing_notif = UserNotification.query.filter_by(
                 user_id=u.id,
-                title=title,
-                body=body
+                data=job.payload
             ).first()
 
             if not existing_notif:
                 notif = UserNotification(
                     user_id=u.id,
                     title=title,
-                    body=body
+                    body=body,
+                    data=job.payload or {}   # 🔥 ADD THIS LINE
                 )
                 db.session.add(notif)
 

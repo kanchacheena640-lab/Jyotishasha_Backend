@@ -1,6 +1,7 @@
 from services.personalization_engine import (
     get_users_for_transit,
-    get_users_for_dasha_change
+    get_users_for_dasha_change,
+    get_current_dasha_users
 )
 
 
@@ -64,7 +65,7 @@ def get_user_notifications(user, events, global_notifications):
                 continue
 
     # ---------------------------
-    # 🔹 DASHA
+    # 🔹 DASHA START WINDOW
     # ---------------------------
     dasha_users = get_users_for_dasha_change()
 
@@ -83,4 +84,25 @@ def get_user_notifications(user, events, global_notifications):
             }
         })
 
+    # ---------------------------
+    # 🔹 RUNNING DASHA
+    # ---------------------------
+    running_users = get_current_dasha_users()
+
+    for d in running_users:
+        if d["user"].id != user.id:
+            continue
+
+        final_notifications.append({
+            "title": f"{d['mahadasha']} Dasha Active 🧠",
+            "body": f"आप अभी {d['mahadasha']} - {d['antardasha']} phase में हैं",
+            "data": {
+                "type": "dasha_running",
+                "event_id": f"running_{d['user'].id}_{d['mahadasha']}_{d['antardasha']}",
+                "mahadasha": d["mahadasha"],
+                "antardasha": d["antardasha"]
+            }
+        })
+
+    # 🔥 RETURN AT END ONLY
     return final_notifications
