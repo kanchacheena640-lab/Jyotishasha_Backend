@@ -15,7 +15,12 @@ def get_user_notifications(user, events, global_notifications):
     # ---------------------------
     # 🔹 GLOBAL
     # ---------------------------
-    final_notifications.extend(global_notifications or [])
+    for n in (global_notifications or []):
+        final_notifications.append({
+            "title": n.get("title"),
+            "body": n.get("body"),
+            "data": n.get("data", {}) or {}   # 🔥 FORCE SAFE
+        })
 
     # ---------------------------
     # 🔹 TRANSIT
@@ -24,8 +29,8 @@ def get_user_notifications(user, events, global_notifications):
 
     # 🔹 Build map (1 DB call per event)
     for event in events:
-        event_type = event.get("type")
-        event_id = event.get("id")
+        event_type = getattr(event, "type", None)
+        event_id = getattr(event, "id", None)
 
         if event_type != "transit" or not event_id:
             continue
@@ -38,8 +43,8 @@ def get_user_notifications(user, events, global_notifications):
 
     # 🔹 Assign to current user
     for event in events:
-        event_type = event.get("type")
-        event_id = event.get("id")
+        event_type = getattr(event, "type", None)
+        event_id = getattr(event, "id", None)
 
         if event_type != "transit" or not event_id:
             continue

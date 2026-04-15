@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM user_notifications;
+SELECT COUNT(*) FROM user_notifications WHERE is_read = false;

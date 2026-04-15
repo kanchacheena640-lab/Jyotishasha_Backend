@@ -40,7 +40,7 @@ config.set_main_option('sqlalchemy.url', get_engine_url())
 target_db = current_app.extensions['migrate'].db
 
 from models import *
-from models_notification_log import *
+from notifications.notification_models import *
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

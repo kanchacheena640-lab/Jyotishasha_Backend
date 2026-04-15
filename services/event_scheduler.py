@@ -74,8 +74,9 @@ def run_daily_event_job():
             ]  # fallback
 
             if filtered:
-                normalized_events = normalize_events(filtered)
-                save_events_to_db(normalized_events)
+                normalized_events = AstroEvent.query.filter(
+                    AstroEvent.date.in_([target_date, target_date + timedelta(days=1)])
+                ).all()
                 print(f"✅ {len(normalized_events)} events saved")
 
         except Exception as e:
@@ -194,8 +195,8 @@ def run_daily_event_job():
                 try:
                     user_notifications = get_user_notifications(
                         user,
-                        filtered_global,       # events
-                        global_notifications   # global
+                        normalized_events,   # ✔ DB events
+                        filtered_global      # ✔ notifications with data
                     )
 
                     for n in user_notifications:

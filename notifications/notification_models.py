@@ -11,7 +11,7 @@ NOTE:
     from app import db
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.dialects.postgresql import JSON
 from extensions import db
 
@@ -65,7 +65,11 @@ class NotificationJob(db.Model):
 
     # Scheduling
     scheduled_at = db.Column(db.DateTime, nullable=False, index=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=db.func.current_timestamp()
+    )
 
     # Processing state
     status = db.Column(
@@ -106,20 +110,37 @@ class UserNotification(db.Model):
 
     user_id = db.Column(db.Integer, nullable=False, index=True)
 
-    title = db.Column(db.String(255))
-    body = db.Column(db.Text)
+    title = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=False)
 
+    # 🔥 IMPORTANT: metadata for routing + filtering
+    data = db.Column(JSON, nullable=True, default=dict)
+
+    # 🔔 read / unread state
     is_read = db.Column(
         db.Boolean,
-        default=False,
         nullable=False,
+        default=False,
         index=True
     )
 
+    # 🕒 timestamps
     created_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        nullable=False,
+        default=db.func.current_timestamp(),
+        index=True
     )
+
+    # (optional future use)
+    read_at = db.Column(db.DateTime, nullable=True)
+
+    # ===============================
+    # HELPER METHODS
+    # ===============================
+    def mark_read(self):
+        self.is_read = True
+        self.read_at = datetime.now(timezone.utc)
 # ===============================
 # NOTIFICATION LOG (DUPLICATE CONTROL)
 # ===============================
@@ -129,10 +150,10 @@ class NotificationLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     user_id = db.Column(db.Integer, nullable=False)
-    event_id = db.Column(db.Integer, nullable=False)
+    event_id = db.Column(db.String(100), nullable=False)
     slot = db.Column(db.String(20), nullable=False)
 
     sent_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow
+        default=db.func.current_timestamp()
     )
