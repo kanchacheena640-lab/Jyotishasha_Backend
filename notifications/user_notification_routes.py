@@ -90,25 +90,29 @@ def mark_read():
     data = request.json or {}
     notif_id = data.get("notification_id")
 
+    print(f"🔍 MARK READ → notif_id={notif_id}, user_id={user_id}")
+
     if not notif_id:
         return jsonify({"error": "notification_id required"}), 400
 
+    # ✅ SAFE + CORRECT (user scoped)
     notif = db.session.query(UserNotification)\
-        .filter_by(id=notif_id)\
+        .filter_by(id=notif_id, user_id=user_id)\
         .first()
 
     if not notif:
-        return jsonify({"error": "Notification not found"}), 404
+        print(f"❌ Not found or unauthorized: {notif_id}")
+        return jsonify({"error": "Not found"}), 404
 
-    # 🔥 IMPORTANT: user_id check temporarily remove (debug)
-    if notif.user_id != user_id:
-        print(f"❌ USER MISMATCH: {notif.user_id} vs {user_id}")
-
-    notif.is_read = True
-    db.session.commit()
+    # ✅ MARK READ
+    if not notif.is_read:
+        notif.is_read = True
+        db.session.commit()
+        print("✅ MARKED AS READ")
+    else:
+        print("ℹ️ Already read")
 
     return jsonify({"success": True})
-
 
 # ===============================
 # 4. MARK ALL READ
