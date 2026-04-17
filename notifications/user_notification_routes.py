@@ -97,7 +97,7 @@ def mark_read():
         .filter_by(id=notif_id, user_id=user_id)\
         .first()
 
-    if notif:
+    if notif and not notif.is_read:
         notif.is_read = True
         db.session.commit()
 
