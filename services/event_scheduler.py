@@ -199,12 +199,21 @@ def run_daily_event_job():
                         filtered_global      # ✔ notifications with data
                     )
 
+                    seen_events = set()
+
                     for n in user_notifications:
                         data = n.get("data", {}) or {}
 
-                        event_id = str(data.get("event_id", "general"))
+                        # 🔥 STRONG UNIQUE EVENT ID
+                        event_id = f"{data.get('type','general')}_{data.get('event_id','0')}"
+                        unique_key = f"{event_id}_{slot}"
 
-                        # 🔥 DEDUP USING LOG
+                        # 🔥 LOCAL DEDUP (same loop)
+                        if unique_key in seen_events:
+                            continue
+                        seen_events.add(unique_key)
+
+                        # 🔥 DB DEDUP (retry / cron safe)
                         existing_log = NotificationLog.query.filter_by(
                             user_id=user.id,
                             event_id=event_id,
@@ -228,14 +237,14 @@ def run_daily_event_job():
                         if success:
                             total_sent += 1
 
-                            # 🔹 SAVE LOG (DEDUP)
+                            # 🔹 SAVE LOG
                             db.session.add(NotificationLog(
                                 user_id=user.id,
                                 event_id=event_id,
                                 slot=slot
                             ))
 
-                            # 🔹 SAVE USER NOTIFICATION (for bell UI)
+                            # 🔹 SAVE USER NOTIFICATION (Bell UI)
                             db.session.add(UserNotification(
                                 user_id=user.id,
                                 title=n.get("title"),
@@ -245,14 +254,16 @@ def run_daily_event_job():
                             ))
 
                 except Exception as e:
-                    db.session.rollback() 
+                    db.session.rollback()
                     print(f"❌ Failed for user {user.id}: {str(e)}")
 
+            # 🔹 Batch commit
             if total_sent > 0 and total_sent % 500 == 0:
                 db.session.commit()
 
             offset += BATCH_SIZE
 
+        # 🔹 Final commit
         try:
             db.session.commit()
         except Exception as e:
@@ -263,7 +274,3 @@ def run_daily_event_job():
             print("⚠️ ALERT: No notifications sent")
 
         print(f"✅ Personalized sent: {total_sent}")
-
-
-if __name__ == "__main__":
-    run_daily_event_job()
