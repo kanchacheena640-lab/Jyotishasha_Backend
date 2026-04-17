@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from modules.auth.models import User
-from models import AppUser
+from modules.models_user import AppUser
 from extensions import db
 from notifications.notification_models import UserNotification
 from flask_jwt_extended import jwt_required, get_jwt_identity
