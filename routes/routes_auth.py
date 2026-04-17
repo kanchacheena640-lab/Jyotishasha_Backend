@@ -75,7 +75,7 @@ def get_backend_token():
         return jsonify({"error": "user not found"}), 404
 
     # 🔥 MAIN FIX
-    token = create_access_token(identity=user.id)
+    token = create_access_token(identity=str(user.id))
 
     return jsonify({
         "token": token,

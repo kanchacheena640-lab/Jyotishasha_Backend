@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM user_notifications WHERE is_read = false;
+SELECT id, firebase_uid FROM app_users WHERE id = 278;
