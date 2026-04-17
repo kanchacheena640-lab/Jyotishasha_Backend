@@ -72,6 +72,7 @@ def get_notifications():
             "title": n.title,
             "body": n.body,
             "is_read": n.is_read,
+            "data": n.data, 
             "created_at": n.created_at.isoformat() if n.created_at else None
         }
         for n in notifications
