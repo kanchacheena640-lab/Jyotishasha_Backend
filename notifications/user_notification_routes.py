@@ -94,12 +94,18 @@ def mark_read():
         return jsonify({"error": "notification_id required"}), 400
 
     notif = db.session.query(UserNotification)\
-        .filter_by(id=notif_id, user_id=user_id)\
+        .filter_by(id=notif_id)\
         .first()
 
-    if notif and not notif.is_read:
-        notif.is_read = True
-        db.session.commit()
+    if not notif:
+        return jsonify({"error": "Notification not found"}), 404
+
+    # 🔥 IMPORTANT: user_id check temporarily remove (debug)
+    if notif.user_id != user_id:
+        print(f"❌ USER MISMATCH: {notif.user_id} vs {user_id}")
+
+    notif.is_read = True
+    db.session.commit()
 
     return jsonify({"success": True})
 

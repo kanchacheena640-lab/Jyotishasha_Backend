@@ -1,3 +1,3 @@
-SELECT COUNT(*) 
+SELECT id, user_id 
 FROM user_notifications 
-WHERE user_id = 276 AND is_read = false;
+WHERE id = <276>;
