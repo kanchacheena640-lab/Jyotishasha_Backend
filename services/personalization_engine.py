@@ -60,15 +60,13 @@ def get_users_for_transit(event):
 # -------------------------------
 # 🔹 Dasha (placeholder)
 # -------------------------------
-def get_users_for_dasha_change():
+def get_users_for_dasha_change(days_before=0):
     today = datetime.now(IST).date()
 
-    start_window = today - timedelta(days=5)
-    end_window = today + timedelta(days=5)
+    target_date = today + timedelta(days=days_before)
 
     rows = UserDashaTimeline.query.filter(
-        UserDashaTimeline.start_date >= start_window,
-        UserDashaTimeline.start_date <= end_window
+        UserDashaTimeline.start_date == target_date
     ).all()
 
     result = []
@@ -81,7 +79,8 @@ def get_users_for_dasha_change():
             "user": r.user,
             "mahadasha": r.mahadasha,
             "antardasha": r.antardasha,
-            "type": "start_window"
+            "type": "dasha_change",
+            "days_before": days_before
         })
 
     return result

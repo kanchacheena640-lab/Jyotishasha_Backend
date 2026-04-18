@@ -3,6 +3,7 @@ from services.personalization_engine import (
     get_users_for_dasha_change,
     get_current_dasha_users
 )
+from datetime import date, timedelta
 
 
 def get_user_notifications(user, events, global_notifications):
@@ -11,15 +12,22 @@ def get_user_notifications(user, events, global_notifications):
     """
 
     final_notifications = []
+    seen = set()
 
     # ---------------------------
     # 🔹 GLOBAL
     # ---------------------------
     for n in (global_notifications or []):
+        event_id = n.get("data", {}).get("event_id", f"global_{len(final_notifications)}")
+
+        if event_id in seen:
+            continue
+        seen.add(event_id)
+
         final_notifications.append({
             "title": n.get("title"),
             "body": n.get("body"),
-            "data": n.get("data", {}) or {}   # 🔥 FORCE SAFE
+            "data": n.get("data", {}) or {}
         })
 
     # ---------------------------
@@ -54,6 +62,12 @@ def get_user_notifications(user, events, global_notifications):
                 if u["user"].id != user.id:
                     continue
 
+                event_id_str = f"transit_{event_id}_{u['planet']}_{u['house']}"
+
+                if event_id_str in seen:
+                    continue
+                seen.add(event_id_str)
+
                 final_notifications.append({
                     "title": f"{u['planet']} Transit Alert",
                     "body": f"{u['planet']} आपके {u['house']} भाव में प्रवेश कर चुका है",
@@ -70,7 +84,33 @@ def get_user_notifications(user, events, global_notifications):
                 continue
 
     # ---------------------------
-    # 🔹 DASHA START WINDOW
+    # 🔹 DASHA T-5 ALERT
+    # ---------------------------
+    t_minus_5_users = get_users_for_dasha_change(days_before=5)
+
+    for d in t_minus_5_users:
+        if d["user"].id != user.id:
+            continue
+
+        event_id_str = f"dasha_pre_{d['user'].id}_{d['mahadasha']}_{d['antardasha']}"
+
+        if event_id_str in seen:
+            continue
+        seen.add(event_id_str)
+
+        final_notifications.append({
+            "title": "⏳ Dasha Change Coming",
+            "body": f"5 din baad aapki {d['mahadasha']} - {d['antardasha']} dasha shuru hogi",
+            "data": {
+                "type": "dasha_pre",
+                "event_id": event_id_str,
+                "mahadasha": d["mahadasha"],
+                "antardasha": d["antardasha"]
+            }
+        })
+
+    # ---------------------------
+    # 🔹 DASHA START (SAME DAY)
     # ---------------------------
     dasha_users = get_users_for_dasha_change()
 
@@ -78,32 +118,18 @@ def get_user_notifications(user, events, global_notifications):
         if d["user"].id != user.id:
             continue
 
+        event_id_str = f"dasha_{d['user'].id}_{d['mahadasha']}_{d['antardasha']}"
+
+        if event_id_str in seen:
+            continue
+        seen.add(event_id_str)
+
         final_notifications.append({
             "title": f"{d['mahadasha']} Dasha Update 🔮",
             "body": f"{d['mahadasha']} - {d['antardasha']} phase शुरू हो गया है",
             "data": {
                 "type": "dasha",
-                "event_id": f"dasha_{d['user'].id}_{d['mahadasha']}_{d['antardasha']}",
-                "mahadasha": d["mahadasha"],
-                "antardasha": d["antardasha"]
-            }
-        })
-
-    # ---------------------------
-    # 🔹 RUNNING DASHA
-    # ---------------------------
-    running_users = get_current_dasha_users()
-
-    for d in running_users:
-        if d["user"].id != user.id:
-            continue
-
-        final_notifications.append({
-            "title": f"{d['mahadasha']} Dasha Active 🧠",
-            "body": f"आप अभी {d['mahadasha']} - {d['antardasha']} phase में हैं",
-            "data": {
-                "type": "dasha_running",
-                "event_id": f"running_{d['user'].id}_{d['mahadasha']}_{d['antardasha']}",
+                "event_id": event_id_str,
                 "mahadasha": d["mahadasha"],
                 "antardasha": d["antardasha"]
             }
