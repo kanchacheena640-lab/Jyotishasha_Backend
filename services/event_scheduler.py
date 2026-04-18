@@ -253,6 +253,19 @@ def run_daily_event_job():
                                 is_read=False
                             ))
 
+                            # 🔥 IMPORTANT: flush so new row is available
+                            db.session.flush()
+
+                            # 🔥 KEEP ONLY LAST 10 NOTIFICATIONS PER USER
+                            old_notifications = db.session.query(UserNotification)\
+                                .filter_by(user_id=user.id)\
+                                .order_by(UserNotification.created_at.desc())\
+                                .offset(10)\
+                                .all()
+
+                            for old in old_notifications:
+                                db.session.delete(old)
+
                 except Exception as e:
                     db.session.rollback()
                     print(f"❌ Failed for user {user.id}: {str(e)}")

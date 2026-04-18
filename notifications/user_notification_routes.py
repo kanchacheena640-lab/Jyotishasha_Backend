@@ -6,6 +6,8 @@ from modules.models_user import AppUser
 from extensions import db
 from notifications.notification_models import UserNotification
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from datetime import datetime, timedelta
+
 
 user_notification_bp = Blueprint(
     "user_notifications",
@@ -42,8 +44,12 @@ def get_unread_count():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
+    cutoff = datetime.utcnow() - timedelta(hours=5)
+
     count = db.session.query(UserNotification)\
-        .filter_by(user_id=user_id, is_read=False)\
+        .filter(UserNotification.user_id == user_id)\
+        .filter(UserNotification.is_read == False)\
+        .filter(UserNotification.created_at > cutoff)\
         .count()
 
     return jsonify({"unread_count": count})
@@ -60,10 +66,16 @@ def get_notifications():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
+    cutoff = datetime.utcnow() - timedelta(hours=5)
+
     notifications = db.session.query(UserNotification)\
-        .filter_by(user_id=user_id)\
+        .filter(UserNotification.user_id == user_id)\
+        .filter(
+            (UserNotification.is_read == False) |
+            (UserNotification.created_at > cutoff)
+        )\
         .order_by(UserNotification.created_at.desc())\
-        .limit(50)\
+        .limit(10)\
         .all()
 
     return jsonify([
