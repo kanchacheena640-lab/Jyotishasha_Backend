@@ -1,0 +1,234 @@
+{
+  "remedies": [
+    {
+      "id": 1,
+      "problem_hi": "काम में रुकावट",
+      "problem_en": "Work getting delayed",
+      "planet": "saturn",
+      "day": "saturday",
+      "duration": 51,
+      "remedy_hi": "कौवे या किसी पक्षी को भोजन दें",
+      "remedy_en": "Feed crows or birds"
+    },
+    {
+      "id": 2,
+      "problem_hi": "पैसे अटकना",
+      "problem_en": "Money getting stuck",
+      "planet": "venus",
+      "day": "friday",
+      "duration": 51,
+      "remedy_hi": "किसी जरूरतमंद को सफेद मिठाई या भोजन दें",
+      "remedy_en": "Offer white sweets or food to someone in need"
+    },
+    {
+      "id": 3,
+      "problem_hi": "बार-बार असफलता",
+      "problem_en": "Repeated failures",
+      "planet": "saturn",
+      "day": "saturday",
+      "duration": 51,
+      "remedy_hi": "किसी जरूरतमंद को भोजन कराएं",
+      "remedy_en": "Offer food to someone in need"
+    },
+    {
+      "id": 4,
+      "problem_hi": "निर्णय में भ्रम",
+      "problem_en": "Decision confusion",
+      "planet": "mercury",
+      "day": "wednesday",
+      "duration": 51,
+      "remedy_hi": "हरे मूंग या हरी दाल का दान करें",
+      "remedy_en": "Donate green lentils"
+    },
+    {
+      "id": 5,
+      "problem_hi": "मन अशांत",
+      "problem_en": "Mental unrest",
+      "planet": "moon",
+      "day": "monday",
+      "duration": 51,
+      "remedy_hi": "चंद्रमा को जल अर्पित करें या चांदनी में समय बिताएं",
+      "remedy_en": "Offer water to the Moon or spend time in moonlight"
+    },
+    {
+      "id": 6,
+      "problem_hi": "ऊर्जा की कमी",
+      "problem_en": "Low energy",
+      "planet": "sun",
+      "day": "sunday",
+      "duration": 51,
+      "remedy_hi": "सुबह सूर्य को जल अर्पित करें",
+      "remedy_en": "Offer water to the Sun in the morning"
+    },
+    {
+      "id": 7,
+      "problem_hi": "रिश्तों में तनाव",
+      "problem_en": "Relationship tension",
+      "planet": "venus",
+      "day": "friday",
+      "duration": 51,
+      "remedy_hi": "किसी को सफेद फूल या छोटी भेंट दें",
+      "remedy_en": "Offer white flowers or a small gift"
+    },
+    {
+      "id": 8,
+      "problem_hi": "गुस्सा",
+      "problem_en": "Anger issues",
+      "planet": "mars",
+      "day": "tuesday",
+      "duration": 51,
+      "remedy_hi": "हनुमान जी को सिंदूर अर्पित करें",
+      "remedy_en": "Offer sindoor to Hanuman ji"
+    },
+    {
+      "id": 9,
+      "problem_hi": "डर या असुरक्षा",
+      "problem_en": "Fear or insecurity",
+      "planet": "saturn",
+      "day": "saturday",
+      "duration": 51,
+      "remedy_hi": "काले तिल बहते पानी में प्रवाहित करें",
+      "remedy_en": "Flow black sesame seeds in running water"
+    },
+    {
+      "id": 10,
+      "problem_hi": "अचानक खर्च",
+      "problem_en": "Sudden expenses",
+      "planet": "rahu",
+      "day": "saturday",
+      "duration": 51,
+      "remedy_hi": "नारियल बहते पानी में प्रवाहित करें",
+      "remedy_en": "Flow a coconut in running water"
+    },
+    {
+      "id": 11,
+      "problem_hi": "एकाग्रता की कमी",
+      "problem_en": "Lack of focus",
+      "planet": "mercury",
+      "day": "wednesday",
+      "duration": 51,
+      "remedy_hi": "गणेश जी की पूजा करें या दूर्वा अर्पित करें",
+      "remedy_en": "Worship Ganesh ji or offer durva grass"
+    },
+    {
+      "id": 12,
+      "problem_hi": "सम्मान की कमी",
+      "problem_en": "Lack of respect",
+      "planet": "sun",
+      "day": "sunday",
+      "duration": 51,
+      "remedy_hi": "सूर्य नमस्कार करें या सूर्य को जल दें",
+      "remedy_en": "Do Surya Namaskar or offer water to the Sun"
+    },
+    {
+      "id": 13,
+      "problem_hi": "बार-बार गलती",
+      "problem_en": "Repeated mistakes",
+      "planet": "mercury",
+      "day": "wednesday",
+      "duration": 51,
+      "remedy_hi": "हरी सब्जी या हरी वस्तु का दान करें",
+      "remedy_en": "Donate green vegetables"
+    },
+    {
+      "id": 14,
+      "problem_hi": "स्वास्थ्य समस्या",
+      "problem_en": "Health issues",
+      "planet": "sun",
+      "day": "sunday",
+      "duration": 51,
+      "remedy_hi": "सुबह धूप लें और सूर्य को जल दें",
+      "remedy_en": "Take sunlight and offer water to the Sun"
+    },
+    {
+      "id": 15,
+      "problem_hi": "अकेलापन",
+      "problem_en": "Loneliness",
+      "planet": "moon",
+      "day": "monday",
+      "duration": 51,
+      "remedy_hi": "किसी से बात करें या किसी की मदद करें",
+      "remedy_en": "Talk to someone or help someone"
+    },
+    {
+      "id": 16,
+      "problem_hi": "शादी में देरी",
+      "problem_en": "Marriage delay",
+      "planet": "saturn",
+      "day": "saturday",
+      "duration": 51,
+      "remedy_hi": "शनि मंदिर में दीपक जलाएं",
+      "remedy_en": "Light a lamp in Shani temple"
+    },
+    {
+      "id": 17,
+      "problem_hi": "पढ़ाई में समस्या",
+      "problem_en": "Study issues",
+      "planet": "mercury",
+      "day": "wednesday",
+      "duration": 51,
+      "remedy_hi": "गणेश जी को दूर्वा अर्पित करें",
+      "remedy_en": "Offer durva to Ganesh ji"
+    },
+    {
+      "id": 18,
+      "problem_hi": "संतान समस्या",
+      "problem_en": "Child-related issues",
+      "planet": "jupiter",
+      "day": "thursday",
+      "duration": 51,
+      "remedy_hi": "पीली वस्तु या फल किसी जरूरतमंद को दें",
+      "remedy_en": "Donate yellow items or fruits"
+    },
+    {
+      "id": 19,
+      "problem_hi": "कानूनी समस्या",
+      "problem_en": "Legal trouble",
+      "planet": "saturn",
+      "day": "saturday",
+      "duration": 51,
+      "remedy_hi": "हनुमान चालीसा का पाठ करें",
+      "remedy_en": "Recite Hanuman Chalisa"
+    },
+    {
+      "id": 20,
+      "problem_hi": "बोलने में दिक्कत",
+      "problem_en": "Communication issues",
+      "planet": "mercury",
+      "day": "wednesday",
+      "duration": 51,
+      "remedy_hi": "हरे फल या सब्जी का दान करें",
+      "remedy_en": "Donate green fruits or vegetables"
+    },
+    {
+      "id": 21,
+      "problem_hi": "रचनात्मकता की कमी",
+      "problem_en": "Creativity block",
+      "planet": "venus",
+      "day": "friday",
+      "duration": 51,
+      "remedy_hi": "सफेद फूल अर्पित करें या सुगंधित वस्तु रखें",
+      "remedy_en": "Offer white flowers or keep fragrance"
+    },
+    {
+      "id": 22,
+      "problem_hi": "भाग्य कमजोर",
+      "problem_en": "Weak luck",
+      "planet": "jupiter",
+      "day": "thursday",
+      "duration": 51,
+      "remedy_hi": "केला या पीली वस्तु दान करें",
+      "remedy_en": "Donate bananas or yellow items"
+    },
+    {
+      "id": 23,
+      "problem_hi": "नींद की समस्या",
+      "problem_en": "Insomnia",
+      "planet": "moon",
+      "day": "monday",
+      "duration": 51,
+      "remedy_hi": "सोने से पहले दूध लें या चंद्रमा को देखें",
+      "remedy_en": "Drink milk before sleep or look at the Moon"
+    }
+  ]
+}
