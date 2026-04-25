@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from services.panchang_engine import today_and_tomorrow
 from services.card_service import generate_cards
-from services.events_engine import get_events_for_date
+from models import AstroEvent
 from datetime import datetime
 
 cards_bp = Blueprint("cards", __name__, url_prefix="/api/cards")
@@ -12,9 +12,11 @@ def get_cards():
     try:
         data = request.get_json(force=True) or {}
 
+        # ✅ Required fields
         if not data.get("lat") or not data.get("lng"):
             return jsonify({"error": "lat & lng required"}), 400
 
+        # ✅ Safe float conversion
         try:
             lat = float(data.get("lat"))
             lng = float(data.get("lng"))
@@ -24,18 +26,27 @@ def get_cards():
         # 🔹 Panchang
         panchang_data = today_and_tomorrow(lat, lng, "en")
 
-        # 🔹 Date
+        # 🔹 Date handling
         date_str = data.get("date")
         date_obj = (
-            datetime.strptime(date_str, "%Y-%m-%d")
+            datetime.strptime(date_str, "%Y-%m-%d").date()
             if date_str
-            else datetime.now()
+            else datetime.now().date()
         )
 
-        # 🔥 REAL EVENTS
-        events = get_events_for_date(date=date_obj, lat=lat, lon=lng)
+        # 🔥 EVENTS FROM DB
+        events_db = AstroEvent.query.filter_by(date=date_obj).all()
 
-        # 🔹 Generate cards (FIXED)
+        events = [
+            {
+                "type": e.type,
+                "name": e.name,
+                "meta": e.meta or {}
+            }
+            for e in events_db
+        ]
+
+        # 🔹 Generate cards
         cards = generate_cards(panchang_data, events)
 
         return jsonify({
