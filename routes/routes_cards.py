@@ -17,11 +17,7 @@ def get_cards():
         return jsonify({"error": "Missing required fields"}), 400
 
     # 🔹 Panchang calculate
-    panchang_data = calculate_panchang(
-        date=date,
-        latitude=lat,
-        longitude=lng
-    )
+    panchang_data = calculate_panchang(date, lat, lng)
 
     # 🔹 Events (abhi empty, baad me connect karenge)
     events = []
