@@ -1,6 +1,9 @@
 from flask import Blueprint, request, jsonify
 from services.panchang_engine import today_and_tomorrow
 from services.card_service import generate_cards
+from services.events_engine import get_events_for_date
+from datetime import datetime
+
 
 cards_bp = Blueprint("cards", __name__, url_prefix="/api/cards")
 
@@ -23,6 +26,11 @@ def get_cards():
 
         # ✅ Panchang (CORRECT STRUCTURE)
         panchang_data = today_and_tomorrow(lat, lng, "en")
+
+        date_str = data.get("date")
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d") if date_str else None
+
+        events = get_events_for_date(date=date_obj, lat=lat, lon=lng)
 
         # 🔥 SAFETY FIX (IMPORTANT — root cause fix)
         if "selected_date" not in panchang_data or "next_date" not in panchang_data:
