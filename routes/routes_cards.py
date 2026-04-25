@@ -10,17 +10,26 @@ def get_cards():
     try:
         data = request.get_json(force=True) or {}
 
+        # ✅ Required fields check
         if not data.get("lat") or not data.get("lng"):
             return jsonify({"error": "lat & lng required"}), 400
 
+        # ✅ Safe float conversion
         try:
             lat = float(data.get("lat"))
             lng = float(data.get("lng"))
         except:
             return jsonify({"error": "invalid lat/lng"}), 400
 
-        panchang_data = today_and_tomorrow(lat, lng)
+        # ✅ Panchang (CORRECT STRUCTURE)
+        panchang_data = today_and_tomorrow(lat, lng, "en")
 
+        # 🔥 SAFETY FIX (IMPORTANT — root cause fix)
+        if "selected_date" not in panchang_data or "next_date" not in panchang_data:
+            print("⚠️ WRONG PANCHANG STRUCTURE:", panchang_data.keys())
+            return jsonify({"error": "panchang structure invalid"}), 500
+
+        # ✅ Generate cards
         cards = generate_cards(panchang_data, events=[])
 
         return jsonify({
@@ -28,5 +37,5 @@ def get_cards():
         })
 
     except Exception as e:
-        print("CARDS API ERROR:", str(e))
+        print("🔥 CARDS API ERROR:", str(e))
         return jsonify({"error": "Internal server error"}), 500
