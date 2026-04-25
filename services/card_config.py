@@ -5,5 +5,6 @@ CARD_DESIGN_MAP = {
     "tomorrow": "night_mode",
     "festival": "festival",
     "planet": "gradient",
-    "remedy": "minimal"
+    "remedy": "minimal",
+    "deep_remedy": "minimal"
 }

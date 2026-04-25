@@ -450,11 +450,10 @@ def build_deep_remedy_card(panchang, lang="hi"):
     try:
         # 🔹 Get today's remedy
         data = get_remedy_for_today(panchang)
-
         if not data:
             return None
 
-        # 🔹 Safe data extraction
+        # 🔹 Safe extraction
         problem_hi = data.get("problem_hi", "")
         problem_en = data.get("problem_en", "")
         remedy_hi = data.get("remedy_hi", "")
@@ -490,18 +489,16 @@ def build_deep_remedy_card(panchang, lang="hi"):
         return {
             "type": "deep_remedy",
 
-            # 🔥 Use config instead of hardcode
-            "design_type": CARD_DESIGN_MAP.get("deep_remedy"),
+            # 🔥 fallback-safe (no null issue)
+            "design_type": CARD_DESIGN_MAP.get("deep_remedy", "minimal"),
 
-            # 🔹 Titles
             "title_hi": "ज्योतिष उपाय",
             "title_en": "Astro Remedy",
 
-            # 🔹 Content (language based)
-            "content_hi": content_hi if lang == "hi" else None,
-            "content_en": content_en if lang == "en" else None,
+            # 🔥 ALWAYS send both (UI safe)
+            "content_hi": content_hi,
+            "content_en": content_en,
 
-            # 🔹 Meta (useful for personalization later)
             "meta": {
                 "planet": planet,
                 "day": day,
