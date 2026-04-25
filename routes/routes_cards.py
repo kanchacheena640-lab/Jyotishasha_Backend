@@ -1,29 +1,30 @@
 from flask import Blueprint, request, jsonify
 from services.panchang_engine import calculate_panchang
 from services.card_service import generate_cards
+from datetime import datetime
 
 cards_bp = Blueprint("cards", __name__, url_prefix="/api/cards")
 
 
 @cards_bp.route("", methods=["POST"])
 def get_cards():
-    data = request.get_json()
+    data = request.get_json(force=True) or {}
 
     date = data.get("date")
-    lat = data.get("lat")
-    lng = data.get("lng")
+    lat = float(data.get("lat"))
+    lng = float(data.get("lng"))
 
-    if not date or not lat or not lng:
-        return jsonify({"error": "Missing required fields"}), 400
+    if not date:
+        return jsonify({"error": "date required"}), 400
 
-    # 🔹 Panchang calculate
-    panchang_data = calculate_panchang(date, lat, lng)
+    # 🔹 Convert to datetime
+    date_obj = datetime.strptime(date, "%Y-%m-%d")
 
-    # 🔹 Events (abhi empty, baad me connect karenge)
-    events = []
+    # 🔹 Panchang
+    panchang_data = calculate_panchang(date_obj, lat, lng)
 
-    # 🔹 Cards generate
-    cards = generate_cards(panchang_data, events)
+    # 🔹 Cards
+    cards = generate_cards(panchang_data, events=[])
 
     return jsonify({
         "cards": cards
