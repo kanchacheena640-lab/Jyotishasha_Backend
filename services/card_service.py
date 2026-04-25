@@ -35,6 +35,15 @@ def generate_cards(panchang_data, events):
     if remedy_card:
         cards.append(remedy_card)
 
+    # 🔥 EVENTS (wish + info)
+    lang = panchang_data["selected_date"].get("language", "en")
+
+    for e in events:
+        if e.get("type") in ["festival", "vrat", "purnima", "amavasya", "pradosh", "sankashti", "vinayaka_chaturthi", "maha_shivratri", "masik_shivratri"]:
+            cards.append(build_event_wish_card(e, lang))
+            cards.append(build_event_info_card(e, lang))
+            break  # first relevant event only
+
     return cards
 
 # ===============================
@@ -425,3 +434,62 @@ def build_deep_remedy_card(panchang, lang="hi"):
         }
     }
 
+def build_event_wish_card(event, lang="en"):
+    name_en = event.get("name_en") or event.get("name") or "Festival"
+    name_hi = event.get("name_hi") or name_en
+
+    if lang == "hi":
+        content = (
+            f"✨ {name_hi} की हार्दिक शुभकामनाएँ\n"
+            f"आपके जीवन में सुख, समृद्धि और शांति आए 🙏\n"
+            f"इसे अपने प्रियजनों के साथ साझा करें"
+        )
+        title_hi = f"{name_hi} शुभकामनाएँ"
+        title_en = f"{name_en} Wishes"
+    else:
+        content = (
+            f"✨ Warm wishes on {name_en}\n"
+            f"May this day bring peace, prosperity and positivity 🙏\n"
+            f"Share this with your loved ones"
+        )
+        title_en = f"{name_en} Wishes"
+        title_hi = f"{name_hi} शुभकामनाएँ"
+
+    return {
+        "type": "event_wish",
+        "design_type": "festival",
+        "title_en": title_en,
+        "title_hi": title_hi,
+        "content_en": content if lang == "en" else None,
+        "content_hi": content if lang == "hi" else None,
+        "meta": {"event": name_en}
+    }
+
+
+def build_event_info_card(event, lang="en"):
+    name_en = event.get("name_en") or event.get("name") or "Festival"
+    name_hi = event.get("name_hi") or name_en
+
+    # 🔥 simple rule-based (real, not dummy)
+    en = "Take a moment for prayer and set a positive intention today."
+    hi = "आज प्रार्थना करें और सकारात्मक संकल्प लें।"
+
+    if "Purnima" in name_en:
+        en = "Light a diya in the evening and practice gratitude."
+        hi = "शाम को दीपक जलाएं और कृतज्ञता व्यक्त करें।"
+    elif "Ekadashi" in name_en:
+        en = "Follow a light satvik diet and avoid tamasic food."
+        hi = "सात्विक आहार लें और तामसिक भोजन से बचें।"
+    elif "Amavasya" in name_en:
+        en = "Offer water and remember ancestors with respect."
+        hi = "पितरों का स्मरण करें और जल अर्पित करें।"
+
+    return {
+        "type": "event_info",
+        "design_type": "festival",
+        "title_en": f"{name_en} Guide",
+        "title_hi": f"{name_hi} जानकारी",
+        "content_en": en if lang == "en" else None,
+        "content_hi": hi if lang == "hi" else None,
+        "meta": {"event": name_en}
+    }

@@ -4,7 +4,6 @@ from services.card_service import generate_cards
 from services.events_engine import get_events_for_date
 from datetime import datetime
 
-
 cards_bp = Blueprint("cards", __name__, url_prefix="/api/cards")
 
 
@@ -13,32 +12,31 @@ def get_cards():
     try:
         data = request.get_json(force=True) or {}
 
-        # ✅ Required fields check
         if not data.get("lat") or not data.get("lng"):
             return jsonify({"error": "lat & lng required"}), 400
 
-        # ✅ Safe float conversion
         try:
             lat = float(data.get("lat"))
             lng = float(data.get("lng"))
         except:
             return jsonify({"error": "invalid lat/lng"}), 400
 
-        # ✅ Panchang (CORRECT STRUCTURE)
+        # 🔹 Panchang
         panchang_data = today_and_tomorrow(lat, lng, "en")
 
+        # 🔹 Date
         date_str = data.get("date")
-        date_obj = datetime.strptime(date_str, "%Y-%m-%d") if date_str else None
+        date_obj = (
+            datetime.strptime(date_str, "%Y-%m-%d")
+            if date_str
+            else datetime.now()
+        )
 
+        # 🔥 REAL EVENTS
         events = get_events_for_date(date=date_obj, lat=lat, lon=lng)
 
-        # 🔥 SAFETY FIX (IMPORTANT — root cause fix)
-        if "selected_date" not in panchang_data or "next_date" not in panchang_data:
-            print("⚠️ WRONG PANCHANG STRUCTURE:", panchang_data.keys())
-            return jsonify({"error": "panchang structure invalid"}), 500
-
-        # ✅ Generate cards
-        cards = generate_cards(panchang_data, events=[])
+        # 🔹 Generate cards (FIXED)
+        cards = generate_cards(panchang_data, events)
 
         return jsonify({
             "cards": cards
