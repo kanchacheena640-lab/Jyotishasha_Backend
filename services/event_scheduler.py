@@ -55,29 +55,29 @@ def run_daily_event_job():
         DEFAULT_LON = 80.9462
 
         # ---------------------------
-        # 🔹 STEP 2: GENERATE EVENTS
+        # 🔹 STEP 2: GENERATE + SAVE EVENTS (FIXED)
         # ---------------------------
         try:
             raw_events = []
 
             for d in [target_date, target_date + timedelta(days=1)]:
                 events = generate_events_for_date(d, DEFAULT_LAT, DEFAULT_LON)
+
                 if events:
                     raw_events.extend(events)
+
+                    # 🔥 CRITICAL: save to DB
+                    save_events_to_db(events)
+
             if not raw_events:
                 print("⚠️ No raw events generated")
 
-            # 🔥 FIX: fallback if no exact date match
-            filtered = [
-                e for e in raw_events
-                if e and e.get("date")
-            ]  # fallback
+            # 🔥 ALWAYS fetch from DB (no condition)
+            normalized_events = AstroEvent.query.filter(
+                AstroEvent.date.in_([target_date, target_date + timedelta(days=1)])
+            ).all()
 
-            if filtered:
-                normalized_events = AstroEvent.query.filter(
-                    AstroEvent.date.in_([target_date, target_date + timedelta(days=1)])
-                ).all()
-                print(f"✅ {len(normalized_events)} events saved")
+            print(f"🔥 DEBUG: DB events count = {len(normalized_events)}")
 
         except Exception as e:
             print(f"❌ Event generation failed: {str(e)}")
