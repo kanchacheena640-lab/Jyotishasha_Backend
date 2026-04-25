@@ -1,31 +1,32 @@
 from flask import Blueprint, request, jsonify
-from services.panchang_engine import calculate_panchang
+from services.panchang_engine import today_and_tomorrow
 from services.card_service import generate_cards
-from datetime import datetime
 
 cards_bp = Blueprint("cards", __name__, url_prefix="/api/cards")
 
 
 @cards_bp.route("", methods=["POST"])
 def get_cards():
-    data = request.get_json(force=True) or {}
+    try:
+        data = request.get_json(force=True) or {}
 
-    date = data.get("date")
-    lat = float(data.get("lat"))
-    lng = float(data.get("lng"))
+        if not data.get("lat") or not data.get("lng"):
+            return jsonify({"error": "lat & lng required"}), 400
 
-    if not date:
-        return jsonify({"error": "date required"}), 400
+        try:
+            lat = float(data.get("lat"))
+            lng = float(data.get("lng"))
+        except:
+            return jsonify({"error": "invalid lat/lng"}), 400
 
-    # 🔹 Convert to datetime
-    date_obj = datetime.strptime(date, "%Y-%m-%d")
+        panchang_data = today_and_tomorrow(lat, lng)
 
-    # 🔹 Panchang
-    panchang_data = calculate_panchang(date_obj, lat, lng)
+        cards = generate_cards(panchang_data, events=[])
 
-    # 🔹 Cards
-    cards = generate_cards(panchang_data, events=[])
+        return jsonify({
+            "cards": cards
+        })
 
-    return jsonify({
-        "cards": cards
-    })
+    except Exception as e:
+        print("CARDS API ERROR:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
