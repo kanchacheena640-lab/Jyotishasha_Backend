@@ -1,6 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from extensions import db     
 from models import AstroEvent
+from services.ekadashi_engine import build_ekadashi_json
+from transit_engine import get_transit_events
+
 
 # 🔹 Existing astro detectors
 from services.events_engine import (
@@ -32,6 +35,41 @@ def generate_events_for_date(date, lat, lon, language="en"):
     add(find_next_purnima(date, lat, lon, language))
     add(find_next_vinayaka_chaturthi(date, lat, lon, language))
     add(find_next_shivratri(date, lat, lon, language))
+
+    # 🔥 TRANSIT ADD START
+
+    transits = []
+
+    # 🔥 3-day scan (today + next 2 days)
+    for i in range(0, 3):
+        check_date = date + timedelta(days=i)
+        t = get_transit_events(check_date)
+        if t:
+            transits.extend(t)
+
+    for t in transits:
+        events.append({
+            "name_en": t.get("name"),   # keep
+            "type": "transit",
+            "date": str(t.get("date"))[:10],
+            "meta": t   # 🔥 FULL meta pass karo
+        })
+    # 🔥 TRANSIT ADD END
+
+    # 🔥 EKADASHI ADD (SCAN NEXT DAYS)
+    for i in range(0, 3):   # today + next 2 days
+        check_date = date + timedelta(days=i)
+
+        ekadashi = build_ekadashi_json(check_date, lat, lon, language)
+
+        if ekadashi:
+            events.append({
+                "name_en": f"{ekadashi.get('name_en')} Ekadashi",
+                "name_hi": f"{ekadashi.get('name_hi')} एकादशी",
+                "type": "ekadashi",
+                "date": ekadashi.get("vrat_date"),
+                "meta": ekadashi
+            })
 
     return events
 

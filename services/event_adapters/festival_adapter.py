@@ -27,7 +27,7 @@ def normalize_type(raw_type: str) -> str:
 
     if t in [
         "pradosh", "sankashti", "shivratri",
-        "masik_shivratri", "chaturthi", "vinayaka_chaturthi"
+        "masik_shivratri", "chaturthi", "vinayaka_chaturthi", "ekadashi"
     ]:
         return "vrat"
 
@@ -65,6 +65,11 @@ def normalize_event(raw_event):
 
     # 🔥 NAME (CRITICAL FIX)
     name = (raw_event.get("name_en") or "").strip()
+    # 🔥 FIX: Ekadashi naming enforce
+    raw_type = (raw_event.get("type") or "").lower()
+
+    if raw_type == "ekadashi" and "ekadashi" not in name.lower():
+        name = f"{name} Ekadashi"
 
     # ❌ reject junk names
     if not name or name.lower().strip() in ["vrat", "festival"]:

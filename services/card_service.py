@@ -10,11 +10,28 @@ with open(os.path.join(BASE_DIR, "remedy_data.json"), "r", encoding="utf-8") as 
     REMEDY_DATA = json.load(f)["remedies"]
 
 def generate_cards(panchang_data, events, slot="morning"):
+    # 🔥 NORMALIZE EVENTS (DB + dict fix)
+    normalized_events = []
+
+    for e in events:
+        if isinstance(e, dict):
+            normalized_events.append(e)
+        else:
+            normalized_events.append({
+                "type": getattr(e, "type", None),
+                "name": getattr(e, "name", None),
+                "name_en": getattr(e, "name", None),
+                "name_hi": getattr(e, "name", None),
+            })
+
+    events = normalized_events
     cards = []
 
     lang = panchang_data["selected_date"].get("language", "en")
 
     VALID_EVENT_TYPES = {"festival", "vrat"}
+    # 🔥 PRIORITY SORT (vrat first)
+    events = sorted(events, key=lambda x: 0 if x.get("type") == "vrat" else 1)
 
     # 🔥 EVENT (only once, slot based)
     for e in events:
@@ -370,7 +387,7 @@ def build_planet_card(events):
         # 🔹 Find first transit-type event
         planet_event = None
         for e in events:
-            if e.get("type") in ["transit"]:   # future safe
+            if e.get("type") == "transit" and e.get("name"):  # future safe
                 planet_event = e
                 break
 
