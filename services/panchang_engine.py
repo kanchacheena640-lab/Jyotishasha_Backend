@@ -43,7 +43,15 @@ HINDU_MONTHS = [
     "Margashirsha", "Pausha", "Magha", "Phalguna"
 ]
 
-RAHU_INDEX_OF_DAY = [2, 7, 5, 6, 4, 3, 1]  # Monday..Sunday
+RAHU_INDEX_OF_DAY = {
+    0: 1,  # Monday
+    1: 6,  # Tuesday 
+    2: 4,  # Wednesday
+    3: 5,  # Thursday
+    4: 3,  # Friday
+    5: 2,  # Saturday
+    6: 7   # Sunday
+}
 
 # --- Hindi mappings (for language == "hi") ---
 WEEKDAYS_HI = {
@@ -311,8 +319,18 @@ def _rahu_kaal(date, sunrise, sunset):
 def _abhijit(sunrise, sunset):
     sunrise, sunset = _normalize_day_window(sunrise, sunset)
 
-    mid = sunrise + (sunset - sunrise) / 2
-    return mid - timedelta(minutes=24), mid + timedelta(minutes=24)
+    day_duration = sunset - sunrise
+
+    # 1/15th of day duration
+    muhurta_duration = day_duration / 15
+
+    # solar noon (midpoint)
+    solar_noon = sunrise + ((sunset - sunrise) / 2)
+
+    start = solar_noon - (muhurta_duration / 2)
+    end = solar_noon + (muhurta_duration / 2)
+
+    return start, end
 
 def _brahma_muhurta(sunrise):
     """
