@@ -38,13 +38,26 @@ def calculate_sunrise_sunset(target_date, latitude, longitude):
             sun_obj = Sun(latitude, longitude)
 
             sunrise_utc = sun_obj.get_sunrise_time(target_date)
-            sunset_utc  = sun_obj.get_sunset_time(target_date)
+            sunset_utc = sun_obj.get_sunset_time(target_date)
 
             if not sunrise_utc or not sunset_utc:
                 raise ValueError("Suntime returned None")
 
             sunrise_ist = sunrise_utc + timedelta(hours=5, minutes=30)
-            sunset_ist  = sunset_utc + timedelta(hours=5, minutes=30)
+            sunset_ist = sunset_utc + timedelta(hours=5, minutes=30)
+
+            print("================================")
+            print("TARGET DATE =", target_date)
+
+            print("SUNRISE UTC RAW =", sunrise_utc)
+            print("SUNSET UTC RAW  =", sunset_utc)
+
+            print("SUNRISE UTC TZ =", sunrise_utc.tzinfo)
+            print("SUNSET UTC TZ  =", sunset_utc.tzinfo)
+
+            print("SUNRISE IST =", sunrise_ist)
+            print("SUNSET IST  =", sunset_ist)
+            print("================================")
 
             print(">> Using FIXED SUNTIME result")
             return sunrise_ist, sunset_ist

@@ -568,6 +568,11 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
         language = "en"
 
     sunrise, sunset = calculate_sunrise_sunset(date, lat, lon)
+    print("================================")
+    print("PANCHANG DATE =", date)
+    print("FINAL SUNRISE =", sunrise)
+    print("FINAL SUNSET  =", sunset)
+    print("================================")
     ref = ref_dt_ist or sunrise
     sun, moon = sidereal_longitudes(ref)
     t_num, paksha, t_name = _tithi_from_longitudes(sun, moon)
