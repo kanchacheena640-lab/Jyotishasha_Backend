@@ -59,8 +59,14 @@ def calculate_sunrise_sunset(target_date, latitude, longitude):
         print("================================")
         print("USING ASTRAL ONLY")
         print("TARGET DATE =", target_date)
-        print("SUNRISE =", sunrise_ist)
-        print("SUNSET  =", sunset_ist)
+        print("RAW SUNRISE =", sunrise_utc)
+        print("RAW SUNSET  =", sunset_utc)
+
+        print("SUNRISE TZ =", sunrise_utc.tzinfo)
+        print("SUNSET TZ  =", sunset_utc.tzinfo)
+
+        print("SUNRISE IST =", sunrise_ist)
+        print("SUNSET IST  =", sunset_ist)
         print("================================")
 
         return sunrise_ist, sunset_ist
