@@ -1,1 +1,3 @@
-SELECT type, COUNT(*) FROM astro_events GROUP BY type;
+SELECT column_name
+FROM information_schema.columns
+WHERE table_name = 'astro_events';

@@ -1,0 +1,32 @@
+[
+  {
+    "column_name": "created_at"
+  },
+  {
+    "column_name": "meta"
+  },
+  {
+    "column_name": "id"
+  },
+  {
+    "column_name": "date"
+  },
+  {
+    "column_name": "priority"
+  },
+  {
+    "column_name": "notify_before_days"
+  },
+  {
+    "column_name": "notify_same_day"
+  },
+  {
+    "column_name": "notify_time"
+  },
+  {
+    "column_name": "name"
+  },
+  {
+    "column_name": "type"
+  }
+]

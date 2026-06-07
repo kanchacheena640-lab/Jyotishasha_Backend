@@ -1,6 +1,6 @@
 # muhurth_engine.py
 import json, os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from services.panchang_engine import calculate_panchang
 
 RULES_DIR = os.path.join(os.path.dirname(__file__), "..", "rules")
@@ -174,4 +174,60 @@ def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
         out.append(item)
 
     out.sort(key=lambda x: x["score"], reverse=True)
+    return out[:top_k]
+
+# ------------------------MONTH-BASED MUHURTH ENGINE--------------------------------
+
+def next_best_dates_for_month(
+    activity,
+    lat,
+    lon,
+    month,
+    year,
+    top_k=50,
+    language="en"
+):
+    is_hindi = (language or "en").lower() == "hi"
+    language = "en"
+
+    rules, file_path = _load_rules(activity)
+
+    start_date = date(year, month, 1)
+
+    if month == 12:
+        end_date = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        end_date = date(year, month + 1, 1) - timedelta(days=1)
+
+    out = []
+
+    current = start_date
+
+    while current <= end_date:
+
+        p = calculate_panchang(current, lat, lon, "en")
+
+        score, reasons = _score_and_reasons(p, rules)
+
+        item = {
+            "date": p["date"],
+            "weekday": p["weekday"],
+            "nakshatra": p["nakshatra"]["name"],
+            "tithi": p["tithi"]["name"],
+            "score": score,
+            "reasons": reasons,
+            "language": "en",
+            "rules_file": file_path
+        }
+
+        if is_hindi:
+            item = translate_item_to_hindi(item)
+            item["language"] = "hi"
+
+        out.append(item)
+
+        current += timedelta(days=1)
+
+    out.sort(key=lambda x: x["score"], reverse=True)
+
     return out[:top_k]

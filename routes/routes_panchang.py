@@ -3,7 +3,10 @@
 import traceback
 from flask import Blueprint, request, jsonify
 from services.panchang_engine import calculate_panchang, today_and_tomorrow
-from services.muhurth_engine import next_best_dates
+from services.muhurth_engine import (
+    next_best_dates,
+    next_best_dates_for_month
+)
 from datetime import datetime, timedelta
 from services.sun_calc import calculate_sunrise_sunset
 from services.moon_calc import get_moon_rise_set
@@ -114,6 +117,80 @@ def api_muhurth_list():
     except Exception as e:
         print(">> Muhurth Error:", e)
         return jsonify({"error": str(e)}), 500
+    
+
+# ------------------- MUHURTH MONTH API ------------------- #
+@routes_panchang.route("/api/muhurth/month", methods=["POST"])
+def api_muhurth_month():
+    """
+    Month-based Muhurth API
+
+    Required:
+    - activity
+    - month
+    - year
+    - latitude
+    - longitude
+
+    Optional:
+    - top_k (default 50)
+    - language ("hi" or "en")
+    """
+
+    try:
+        data = request.get_json() or {}
+
+        print(">> Muhurth Month Payload Received:", data)
+
+        activity = data.get("activity")
+
+        if not activity:
+            return jsonify({
+                "error": "Missing 'activity' field"
+            }), 400
+
+        month = int(data.get("month"))
+        year = int(data.get("year"))
+
+        lat = float(data.get("latitude"))
+        lon = float(data.get("longitude"))
+
+        top_k = int(data.get("top_k", 50))
+
+        language = (
+            data.get("language")
+            or data.get("lang")
+            or "en"
+        ).lower()
+
+        if language != "hi":
+            language = "en"
+
+        results = next_best_dates_for_month(
+            activity=activity,
+            lat=lat,
+            lon=lon,
+            month=month,
+            year=year,
+            top_k=top_k,
+            language=language
+        )
+
+        return jsonify({
+            "activity": activity,
+            "month": month,
+            "year": year,
+            "language": language,
+            "results": results
+        })
+
+    except Exception as e:
+        print(">> Muhurth Month Error:", e)
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
 
 
 # ------------------- SUNRISE / SUNSET ------------------- #
