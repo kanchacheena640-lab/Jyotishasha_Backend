@@ -163,7 +163,6 @@ def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
             "score": score,
             "reasons": reasons,
             "language": "en",
-            "rules_file": file_path
         }
 
         # Hindi output requested → translate final item
@@ -217,7 +216,6 @@ def next_best_dates_for_month(
             "score": score,
             "reasons": reasons,
             "language": "en",
-            "rules_file": file_path
         }
 
         if is_hindi:
@@ -227,6 +225,8 @@ def next_best_dates_for_month(
         out.append(item)
 
         current += timedelta(days=1)
+    # Only keep genuinely auspicious dates
+    out = [x for x in out if x["score"] >= 4]
 
     out.sort(key=lambda x: x["score"], reverse=True)
 
