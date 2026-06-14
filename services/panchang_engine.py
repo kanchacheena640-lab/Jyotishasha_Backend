@@ -590,6 +590,15 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
 
     # --- Kshaya / Vriddhi Detection (exact transitions + segments) ---
     sunrise_tomorrow, _ = calculate_sunrise_sunset(date + timedelta(days=1), lat, lon)
+
+    if sunrise_tomorrow is None:
+        print(
+            f"WARNING: Sunrise missing for {date + timedelta(days=1)}"
+        )
+
+        sunrise_tomorrow = (
+            sunrise + timedelta(days=1)
+        )
     
     # ---- TEMP SANITY TEST (remove later) ----
     print("DATE:", date)
