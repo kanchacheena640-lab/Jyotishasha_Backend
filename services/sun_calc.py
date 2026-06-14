@@ -52,18 +52,21 @@ def calculate_sunrise_sunset(target_date, latitude, longitude):
 
         sunrise_utc = sunrise(
             observer,
-            date=target_date.date(),
-            tzinfo=ZoneInfo("Asia/Kolkata")
+            date=target_date.date()
         )
 
         sunset_utc = sunset(
             observer,
-            date=target_date.date(),
-            tzinfo=ZoneInfo("Asia/Kolkata")
+            date=target_date.date()
         )
 
-        sunrise_ist = sunrise_utc
-        sunset_ist = sunset_utc
+        sunrise_ist = sunrise_utc.astimezone(
+            ZoneInfo("Asia/Kolkata")
+        )
+
+        sunset_ist = sunset_utc.astimezone(
+            ZoneInfo("Asia/Kolkata")
+        )
 
         print("================================")
         print("USING ASTRAL ONLY")
