@@ -1,24 +1,30 @@
 # services/sun_calc.py
-from datetime import date, datetime, timedelta
 
-# Try suntime first
-#from suntime import Sun
-
-# Fallback import (Astral)
+from datetime import date, datetime
 from astral import Observer
 from astral.sun import sunrise, sunset
 from zoneinfo import ZoneInfo
 
 
-def calculate_sunrise_sunset(target_date, latitude, longitude):
+def calculate_sunrise_sunset(
+    target_date,
+    latitude,
+    longitude
+):
     """
-    Calculate sunrise and sunset using Astral only.
+    Calculate sunrise and sunset using Astral.
+    Returns IST datetime objects.
     """
 
     try:
-        # Normalize target_date → datetime
+
+        # Normalize date
         if isinstance(target_date, str):
-            y, m, d = map(int, target_date.split('-'))
+            y, m, d = map(
+                int,
+                target_date.split("-")
+            )
+
             target_date = datetime(y, m, d)
 
         elif isinstance(target_date, date):
@@ -28,27 +34,18 @@ def calculate_sunrise_sunset(target_date, latitude, longitude):
                 target_date.day
             )
 
-        elif isinstance(target_date, datetime):
-            pass
+        elif not isinstance(
+            target_date,
+            datetime
+        ):
+            raise ValueError(
+                "Invalid date type"
+            )
 
-        else:
-            raise ValueError("Invalid date type")
-
-        print(
-            f">> DEBUG FIXED: date={target_date}, "
-            f"lat={latitude}, lon={longitude}, "
-            f"type={type(target_date)}"
-        )
-
-        # Astral Only
         observer = Observer(
             latitude=latitude,
             longitude=longitude
         )
-
-        print("DATE TO CHECK:", target_date.date())
-        print("LAT:", latitude)
-        print("LON:", longitude)
 
         sunrise_utc = sunrise(
             observer,
@@ -68,24 +65,15 @@ def calculate_sunrise_sunset(target_date, latitude, longitude):
             ZoneInfo("Asia/Kolkata")
         )
 
-        print("================================")
-        print("USING ASTRAL ONLY")
-        print("TARGET DATE =", target_date)
-        print("RAW SUNRISE =", sunrise_utc)
-        print("RAW SUNSET  =", sunset_utc)
-
-        print("SUNRISE TZ =", sunrise_utc.tzinfo)
-        print("SUNSET TZ  =", sunset_utc.tzinfo)
-
-        print("SUNRISE IST =", sunrise_ist)
-        print("SUNSET IST  =", sunset_ist)
-        print("================================")
-
-        return sunrise_ist, sunset_ist
+        return (
+            sunrise_ist,
+            sunset_ist
+        )
 
     except Exception as e:
-            print(
-                "[ERROR] Sunrise/sunset calculation failed:",
-                repr(e)
-            )
-            raise
+        print(
+            "[ERROR] Sunrise/sunset calculation failed:",
+            e
+        )
+
+        return None, None

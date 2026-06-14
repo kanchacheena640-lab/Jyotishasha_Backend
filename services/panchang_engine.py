@@ -569,16 +569,6 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
 
     sunrise, sunset = calculate_sunrise_sunset(date, lat, lon)
 
-    if sunrise is None or sunset is None:
-        raise ValueError(
-            f"Sunrise/Sunset calculation failed for {date}"
-        )
-
-    print("================================")
-    print("PANCHANG DATE =", date)
-    print("FINAL SUNRISE =", sunrise)
-    print("FINAL SUNSET  =", sunset)
-    print("================================")
     ref = ref_dt_ist or sunrise
     sun, moon = sidereal_longitudes(ref)
     t_num, paksha, t_name = _tithi_from_longitudes(sun, moon)
@@ -607,9 +597,6 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
         )
     
     # ---- TEMP SANITY TEST (remove later) ----
-    print("DATE:", date)
-    print("NAKSHATRA TRANSITIONS:",
-        _nakshatra_transition_times(sunrise, sunrise_tomorrow))
 
     transition_times, tithi_segments = _build_tithi_segments(sunrise, sunrise_tomorrow)
     transition_count = len(transition_times)
