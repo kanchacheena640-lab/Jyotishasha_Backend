@@ -46,6 +46,10 @@ def calculate_sunrise_sunset(target_date, latitude, longitude):
             longitude=longitude
         )
 
+        print("DATE TO CHECK:", target_date.date())
+        print("LAT:", latitude)
+        print("LON:", longitude)
+
         sunrise_utc = sunrise(
             observer,
             date=target_date.date(),
@@ -77,5 +81,8 @@ def calculate_sunrise_sunset(target_date, latitude, longitude):
         return sunrise_ist, sunset_ist
 
     except Exception as e:
-        print("[ERROR] Sunrise/sunset calculation failed:", e)
-        return None, None
+            print(
+                "[ERROR] Sunrise/sunset calculation failed:",
+                repr(e)
+            )
+            raise
