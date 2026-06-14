@@ -185,7 +185,8 @@ def api_muhurth_month():
         })
 
     except Exception as e:
-        print(">> Muhurth Month Error:", e)
+        print(">> Muhurth Month Error:")
+        traceback.print_exc()
 
         return jsonify({
             "error": str(e)
