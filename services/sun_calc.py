@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta
 #from suntime import Sun
 
 # Fallback import (Astral)
-from astral import LocationInfo
+from astral import Observer
 from astral.sun import sunrise, sunset
 from zoneinfo import ZoneInfo
 
@@ -41,19 +41,19 @@ def calculate_sunrise_sunset(target_date, latitude, longitude):
         )
 
         # Astral Only
-        location = LocationInfo(
+        observer = Observer(
             latitude=latitude,
             longitude=longitude
         )
 
         sunrise_utc = sunrise(
-            location.observer,
+            observer,
             date=target_date.date(),
             tzinfo=ZoneInfo("Asia/Kolkata")
         )
 
         sunset_utc = sunset(
-            location.observer,
+            observer,
             date=target_date.date(),
             tzinfo=ZoneInfo("Asia/Kolkata")
         )

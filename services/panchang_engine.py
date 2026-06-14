@@ -568,6 +568,12 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
         language = "en"
 
     sunrise, sunset = calculate_sunrise_sunset(date, lat, lon)
+
+    if sunrise is None or sunset is None:
+        raise ValueError(
+            f"Sunrise/Sunset calculation failed for {date}"
+        )
+
     print("================================")
     print("PANCHANG DATE =", date)
     print("FINAL SUNRISE =", sunrise)
