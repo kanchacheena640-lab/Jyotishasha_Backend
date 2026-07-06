@@ -49,12 +49,14 @@ def calculate_sunrise_sunset(
 
         sunrise_utc = sunrise(
             observer,
-            date=target_date.date()
+            date=target_date.date(),
+            tzinfo=ZoneInfo("Asia/Kolkata")
         )
 
         sunset_utc = sunset(
             observer,
-            date=target_date.date()
+            date=target_date.date(),
+            tzinfo=ZoneInfo("Asia/Kolkata")
         )
 
         sunrise_ist = sunrise_utc.astimezone(
