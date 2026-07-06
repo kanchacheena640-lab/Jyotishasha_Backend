@@ -574,7 +574,7 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     t_num, paksha, t_name = _tithi_from_longitudes(sun, moon)
     n_name, n_idx, n_pada = _nakshatra_from_moon(moon)
     y_name, y_idx = _yoga_from_lons(sun, moon)
-    k_name, k_slot = _karan_from_tithi(t_num)
+    k_name, k_slot = _karan_at(ref)
 
     # ✅ Chaughadiya derived from sunrise/sunset + weekday
     chaughadiya = _calculate_chaughadiya(date, sunrise, sunset, language)
