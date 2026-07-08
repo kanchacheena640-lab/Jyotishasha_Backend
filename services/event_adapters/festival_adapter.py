@@ -37,6 +37,9 @@ def normalize_type(raw_type: str) -> str:
     elif t in ["transit"]:
         return "transit"
 
+    elif t in ["tithi", "nakshatra", "panchak"]:
+        return t
+
     return "festival"
 
 

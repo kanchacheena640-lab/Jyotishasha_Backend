@@ -48,6 +48,7 @@ from routes.routes_festivals import routes_festivals
 from routes.routes_ekadashi import ekadashi_bp
 from notifications.user_notification_routes import user_notification_bp
 from routes.routes_cards import cards_bp
+from routes.routes_event_resource import event_resource_bp
 
 
 
@@ -91,6 +92,7 @@ app.register_blueprint(routes_events, url_prefix="/api/events")
 app.register_blueprint(routes_festivals, url_prefix="/api/festivals")
 app.register_blueprint(ekadashi_bp)
 app.register_blueprint(cards_bp)
+app.register_blueprint(event_resource_bp)
 
 # ------------------- ROOT ------------------- #
 @app.route("/")

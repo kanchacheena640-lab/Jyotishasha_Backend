@@ -3,6 +3,8 @@ from extensions import db
 from models import AstroEvent
 from services.ekadashi_engine import build_ekadashi_json
 from transit_engine import get_transit_events
+from services.panchang_engine import calculate_panchang
+from services.event_adapters.panchang_adapter import generate_panchang_events
 
 
 # 🔹 Existing astro detectors
@@ -70,6 +72,22 @@ def generate_events_for_date(date, lat, lon, language="en"):
                 "date": ekadashi.get("vrat_date"),
                 "meta": ekadashi
             })
+
+    # 🔥 PANCHANG ADD START (Tithi / Nakshatra / Panchak)
+    try:
+        panchang_data = calculate_panchang(date, lat, lon, language)
+        panchang_events = generate_panchang_events(panchang_data)
+
+        for p in panchang_events:
+            events.append({
+                "name_en": p.get("name"),
+                "type": p.get("type"),
+                "date": str(p.get("date"))[:10],
+                "meta": p.get("meta")
+            })
+    except Exception as e:
+        print(f"❌ Panchang event generation failed: {str(e)}")
+    # 🔥 PANCHANG ADD END
 
     return events
 

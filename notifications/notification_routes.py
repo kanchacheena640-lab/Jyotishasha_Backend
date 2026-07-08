@@ -1,13 +1,35 @@
 # notifications/notification_routes.py
 
+import os
+from functools import wraps
 from flask import Blueprint, request, jsonify
 from datetime import datetime
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
 from notifications.notification_models import NotificationJob
 from notifications.notification_service import send_job_now
 from notifications.notification_fcm import send_fcm
 
 notification_bp = Blueprint("notifications", __name__, url_prefix="/api/notifications")
+
+
+# ---------------------------------------------------
+# Admin authorization (reuses existing JWT auth)
+# ---------------------------------------------------
+def _admin_user_ids():
+    raw = os.getenv("ADMIN_USER_IDS", "")
+    return {uid.strip() for uid in raw.split(",") if uid.strip()}
+
+
+def admin_required(fn):
+    @wraps(fn)
+    @jwt_required()
+    def wrapper(*args, **kwargs):
+        identity = get_jwt_identity()
+        if str(identity) not in _admin_user_ids():
+            return jsonify({"error": "Forbidden"}), 403
+        return fn(*args, **kwargs)
+    return wrapper
 
 
 def _parse_datetime(value: str):
@@ -24,6 +46,7 @@ def _parse_datetime(value: str):
 # Create a new notification job (from dashboard)
 # ---------------------------------------------------
 @notification_bp.route("", methods=["POST"])
+@admin_required
 def create_notification_job():
     data = request.get_json() or {}
 
@@ -61,6 +84,7 @@ def create_notification_job():
 # List notification jobs (for dashboard table)
 # ---------------------------------------------------
 @notification_bp.route("", methods=["GET"])
+@admin_required
 def list_notification_jobs():
     status = request.args.get("status")  # optional filter
 
@@ -95,6 +119,7 @@ def list_notification_jobs():
 # Force send a job NOW (for testing / urgent push)
 # ---------------------------------------------------
 @notification_bp.route("/<int:job_id>/send-now", methods=["POST"])
+@admin_required
 def send_notification_now(job_id):
     try:
         job = NotificationJob.query.get(job_id)

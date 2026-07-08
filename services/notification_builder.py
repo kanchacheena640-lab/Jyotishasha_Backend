@@ -4,6 +4,7 @@ from services.personalization_engine import (
     get_current_dasha_users
 )
 from datetime import date, timedelta
+from models import AstroEvent
 
 
 def get_user_notifications(user, events, global_notifications):
@@ -191,6 +192,54 @@ def get_user_notifications(user, events, global_notifications):
                 "antardasha": d["antardasha"]
             }
         })
+
+    # ---------------------------
+    # 🔹 PANCHAK
+    # ---------------------------
+    for event in events:
+        try:
+            event_type = getattr(event, "type", None)
+            event_name = getattr(event, "name", None)
+            event_id = getattr(event, "id", None)
+            event_date = getattr(event, "date", None)
+
+            if event_type != "panchak" or not event_id or not event_date:
+                continue
+
+            # 🔥 Only notify on the FIRST day of this Panchak window.
+            # AstroEvent gets a fresh "panchak" row every day it stays active,
+            # so a row dated "yesterday" means today is a continuation, not the start.
+            prev_day = event_date - timedelta(days=1)
+
+            already_running = AstroEvent.query.filter_by(
+                type="panchak",
+                date=prev_day
+            ).first()
+
+            if already_running:
+                continue
+
+            event_id_str = f"panchak_{event_id}"
+
+            if event_id_str in seen:
+                continue
+            seen.add(event_id_str)
+
+            final_notifications.append({
+                "title": event_name or "Panchak Alert",
+                "body": f"""{event_name or "Panchak"} शुरू हो गया है 🙏
+
+        Is samay nirmaan, yatra aur mahatvapurn karyon se bachein
+        Niyamon ka dhyan rakhein""",
+                "data": {
+                    "type": "panchak",
+                    "event_id": str(event_id)
+                }
+            })
+
+        except Exception as e:
+            print(f"❌ Panchak event error: {str(e)}")
+            continue
 
     # 🔥 RETURN AT END ONLY
     return final_notifications
