@@ -80,5 +80,5 @@ def get_event_resource(event_id):
             "body": body,
             "date": date_str,
         },
-        "resource": resolve_resource(event)
+        "resource": resolve_resource(event, lang)
     })
