@@ -2,7 +2,7 @@
 
 import os
 from functools import wraps
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
@@ -11,6 +11,9 @@ from notifications.notification_service import send_job_now
 from notifications.notification_fcm import send_fcm
 
 notification_bp = Blueprint("notifications", __name__, url_prefix="/api/notifications")
+admin_notification_bp = Blueprint(
+    "admin_notifications", __name__, url_prefix="/api/admin/notifications"
+)
 
 
 # ---------------------------------------------------
@@ -150,12 +153,13 @@ def send_notification_now(job_id):
 
 
 # ---------------------------------------------------
-# PERMANENT DEV TEST ENDPOINT -- until a Notification
-# Dashboard exists. Never touches production logic itself:
-# it only calls notification_builder.get_user_notifications
-# (Builder) and notification_engine.send_push_notification
-# (Engine + FCM sender), the exact functions
-# services/event_scheduler.py calls in production.
+# PERMANENT ADMIN TEST ENDPOINT. Never touches production
+# logic itself: it only calls
+# notification_builder.get_user_notifications (Builder) and
+# notification_engine.send_push_notification (Engine + FCM
+# sender), the exact functions services/event_scheduler.py
+# calls in production, plus the same UserNotification /
+# NotificationLog persistence the scheduler writes.
 #
 # Two modes, chosen by whether title/body/data were supplied:
 #   - Builder mode (event_id only): identical to a real
@@ -165,17 +169,16 @@ def send_notification_now(job_id):
 #     values given are sent as-is. Dedup is intentionally
 #     skipped in this mode (see below).
 #
-# Gated on Flask's own debug flag instead of admin JWT --
-# this app only sets debug=True via `app.run(debug=True)`
-# in the __main__ block (app.py:346) or FLASK_DEBUG=1, which
-# is how this project already runs locally; a normal
-# production WSGI process (gunicorn etc.) never sets this,
-# so the route 404s there as if it doesn't exist.
+# Access is gated by @admin_required -- the same JWT +
+# ADMIN_USER_IDS allowlist every other route in this file
+# uses. No new auth mechanism, no role tiers: this codebase
+# has a single flat admin allowlist, not separate Super
+# Admin/Admin roles, so that one check is "admin" here.
 # ---------------------------------------------------
-@notification_bp.route("/test-send", methods=["POST"])
-def test_send_notification():
-    if not (current_app.debug or os.getenv("FLASK_DEBUG") == "1"):
-        return jsonify({"error": "Not found"}), 404
+@admin_notification_bp.route("/test-send", methods=["POST"])
+@admin_required
+def admin_test_send_notification():
+    admin_identity = get_jwt_identity()
 
     from modules.models_user import AppUser
     from models import AstroEvent
@@ -189,6 +192,13 @@ def test_send_notification():
     manual_title = payload.get("title")
     manual_body = payload.get("body")
     manual_data = payload.get("data")
+
+    # 🔐 AUDIT LOG: who fired this, and with what, before anything else runs.
+    print(
+        f"🔐 AUDIT admin_test_send_notification | admin={admin_identity} "
+        f"user_id={user_id} event_id={event_id} "
+        f"manual={'yes' if (manual_title or manual_body or manual_data) else 'no'}"
+    )
 
     if not user_id:
         return jsonify({"error": "user_id is required"}), 400
@@ -287,6 +297,13 @@ def test_send_notification():
             ))
 
         db.session.commit()
+
+    # 🔐 AUDIT LOG: outcome of the send, tied back to the admin who triggered it.
+    print(
+        f"🔐 AUDIT admin_test_send_notification RESULT | admin={admin_identity} "
+        f"user_id={user_id} mode={'manual' if manual_mode else 'builder'} "
+        f"success={success} title={final_title!r}"
+    )
 
     return jsonify({
         "success": success,
