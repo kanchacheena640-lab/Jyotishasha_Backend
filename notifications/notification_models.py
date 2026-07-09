@@ -18,12 +18,14 @@ from extensions import db
 
 class NotificationJob(db.Model):
     """
-    Single notification job.
+    Admin/Marketing broadcast job (dashboard-created or future scheduled
+    campaigns) -- NOT for event notifications, which are generated
+    exclusively by services.event_scheduler.run_daily_event_job().
 
     Example:
     - Title: "Deepavali Pujan Muhurta"
     - Body: "Today 7:15–8:30 PM, do Laxmi Pujan..."
-    - Type: "festival" / "blog" / "daily" / "custom"
+    - Type: "blog" / "daily" / "custom"
     - Audience: JSON filter (zodiac, age_group, interest, etc.)
     - Payload: Extra data for app routing (screen, slug, etc.)
     """

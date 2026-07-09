@@ -1,4 +1,11 @@
 # notifications/notification_service.py
+#
+# Admin/Marketing broadcast infrastructure ONLY (NotificationJob queue).
+# Event-driven notifications (festivals, vrat, transit, dasha, ekadashi...)
+# are generated exclusively by services.event_scheduler.run_daily_event_job()
+# via notification_builder.py -- nothing here should produce or process
+# an event notification. See auto_job_creator.py / daily_runner.py removal
+# in the v1.0 freeze for why that split matters.
 
 from datetime import datetime
 from extensions import db
