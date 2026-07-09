@@ -6,18 +6,59 @@
 # single content question: "does this event have an associated resource,
 # and if so, what type/id/canonical-url identifies it?"
 
-BASE_URL = "https://jyotishasha.com"
+# Legacy URL scheme, used for every resource sub-type that has no
+# canonical builder registered in _CANONICAL_URL_BUILDERS below.
+LEGACY_BASE_URL = "https://jyotishasha.com"
+
+# Frontend domain that actually serves canonical content pages.
+FRONTEND_BASE_URL = "https://www.jyotishasha.com"
 
 # Languages the site actually publishes canonical URLs for. An
 # unsupported/unknown lang falls back to "en" rather than producing
 # a URL for a locale that doesn't exist -- see build_resource_url().
 SUPPORTED_LANGS = {"en", "hi"}
 
-# One URL template per resource.type. A type with no entry here has
+
+def _legacy_authority_url(resource_id, lang):
+    """
+    Pre-existing URL scheme: jyotishasha.com/<lang>/<resource_id>.
+    This is the fallback for any resource sub-type that hasn't been
+    given a canonical builder below, so fixing one sub-type's URL
+    never changes another's.
+    """
+    return f"{LEGACY_BASE_URL}/{lang}/{resource_id}"
+
+
+def _ekadashi_canonical_url(resource_id, lang):
+    """
+    Ekadashi resource ids look like "ekadashi/yogini" -- the slug is
+    just the vrat's base name (see ekadashi_engine.get_ekadashi_name()),
+    it never carries the word "Ekadashi". The frontend's canonical page
+    always does, e.g. https://www.jyotishasha.com/ekadashi/yogini-ekadashi.
+    A few adhik-maas names (e.g. "Padmini Ekadashi") already end in
+    "ekadashi", so the suffix is only added when it's actually missing.
+    """
+    sub_type, slug = resource_id.split("/", 1)
+    canonical_slug = slug if slug.endswith("-ekadashi") else f"{slug}-ekadashi"
+    return f"{FRONTEND_BASE_URL}/{sub_type}/{canonical_slug}"
+
+
+# Default URL builder per resource.type. A type with no entry here has
 # no known URL scheme yet, so build_resource_url() returns None for
 # it instead of guessing a shape.
 _URL_BUILDERS = {
-    "authority": lambda resource_id, lang: f"{BASE_URL}/{lang}/{resource_id}",
+    "authority": _legacy_authority_url,
+}
+
+# Canonical URL builder per resource sub-type -- the segment of
+# resource_id before the "/" (e.g. "ekadashi" in "ekadashi/yogini").
+# This is the single source of truth for a resource's real frontend
+# page, and it always wins over the generic per-resource.type builder
+# above. To support a new sub-type (festivals, transit, rajyoga,
+# reports, ...), register its builder here -- nothing else in this
+# module needs to change, and every existing entry is unaffected.
+_CANONICAL_URL_BUILDERS = {
+    "ekadashi": _ekadashi_canonical_url,
 }
 
 
@@ -27,11 +68,14 @@ def build_resource_url(resource_type, resource_id, lang="en"):
     existing type + id only. Never fabricates a URL for a resource
     type with no known scheme -- returns None instead.
     """
-    builder = _URL_BUILDERS.get(resource_type)
-    if not builder:
+    default_builder = _URL_BUILDERS.get(resource_type)
+    if not default_builder or not resource_id:
         return None
 
     safe_lang = lang if lang in SUPPORTED_LANGS else "en"
+
+    sub_type = resource_id.split("/", 1)[0]
+    builder = _CANONICAL_URL_BUILDERS.get(sub_type, default_builder)
     return builder(resource_id, safe_lang)
 
 
