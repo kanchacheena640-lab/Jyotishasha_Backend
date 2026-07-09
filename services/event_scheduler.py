@@ -200,12 +200,27 @@ def run_daily_event_job():
                     )
 
                     seen_events = set()
+                    user_sent = 0
 
                     for n in user_notifications:
                         data = n.get("data", {}) or {}
 
-                        # 🔥 STRONG UNIQUE EVENT ID
-                        event_id = f"{data.get('type','general')}_{data.get('event_id','0')}"
+                        ntype = data.get("type", "general")
+                        raw_event_id = data.get("event_id", "0")
+
+                        # 🔥 SINGLE NOTIFICATION IDENTITY
+                        # AstroEvent-based notifications ("event" type) are
+                        # produced by exactly one code path now (see
+                        # notification_builder.py's EVENT section), so the
+                        # AstroEvent's own id is the whole identity -- no
+                        # type prefix needed, and none of the type-prefixed
+                        # schemes below can ever collide with it since
+                        # AstroEvent.id is a single unique primary key.
+                        if ntype == "event":
+                            event_id = raw_event_id
+                        else:
+                            event_id = f"{ntype}_{raw_event_id}"
+
                         unique_key = f"{event_id}_{slot}"
 
                         # 🔥 LOCAL DEDUP (same loop)
@@ -236,6 +251,7 @@ def run_daily_event_job():
 
                         if success:
                             total_sent += 1
+                            user_sent += 1
 
                             # 🔹 SAVE LOG
                             db.session.add(NotificationLog(
@@ -253,35 +269,39 @@ def run_daily_event_job():
                                 is_read=False
                             ))
 
-                            # 🔥 IMPORTANT: flush so new row is available
-                            db.session.flush()
+                    # 🔥 Commit ALL of this user's notifications first --
+                    # retention must never run against uncommitted/in-flight
+                    # rows from this same loop (that race is what silently
+                    # deleted a just-sent notification before the Bell
+                    # could ever read it).
+                    if user_sent:
+                        db.session.commit()
 
-                            # 🔥 KEEP ONLY LAST 10 NOTIFICATIONS PER USER
-                            old_notifications = db.session.query(UserNotification)\
-                                .filter_by(user_id=user.id)\
-                                .order_by(UserNotification.created_at.desc())\
-                                .offset(10)\
-                                .all()
+                        # 🔥 KEEP ONLY LAST 10 NOTIFICATIONS PER USER
+                        # Runs ONCE per user, after their inserts are
+                        # durable, ordered by a tiebreaker (id) so ties on
+                        # created_at (same-transaction timestamps are
+                        # identical under Postgres) can't make the trim
+                        # non-deterministic.
+                        old_notifications = db.session.query(UserNotification)\
+                            .filter_by(user_id=user.id)\
+                            .order_by(
+                                UserNotification.created_at.desc(),
+                                UserNotification.id.desc()
+                            )\
+                            .offset(10)\
+                            .all()
 
-                            for old in old_notifications:
-                                db.session.delete(old)
+                        for old in old_notifications:
+                            db.session.delete(old)
+
+                        db.session.commit()
 
                 except Exception as e:
                     db.session.rollback()
                     print(f"❌ Failed for user {user.id}: {str(e)}")
 
-            # 🔹 Batch commit
-            if total_sent > 0 and total_sent % 500 == 0:
-                db.session.commit()
-
             offset += BATCH_SIZE
-
-        # 🔹 Final commit
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print(f"❌ Final commit failed: {str(e)}")
 
         if total_sent == 0:
             print("⚠️ ALERT: No notifications sent")

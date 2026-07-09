@@ -16,10 +16,21 @@ def get_user_notifications(user, events, global_notifications):
     seen = set()
 
     # ---------------------------
-    # 🔹 GLOBAL
+    # 🔹 GLOBAL (application-wide generic notifications ONLY)
     # ---------------------------
+    # AstroEvent-based notifications are the EVENT section's job below --
+    # GLOBAL must never emit one, or the same AstroEvent ends up notified
+    # twice under two different identities (see the v1.0 architecture
+    # freeze). The only thing that legitimately reaches here is the
+    # event-less generic fallback event_scheduler.py builds when there's
+    # nothing to say today (data.type == "general").
     for n in (global_notifications or []):
-        event_id = n.get("data", {}).get("event_id", f"global_{len(final_notifications)}")
+        data = n.get("data", {}) or {}
+
+        if data.get("type") != "general":
+            continue
+
+        event_id = data.get("event_id", f"global_{len(final_notifications)}")
 
         if event_id in seen:
             continue
@@ -28,12 +39,17 @@ def get_user_notifications(user, events, global_notifications):
         final_notifications.append({
             "title": n.get("title"),
             "body": n.get("body"),
-            "data": n.get("data", {}) or {}
+            "data": data
         })
 
     # ---------------------------
-    # 🔹 EVENT (VRAT / FESTIVAL)
+    # 🔹 EVENT (VRAT / FESTIVAL) -- sole owner of AstroEvent notifications
     # ---------------------------
+    # One AstroEvent produces exactly one notification. This is the only
+    # section allowed to turn a vrat/festival AstroEvent into a
+    # notification; its dedup identity (event_scheduler.py) is the
+    # AstroEvent's own id, so there is exactly one code path and one key
+    # per event -- never two.
 
     LINK_MAP = {
         "ekadashi": "jyotishasha.com/ekadashi",
