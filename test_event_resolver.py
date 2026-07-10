@@ -46,8 +46,8 @@ results.append(check(
 #    (legacy scheme, unchanged from before this change).
 pradosh = resolve_resource(FakeEvent({"type": "pradosh", "slug": "pradosh-vrat"}))
 results.append(check(
-    "Non-ekadashi resource.url keeps the legacy scheme",
-    pradosh["url"] == "https://jyotishasha.com/en/pradosh/pradosh-vrat"
+    "Non-ekadashi resource.url keeps the legacy scheme (English has no /en/)",
+    pradosh["url"] == "https://jyotishasha.com/pradosh/pradosh-vrat"
 ))
 
 # 4. Events with no slug/type still resolve to None (unchanged contract).

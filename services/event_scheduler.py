@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone, timedelta
 from factory import create_app
 from extensions import db
@@ -18,10 +19,21 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 
 # -------------------------------
-# 🔹 TIME SLOT (IST)
+# 🔹 TIME SLOT (explicit, from GitHub Actions)
 # -------------------------------
+# The scheduler never guesses morning/evening from the clock. GitHub
+# Actions is the single source of truth for which slot is running -- it
+# knows which of its two schedule entries fired (or which slot a manual
+# workflow_dispatch requested) and passes that through the
+# NOTIFICATION_SLOT environment variable (see .github/workflows/notifications.yml).
+# Anything other than an explicit "morning"/"evening" is treated as "skip".
 def get_time_slot():
-    return "morning"
+    slot = os.getenv("NOTIFICATION_SLOT", "").strip().lower()
+
+    if slot in ("morning", "evening"):
+        return slot
+
+    return "skip"
 
 
 # -------------------------------
@@ -119,7 +131,7 @@ def run_daily_event_job():
                     filtered_global.append(n)
 
             elif slot == "evening":
-                if event_date == target_date + timedelta(days=1):
+                if event_date == target_date:
                     filtered_global.append(n)
 
         # 🔥 FALLBACK (IMPORTANT)

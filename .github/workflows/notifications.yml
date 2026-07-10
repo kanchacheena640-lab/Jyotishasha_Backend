@@ -2,12 +2,21 @@ name: Run Notification Cron
 
 on:
   schedule:
-    # 🕒 6:00 AM IST
+    # 🕒 6:00 AM IST -> morning slot
     - cron: "30 0 * * *"
-    # 🕒 6:00 PM IST
+    # 🕒 6:00 PM IST -> evening slot
     - cron: "30 12 * * *"
 
   workflow_dispatch:
+    inputs:
+      slot:
+        description: "Notification slot to run (manual trigger only)"
+        required: false
+        default: "morning"
+        type: choice
+        options:
+          - morning
+          - evening
 
 jobs:
   run-cron:
@@ -32,6 +41,11 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          # GitHub Actions is the single source of truth for which slot is
+          # running -- it knows which schedule entry fired (or which slot
+          # a manual run requested), so the scheduler never has to guess
+          # from the clock.
+          NOTIFICATION_SLOT: ${{ github.event.schedule == '30 0 * * *' && 'morning' || github.event.schedule == '30 12 * * *' && 'evening' || github.event.inputs.slot || 'skip' }}
 
         run: |
           python - <<EOF

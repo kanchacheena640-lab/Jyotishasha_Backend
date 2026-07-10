@@ -1,3 +1,4 @@
+import os
 from services.personalization_engine import (
     get_users_for_transit,
     get_users_for_dasha_change,
@@ -167,6 +168,22 @@ def get_user_notifications(user, events, global_notifications):
         event_id = getattr(event, "id", None)
 
         if event_id in seen:
+            continue
+
+        # 🔒 Selection layer: morning may only select TODAY's vrat/festival;
+        # evening may only select a TOMORROW reminder for one. This is a
+        # selection decision (should this AstroEvent become a notification
+        # right now), not content -- build_event_content() stays a pure
+        # AstroEvent -> title/body/payload function with no knowledge of
+        # slot or runtime context.
+        relative_day = get_relative_day(getattr(event, "date", None))
+        slot = os.getenv("NOTIFICATION_SLOT", "").strip().lower()
+
+        if slot == "morning" and relative_day != TODAY:
+            continue
+        if slot == "evening" and relative_day != TOMORROW:
+            continue
+        if slot not in ("morning", "evening"):
             continue
 
         content = build_event_content(event)
@@ -341,6 +358,19 @@ def get_user_notifications(user, events, global_notifications):
             event_id = getattr(event, "id", None)
 
             if event_type != "panchang" or not event_id:
+                continue
+
+            # 🔒 Defensive validation: the scheduler intentionally hands
+            # over both today's and tomorrow's AstroEvents (other sections
+            # need the look-ahead for pre-event reminders). Panchang is a
+            # same-day, morning-only notification, so this must not trust
+            # that it was already filtered upstream -- it refuses on its
+            # own even if tomorrow's Panchang (or an evening-slot run)
+            # reaches this loop.
+            if os.getenv("NOTIFICATION_SLOT", "").strip().lower() != "morning":
+                continue
+
+            if get_relative_day(getattr(event, "date", None)) != TODAY:
                 continue
 
             event_id_str = f"panchang_{event_id}"

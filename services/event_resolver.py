@@ -21,12 +21,16 @@ SUPPORTED_LANGS = {"en", "hi"}
 
 def _legacy_authority_url(resource_id, lang):
     """
-    Pre-existing URL scheme: jyotishasha.com/<lang>/<resource_id>.
-    This is the fallback for any resource sub-type that hasn't been
-    given a canonical builder below, so fixing one sub-type's URL
-    never changes another's.
+    Pre-existing URL scheme: jyotishasha.com/<resource_id>, and
+    jyotishasha.com/hi/<resource_id> for Hindi. English is the site's
+    default locale and its canonical URLs never carry a "/en/" segment;
+    only Hindi gets a language prefix. This is the fallback for any
+    resource sub-type that hasn't been given a canonical builder below,
+    so fixing one sub-type's URL never changes another's.
     """
-    return f"{LEGACY_BASE_URL}/{lang}/{resource_id}"
+    if lang == "hi":
+        return f"{LEGACY_BASE_URL}/hi/{resource_id}"
+    return f"{LEGACY_BASE_URL}/{resource_id}"
 
 
 def _ekadashi_canonical_url(resource_id, lang):
