@@ -9,7 +9,7 @@ from models import AstroEvent
 # Services
 from services.event_master import generate_events_for_date, save_events_to_db
 from services.notification_engine import build_notifications, send_push_notification
-from services.notification_builder import get_user_notifications
+from services.notification_builder import get_user_notifications, build_event_content
 from services.notification_engine import send_topic_notification
 from notifications.notification_models import UserNotification, NotificationLog
 from services.event_adapters.festival_adapter import normalize_events
@@ -86,6 +86,11 @@ def run_daily_event_job():
         # ---------------------------
         # 🔹 STEP 3: BUILD NOTIFICATIONS
         # ---------------------------
+        # build_notifications() is only used for EVENT SELECTION now
+        # (which AstroEvents are relevant today, incl. notify_before_days
+        # pre-events) -- its own title/body are superseded below, in
+        # STEP 5A, by notification_builder.build_event_content(), the
+        # single owner of AstroEvent notification wording.
         try:
             global_notifications = build_notifications(target_date=target_date)
         except Exception as e:
@@ -153,11 +158,18 @@ def run_daily_event_job():
         # ---------------------------
         print("🚀 Sending GLOBAL via TOPICS...")
 
+        # AstroEvent-backed topics get their title/body from
+        # notification_builder.build_event_content() -- the same function
+        # STEP 5B uses for the personal/Bell send -- so a topic broadcast
+        # can never disagree with the Bell about the same event again.
+        events_by_id = {e.id: e for e in normalized_events}
+
         sent_topics = set()
 
         for n in filtered_global:
-            event_type = n.get("data", {}).get("type")
-            event_id = n.get("data", {}).get("event_id")
+            data = n.get("data", {}) or {}
+            event_type = data.get("type")
+            event_id = data.get("event_id")
 
             if not event_type or not event_id:
                 continue
@@ -167,11 +179,24 @@ def run_daily_event_job():
             if topic in sent_topics:
                 continue
 
+            if event_type == "general":
+                # No backing AstroEvent -- the application-wide generic
+                # fallback isn't notification_builder's to own.
+                title, body, payload = n.get("title"), n.get("body"), data
+            else:
+                astro_event = events_by_id.get(int(event_id)) if str(event_id).isdigit() else None
+                content = build_event_content(astro_event) if astro_event else None
+
+                if not content:
+                    continue
+
+                title, body, payload = content["title"], content["body"], content["data"]
+
             success = send_topic_notification(
                 topic=topic,
-                title=n.get("title"),
-                body=n.get("body"),
-                data=n.get("data", {})
+                title=title,
+                body=body,
+                data=payload
             )
 
             if success:

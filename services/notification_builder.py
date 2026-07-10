@@ -3,8 +3,79 @@ from services.personalization_engine import (
     get_users_for_dasha_change,
     get_current_dasha_users
 )
+from services.relative_day import get_relative_day, TODAY, TOMORROW, YESTERDAY
 from datetime import date, timedelta
 from models import AstroEvent
+
+LINK_MAP = {
+    "ekadashi": "jyotishasha.com/ekadashi",
+    # future:
+    # "pradosh": "jyotishasha.com/pradosh",
+    # "amavasya": "jyotishasha.com/amavasya",
+}
+
+_DAY_WORD = {
+    TODAY: "Today",
+    TOMORROW: "Tomorrow",
+    YESTERDAY: "Yesterday",
+}
+
+
+def build_event_content(event):
+    """
+    The single place that turns a vrat/festival AstroEvent into
+    notification title/body/data -- used for both the personalized Bell
+    (get_user_notifications' EVENT section) and the Step 5A topic
+    broadcast (event_scheduler.py), so both always say the same thing.
+    Not user-specific: same event always produces the same content.
+
+    Today/Tomorrow/Yesterday wording comes from relative_day.py -- the
+    one place that compares event.date to "now" -- never hand-rolled
+    here, which is what previously let this text disagree with
+    card_service's Event Detail wording for the same event.
+    """
+    event_type = getattr(event, "type", None)
+    event_name = getattr(event, "name", None)
+    event_id = getattr(event, "id", None)
+    event_date = getattr(event, "date", None)
+
+    if event_type not in ["vrat", "festival"] or not event_id:
+        return None
+
+    relative_day = get_relative_day(event_date)
+    day_word = _DAY_WORD.get(relative_day, "Today")
+
+    name_lower = (event_name or "").lower()
+
+    link = None
+    for key in LINK_MAP:
+        if key in name_lower:
+            link = LINK_MAP[key]
+            break
+
+    if link:
+        body = f"""{event_name} {day_word} 🙏
+
+        Vrat vidhi, mahatva aur Paran time jaane
+        👉 Read Full Guide
+
+        {link}"""
+    else:
+        body = f"""{event_name} {day_word} 🙏
+
+        Is din ka vishesh mahatva hai
+        Niyamon ka dhyan rakhein"""
+
+    title = f"{event_name} {day_word}" if relative_day in _DAY_WORD else event_name
+
+    return {
+        "title": title,
+        "body": body,
+        "data": {
+            "type": "event",
+            "event_id": str(event_id)
+        }
+    }
 
 
 def get_user_notifications(user, events, global_notifications):
@@ -49,60 +120,20 @@ def get_user_notifications(user, events, global_notifications):
     # section allowed to turn a vrat/festival AstroEvent into a
     # notification; its dedup identity (event_scheduler.py) is the
     # AstroEvent's own id, so there is exactly one code path and one key
-    # per event -- never two.
-
-    LINK_MAP = {
-        "ekadashi": "jyotishasha.com/ekadashi",
-        # future:
-        # "pradosh": "jyotishasha.com/pradosh",
-        # "amavasya": "jyotishasha.com/amavasya",
-    }
-
+    # per event -- never two. Content comes from build_event_content()
+    # above, shared with the Step 5A topic broadcast.
     for event in events:
-        event_type = getattr(event, "type", None)
-        event_name = getattr(event, "name", None)
         event_id = getattr(event, "id", None)
 
-        if event_type not in ["vrat", "festival"]:
+        if event_id in seen:
             continue
 
-        event_id_str = f"event_{event_id}"
-
-        if event_id_str in seen:
+        content = build_event_content(event)
+        if not content:
             continue
-        seen.add(event_id_str)
 
-        name_lower = (event_name or "").lower()
-
-        # 🔍 link detect
-        link = None
-        for key in LINK_MAP:
-            if key in name_lower:
-                link = LINK_MAP[key]
-                break
-
-        # 🔥 BODY BUILD
-        if link:
-            body = f"""{event_name} Today 🙏
-
-        Vrat vidhi, mahatva aur Paran time jaane  
-        👉 Read Full Guide
-
-        {link}"""
-        else:   
-            body = f"""{event_name} Today 🙏
-
-        Is din ka vishesh mahatva hai  
-        Niyamon ka dhyan rakhein"""
-
-        final_notifications.append({
-            "title": event_name,
-            "body": body,
-            "data": {
-                "type": "event",
-                "event_id": str(event_id)
-            }
-        })
+        seen.add(event_id)
+        final_notifications.append(content)
 
     # ---------------------------
     # 🔹 TRANSIT

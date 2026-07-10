@@ -41,6 +41,9 @@ def _event_content(event, lang):
         "name_hi": event.name,
         "type": category,
         "meta": event.meta or {},
+        # so build_festival_card can compute the real Today/Tomorrow/
+        # Yesterday wording via relative_day.py instead of assuming one
+        "date": event.date,
     }
 
     builder = _CONTENT_BUILDERS.get(category)

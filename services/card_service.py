@@ -1,4 +1,5 @@
 from services.card_config import CARD_DESIGN_MAP
+from services.relative_day import get_relative_day, TODAY, TOMORROW, YESTERDAY
 import json
 import os
 import random
@@ -319,42 +320,60 @@ def build_festival_card(event):
         # 🔥 Normalize name (case safe)
         name_check = name_en.lower()
 
+        # 🔹 Day-relative wording comes from relative_day.py (shared with
+        # notification_builder.py) -- not hand-rolled here. Callers that
+        # don't supply "date" (e.g. the evening digest in generate_cards())
+        # keep the original always-prospective framing via the defaults.
+        relative_day = get_relative_day(event.get("date")) if event.get("date") else None
+        phrase_en = {
+            TODAY: "is today", TOMORROW: "is tomorrow", YESTERDAY: "was yesterday",
+        }.get(relative_day, "is coming")
+        phrase_hi = {
+            TODAY: "आज है", TOMORROW: "कल है", YESTERDAY: "कल था",
+        }.get(relative_day, "आने वाला है")
+        title_word_en = {
+            TODAY: "Today", TOMORROW: "Tomorrow", YESTERDAY: "Yesterday",
+        }.get(relative_day, "Tomorrow")
+        title_word_hi = {
+            TODAY: "आज", TOMORROW: "कल", YESTERDAY: "बीता कल",
+        }.get(relative_day, "कल")
+
         # 🔹 Rule-based content (evening prep tone)
         if "purnima" in name_check:
             content_en = (
-                f"{name_en} is coming 🌕\n"
+                f"{name_en} {phrase_en} 🌕\n"
                 f"Prepare for evening prayers and light a diya.\n"
                 f"Plan your rituals in advance 🙏"
             )
 
             content_hi = (
-                f"{name_hi} आने वाला है 🌕\n"
+                f"{name_hi} {phrase_hi} 🌕\n"
                 f"शाम की पूजा और दीपक के लिए तैयारी करें।\n"
                 f"अपने कार्य पहले से योजना बनाएं 🙏"
             )
 
         elif "ekadashi" in name_check:
             content_en = (
-                f"{name_en} is tomorrow 🌿\n"
+                f"{name_en} {phrase_en} 🌿\n"
                 f"Prepare for fasting and follow satvik habits.\n"
                 f"Avoid tamasic food from tonight 🙏"
             )
 
             content_hi = (
-                f"{name_hi} कल है 🌿\n"
+                f"{name_hi} {phrase_hi} 🌿\n"
                 f"व्रत की तैयारी करें और सात्विक आहार अपनाएं।\n"
                 f"आज रात से तामसिक भोजन से बचें 🙏"
             )
 
         else:
             content_en = (
-                f"{name_en} is coming ✨\n"
+                f"{name_en} {phrase_en} ✨\n"
                 f"Take time to prepare and plan your rituals.\n"
                 f"Stay mindful and positive 🙏"
             )
 
             content_hi = (
-                f"{name_hi} आने वाला है ✨\n"
+                f"{name_hi} {phrase_hi} ✨\n"
                 f"पूजा और कार्यों की तैयारी करें।\n"
                 f"सकारात्मक और सजग रहें 🙏"
             )
@@ -364,8 +383,8 @@ def build_festival_card(event):
             "design_type": CARD_DESIGN_MAP.get("festival"),
 
             # 🔹 Titles
-            "title_en": f"{name_en} Tomorrow",
-            "title_hi": f"{name_hi} कल",
+            "title_en": f"{name_en} {title_word_en}",
+            "title_hi": f"{name_hi} {title_word_hi}",
 
             # 🔹 Content
             "content_en": content_en,
