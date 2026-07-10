@@ -79,6 +79,46 @@ def build_event_content(event):
     }
 
 
+def build_panchang_content(event):
+    """
+    The single place that turns the daily "panchang" AstroEvent into
+    title/body/data -- used for both the Bell/push (get_user_notifications'
+    PANCHANG section) and the Resource API (routes_event_resource.py), so
+    the notification and the Summary screen it opens always say the same
+    thing. Reuses card_service.build_good_morning_card() for the Abhijit
+    Muhurta / Rahu Kaal text instead of recomputing it.
+    """
+    event_id = getattr(event, "id", None)
+    event_date = getattr(event, "date", None)
+    meta = getattr(event, "meta", None) or {}
+
+    if not event_id:
+        return None
+
+    good_morning = build_good_morning_card(meta) or {}
+    times = good_morning.get("meta", {})
+    tithi_name = (meta.get("tithi") or {}).get("name") or "Not available"
+
+    body = (
+        f"Today's Tithi: {tithi_name}\n"
+        f"Best Time (Shubh): {times.get('abhijit', 'Not available')}\n"
+        f"Avoid Time (Ashubh): {times.get('rahu_kaal', 'Not available')}"
+    )
+
+    data = {
+        "type": "panchang",
+        "event_id": str(event_id)
+    }
+    if event_date is not None:
+        data["date"] = str(event_date)
+
+    return {
+        "title": "🌅 Today's Panchang",
+        "body": body,
+        "data": data
+    }
+
+
 def get_user_notifications(user, events, global_notifications):
     """
     Returns personalized + global notifications for a user
@@ -292,6 +332,9 @@ def get_user_notifications(user, events, global_notifications):
     # ---------------------------
     # 🔹 PANCHANG (Today's Panchang -- one per day, not personalized)
     # ---------------------------
+    # Content comes from build_panchang_content() above, shared with the
+    # Resource API (routes_event_resource.py), so the notification and
+    # the screen it opens can never disagree about what today's Panchang says.
     for event in events:
         try:
             event_type = getattr(event, "type", None)
@@ -304,29 +347,13 @@ def get_user_notifications(user, events, global_notifications):
 
             if event_id_str in seen:
                 continue
+
+            content = build_panchang_content(event)
+            if not content:
+                continue
+
             seen.add(event_id_str)
-
-            # Reuse the existing card content builder instead of
-            # recomputing Abhijit Muhurta / Rahu Kaal here.
-            good_morning = build_good_morning_card(event.meta or {}) or {}
-            times = good_morning.get("meta", {})
-
-            tithi_name = ((event.meta or {}).get("tithi") or {}).get("name") or "Not available"
-
-            body = (
-                f"Today's Tithi: {tithi_name}\n"
-                f"Best Time (Shubh): {times.get('abhijit', 'Not available')}\n"
-                f"Avoid Time (Ashubh): {times.get('rahu_kaal', 'Not available')}"
-            )
-
-            final_notifications.append({
-                "title": "🌅 Today's Panchang",
-                "body": body,
-                "data": {
-                    "type": "panchang",
-                    "event_id": str(event_id)
-                }
-            })
+            final_notifications.append(content)
 
         except Exception as e:
             print(f"❌ Panchang notification error: {str(e)}")
