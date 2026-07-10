@@ -7,7 +7,7 @@
 from flask import Blueprint, request, jsonify
 from models import AstroEvent
 from services.event_adapters.festival_adapter import normalize_type
-from services.card_service import build_festival_card, build_planet_card
+from services.card_service import build_festival_card, build_planet_card, build_good_morning_card
 from services.event_resolver import resolve_resource
 
 event_resource_bp = Blueprint(
@@ -18,6 +18,8 @@ _CONTENT_BUILDERS = {
     "vrat": build_festival_card,
     "festival": build_festival_card,
     "transit": lambda event_dict: build_planet_card([event_dict]),
+    # panchang's meta IS the panchang dict build_good_morning_card expects
+    "panchang": lambda event_dict: build_good_morning_card(event_dict.get("meta") or {}),
 }
 
 

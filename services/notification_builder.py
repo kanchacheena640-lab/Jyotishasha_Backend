@@ -4,6 +4,7 @@ from services.personalization_engine import (
     get_current_dasha_users
 )
 from services.relative_day import get_relative_day, TODAY, TOMORROW, YESTERDAY
+from services.card_service import build_good_morning_card
 from datetime import date, timedelta
 from models import AstroEvent
 
@@ -286,6 +287,49 @@ def get_user_notifications(user, events, global_notifications):
 
         except Exception as e:
             print(f"❌ Panchak event error: {str(e)}")
+            continue
+
+    # ---------------------------
+    # 🔹 PANCHANG (Today's Panchang -- one per day, not personalized)
+    # ---------------------------
+    for event in events:
+        try:
+            event_type = getattr(event, "type", None)
+            event_id = getattr(event, "id", None)
+
+            if event_type != "panchang" or not event_id:
+                continue
+
+            event_id_str = f"panchang_{event_id}"
+
+            if event_id_str in seen:
+                continue
+            seen.add(event_id_str)
+
+            # Reuse the existing card content builder instead of
+            # recomputing Abhijit Muhurta / Rahu Kaal here.
+            good_morning = build_good_morning_card(event.meta or {}) or {}
+            times = good_morning.get("meta", {})
+
+            tithi_name = ((event.meta or {}).get("tithi") or {}).get("name") or "Not available"
+
+            body = (
+                f"Today's Tithi: {tithi_name}\n"
+                f"Best Time (Shubh): {times.get('abhijit', 'Not available')}\n"
+                f"Avoid Time (Ashubh): {times.get('rahu_kaal', 'Not available')}"
+            )
+
+            final_notifications.append({
+                "title": "🌅 Today's Panchang",
+                "body": body,
+                "data": {
+                    "type": "panchang",
+                    "event_id": str(event_id)
+                }
+            })
+
+        except Exception as e:
+            print(f"❌ Panchang notification error: {str(e)}")
             continue
 
     # 🔥 RETURN AT END ONLY
