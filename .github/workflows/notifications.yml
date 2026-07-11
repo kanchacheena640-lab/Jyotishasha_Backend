@@ -45,7 +45,7 @@ jobs:
           # running -- it knows which schedule entry fired (or which slot
           # a manual run requested), so the scheduler never has to guess
           # from the clock.
-          NOTIFICATION_SLOT: ${{ github.event.schedule == '30 0 * * *' && 'morning' || github.event.schedule == '30 12 * * *' && 'evening' || github.event.inputs.slot || 'skip' }}
+          NOTIFICATION_SLOT: ${{ (github.event.schedule == '30 0 * * *' && 'morning') || (github.event.schedule == '30 12 * * *' && 'evening') || github.event.inputs.slot || 'skip' }}
 
         run: |
           python - <<EOF
