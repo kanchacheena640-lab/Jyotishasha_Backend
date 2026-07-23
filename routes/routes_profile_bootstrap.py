@@ -7,16 +7,20 @@ This route:
 1. Receives DOB, TOB, POB from the app
 2. Runs calculate_full_kundali() from full_kundali_api.py
 3. Extracts Lagna, Moon Sign, Nakshatra
-4. Saves into AppUser table
+4. Updates the AppUser resolved by modules.user_service.get_or_create_app_user()
 5. Returns personalized profile JSON
+
+This route never constructs AppUser() itself -- identity resolution is
+owned exclusively by modules/user_service.py (ESR-001A/B), so this
+route can never produce a second, disconnected AppUser row for a
+person who already has one.
 """
 
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 
-# 🟢 Correct model import (your user table)
-from modules.models_user import AppUser
 from extensions import db
+from modules.user_service import get_or_create_app_user
 
 # 🟢 Correct kundali calculator (confirmed by you)
 from full_kundali_api import calculate_full_kundali
@@ -30,6 +34,7 @@ def bootstrap_user_profile():
     try:
         data = request.get_json() or {}
 
+        firebase_uid = data.get("firebase_uid")
         name = data.get("name")
         email = data.get("email")
         dob = data.get("dob")
@@ -64,10 +69,10 @@ def bootstrap_user_profile():
                 break
 
         # ----------------------------------------------------------
-        # 2) Create NEW AppUser entry
+        # 2) Resolve (never create directly) the AppUser via the
+        # single identity-resolution service from modules/user_service.py
         # ----------------------------------------------------------
-        user = AppUser()
-        db.session.add(user)
+        user = get_or_create_app_user(firebase_uid)
 
         user.name = name
         user.email = email

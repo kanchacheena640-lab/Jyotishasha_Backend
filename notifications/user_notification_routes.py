@@ -45,11 +45,16 @@ def get_unread_count():
         return jsonify({"error": "User not found"}), 404
 
     cutoff = datetime.utcnow() - timedelta(hours=5)
+    now = datetime.utcnow()
 
     count = db.session.query(UserNotification)\
         .filter(UserNotification.user_id == user_id)\
         .filter(UserNotification.is_read == False)\
         .filter(UserNotification.created_at > cutoff)\
+        .filter(
+            (UserNotification.expires_at.is_(None)) |
+            (UserNotification.expires_at > now)
+        )\
         .count()
 
     return jsonify({"unread_count": count})
@@ -67,12 +72,17 @@ def get_notifications():
         return jsonify({"error": "User not found"}), 404
 
     cutoff = datetime.utcnow() - timedelta(hours=5)
+    now = datetime.utcnow()
 
     notifications = db.session.query(UserNotification)\
         .filter(UserNotification.user_id == user_id)\
         .filter(
             (UserNotification.is_read == False) |
             (UserNotification.created_at > cutoff)
+        )\
+        .filter(
+            (UserNotification.expires_at.is_(None)) |
+            (UserNotification.expires_at > now)
         )\
         .order_by(UserNotification.created_at.desc())\
         .limit(10)\

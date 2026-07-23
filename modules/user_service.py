@@ -6,13 +6,42 @@ Service layer for AppUser model.
 Handles creation, update, and retrieval of app-specific user records.
 This isolates ORM logic from route logic, keeping the API clean.
 
+This module is the single source of truth for AppUser resolution --
+every code path that needs to find-or-create an AppUser for a given
+firebase_uid should go through get_or_create_app_user() (directly, or
+indirectly via register_or_update_user()) rather than constructing
+AppUser() itself, so a person can never end up with two disconnected
+AppUser rows.
+
 Functions:
+- get_or_create_app_user(firebase_uid)
 - register_or_update_user(data)
 - get_user_by_id(user_id)
 """
 
 from extensions import db
 from modules.models_user import AppUser
+
+
+# ---------- Identity resolution (Single Source of Truth) ----------
+def get_or_create_app_user(firebase_uid: str) -> AppUser:
+    """
+    Find the AppUser for this firebase_uid, creating one only if it
+    doesn't already exist. Never creates a duplicate for an identity
+    that already has a row. Touches no field other than firebase_uid --
+    callers that need to set profile data do so on the returned row.
+    """
+    if not firebase_uid:
+        raise ValueError("firebase_uid is required")
+
+    user = AppUser.query.filter_by(firebase_uid=firebase_uid).first()
+
+    if not user:
+        user = AppUser(firebase_uid=firebase_uid)
+        db.session.add(user)
+
+    return user
+
 
 # ---------- Register or Update ----------
 def register_or_update_user(data: dict) -> AppUser:
@@ -24,13 +53,8 @@ def register_or_update_user(data: dict) -> AppUser:
     if not firebase_uid:
         raise ValueError("firebase_uid is required")
 
-    # 🔥 2. Find existing AppUser by firebase_uid
-    user = AppUser.query.filter_by(firebase_uid=firebase_uid).first()
-
-    # 🔥 3. If not found → create
-    if not user:
-        user = AppUser(firebase_uid=firebase_uid)
-        db.session.add(user)
+    # 🔥 2-3. Resolve (find-or-create) via the single source of truth
+    user = get_or_create_app_user(firebase_uid)
 
     # 🔥 4. Sync from User table (IMPORTANT)
     main_user = User.query.filter_by(firebase_uid=firebase_uid).first()

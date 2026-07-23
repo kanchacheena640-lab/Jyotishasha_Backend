@@ -137,6 +137,12 @@ class UserNotification(db.Model):
     # (optional future use)
     read_at = db.Column(db.DateTime, nullable=True)
 
+    # 🕓 auto-dismiss: when set, this notification should stop being
+    # shown (Bell + tray) even if the user never taps it -- e.g. the
+    # morning Panchang notification expires at 5 PM the same day.
+    # NULL means "never auto-expires".
+    expires_at = db.Column(db.DateTime, nullable=True)
+
     # ===============================
     # HELPER METHODS
     # ===============================

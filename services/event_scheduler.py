@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, time
 from factory import create_app
 from extensions import db
 
@@ -16,6 +16,10 @@ from notifications.notification_models import UserNotification, NotificationLog
 from services.event_adapters.festival_adapter import normalize_events
 
 IST = timezone(timedelta(hours=5, minutes=30))
+
+# The morning Panchang notification auto-dismisses (Bell + tray) at this
+# IST hour on the same day it was sent, even if the user never taps it.
+PANCHANG_AUTO_DISMISS_HOUR_IST = 17  # 5:00 PM
 
 
 # -------------------------------
@@ -134,21 +138,11 @@ def run_daily_event_job():
                 if event_date == target_date:
                     filtered_global.append(n)
 
-        # 🔥 FALLBACK (IMPORTANT)
-        if not filtered_global:
-            print("⚠️ No events → sending fallback")
-
-            fallback = {
-                "title": "📿 Aaj ka Din Mahatvapurn Hai",
-                "body": "Shubh kaam karne jaa rahe hain to shubh muhurat zarur dekhiye. Aaj ka rashifal bhi check karein.",
-                "data": {
-                    "type": "general",
-                    "event_id": "0",
-                    "date": str(target_date)
-                }
-            }
-
-            filtered_global = [fallback]
+        # 🔥 NO FALLBACK: the generic "Aaj ka Din Mahatvapurn Hai" notice
+        # is removed (v1.1 freeze). If nothing eligible was selected,
+        # filtered_global simply stays empty -- Step 5A and Step 5B below
+        # both no-op gracefully on an empty list, so this run correctly
+        # sends nothing rather than a placeholder notification.
 
         # ---------------------------
         # 🔹 PRIORITY SORT
@@ -191,18 +185,13 @@ def run_daily_event_job():
             if topic in sent_topics:
                 continue
 
-            if event_type == "general":
-                # No backing AstroEvent -- the application-wide generic
-                # fallback isn't notification_builder's to own.
-                title, body, payload = n.get("title"), n.get("body"), data
-            else:
-                astro_event = events_by_id.get(int(event_id)) if str(event_id).isdigit() else None
-                content = build_event_content(astro_event) if astro_event else None
+            astro_event = events_by_id.get(int(event_id)) if str(event_id).isdigit() else None
+            content = build_event_content(astro_event) if astro_event else None
 
-                if not content:
-                    continue
+            if not content:
+                continue
 
-                title, body, payload = content["title"], content["body"], content["data"]
+            title, body, payload = content["title"], content["body"], content["data"]
 
             success = send_topic_notification(
                 topic=topic,
@@ -232,8 +221,7 @@ def run_daily_event_job():
                 try:
                     user_notifications = get_user_notifications(
                         user,
-                        normalized_events,   # ✔ DB events
-                        filtered_global      # ✔ notifications with data
+                        normalized_events   # ✔ DB events
                     )
 
                     seen_events = set()
@@ -244,6 +232,21 @@ def run_daily_event_job():
 
                         ntype = data.get("type", "general")
                         raw_event_id = data.get("event_id", "0")
+
+                        # 🔥 AUTO-DISMISS (Panchang only): expires the
+                        # same day at PANCHANG_AUTO_DISMISS_HOUR_IST, so
+                        # it disappears from the Bell (query-time filter
+                        # in user_notification_routes.py) and carries the
+                        # cutoff in the payload so the app can also clear
+                        # it from the tray, even if never tapped.
+                        expires_at = None
+                        if ntype == "panchang":
+                            expires_at = datetime.combine(
+                                target_date,
+                                time(hour=PANCHANG_AUTO_DISMISS_HOUR_IST),
+                                tzinfo=IST
+                            ).astimezone(timezone.utc).replace(tzinfo=None)
+                            data["auto_dismiss_at"] = expires_at.isoformat() + "Z"
 
                         # 🔥 SINGLE NOTIFICATION IDENTITY
                         # AstroEvent-based notifications ("event" type) are
@@ -303,7 +306,8 @@ def run_daily_event_job():
                                 title=n.get("title"),
                                 body=n.get("body"),
                                 data=data,
-                                is_read=False
+                                is_read=False,
+                                expires_at=expires_at
                             ))
 
                     # 🔥 Commit ALL of this user's notifications first --
