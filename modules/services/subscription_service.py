@@ -10,6 +10,15 @@ from modules.models_subscription import SubscriptionOrder
 from modules.user_service import get_user_by_id
 from config.razorpay_config import razorpay_client
 
+# Subscription Migration Phase 1 -- temporary dual-write, see
+# modules/subscription/dual_write_adapter.py for what this is and why.
+# Unlike modules/subscription/routes_webhook.py, no user_id -> profile_id
+# resolution is needed here: get_user_by_id() below already resolves
+# this file's "user_id" against AppUser (see that function), so it is
+# already a profile_id in every call site in this file, not a genuine
+# users.id -- passed straight through.
+from modules.subscription.dual_write_adapter import mirror_subscription_activation
+
 
 # Amount mapping (in ₹)
 PLAN_PRICES = {
@@ -82,4 +91,12 @@ def verify_subscription_payment(order_id, payment_id, user_id):
         user.subscription_expiry = expiry
 
     db.session.commit()
+
+    # Phase 1 dual-write: mirror this activation into System C.
+    # Best-effort -- cannot affect the result below, which has already
+    # succeeded.
+    mirror_subscription_activation(
+        user_id, plan=order.plan_type, expires_at=expiry, transaction_reference=payment_id,
+    )
+
     return {"success": True, "plan": order.plan_type, "expiry": expiry.isoformat()}

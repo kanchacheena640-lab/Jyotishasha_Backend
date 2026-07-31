@@ -4,3 +4,31 @@ __pycache__/
 *.pyc
 .env
 *.sqlite3
+
+# Repository Cleanup Audit -- generated / temporary / disposable artifacts.
+# Never commit these; the code that produces them recreates the
+# directory (via os.makedirs(..., exist_ok=True)) the next time it runs.
+
+# AI Prediction Lab -- timestamped prompt/response snapshots from
+# test_love.py (local-only dev script). Directory itself is kept via
+# .gitkeep; only the generated runs are ignored.
+services/ai_prediction_lab/output/*
+!services/ai_prediction_lab/output/.gitkeep
+
+# Per-order debug prompt/GPT-response dumps written by tasks.py and
+# modules/love/love_premium_task.py for every report generated.
+debug_prompts/
+
+# Generated report/chart output written by summary_api.py and the PDF
+# generators -- never the source of truth, always regenerable.
+reports/*.pdf
+reports/*.png
+
+# One-off local DB/debug exports that have no runtime purpose.
+backup.dump
+*.dump
+*.session.sql
+/tables.json
+/user notification.json
+/report.pdf
+/order_1_report.pdf

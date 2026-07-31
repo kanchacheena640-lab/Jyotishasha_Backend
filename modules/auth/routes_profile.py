@@ -4,7 +4,7 @@ from extensions import db
 from modules.auth.models import User
 from modules.subscription.utils import subscription_required
 from firebase_admin import auth as firebase_auth
-from modules.models_user import AppUser
+from modules.user_service import get_or_create_app_user, provision_trial_for_new_profile
 
 
 
@@ -52,12 +52,24 @@ def premium_content():
 @profile_bp.route("/api/profile/subscription-info", methods=["GET"])
 @jwt_required()
 def subscription_info():
+    # Subscription Migration Phase 3 -- this consumer is confirmed
+    # READY per the approved Migration Plan (read-only, no external
+    # dependency, no other code depends on this route's side effects
+    # since it never had any). Reads now come from the Entitlement
+    # Engine (System C) via its existing read API -- reusing the same
+    # identity resolution Phase 1's dual-write adapter already uses --
+    # rather than the legacy Subscription table. No new business logic:
+    # this is purely reshaping an already-computed EntitlementSnapshot
+    # into the same response shape this endpoint already returned.
+    from modules.entitlement import EntitlementService
+    from modules.subscription.dual_write_adapter import (
+        resolve_profile_id_from_account_user_id,
+    )
+
     user_id = get_jwt_identity()
-    from modules.subscription.models import Subscription  # ✅ safe import here
+    profile_id = resolve_profile_id_from_account_user_id(user_id)
 
-    subscription = Subscription.query.filter_by(user_id=user_id).first()
-
-    if not subscription:
+    if profile_id is None:
         return jsonify({
             "plan": "free",
             "status": "inactive",
@@ -65,12 +77,34 @@ def subscription_info():
             "message": "No active subscription"
         }), 200
 
+    snapshot = EntitlementService().get_current_entitlement(profile_id)
+
+    if snapshot.status == "PENDING":
+        return jsonify({
+            "plan": "free",
+            "status": "inactive",
+            "is_active": False,
+            "message": "No active subscription"
+        }), 200
+
+    if snapshot.trial.is_active:
+        plan, is_active = "free", True
+        start_at, end_at = snapshot.trial.started_at, snapshot.trial.expires_at
+    elif snapshot.subscription.is_active:
+        plan, is_active = snapshot.plan, True
+        start_at, end_at = snapshot.subscription.started_at, snapshot.subscription.expires_at
+    else:
+        plan = snapshot.plan or "free"
+        is_active = False
+        start_at = snapshot.trial.started_at or snapshot.subscription.started_at
+        end_at = snapshot.trial.expires_at or snapshot.subscription.expires_at
+
     return jsonify({
-        "plan": subscription.plan,
-        "status": subscription.status,
-        "is_active": subscription.is_active(),  # ✅ call the method
-        "start_at": subscription.start_at.isoformat() if subscription.start_at else None,
-        "end_at": subscription.end_at.isoformat() if subscription.end_at else None
+        "plan": plan,
+        "status": "active" if is_active else "inactive",
+        "is_active": is_active,
+        "start_at": start_at.isoformat() if start_at else None,
+        "end_at": end_at.isoformat() if end_at else None,
     })
 
 @profile_bp.route('/personalized-horoscope', methods=["POST"])
@@ -124,17 +158,20 @@ def update_fcm_token():
         if user:
             user.fcm_token = fcm_token
 
-        # 🔥 NEW SYSTEM (ALWAYS ENSURE)
-        app_user = AppUser.query.filter_by(firebase_uid=firebase_uid).first()
-
-        if not app_user:
-            app_user = AppUser(firebase_uid=firebase_uid)
-            db.session.add(app_user)
+        # 🔥 NEW SYSTEM (ALWAYS ENSURE) -- routed through the shared
+        # identity-resolution service (modules/user_service.py) instead
+        # of constructing AppUser() inline, so this endpoint can never
+        # produce a second, disconnected AppUser row, and so a profile
+        # first created here also gets its initial trial provisioned.
+        app_user, created = get_or_create_app_user(firebase_uid)
 
         app_user.fcm_token = fcm_token
 
         # 🔥 SINGLE COMMIT (IMPORTANT)
         db.session.commit()
+
+        if created:
+            provision_trial_for_new_profile(app_user.id)
 
         return jsonify({
             "status": "success",

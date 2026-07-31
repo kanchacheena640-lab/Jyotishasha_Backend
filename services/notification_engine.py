@@ -151,13 +151,24 @@ def sort_by_priority(events):
 # -------------------------------
 # 🔹 SEND PUSH
 # -------------------------------
-def send_push_notification(token, title, body, data=None):
+def send_push_notification(token, title, body, data=None, android_tag=None):
     try:
         if not token:
             return False
 
         # 🔥 FCM requires string values
         safe_data = {k: str(v) for k, v in (data or {}).items()}
+
+        # android_tag is opt-in (None by default -- every existing caller
+        # is unaffected). Only the Morning Panchang send passes it, so it
+        # can carry an Android notification tag without touching title,
+        # body, data, or any other notification type.
+        android_config = (
+            messaging.AndroidConfig(
+                notification=messaging.AndroidNotification(tag=android_tag)
+            )
+            if android_tag else None
+        )
 
         for attempt in range(2):  # retry 2 times
             try:
@@ -167,7 +178,8 @@ def send_push_notification(token, title, body, data=None):
                         body=body
                     ),
                     data=safe_data,
-                    token=token
+                    token=token,
+                    android=android_config
                 )
 
                 response = messaging.send(message)
@@ -182,7 +194,37 @@ def send_push_notification(token, title, body, data=None):
     except Exception as e:
         print(f"❌ Error sending notification: {str(e)}")
         return False
-    
+
+# -------------------------------
+# 🔹 SEND DATA-ONLY (silent) NOTIFICATION
+# -------------------------------
+def send_data_only_notification(token, data=None):
+    """
+    Sends a data-only FCM message -- no `notification` block, no title,
+    no body. Used for silent device-side signals (e.g. the 5 PM Panchang
+    dismiss). Deliberately a separate function from send_push_notification()
+    so no visible-notification send path can accidentally lose its
+    notification block.
+    """
+    try:
+        if not token:
+            return False
+
+        safe_data = {k: str(v) for k, v in (data or {}).items()}
+
+        message = messaging.Message(
+            data=safe_data,
+            token=token
+        )
+
+        response = messaging.send(message)
+        print(f"✅ Data-only sent → {response}")
+        return True
+
+    except Exception as e:
+        print(f"❌ Error sending data-only notification: {str(e)}")
+        return False
+
 # -------------------------------
 # 🔹 SEND TOPIC NOTIFICATION
 # -------------------------------

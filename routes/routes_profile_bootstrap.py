@@ -20,7 +20,7 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime
 
 from extensions import db
-from modules.user_service import get_or_create_app_user
+from modules.user_service import get_or_create_app_user, provision_trial_for_new_profile
 
 # 🟢 Correct kundali calculator (confirmed by you)
 from full_kundali_api import calculate_full_kundali
@@ -72,7 +72,7 @@ def bootstrap_user_profile():
         # 2) Resolve (never create directly) the AppUser via the
         # single identity-resolution service from modules/user_service.py
         # ----------------------------------------------------------
-        user = get_or_create_app_user(firebase_uid)
+        user, created = get_or_create_app_user(firebase_uid)
 
         user.name = name
         user.email = email
@@ -89,6 +89,16 @@ def bootstrap_user_profile():
         user.nakshatra = nakshatra
 
         db.session.commit()
+
+        # ----------------------------------------------------------
+        # 2b) Provision the initial free trial -- exactly once, only
+        # for a profile that was just created (never for an existing
+        # one being updated). See provision_trial_for_new_profile()'s
+        # docstring for why a failure here does not roll back or fail
+        # this request.
+        # ----------------------------------------------------------
+        if created:
+            provision_trial_for_new_profile(user.id)
 
         # ----------------------------------------------------------
         # 3) Response to App

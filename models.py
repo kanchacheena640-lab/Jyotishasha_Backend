@@ -14,7 +14,13 @@ class Order(db.Model):
     status = db.Column(db.String(20), default="PENDING")
     created_at = db.Column(db.DateTime, default=datetime.now)
     language = db.Column(db.String(10), default="en")
-    report_stage = db.Column(db.String(50), default="Pending")  # e.g., Pending, Generating, Ready
+    report_stage = db.Column(db.String(50), default="Pending")  # Pending, Processing, Ready, Failed -- see tasks.py / modules/love/love_premium_task.py
+    # Set whenever report_stage becomes "Processing" (initial dispatch or a
+    # Failed/abandoned-Processing resume) -- Payment Hardening Blocker 02:
+    # the only signal that lets ReconciliationService tell a genuinely
+    # in-flight report apart from one abandoned by a crashed/restarted
+    # process. See modules/payments/reconciliation_service.py.
+    processing_started_at = db.Column(db.DateTime, nullable=True)
     pdf_url = db.Column(db.String(255))  
     latitude = db.Column(db.String)
     longitude = db.Column(db.String)

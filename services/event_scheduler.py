@@ -9,7 +9,7 @@ from models import AstroEvent
 
 # Services
 from services.event_master import generate_events_for_date, save_events_to_db
-from services.notification_engine import build_notifications, send_push_notification
+from services.notification_engine import build_notifications, send_push_notification, send_data_only_notification
 from services.notification_builder import get_user_notifications, build_event_content
 from services.notification_engine import send_topic_notification
 from notifications.notification_models import UserNotification, NotificationLog
@@ -240,6 +240,7 @@ def run_daily_event_job():
                         # cutoff in the payload so the app can also clear
                         # it from the tray, even if never tapped.
                         expires_at = None
+                        android_tag = None
                         if ntype == "panchang":
                             expires_at = datetime.combine(
                                 target_date,
@@ -247,6 +248,7 @@ def run_daily_event_job():
                                 tzinfo=IST
                             ).astimezone(timezone.utc).replace(tzinfo=None)
                             data["auto_dismiss_at"] = expires_at.isoformat() + "Z"
+                            android_tag = "panchang_morning"
 
                         # 🔥 SINGLE NOTIFICATION IDENTITY
                         # AstroEvent-based notifications ("event" type) are
@@ -286,7 +288,8 @@ def run_daily_event_job():
                                 token=token,
                                 title=n.get("title"),
                                 body=n.get("body"),
-                                data=data
+                                data=data,
+                                android_tag=android_tag
                             )
 
                         if success:
@@ -348,3 +351,73 @@ def run_daily_event_job():
             print("⚠️ ALERT: No notifications sent")
 
         print(f"✅ Personalized sent: {total_sent}")
+
+
+# -------------------------------
+# 🔹 PANCHANG DISMISS JOB (5 PM IST)
+# -------------------------------
+def run_panchang_dismiss_job():
+    """
+    Sends a silent, data-only FCM message telling each recipient's device
+    to dismiss today's Morning Panchang notification (tray + Bell), even
+    if it was never tapped. Recipients are read directly off
+    NotificationLog -- the same ledger run_daily_event_job() writes to
+    only after a successful morning Panchang send -- so this can only
+    ever reach users who actually received that notification today.
+    Entirely separate code path from run_daily_event_job(): touches no
+    other notification type (Festival/Vrat/Transit/Muhurat), no scheduler
+    state, no slot detection.
+    """
+    print("🚀 Running Panchang dismiss job...")
+
+    app = create_app()
+
+    with app.app_context():
+        today = datetime.now(IST).date()
+
+        panchang_event = AstroEvent.query.filter_by(
+            type="panchang",
+            date=today
+        ).first()
+
+        if not panchang_event:
+            print("⚠️ No Panchang event for today -- nothing to dismiss")
+            return
+
+        event_id = f"panchang_{panchang_event.id}"
+
+        # 🔹 Only users with a logged, successful Morning Panchang send today
+        logs = NotificationLog.query.filter_by(
+            event_id=event_id,
+            slot="morning"
+        ).all()
+
+        if not logs:
+            print("⚠️ No Morning Panchang recipients today -- nothing to dismiss")
+            return
+
+        recipient_ids = {log.user_id for log in logs}
+
+        users = AppUser.query.filter(AppUser.id.in_(recipient_ids)).all()
+
+        dismiss_data = {
+            "action": "dismiss_panchang",
+            "tag": "panchang_morning"
+        }
+
+        sent = 0
+
+        for user in users:
+            token = getattr(user, "fcm_token", None)
+            if not token:
+                continue
+
+            success = send_data_only_notification(
+                token=token,
+                data=dismiss_data
+            )
+
+            if success:
+                sent += 1
+
+        print(f"✅ Panchang dismiss sent: {sent}/{len(users)}")

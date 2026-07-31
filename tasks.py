@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import traceback
+from datetime import datetime
 from dotenv import load_dotenv
 from extensions import db
 from models import Order
@@ -56,6 +57,22 @@ def _generate_and_send_report_core(order_id):
                 return
             # ⬆️ YAHAN TAK
 
+            # Payment Hardening Phase 6: mark this order as actively
+            # processing BEFORE any real work begins, so a retry
+            # arriving while this is still running can be told apart
+            # from one arriving after a genuine failure (previously
+            # both looked identical -- report_stage stuck at "Pending").
+            order_model = Order.query.get(order_id)
+            if order_model:
+                order_model.report_stage = "Processing"
+                # Payment Hardening Blocker 02: the only signal that lets
+                # ReconciliationService later tell "still genuinely
+                # running" apart from "abandoned -- the process that was
+                # running this died" (crash/deploy restart, thread mode
+                # has no other liveness signal). See reconciliation_service.py.
+                order_model.processing_started_at = datetime.utcnow()
+                db.session.commit()
+
             language = order.get("language", "en")
             print(f"[DEBUG] Language for this order: {language}")
 
@@ -100,6 +117,20 @@ def _generate_and_send_report_core(order_id):
                 messages=[{"role": "user", "content": prompt_final}]
             )
             gpt_content = response.choices[0].message.content.strip()
+
+            # Payment Hardening Blocker 02.1 (Progress Heartbeat): GPT is
+            # the one stage whose legitimate duration can approach the
+            # abandonment threshold on its own (the OpenAI SDK's default
+            # per-attempt timeout is 600s with up to 2 retries -- a
+            # healthy call can take a long time before this line is ever
+            # reached). Marking progress here, the moment it returns,
+            # means a slow-but-successful GPT call is never mistaken for
+            # an abandoned pipeline once PDF generation begins -- that
+            # stage gets its own fresh window instead of inheriting
+            # however long GPT happened to take.
+            if order_model:
+                order_model.processing_started_at = datetime.utcnow()
+                db.session.commit()
 
             with open(f"debug_prompts/{product_slug}_{order_id}_gpt_response.txt", "w", encoding="utf-8") as f:
                 f.write(gpt_content)
@@ -159,6 +190,19 @@ def _generate_and_send_report_core(order_id):
     except Exception as e:
         print(f"[Task] ❌ Error generating report: {e}")
         traceback.print_exc()
+        # Payment Hardening Phase 6: record that generation failed, so
+        # a retry can safely resume instead of staying indistinguishable
+        # from "still processing" forever. A fresh app context is
+        # needed here since the one from the `with` block above has
+        # already been torn down by the time this except runs.
+        try:
+            with app.app_context():
+                order_model = Order.query.get(order_id)
+                if order_model and order_model.report_stage != "Ready":
+                    order_model.report_stage = "Failed"
+                    db.session.commit()
+        except Exception as state_write_error:
+            print(f"[Task] ⚠️ Could not record Failed report_stage: {state_write_error}")
 
 
 # ------------------------------------------------------------

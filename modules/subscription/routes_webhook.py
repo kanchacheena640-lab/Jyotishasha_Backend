@@ -4,6 +4,13 @@ from modules.subscription.models import Subscription
 from modules.auth.models import User as AuthUser  # ✅ avoid name conflict
 from datetime import datetime, timedelta
 
+# Subscription Migration Phase 1 -- temporary dual-write, see
+# modules/subscription/dual_write_adapter.py for what this is and why.
+from modules.subscription.dual_write_adapter import (
+    mirror_subscription_activation,
+    resolve_profile_id_from_account_user_id,
+)
+
 webhook_bp = Blueprint("webhook", __name__)
 
 @webhook_bp.route("/webhook/subscription", methods=["POST"])
@@ -50,6 +57,19 @@ def handle_subscription_webhook():
 
         db.session.add(subscription)
         db.session.commit()
+
+        # Phase 1 dual-write: mirror this activation into System C.
+        # Best-effort -- cannot affect the response below, which has
+        # already succeeded.
+        payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+        profile_id = resolve_profile_id_from_account_user_id(user_id)
+        if profile_id is not None:
+            mirror_subscription_activation(
+                profile_id,
+                plan="personalized_horoscope",
+                expires_at=subscription.end_at,
+                transaction_reference=payment_entity.get("id"),
+            )
 
         return jsonify({"message": "Subscription updated", "user_id": user_id}), 200
 

@@ -1,0 +1,51 @@
+name: Subscription State Sync
+
+on:
+  schedule:
+    # Once daily -- trial/grace windows here are measured in days (15-day
+    # trial, 3-day default grace), so a daily sweep is granular enough to
+    # keep CurrentEntitlement.status from drifting stale for long, without
+    # running more often than this reconciliation actually needs.
+    - cron: "0 3 * * *"
+  workflow_dispatch: # Manual trigger from the Actions tab, for on-demand runs
+
+jobs:
+  sync-subscription-state:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Subscription State Sync
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+        run: |
+          python - <<EOF
+          from factory import create_app
+          from modules.subscription.subscription_state_sync_service import SubscriptionStateSyncService
+
+          app = create_app()
+
+          with app.app_context():
+              result = SubscriptionStateSyncService().sync_all_profiles()
+              print(
+                  f"Subscription state sync: checked={result.total_checked} "
+                  f"changed={result.total_changed} errors={result.total_errors}"
+              )
+              for outcome in result.outcomes:
+                  if outcome.changed or outcome.error:
+                      print(f"  profile_id={outcome.profile_id} action={outcome.action} error={outcome.error}")
+          EOF

@@ -4,6 +4,8 @@ on:
   schedule:
     # 🕒 6:00 AM IST -> morning slot
     - cron: "30 0 * * *"
+    # 🕒 5:00 PM IST -> Panchang dismiss slot
+    - cron: "30 11 * * *"
     # 🕒 6:00 PM IST -> evening slot
     - cron: "30 12 * * *"
 
@@ -17,6 +19,7 @@ on:
         options:
           - morning
           - evening
+          - dismiss_panchang
 
 jobs:
   run-cron:
@@ -45,15 +48,21 @@ jobs:
           # running -- it knows which schedule entry fired (or which slot
           # a manual run requested), so the scheduler never has to guess
           # from the clock.
-          NOTIFICATION_SLOT: ${{ (github.event.schedule == '30 0 * * *' && 'morning') || (github.event.schedule == '30 12 * * *' && 'evening') || github.event.inputs.slot || 'skip' }}
+          NOTIFICATION_SLOT: ${{ (github.event.schedule == '30 0 * * *' && 'morning') || (github.event.schedule == '30 12 * * *' && 'evening') || (github.event.schedule == '30 11 * * *' && 'dismiss_panchang') || github.event.inputs.slot || 'skip' }}
 
         run: |
           python - <<EOF
+          import os
           from factory import create_app
-          from services.event_scheduler import run_daily_event_job
+          from services.event_scheduler import run_daily_event_job, run_panchang_dismiss_job
+
+          slot = os.getenv("NOTIFICATION_SLOT", "").strip().lower()
 
           app = create_app()
 
           with app.app_context():
-              run_daily_event_job()
+              if slot == "dismiss_panchang":
+                  run_panchang_dismiss_job()
+              else:
+                  run_daily_event_job()
           EOF

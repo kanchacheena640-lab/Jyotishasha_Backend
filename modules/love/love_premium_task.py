@@ -6,6 +6,7 @@
 
 import os
 import traceback
+from datetime import datetime
 from dotenv import load_dotenv
 
 from openai import OpenAI
@@ -40,6 +41,16 @@ def generate_love_premium_report(order_id: int):
             order = Order.query.get(order_id)
             if not order:
                 raise RuntimeError(f"Order {order_id} not found")
+
+            # Payment Hardening Phase 6: mark as actively processing
+            # before any real work begins (see tasks.py for the same
+            # pattern and its rationale).
+            order.report_stage = "Processing"
+            # Payment Hardening Blocker 02: same abandonment-detection
+            # signal as tasks.py -- see that file and
+            # reconciliation_service.py for how it's used.
+            order.processing_started_at = datetime.utcnow()
+            db.session.commit()
 
             language = getattr(order, "language", "en")
 
@@ -100,6 +111,14 @@ def generate_love_premium_report(order_id: int):
 
             report_text = report_text[:18000]
 
+            # Payment Hardening Blocker 02.1 (Progress Heartbeat): same
+            # reasoning as tasks.py -- GPT's own legitimate worst-case
+            # duration can approach the abandonment threshold on its
+            # own, so progress is marked here, the moment it returns,
+            # rather than only once at the very start of Processing.
+            order.processing_started_at = datetime.utcnow()
+            db.session.commit()
+
             # ---------------- 7) Kundali Drawing ----------------
             RASHI_MAP = {
                 "Aries": 1, "Taurus": 2, "Gemini": 3, "Cancer": 4,
@@ -155,3 +174,14 @@ def generate_love_premium_report(order_id: int):
     except Exception as e:
         print("[LOVE PREMIUM TASK ERROR]", e)
         traceback.print_exc()
+        # Payment Hardening Phase 6: same failure-state recording as
+        # tasks.py -- a fresh app context is needed since the one from
+        # the `with` block above has already been torn down here.
+        try:
+            with app.app_context():
+                order_model = Order.query.get(order_id)
+                if order_model and order_model.report_stage != "Ready":
+                    order_model.report_stage = "Failed"
+                    db.session.commit()
+        except Exception as state_write_error:
+            print("[LOVE PREMIUM TASK ERROR] Could not record Failed report_stage:", state_write_error)

@@ -1,0 +1,74 @@
+"""
+services/ai_prediction_lab/current_love_phase_prompt_builder.py
+--------------------------------------------------------------------
+Loads prompts/current_love_phase_v1.txt and fills it with the Current
+Love Phase context (current_love_phase_context.py) plus the birth
+details and the already-generated Relationship DNA text (first section).
+
+The prompt text itself lives entirely in the .txt template -- nothing is
+hardcoded in this file.
+"""
+
+from __future__ import annotations
+
+import os
+from typing import Any, Dict, List
+
+_TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "prompts")
+_CURRENT_LOVE_PHASE_TEMPLATE = os.path.join(_TEMPLATE_DIR, "current_love_phase_v1.txt")
+
+_TRANSIT_PLANETS = ["jupiter", "saturn", "rahu", "ketu"]
+
+
+def _load_template(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def _reasons_to_text(reasons: List[str]) -> str:
+    return "; ".join(reasons) if reasons else "None"
+
+
+def build_current_love_phase_prompt(
+    birth_date: str,
+    birth_time: str,
+    birth_place: str,
+    relationship_dna: str,
+    context: Dict[str, Any],
+) -> str:
+    template = _load_template(_CURRENT_LOVE_PHASE_TEMPLATE)
+
+    mahadasha = context.get("mahadasha", {})
+    antardasha = context.get("antardasha", {})
+    phase = context.get("relationship_phase", {})
+    transits = context.get("transits", {})
+
+    values: Dict[str, str] = {
+        "birth_date": birth_date,
+        "birth_time": birth_time,
+        "birth_place": birth_place,
+        "relationship_dna": relationship_dna,
+
+        "mahadasha_planet": mahadasha.get("planet") or "Unknown",
+        "mahadasha_start": mahadasha.get("start") or "Unknown",
+        "mahadasha_end": mahadasha.get("end") or "Unknown",
+
+        "antardasha_planet": antardasha.get("planet") or "Unknown",
+        "antardasha_start": antardasha.get("start") or "Unknown",
+        "antardasha_end": antardasha.get("end") or "Unknown",
+
+        "relationship_phase_level": phase.get("level") or "Unknown",
+        "relationship_phase_confidence": phase.get("confidence") or "Unknown",
+        "relationship_phase_reasons": _reasons_to_text(phase.get("reasons", [])),
+    }
+
+    planet_name_map = {"jupiter": "Jupiter", "saturn": "Saturn", "rahu": "Rahu", "ketu": "Ketu"}
+    for key in _TRANSIT_PLANETS:
+        t = transits.get(planet_name_map[key], {}) or {}
+        values[f"{key}_sign"] = t.get("sign") or "Unknown"
+        values[f"{key}_house"] = str(t.get("house") if t.get("house") is not None else "Unknown")
+        values[f"{key}_nakshatra"] = t.get("nakshatra") or "Unknown"
+        values[f"{key}_motion"] = t.get("motion") or "Unknown"
+        values[f"{key}_relationship_role"] = t.get("relationship_role") or "Unknown"
+
+    return template.format(**values)

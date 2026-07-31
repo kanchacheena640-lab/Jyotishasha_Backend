@@ -11,12 +11,13 @@ from life_tools_report import life_tools_bp
 from routes.generate_report import generate_report_bp
 from openai import OpenAI
 import os
-import threading 
 from dotenv import load_dotenv
 load_dotenv()
 from config.razorpay_config import razorpay_client
 from config.pricing import PRODUCT_PRICES
 from routes.admin_orders import admin_orders_bp
+from routes.routes_reconciliation import routes_reconciliation
+from routes.routes_metrics import routes_metrics
 from summary_api import summary_api
 from routes.daily_horoscope import daily_bp
 from routes.monthly_horoscope import monthly_bp
@@ -49,6 +50,9 @@ from routes.routes_ekadashi import ekadashi_bp
 from notifications.user_notification_routes import user_notification_bp
 from routes.routes_cards import cards_bp
 from routes.routes_event_resource import event_resource_bp
+from routes.routes_premium_report import premium_report_bp
+from routes.routes_rtdn import routes_rtdn
+from routes.routes_google_purchase_confirm import routes_google_purchase_confirm
 
 
 
@@ -63,6 +67,8 @@ app.register_blueprint(life_tools_bp)
 app.register_blueprint(generate_report_bp)
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 app.register_blueprint(admin_orders_bp)
+app.register_blueprint(routes_reconciliation)
+app.register_blueprint(routes_metrics)
 app.register_blueprint(summary_api)
 app.register_blueprint(daily_bp)
 app.register_blueprint(monthly_bp)
@@ -94,6 +100,9 @@ app.register_blueprint(routes_festivals, url_prefix="/api/festivals")
 app.register_blueprint(ekadashi_bp)
 app.register_blueprint(cards_bp)
 app.register_blueprint(event_resource_bp)
+app.register_blueprint(premium_report_bp)
+app.register_blueprint(routes_rtdn)
+app.register_blueprint(routes_google_purchase_confirm)
 
 # ------------------- ROOT ------------------- #
 @app.route("/")
@@ -140,29 +149,159 @@ def zodiac_traits():
 # ------------------- WEBHOOK ------------------- #
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    from app_config import USE_CELERY
-    from tasks import generate_and_send_report
+    import json
 
-    data = request.get_json()
+    from modules.payments import (
+        PaymentProviderType,
+        PaymentPurpose,
+        PaymentRequest,
+        PaymentService,
+        PaymentStatus,
+    )
+    from modules.payments.razorpay_provider import RazorpayProvider
+
+    # Raw text captured BEFORE parsing -- Razorpay's server webhook
+    # signature (verified below, Case A) is an HMAC over the exact raw
+    # body bytes it sent; re-serializing the parsed JSON could change
+    # key order/whitespace and silently break that check. Flask caches
+    # this, so get_json() right after still works normally.
+    raw_body = request.get_data(as_text=True)
+    data = request.get_json(silent=True) or {}
 
     # 🔍 DEBUG — ADD HERE
     print("WEBHOOK PAYLOAD =>", data)
 
-    # ✅ Case A: Razorpay webhook
-    if "event" in data and data.get("event") == "payment.captured":
-        print("[Webhook] Razorpay payment.captured webhook received. Ignored for now.")
-        return jsonify({"status": "Webhook received (ignored)"}), 200
+    payment_service = PaymentService()
 
-    # ✅ Case B: Frontend-triggered report request
+    def _run_payment_service(payment_request):
+        """
+        The ONE place a PaymentRequest is handed to PaymentService and
+        its result translated into this route's response shape --
+        shared by both entry points below (the browser callback, Case
+        B, and the payment.captured server-webhook recovery path, Case
+        A) so there remains exactly one payment-processing pipeline,
+        not two independent copies of this logic.
+        """
+        try:
+            result = payment_service.process_payment(payment_request)
+        except Exception:
+            # Payment Hardening Phase 4: never leak an unhandled exception
+            # as Flask's default 500 page. PaymentService has already
+            # logged the full, correlated failure (with stack trace)
+            # before this exception reached us -- this is only about
+            # giving the caller a safe, consistent JSON response.
+            print("[Webhook] Unexpected error while processing payment -- see payments logger for detail.")
+            return jsonify({"error": "Internal error processing payment"}), 500
+
+        # Payment Hardening Phase 3: DUPLICATE means this exact
+        # razorpay_payment_id already succeeded before (browser refresh,
+        # double-click, network retry, duplicate webhook, the OTHER
+        # entry point having already handled it, ...) -- no new Order
+        # was created and no report was re-dispatched. It is a success
+        # outcome for the caller, carrying the ORIGINAL order_id, not
+        # an error.
+        if result.status not in (PaymentStatus.VERIFIED, PaymentStatus.DUPLICATE):
+            print(f"[Webhook] Payment verification failed: {result.message}")
+            return jsonify({"error": "Payment verification failed"}), 400
+
+        if not result.raw_payload:
+            # Extremely narrow race window: a concurrent request for the
+            # same payment_id is still finishing its own processing right
+            # now. Acknowledge without creating a second Order rather than
+            # error out -- the winning request's Order is (or will
+            # momentarily be) the single result for this payment_id.
+            print(f"[Webhook] {result.message}")
+            return jsonify({"message": "Payment already being processed"}), 200
+
+        order_id = result.raw_payload.get("order_id")
+        task_id = result.raw_payload.get("task_id")
+
+        if task_id is not None:
+            # 🧵 ASYNC MODE (Celery + Redis)
+            print(f"[Webhook] Queuing async task for Order {order_id}")
+            return jsonify({
+                "message": "Webhook received — report task queued",
+                "order_id": order_id,
+                "task_id": task_id
+            }), 200
+        else:
+            # ⚡ SYNC MODE (Direct execution, no Celery)
+            print(f"[Webhook] Running report directly for Order {order_id}")
+            return jsonify({
+                "message": "Webhook received — report generated successfully",
+                "order_id": order_id
+            }), 200
+
+    # ✅ Case A: Razorpay's own server-to-server webhook. Distinguished
+    # from the browser callback (Case B) below by the "event" key,
+    # which the browser's own POST body never contains.
+    if isinstance(data, dict) and "event" in data:
+        signature = request.headers.get("X-Razorpay-Signature", "")
+        if not RazorpayProvider.verify_webhook_signature(raw_body, signature):
+            print("[Webhook] Razorpay server webhook signature missing/invalid -- rejecting.")
+            return jsonify({"error": "Invalid webhook signature"}), 400
+
+        event = data.get("event")
+        if event != "payment.captured":
+            # Authenticity is now confirmed (unlike before this phase,
+            # which trusted the shape blindly) -- there is just no
+            # recovery action defined for any OTHER event type yet.
+            print(f"[Webhook] Razorpay event '{event}' received and verified. No action defined for it.")
+            return jsonify({"status": "Webhook received (ignored)"}), 200
+
+        # Payment Hardening -- Blocker 01 (Server-to-Server Payment
+        # Recovery): this is the complete recovery path for a captured
+        # payment whose browser never called back. Signature already
+        # confirmed above; everything past this point reuses the exact
+        # same PaymentService / OrderService / idempotency / dispatch
+        # as Case B, via the shared _run_payment_service() above.
+        payment_entity = (
+            (data.get("payload") or {}).get("payment", {}).get("entity", {}) or {}
+        )
+        razorpay_payment_id = payment_entity.get("id")
+        razorpay_order_id = payment_entity.get("order_id")
+        notes = payment_entity.get("notes") or {}
+
+        if not razorpay_payment_id or not razorpay_order_id:
+            print("[Webhook] payment.captured event missing payment/order id -- cannot recover.")
+            return jsonify({"error": "Malformed payment.captured event"}), 400
+
+        # notes is populated by /api/razorpay-order at order-creation
+        # time (see that route) -- it is the only place this data can
+        # come from, since Razorpay itself never learns a customer's
+        # dob/tob/pob. email also falls back to the payment entity's
+        # own captured email if notes lacks one.
+        order_payload = {
+            "name": notes.get("name"),
+            "email": notes.get("email") or payment_entity.get("email"),
+            "product": notes.get("product"),
+            "dob": notes.get("dob"),
+            "tob": notes.get("tob"),
+            "pob": notes.get("pob"),
+            "language": notes.get("language", "en"),
+        }
+        partner_json = notes.get("partner_json")
+        if partner_json:
+            try:
+                order_payload["partner"] = json.loads(partner_json)
+            except (TypeError, ValueError):
+                pass
+
+        payment_request = PaymentRequest(
+            provider=PaymentProviderType.RAZORPAY,
+            purpose=PaymentPurpose.REPORT_PURCHASE,
+            reference=razorpay_order_id,
+            payment_id=razorpay_payment_id,
+            signature=None,
+            order_payload=order_payload,
+            metadata={"source": "webhook"},
+        )
+        return _run_payment_service(payment_request)
+
+    # ✅ Case B: Frontend-triggered report request (browser callback).
     name = data.get("name")
     email = data.get("email")
-    phone = data.get("phone")
     product = data.get("product")
-    dob = data.get("dob")
-    tob = data.get("tob")
-    pob = data.get("pob")
-    language = data.get("language", "en")
-    partner_payload = data.get("partner")
 
     # 🔍 DEBUG — ADD HERE
     print("name:", name, "email:", email, "product:", product)
@@ -170,49 +309,31 @@ def webhook():
     if not all([name, email, product]):
         return jsonify({"error": "Missing required fields"}), 400
 
-    # Save order in DB
-    order = Order(
-        name=name,
-        email=email,
-        phone=phone,
-        product=product,
-        dob=dob,
-        tob=tob,
-        pob=pob,
-        language=language,
-        status="PAID",
-        latitude=data.get("latitude"),
-        longitude=data.get("longitude"),
-        partner_payload=partner_payload
-    )
-    db.session.add(order)
-    db.session.commit()
+    # Payment Architecture Integration Phase 2: the legacy, unverified
+    # fallback has been removed. PaymentService is now the ONLY path a
+    # report purchase can go through -- every request must carry real
+    # Razorpay verification fields; there is no trust-the-payload path
+    # left. Order creation + report-generation dispatch inside
+    # OrderService are completely unchanged (same table, same
+    # status="PAID", same dispatch mechanism) -- only reachable now via
+    # a verified payment.
+    razorpay_order_id = data.get("razorpay_order_id")
+    razorpay_payment_id = data.get("razorpay_payment_id")
+    razorpay_signature = data.get("razorpay_signature")
 
-    # ----------------------------------------------------------
-    # 🔁 DUAL MODE LOGIC — Decide based on USE_CELERY flag
-    # ----------------------------------------------------------
-    if USE_CELERY:
-        # 🧵 ASYNC MODE (Celery + Redis)
-        print(f"[Webhook] Queuing async task for Order {order.id}")
-        task = generate_and_send_report.delay(order.id)
-        return jsonify({
-            "message": "Webhook received — report task queued",
-            "order_id": order.id,
-            "task_id": task.id
-        }), 200
-    else:
-        # ⚡ SYNC MODE (Direct execution, no Celery)
-        print(f"[Webhook] Running report directly for Order {order.id}")
-        threading.Thread(
-            target=generate_and_send_report,
-            args=(order.id,),
-            daemon=True
-        ).start()
-        
-        return jsonify({
-            "message": "Webhook received — report generated successfully",
-            "order_id": order.id
-        }), 200
+    if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
+        print("[Webhook] Missing Razorpay verification fields -- rejecting.")
+        return jsonify({"error": "Missing Razorpay verification fields"}), 400
+
+    payment_request = PaymentRequest(
+        provider=PaymentProviderType.RAZORPAY,
+        purpose=PaymentPurpose.REPORT_PURCHASE,
+        reference=razorpay_order_id,
+        payment_id=razorpay_payment_id,
+        signature=razorpay_signature,
+        order_payload=data,
+    )
+    return _run_payment_service(payment_request)
 
 
 # ------------------- FOR TRANSIT DATA ------------------- #
@@ -288,6 +409,7 @@ def full_kundali():
 # ------------------- RAZORPAY ORDER CREATE ------------------- #
 @app.route("/api/razorpay-order", methods=["POST"])
 def create_razorpay_order():
+    import json
     import time
     try:
         data = request.get_json() or {}
@@ -309,12 +431,32 @@ def create_razorpay_order():
 
         receipt = f"order_{os.urandom(4).hex()}"
 
+        # Payment Hardening -- Blocker 01 (Server-to-Server Payment
+        # Recovery): forward the report-purchase details already known
+        # at this point into Razorpay's own notes, so that IF the
+        # browser never calls /webhook back, Razorpay's own
+        # payment.captured webhook still carries enough to create the
+        # exact same Order. Purely additive -- a caller that only sends
+        # "product" (the previous contract) still works exactly as
+        # before, it just forgoes webhook-based recovery for that order.
+        notes = {"product": product_id}
+        for key in ("name", "email", "dob", "tob", "pob", "language"):
+            value = data.get(key)
+            if value:
+                notes[key] = str(value)[:256]
+        partner_payload = data.get("partner")
+        if partner_payload:
+            try:
+                notes["partner_json"] = json.dumps(partner_payload)[:512]
+            except (TypeError, ValueError):
+                pass
+
         payload = {
             "amount": amount_paise,
             "currency": "INR",
             "receipt": receipt,
             "payment_capture": 1,
-            "notes": {"product": product_id},
+            "notes": notes,
         }
 
         # ✅ Retry safeguard

@@ -5,6 +5,13 @@ from modules.subscription.models import Subscription
 from config.razorpay_config import razorpay_client
 from datetime import datetime, timedelta
 
+# Subscription Migration Phase 1 -- temporary dual-write, see
+# modules/subscription/dual_write_adapter.py for what this is and why.
+from modules.subscription.dual_write_adapter import (
+    mirror_trial_start,
+    resolve_profile_id_from_account_user_id,
+)
+
 subscription_bp = Blueprint("subscription_bp", __name__)
 
 # -------------------- GET Subscription Status -------------------- #
@@ -15,7 +22,12 @@ def get_subscription():
     sub = Subscription.query.filter_by(user_id=uid).first()
 
     if not sub:
-        # auto-create 15-day free plan
+        # auto-create 15-day free plan -- UNCHANGED. Other legacy
+        # consumers (e.g. modules/subscription/utils.py::
+        # subscription_required, still on the legacy implementation
+        # per this phase's approved scope) depend on this row existing;
+        # removing this write would be a regression for them, not a
+        # migration of this route.
         sub = Subscription(
             user_id=uid,
             plan="free",
@@ -25,6 +37,51 @@ def get_subscription():
         )
         db.session.add(sub)
         db.session.commit()
+
+        # Phase 1 dual-write: mirror this trial start into System C.
+        # Best-effort -- cannot affect the response above, which has
+        # already succeeded.
+        profile_id = resolve_profile_id_from_account_user_id(uid)
+        if profile_id is not None:
+            mirror_trial_start(profile_id)
+
+    # Subscription Migration Phase 3 -- this consumer is confirmed
+    # READY per the approved Migration Plan. The legacy write above is
+    # intentionally preserved (see comment); only the RESPONSE is now
+    # sourced from the Entitlement Engine (System C) via its existing
+    # read API, reusing the same identity resolution the dual-write
+    # adapter already uses. No new business logic -- this reshapes an
+    # already-computed EntitlementSnapshot into the same
+    # {"subscription": {...}} shape this endpoint already returned. If
+    # no profile can be resolved (or System C genuinely has nothing
+    # for it yet, a narrow race with the dual-write mirror just above),
+    # falls back to the legacy row's own data so the response is never
+    # empty.
+    from modules.entitlement import EntitlementService
+
+    profile_id = resolve_profile_id_from_account_user_id(uid)
+    snapshot = EntitlementService().get_current_entitlement(profile_id) if profile_id else None
+
+    if snapshot is not None and snapshot.status != "PENDING":
+        if snapshot.trial.is_active:
+            plan, is_active = "free", True
+            start_at, end_at = snapshot.trial.started_at, snapshot.trial.expires_at
+        elif snapshot.subscription.is_active:
+            plan, is_active = snapshot.plan, True
+            start_at, end_at = snapshot.subscription.started_at, snapshot.subscription.expires_at
+        else:
+            plan = snapshot.plan or "free"
+            is_active = False
+            start_at = snapshot.trial.started_at or snapshot.subscription.started_at
+            end_at = snapshot.trial.expires_at or snapshot.subscription.expires_at
+
+        return jsonify({"subscription": {
+            "plan": plan,
+            "status": "active" if is_active else "inactive",
+            "start_at": start_at.isoformat() if start_at else None,
+            "end_at": end_at.isoformat() if end_at else None,
+            "is_active": is_active,
+        }}), 200
 
     return jsonify({"subscription": sub.to_dict()}), 200
 
