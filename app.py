@@ -26,7 +26,6 @@ from flask_migrate import Migrate
 from extensions import db, jwt
 from modules.auth import register_auth
 from modules.subscription import register_subscription
-from modules.auth.routes_profile import profile_bp
 from flask import send_file
 from models import Order
 from routes.full_kundali_route import full_kundali_modern_bp
@@ -76,7 +75,16 @@ app.register_blueprint(routes_panchang)
 jwt.init_app(app)
 register_auth(app)
 register_subscription(app)
-app.register_blueprint(profile_bp, url_prefix="/api/profile")
+# S4.0 -- removed a duplicate `app.register_blueprint(profile_bp,
+# url_prefix="/api/profile")` that was here. profile_bp is already
+# registered above via register_auth(app) -> modules/auth/__init__.py
+# (bp.register_blueprint(profile_bp), no prefix), which is what makes
+# routes like /api/profile/subscription-info live -- that route's own
+# decorator already includes the "/api/profile" prefix literally. The
+# second registration removed here only added a redundant, unintended
+# second prefix, producing broken duplicate paths (e.g.
+# /api/profile/api/profile/subscription-info) that nothing depends on.
+# Every real, documented endpoint (S3 audit) is unaffected.
 app.register_blueprint(full_kundali_modern_bp)
 app.register_blueprint(routes_free_consult)
 app.register_blueprint(routes_user)

@@ -1,55 +1,91 @@
 # routes/routes_premium_report.py
 
 """
-Premium Report API (Phase 6, revised in Phase 7).
+Premium Report API (Phase 6, revised in Phase 7, hardened in S4.0).
 
 Phase 7 moved every business decision out of this controller and into
-PremiumReportService (modules/premium_report/). This file now does
-ONLY three things:
+PremiumReportService (modules/premium_report/). This file does three
+things:
     1. Parse the HTTP request.
-    2. Call PremiumReportService.get_report().
-    3. Translate whatever PremiumReportError it catches into an HTTP
+    2. Verify the caller owns the profile being requested (S4.0).
+    3. Call PremiumReportService.get_report().
+    4. Translate whatever PremiumReportError it catches into an HTTP
        response, using that exception's own status_code/error_code --
        this controller never inspects exception text or `.__cause__`
-       chains itself anymore (that translation lives entirely inside
-       the service now).
+       chains itself (that translation lives entirely inside the
+       service).
 
-No subscription check, no auth change, no Flutter change -- the
-service's access-control hooks are placeholders that always allow
-access this phase (see PremiumReportService for where those will
-attach later).
+S4.0 -- Backend Hardening: this endpoint previously trusted `profile_id`
+directly from an unauthenticated query string (S3 audit finding,
+High). PremiumReportService's own entitlement check
+(validate_entitlement_access) already verified the requested profile
+had access to the requested segment, but nothing verified the CALLER
+was that profile's owner -- ownership and entitlement are distinct
+concerns. Fixed by reusing the project's existing, already-proven
+pattern for exactly this situation -- @jwt_required() +
+get_jwt_identity() + resolve_profile_id_from_account_user_id()
+(modules/subscription/dual_write_adapter.py) -- the same three calls
+already used by modules/auth/routes_profile.py::subscription_info()
+and routes/routes_google_purchase_confirm.py. No new authentication
+mechanism was introduced, and PremiumReportService itself is
+untouched: ownership is verified here, in the controller, before the
+service is ever called. `profile_id` in the query string remains
+optional and, if present, is only ever compared against the
+authenticated identity's own resolved profile_id -- a mismatch is
+rejected (403) as a cross-account attempt, never silently substituted
+or trusted. Every entitlement check PremiumReportService already
+performed (validate_entitlement_access -- trial/subscription/segment
+access) is preserved exactly as it was.
 """
 
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from modules.premium_report import PremiumReportError, PremiumReportService
+from modules.subscription.dual_write_adapter import (
+    resolve_profile_id_from_account_user_id,
+)
 
 premium_report_bp = Blueprint("premium_report", __name__)
 
 
 @premium_report_bp.route("/api/premium-report", methods=["GET"])
+@jwt_required()
 def get_premium_report():
+    # S4.0 -- ownership validation. The authenticated account's own
+    # profile_id is resolved from the JWT identity and is always the
+    # value actually used below; a client-supplied profile_id (if any)
+    # is only ever checked for a match, never trusted on its own.
+    user_id = get_jwt_identity()
+    authenticated_profile_id = resolve_profile_id_from_account_user_id(user_id)
+    if authenticated_profile_id is None:
+        return jsonify({
+            "error": "forbidden", "message": "No profile is associated with this account.",
+        }), 403
+
     profile_id_raw = request.args.get("profile_id")
     segment = request.args.get("segment")
     report_type = request.args.get("report_type")
     language = request.args.get("language", "en")
 
-    profile_id = None
     if profile_id_raw is not None:
         try:
-            profile_id = int(profile_id_raw)
+            requested_profile_id = int(profile_id_raw)
         except ValueError:
             return jsonify({"error": "invalid_request", "message": "profile_id must be an integer."}), 400
+        if requested_profile_id != authenticated_profile_id:
+            return jsonify({
+                "error": "forbidden",
+                "message": "profile_id does not belong to the authenticated account.",
+            }), 403
+
+    profile_id = authenticated_profile_id
 
     service = PremiumReportService()
 
     try:
         result = service.get_report(
-            # No authentication exists yet -- current_user_id is not
-            # available, so it's passed through as None. Once auth
-            # exists, this becomes the authenticated user's id and
-            # nothing else in this controller needs to change.
-            current_user_id=None,
+            current_user_id=authenticated_profile_id,
             profile_id=profile_id,
             segment=segment,
             report_type=report_type,
