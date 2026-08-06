@@ -4,11 +4,18 @@
 AI Report Engine - Database Foundation (Phase 1)
 
 Generic, reusable cache table for all Premium AI Insight modules
-(Love, Career, Finance, Health, Family, Alerts). Each segment produces
-the same three report types (DNA, CURRENT_PHASE, DAILY_INSIGHT); rather
-than one table per segment, this single table is shaped so future
-segments/report types never require a schema change -- only new values
-for `segment` / `report_type`.
+(Love, Career, Finance, Health, Family). Each segment produces the same
+three report types (DNA, CURRENT_PHASE, DAILY_INSIGHT); rather than one
+table per segment, this single table is shaped so future segments/
+report types never require a schema change -- only new values for
+`segment` / `report_type`.
+
+Note: "Alerts" is NOT one of these segments. The Micro Event Engine
+(modules/alerts/) is a separate, independent system -- rule-based, not
+AI-generated, not cached here, not subscription/entitlement-gated the
+same way these five are. It was previously listed as a placeholder 6th
+segment below; that placeholder is removed to avoid the two being
+confused with one another.
 
 Identity: no dedicated Profile model exists yet in this backend, so
 `profile_id` is a real foreign key to `app_users.id` (AppUser is the
@@ -45,7 +52,6 @@ AI_REPORT_SEGMENTS = (
     "FINANCE",
     "HEALTH",
     "FAMILY",
-    "ALERTS",
 )
 
 AI_REPORT_TYPES = (

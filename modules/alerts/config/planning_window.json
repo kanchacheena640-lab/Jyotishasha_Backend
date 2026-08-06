@@ -1,0 +1,4 @@
+{
+  "_comment": "Planning Window config (Phase 3). default_window_days is how many days ahead the engine simulates, INCLUDING today (so the default of 4 means today + the next 3 days). Kept as its own file, separate from config/micro_events.json (the Rule Engine's own catalog), so this phase never touches that file.",
+  "default_window_days": 4
+}

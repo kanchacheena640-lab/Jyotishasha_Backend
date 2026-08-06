@@ -1,5 +1,4 @@
 from .routes import subscription_bp
-from .routes_webhook import webhook_bp
 
 
 def register_subscription(app):
@@ -16,4 +15,16 @@ def register_subscription(app):
     # compatibility break S4.0 was told to avoid. Left intact and
     # documented per S4.0's own safety instruction.
     app.register_blueprint(subscription_bp, url_prefix="/api/subscription")
-    app.register_blueprint(webhook_bp, url_prefix="")  # ✅ direct root path
+
+    # Bucket A -- Critical Fix #6. webhook_bp (POST /webhook/subscription,
+    # modules/subscription/routes_webhook.py) is no longer registered
+    # here. Independently verified (Critical Verification #3 and #4)
+    # as: unsigned/unauthenticated (forgeable), zero internal callers
+    # anywhere in this codebase, zero historical rows in the table it
+    # wrote to, and functionally superseded by the Google Play RTDN
+    # pipeline (routes/routes_rtdn.py) that now drives all real
+    # subscription activity. Removing only this registration line makes
+    # the route unreachable in production; routes_webhook.py itself is
+    # left on disk, untouched, per this fix's "smallest possible
+    # change" scope -- no other blueprint, route, or business logic in
+    # this file was touched.

@@ -103,6 +103,49 @@ class GooglePlaySubscriptionVerification:
         }
 
 
+@dataclass
+class GooglePlayProductVerification:
+    """
+    Normalized, read-only snapshot of one purchases.products.get response
+    (or of why that call could not be completed) -- the one-time-product
+    counterpart to GooglePlaySubscriptionVerification above. Same rules
+    apply: nothing here is inferred or decided, only reshaped from
+    Google's own response into stable, provider-agnostic names. Fields
+    Google returns as raw integers (purchaseState, consumptionState,
+    acknowledgementState) are passed through as integers, verbatim --
+    this file makes no judgment about what they mean for access.
+    """
+    verification_status: str          # GooglePlayVerificationStatus
+    purchase_token: str
+    product_id: Optional[str] = None  # the productId this token was verified against
+
+    package_name: Optional[str] = None
+    purchase_state: Optional[int] = None          # Google's raw purchaseState (0=Purchased,1=Canceled,2=Pending)
+    consumption_state: Optional[int] = None       # Google's raw consumptionState (0=Yet to be consumed,1=Consumed)
+    acknowledgement_state: Optional[int] = None   # Google's raw acknowledgementState (0=Yet to be acknowledged,1=Acknowledged)
+    order_id: Optional[str] = None                # Google's own orderId for this purchase
+    purchase_time: Optional[datetime] = None      # purchaseTimeMillis
+    country: Optional[str] = None                 # regionCode
+
+    error_message: Optional[str] = None
+    raw_response: Optional[Dict[str, Any]] = field(default_factory=dict)  # the untouched Google API body
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "verification_status": self.verification_status,
+            "purchase_token": self.purchase_token,
+            "product_id": self.product_id,
+            "package_name": self.package_name,
+            "purchase_state": self.purchase_state,
+            "consumption_state": self.consumption_state,
+            "acknowledgement_state": self.acknowledgement_state,
+            "order_id": self.order_id,
+            "purchase_time": self.purchase_time.isoformat() if self.purchase_time else None,
+            "country": self.country,
+            "error_message": self.error_message,
+        }
+
+
 class GooglePlayAcknowledgementStatus:
     """
     The outcome of asking Google to acknowledge a subscription purchase

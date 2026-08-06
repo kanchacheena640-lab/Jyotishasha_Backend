@@ -14,6 +14,8 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, List
 
+from services.ai_prediction_lab.prompt_input_sanitizer import sanitize_prompt_text
+
 _TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "prompts")
 _CURRENT_LOVE_PHASE_TEMPLATE = os.path.join(_TEMPLATE_DIR, "current_love_phase_v1.txt")
 
@@ -44,9 +46,13 @@ def build_current_love_phase_prompt(
     transits = context.get("transits", {})
 
     values: Dict[str, str] = {
-        "birth_date": birth_date,
-        "birth_time": birth_time,
-        "birth_place": birth_place,
+        # Free-text profile fields -- sanitized immediately before
+        # entering this prompt's `values` dict (defensive hardening
+        # only; ordinary birth date/time/place text passes through
+        # unchanged). See prompt_input_sanitizer.py.
+        "birth_date": sanitize_prompt_text(birth_date),
+        "birth_time": sanitize_prompt_text(birth_time),
+        "birth_place": sanitize_prompt_text(birth_place),
         "relationship_dna": relationship_dna,
 
         "mahadasha_planet": mahadasha.get("planet") or "Unknown",

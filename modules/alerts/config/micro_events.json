@@ -1,0 +1,1767 @@
+{
+  "_comment": "Micro Event Engine catalog (Phase 2 -- Astrological Rule Library v1). Every event's identity and detection logic lives here, not in Python. house_in/house_not_in values are house numbers (1-12) relative to the natal Lagna. motion_equals is 'Direct'/'Retrograde'. sign_in values are classical own/exaltation signs. conjunction_with checks whether two transiting planets currently share a house. mahadasha_lord_in/antardasha_lord_in check the current dasha lord against a significator list. yoga_active checks one of calculate_full_kundali()'s own yoga evaluator results. natal_lord_house_in/natal_lord_aspected_by check the NATAL lord of a given house's own current transit house / natal aspects. priority is derived per detection run from confidence against priority_thresholds below -- it is never authored per event. Adding a new event, or a new rule on an existing event, requires editing this file only.",
+  "priority_thresholds": {
+    "high": 0.6,
+    "medium": 0.3
+  },
+  "events": [
+    {
+      "event_id": "mood_positive",
+      "title": "Mood Positive",
+      "category": "emotional",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "moon_house",
+          "planet": "Moon",
+          "condition": "house_in",
+          "value": [
+            1,
+            3,
+            5,
+            9,
+            11
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "moon_strong_sign",
+          "planet": "Moon",
+          "condition": "sign_in",
+          "value": [
+            "Taurus",
+            "Cancer"
+          ],
+          "weight": 0.1
+        },
+        {
+          "rule_id": "moon_jupiter_conjunction",
+          "planet": "Moon",
+          "condition": "conjunction_with",
+          "value": "Jupiter",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Moon",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Moon",
+            "Jupiter",
+            "Venus"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Moon",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Moon",
+            "Jupiter",
+            "Venus"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "gajakesari_yog_active",
+          "planet": "Moon",
+          "condition": "yoga_active",
+          "value": "gajakesari_yog",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_1th_lord_placement",
+          "planet": "Moon",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 1,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "mood_low",
+      "title": "Mood Low",
+      "category": "emotional",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "moon_house",
+          "planet": "Moon",
+          "condition": "house_in",
+          "value": [
+            6,
+            8,
+            12
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "moon_saturn_conjunction",
+          "planet": "Moon",
+          "condition": "conjunction_with",
+          "value": "Saturn",
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Saturn",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Saturn",
+            "Rahu",
+            "Ketu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Saturn",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Saturn",
+            "Rahu",
+            "Ketu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_1th_lord_placement",
+          "planet": "Moon",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 1,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_1th_lord_aspect",
+          "planet": "Moon",
+          "condition": "natal_lord_aspected_by",
+          "value": {
+            "natal_house": 1,
+            "aspected_by_any": [
+              "Saturn",
+              "Mars",
+              "Rahu"
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "energy_high",
+      "title": "Energy High",
+      "category": "vitality",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mars_house",
+          "planet": "Mars",
+          "condition": "house_in",
+          "value": [
+            1,
+            3,
+            6,
+            10,
+            11
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "sun_house_b",
+          "planet": "Sun",
+          "condition": "house_in",
+          "value": [
+            1,
+            10,
+            11
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mars_strong_sign",
+          "planet": "Mars",
+          "condition": "sign_in",
+          "value": [
+            "Capricorn",
+            "Aries",
+            "Scorpio"
+          ],
+          "weight": 0.1
+        },
+        {
+          "rule_id": "mars_sun_conjunction",
+          "planet": "Mars",
+          "condition": "conjunction_with",
+          "value": "Sun",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Mars",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Mars",
+            "Sun"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Mars",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Mars",
+            "Sun"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "panch_mahapurush_yog_active",
+          "planet": "Mars",
+          "condition": "yoga_active",
+          "value": "panch_mahapurush_yog",
+          "weight": 0.15
+        }
+      ]
+    },
+    {
+      "event_id": "energy_low",
+      "title": "Energy Low",
+      "category": "vitality",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mars_retrograde",
+          "planet": "Mars",
+          "condition": "motion_equals",
+          "value": "Retrograde",
+          "weight": 0.2
+        },
+        {
+          "rule_id": "mars_house",
+          "planet": "Mars",
+          "condition": "house_in",
+          "value": [
+            8,
+            12
+          ],
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mars_saturn_conjunction",
+          "planet": "Mars",
+          "condition": "conjunction_with",
+          "value": "Saturn",
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Saturn",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Saturn",
+            "Ketu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Saturn",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Saturn",
+            "Ketu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_1th_lord_placement",
+          "planet": "Mars",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 1,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "stress_high",
+      "title": "Stress High",
+      "category": "vitality",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "saturn_house",
+          "planet": "Saturn",
+          "condition": "house_in",
+          "value": [
+            1,
+            4,
+            7,
+            8,
+            12
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "saturn_retrograde",
+          "planet": "Saturn",
+          "condition": "motion_equals",
+          "value": "Retrograde",
+          "weight": 0.12
+        },
+        {
+          "rule_id": "saturn_mars_conjunction",
+          "planet": "Saturn",
+          "condition": "conjunction_with",
+          "value": "Mars",
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Saturn",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Saturn",
+            "Rahu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Saturn",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Saturn",
+            "Rahu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_8th_lord_placement",
+          "planet": "Saturn",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 8,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.12
+        },
+        {
+          "rule_id": "natal_1th_lord_aspect",
+          "planet": "Saturn",
+          "condition": "natal_lord_aspected_by",
+          "value": {
+            "natal_house": 1,
+            "aspected_by_any": [
+              "Saturn",
+              "Mars",
+              "Rahu"
+            ]
+          },
+          "weight": 0.1
+        }
+      ]
+    },
+    {
+      "event_id": "mental_clarity",
+      "title": "Mental Clarity",
+      "category": "vitality",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mercury_house",
+          "planet": "Mercury",
+          "condition": "house_in",
+          "value": [
+            1,
+            3,
+            5,
+            9,
+            10,
+            11
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "mercury_strong_sign",
+          "planet": "Mercury",
+          "condition": "sign_in",
+          "value": [
+            "Virgo",
+            "Gemini"
+          ],
+          "weight": 0.1
+        },
+        {
+          "rule_id": "mercury_jupiter_conjunction",
+          "planet": "Mercury",
+          "condition": "conjunction_with",
+          "value": "Jupiter",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Mercury",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Mercury",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Mercury",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Mercury",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "budh_aditya_yog_active",
+          "planet": "Mercury",
+          "condition": "yoga_active",
+          "value": "budh_aditya_yog",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_5th_lord_placement",
+          "planet": "Mercury",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 5,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "financial_gain_opportunity",
+      "title": "Financial Gain Opportunity",
+      "category": "financial",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "jupiter_house",
+          "planet": "Jupiter",
+          "condition": "house_in",
+          "value": [
+            2,
+            5,
+            9,
+            11
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "venus_house_b",
+          "planet": "Venus",
+          "condition": "house_in",
+          "value": [
+            2,
+            11
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "jupiter_venus_conjunction",
+          "planet": "Jupiter",
+          "condition": "conjunction_with",
+          "value": "Venus",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Jupiter",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Jupiter",
+            "Venus"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Jupiter",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Jupiter",
+            "Venus"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "dhan_yog_active",
+          "planet": "Jupiter",
+          "condition": "yoga_active",
+          "value": "dhan_yog",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_2th_lord_placement",
+          "planet": "Jupiter",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 2,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        },
+        {
+          "rule_id": "natal_11th_lord_aspect",
+          "planet": "Venus",
+          "condition": "natal_lord_aspected_by",
+          "value": {
+            "natal_house": 11,
+            "aspected_by_any": [
+              "Jupiter",
+              "Venus"
+            ]
+          },
+          "weight": 0.1
+        }
+      ]
+    },
+    {
+      "event_id": "financial_caution",
+      "title": "Financial Caution",
+      "category": "financial",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "saturn_house",
+          "planet": "Saturn",
+          "condition": "house_in",
+          "value": [
+            2,
+            11
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "rahu_house_b",
+          "planet": "Rahu",
+          "condition": "house_in",
+          "value": [
+            2,
+            12
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "saturn_rahu_conjunction",
+          "planet": "Saturn",
+          "condition": "conjunction_with",
+          "value": "Rahu",
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Saturn",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Saturn",
+            "Rahu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Saturn",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Saturn",
+            "Rahu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_2th_lord_placement",
+          "planet": "Saturn",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 2,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.12
+        },
+        {
+          "rule_id": "natal_2th_lord_aspect",
+          "planet": "Saturn",
+          "condition": "natal_lord_aspected_by",
+          "value": {
+            "natal_house": 2,
+            "aspected_by_any": [
+              "Saturn",
+              "Mars",
+              "Rahu"
+            ]
+          },
+          "weight": 0.1
+        }
+      ]
+    },
+    {
+      "event_id": "unexpected_expense",
+      "title": "Unexpected Expense",
+      "category": "financial",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "rahu_house",
+          "planet": "Rahu",
+          "condition": "house_in",
+          "value": [
+            8,
+            12
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "mars_house_b",
+          "planet": "Mars",
+          "condition": "house_in",
+          "value": [
+            8,
+            12
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mars_rahu_conjunction",
+          "planet": "Mars",
+          "condition": "conjunction_with",
+          "value": "Rahu",
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Rahu",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Rahu",
+            "Ketu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Rahu",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Rahu",
+            "Ketu"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_12th_lord_placement",
+          "planet": "Rahu",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 12,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "good_time_to_start_something_new",
+      "title": "Good Time To Start Something New",
+      "category": "timing",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "jupiter_house",
+          "planet": "Jupiter",
+          "condition": "house_in",
+          "value": [
+            1,
+            5,
+            9,
+            10,
+            11
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "sun_house_b",
+          "planet": "Sun",
+          "condition": "house_in",
+          "value": [
+            1,
+            10
+          ],
+          "weight": 0.13
+        },
+        {
+          "rule_id": "jupiter_strong_sign",
+          "planet": "Jupiter",
+          "condition": "sign_in",
+          "value": [
+            "Cancer",
+            "Sagittarius",
+            "Pisces"
+          ],
+          "weight": 0.1
+        },
+        {
+          "rule_id": "sun_jupiter_conjunction",
+          "planet": "Sun",
+          "condition": "conjunction_with",
+          "value": "Jupiter",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Jupiter",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Jupiter",
+            "Sun"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Jupiter",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Jupiter",
+            "Sun"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "parashari_rajyog_active",
+          "planet": "Jupiter",
+          "condition": "yoga_active",
+          "value": "parashari_rajyog",
+          "weight": 0.15
+        }
+      ]
+    },
+    {
+      "event_id": "delay_possible",
+      "title": "Delay Possible",
+      "category": "timing",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mercury_retrograde",
+          "planet": "Mercury",
+          "condition": "motion_equals",
+          "value": "Retrograde",
+          "weight": 0.22
+        },
+        {
+          "rule_id": "saturn_house",
+          "planet": "Saturn",
+          "condition": "house_in",
+          "value": [
+            1,
+            4,
+            7,
+            10
+          ],
+          "weight": 0.18
+        },
+        {
+          "rule_id": "saturn_mercury_conjunction",
+          "planet": "Saturn",
+          "condition": "conjunction_with",
+          "value": "Mercury",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Saturn",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Saturn"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Saturn",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Saturn"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_3th_lord_placement",
+          "planet": "Mercury",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 3,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "minor_injury_caution",
+      "title": "Minor Injury Caution",
+      "category": "health",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mars_house",
+          "planet": "Mars",
+          "condition": "house_in",
+          "value": [
+            6,
+            8,
+            12
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "mars_saturn_conjunction",
+          "planet": "Mars",
+          "condition": "conjunction_with",
+          "value": "Saturn",
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mars_rahu_conjunction",
+          "planet": "Mars",
+          "condition": "conjunction_with",
+          "value": "Rahu",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Mars",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Mars"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Mars",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Mars"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_6th_lord_placement",
+          "planet": "Mars",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 6,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "health_slightly_weak",
+      "title": "Health Slightly Weak",
+      "category": "health",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "saturn_house",
+          "planet": "Saturn",
+          "condition": "house_in",
+          "value": [
+            6,
+            8,
+            12
+          ],
+          "weight": 0.16
+        },
+        {
+          "rule_id": "sun_house_b",
+          "planet": "Sun",
+          "condition": "house_in",
+          "value": [
+            6,
+            8,
+            12
+          ],
+          "weight": 0.13
+        },
+        {
+          "rule_id": "moon_house_c",
+          "planet": "Moon",
+          "condition": "house_in",
+          "value": [
+            6,
+            8,
+            12
+          ],
+          "weight": 0.13
+        },
+        {
+          "rule_id": "saturn_moon_conjunction",
+          "planet": "Saturn",
+          "condition": "conjunction_with",
+          "value": "Moon",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Saturn",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Saturn"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Saturn",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Saturn"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_6th_lord_placement",
+          "planet": "Saturn",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 6,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.12
+        },
+        {
+          "rule_id": "natal_1th_lord_aspect",
+          "planet": "Saturn",
+          "condition": "natal_lord_aspected_by",
+          "value": {
+            "natal_house": 1,
+            "aspected_by_any": [
+              "Saturn",
+              "Mars",
+              "Rahu"
+            ]
+          },
+          "weight": 0.1
+        }
+      ]
+    },
+    {
+      "event_id": "recovery_phase",
+      "title": "Recovery Phase",
+      "category": "health",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "jupiter_house",
+          "planet": "Jupiter",
+          "condition": "house_in",
+          "value": [
+            6,
+            8,
+            12
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "moon_house_b",
+          "planet": "Moon",
+          "condition": "house_in",
+          "value": [
+            8,
+            12
+          ],
+          "weight": 0.14
+        },
+        {
+          "rule_id": "jupiter_moon_conjunction",
+          "planet": "Jupiter",
+          "condition": "conjunction_with",
+          "value": "Moon",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Jupiter",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Jupiter",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "neechbhang_rajyog_active",
+          "planet": "Jupiter",
+          "condition": "yoga_active",
+          "value": "neechbhang_rajyog",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_6th_lord_placement",
+          "planet": "Jupiter",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 6,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "relationship_harmony",
+      "title": "Relationship Harmony",
+      "category": "relationship",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "venus_house",
+          "planet": "Venus",
+          "condition": "house_in",
+          "value": [
+            1,
+            2,
+            5,
+            7,
+            11
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "venus_strong_sign",
+          "planet": "Venus",
+          "condition": "sign_in",
+          "value": [
+            "Pisces",
+            "Taurus",
+            "Libra"
+          ],
+          "weight": 0.1
+        },
+        {
+          "rule_id": "venus_jupiter_conjunction",
+          "planet": "Venus",
+          "condition": "conjunction_with",
+          "value": "Jupiter",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Venus",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Venus",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Venus",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Venus",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "shubh_kartari_yog_active",
+          "planet": "Venus",
+          "condition": "yoga_active",
+          "value": "shubh_kartari_yog",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_7th_lord_placement",
+          "planet": "Venus",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 7,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "relationship_tension",
+      "title": "Relationship Tension",
+      "category": "relationship",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "saturn_house",
+          "planet": "Saturn",
+          "condition": "house_in",
+          "value": [
+            7
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "mars_house_b",
+          "planet": "Mars",
+          "condition": "house_in",
+          "value": [
+            7
+          ],
+          "weight": 0.18
+        },
+        {
+          "rule_id": "saturn_venus_conjunction",
+          "planet": "Saturn",
+          "condition": "conjunction_with",
+          "value": "Venus",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Saturn",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Saturn",
+            "Mars"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Saturn",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Saturn",
+            "Mars"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_7th_lord_placement",
+          "planet": "Saturn",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 7,
+            "lord_transit_house_in": [
+              6,
+              8,
+              12
+            ]
+          },
+          "weight": 0.12
+        },
+        {
+          "rule_id": "natal_7th_lord_aspect",
+          "planet": "Saturn",
+          "condition": "natal_lord_aspected_by",
+          "value": {
+            "natal_house": 7,
+            "aspected_by_any": [
+              "Saturn",
+              "Mars",
+              "Rahu"
+            ]
+          },
+          "weight": 0.1
+        }
+      ]
+    },
+    {
+      "event_id": "good_communication_window",
+      "title": "Good Communication Window",
+      "category": "relationship",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mercury_house",
+          "planet": "Mercury",
+          "condition": "house_in",
+          "value": [
+            3,
+            5,
+            9,
+            11
+          ],
+          "weight": 0.22
+        },
+        {
+          "rule_id": "mercury_venus_conjunction",
+          "planet": "Mercury",
+          "condition": "conjunction_with",
+          "value": "Venus",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Mercury",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Mercury"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Mercury",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Mercury"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "budh_aditya_yog_active",
+          "planet": "Mercury",
+          "condition": "yoga_active",
+          "value": "budh_aditya_yog",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_3th_lord_placement",
+          "planet": "Mercury",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 3,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "travel_opportunity",
+      "title": "Travel Opportunity",
+      "category": "travel",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mercury_house",
+          "planet": "Mercury",
+          "condition": "house_in",
+          "value": [
+            3,
+            9
+          ],
+          "weight": 0.18
+        },
+        {
+          "rule_id": "jupiter_house_b",
+          "planet": "Jupiter",
+          "condition": "house_in",
+          "value": [
+            3,
+            9
+          ],
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mercury_jupiter_conjunction",
+          "planet": "Mercury",
+          "condition": "conjunction_with",
+          "value": "Jupiter",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Mercury",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Mercury",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Mercury",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Mercury",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_3th_lord_placement",
+          "planet": "Mercury",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 3,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "foreign_travel_opportunity",
+      "title": "Foreign Travel Opportunity",
+      "category": "travel",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "jupiter_house",
+          "planet": "Jupiter",
+          "condition": "house_in",
+          "value": [
+            12
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "rahu_house_b",
+          "planet": "Rahu",
+          "condition": "house_in",
+          "value": [
+            9,
+            12
+          ],
+          "weight": 0.18
+        },
+        {
+          "rule_id": "rahu_jupiter_conjunction",
+          "planet": "Rahu",
+          "condition": "conjunction_with",
+          "value": "Jupiter",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Rahu",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Rahu",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Rahu",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Rahu",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_12th_lord_placement",
+          "planet": "Jupiter",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 12,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "learning_focus",
+      "title": "Learning Focus",
+      "category": "learning",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mercury_house",
+          "planet": "Mercury",
+          "condition": "house_in",
+          "value": [
+            5,
+            9
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "jupiter_house_b",
+          "planet": "Jupiter",
+          "condition": "house_in",
+          "value": [
+            5,
+            9
+          ],
+          "weight": 0.18
+        },
+        {
+          "rule_id": "mercury_jupiter_conjunction",
+          "planet": "Mercury",
+          "condition": "conjunction_with",
+          "value": "Jupiter",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Mercury",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Mercury",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Mercury",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Mercury",
+            "Jupiter"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "gajakesari_yog_active",
+          "planet": "Jupiter",
+          "condition": "yoga_active",
+          "value": "gajakesari_yog",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_5th_lord_placement",
+          "planet": "Jupiter",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 5,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "decision_window",
+      "title": "Decision Window",
+      "category": "timing",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "mercury_house",
+          "planet": "Mercury",
+          "condition": "house_in",
+          "value": [
+            1,
+            10,
+            11
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "sun_house_b",
+          "planet": "Sun",
+          "condition": "house_in",
+          "value": [
+            1,
+            10
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "sun_mercury_conjunction",
+          "planet": "Sun",
+          "condition": "conjunction_with",
+          "value": "Mercury",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Mercury",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Mercury",
+            "Sun"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Mercury",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Mercury",
+            "Sun"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "budh_aditya_yog_active",
+          "planet": "Mercury",
+          "condition": "yoga_active",
+          "value": "budh_aditya_yog",
+          "weight": 0.15
+        }
+      ]
+    },
+    {
+      "event_id": "opportunity_window",
+      "title": "Opportunity Window",
+      "category": "timing",
+      "min_rules_required": 1,
+      "is_fallback": false,
+      "rules": [
+        {
+          "rule_id": "jupiter_house",
+          "planet": "Jupiter",
+          "condition": "house_in",
+          "value": [
+            1,
+            4,
+            5,
+            7,
+            9,
+            10
+          ],
+          "weight": 0.2
+        },
+        {
+          "rule_id": "venus_house_b",
+          "planet": "Venus",
+          "condition": "house_in",
+          "value": [
+            1,
+            5,
+            9,
+            10
+          ],
+          "weight": 0.13
+        },
+        {
+          "rule_id": "jupiter_venus_conjunction",
+          "planet": "Jupiter",
+          "condition": "conjunction_with",
+          "value": "Venus",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "mahadasha_support",
+          "planet": "Jupiter",
+          "condition": "mahadasha_lord_in",
+          "value": [
+            "Jupiter",
+            "Venus"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "antardasha_support",
+          "planet": "Jupiter",
+          "condition": "antardasha_lord_in",
+          "value": [
+            "Jupiter",
+            "Venus"
+          ],
+          "weight": 0.15
+        },
+        {
+          "rule_id": "rajya_sambandh_rajyog_active",
+          "planet": "Jupiter",
+          "condition": "yoga_active",
+          "value": "rajya_sambandh_rajyog",
+          "weight": 0.15
+        },
+        {
+          "rule_id": "natal_10th_lord_placement",
+          "planet": "Jupiter",
+          "condition": "natal_lord_house_in",
+          "value": {
+            "natal_house": 10,
+            "lord_transit_house_in": [
+              1,
+              4,
+              5,
+              7,
+              9,
+              10,
+              11
+            ]
+          },
+          "weight": 0.12
+        }
+      ]
+    },
+    {
+      "event_id": "stable_phase",
+      "title": "Stable Phase",
+      "category": "general",
+      "min_rules_required": 1,
+      "is_fallback": true,
+      "rules": [
+        {
+          "rule_id": "always_present_baseline",
+          "planet": "Moon",
+          "condition": "house_in",
+          "value": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "weight": 0.3
+        }
+      ]
+    }
+  ]
+}

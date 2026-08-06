@@ -4,10 +4,17 @@ from flask import Blueprint, jsonify
 from extensions import db
 from models import Order
 
+# Bucket A -- Critical Fix #7. Reuses the repository's existing admin
+# auth mechanism (JWT + ADMIN_USER_IDS allowlist), already proven in
+# notifications/notification_routes.py -- no new auth mechanism, no
+# RBAC, no change to the admin login flow.
+from notifications.notification_routes import admin_required
+
 
 admin_orders_bp = Blueprint('admin_orders', __name__)
 
 @admin_orders_bp.route('/admin/api/orders', methods=['GET'])
+@admin_required
 def get_all_orders():
     orders = Order.query.order_by(Order.created_at.desc()).all()
 
@@ -30,6 +37,7 @@ def get_all_orders():
 
 # ------------------- RESEND ORDER ------------------- #
 @admin_orders_bp.route('/admin/api/resend/<int:order_id>', methods=['POST'])
+@admin_required
 def resend_order(order_id):
     from tasks import generate_and_send_report   # ✅ NEW import
 
@@ -48,6 +56,7 @@ def resend_order(order_id):
 
 # ------------------- UPDATE ORDER ------------------- #
 @admin_orders_bp.route('/admin/api/order/<int:order_id>', methods=['PUT'])
+@admin_required
 def update_order(order_id):
     from flask import request
 

@@ -10,12 +10,26 @@ about, and tested, independently of persistence details.
 No segment knowledge lives here either -- every method just takes
 whatever `segment`/`report_type`/`language` values it's given and
 stores/reads them as opaque strings.
+
+Hardening pass: `save_cache()` now handles the existing UNIQUE
+constraint on (profile_id, segment, report_type, language) gracefully.
+Two concurrent requests for the same, not-yet-cached report can both
+reach `save_cache()` (LifecycleManager.get_report() -- unmodified --
+still reads-then-generates-then-saves); the loser's INSERT now hits
+that UNIQUE constraint and is recovered here by re-reading and
+returning the winner's row, instead of letting the IntegrityError
+propagate as an unhandled exception. No schema change, no lock, no
+change to LifecycleManager -- this is the smallest fix that makes the
+existing constraint's own guarantee (at most one row per key) behave
+gracefully under the race it was always meant to prevent.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
 from typing import Any, Dict, Optional
+
+from sqlalchemy.exc import IntegrityError
 
 from extensions import db
 from modules.models_ai_reports import AIReport
@@ -53,7 +67,17 @@ class ReportCacheRepository:
         generator_version: Optional[str],
     ) -> AIReport:
         """INSERT a new cache row -- used only when no row exists yet
-        for this key (Responsibility #5: cache missing)."""
+        for this key (Responsibility #5: cache missing).
+
+        Race-safe: if a concurrent request already inserted the same
+        (profile_id, segment, report_type, language) row between this
+        caller's own `read_cache()` and this INSERT, the database's
+        existing UNIQUE constraint rejects this INSERT with an
+        IntegrityError. That is not this caller's failure -- another
+        request already produced a valid, saved report for the exact
+        same key -- so it is recovered here by rolling back this
+        session's failed INSERT and returning the winning row that's
+        now actually in the table, instead of raising."""
         row = AIReport(
             profile_id=profile_id,
             segment=segment,
@@ -68,7 +92,22 @@ class ReportCacheRepository:
             generator_version=generator_version,
         )
         db.session.add(row)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            winner = self.read_cache(
+                profile_id=profile_id,
+                segment=segment,
+                report_type=report_type,
+                language=language,
+            )
+            if winner is None:
+                # Not the race we expected (no row actually exists to
+                # recover) -- a genuinely different integrity problem.
+                # Never swallow that; let it surface as before.
+                raise
+            return winner
         return row
 
     def update_cache(

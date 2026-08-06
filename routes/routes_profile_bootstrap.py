@@ -21,6 +21,7 @@ from datetime import datetime
 
 from extensions import db
 from modules.user_service import get_or_create_app_user, provision_trial_for_new_profile
+from firebase_admin import auth as firebase_auth
 
 # 🟢 Correct kundali calculator (confirmed by you)
 from full_kundali_api import calculate_full_kundali
@@ -31,10 +32,37 @@ routes_profile_bootstrap = Blueprint("routes_profile_bootstrap", __name__)
 
 @routes_profile_bootstrap.post("/api/user/bootstrap")
 def bootstrap_user_profile():
+    # Bucket A -- Critical Fix #3. This endpoint previously trusted
+    # firebase_uid directly from the request body, with no proof the
+    # caller actually owns that Firebase identity -- independently
+    # verified as exploitable (a forged UID could overwrite another
+    # user's profile/birth data or create a profile for a UID the
+    # caller doesn't own). Fixed by reusing the exact same Firebase
+    # verification pattern already used by
+    # modules/auth/routes_profile.py::update_fcm_token() and
+    # routes/routes_auth.py's register_user()/get_backend_token(). No
+    # new authentication mechanism was introduced. Any firebase_uid the
+    # client sends in the request body is now ignored entirely; the
+    # UID used below always comes from the verified token.
+    auth_header = request.headers.get("Authorization", "")
+
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"ok": False, "error": "Missing or invalid Authorization header"}), 401
+
+    id_token = auth_header.replace("Bearer ", "").strip()
+
+    try:
+        decoded = firebase_auth.verify_id_token(id_token)
+    except Exception:
+        return jsonify({"ok": False, "error": "Invalid or expired Firebase token"}), 401
+
+    firebase_uid = decoded.get("uid")
+    if not firebase_uid:
+        return jsonify({"ok": False, "error": "Invalid Firebase token"}), 401
+
     try:
         data = request.get_json() or {}
 
-        firebase_uid = data.get("firebase_uid")
         name = data.get("name")
         email = data.get("email")
         dob = data.get("dob")

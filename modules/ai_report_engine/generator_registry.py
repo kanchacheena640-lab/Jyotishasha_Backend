@@ -3,7 +3,11 @@
 """
 Generator Registry -- the single source of truth for which
 ReportGenerator handles which segment (LOVE, CAREER, FINANCE, HEALTH,
-FAMILY, ALERTS).
+FAMILY -- see modules/models_ai_reports.py's AI_REPORT_SEGMENTS, the
+authoritative list). "Alerts" is NOT one of these segments and never
+registers here -- modules/alerts/ (the Micro Event Engine) is a
+separate, independent, rule-based system with its own registry
+(modules/alerts/event_registry.py), not a ReportGenerator.
 
 This registry is completely generic: the `GeneratorRegistry` class
 itself knows nothing about LOVE or any other segment -- it only stores
@@ -99,13 +103,19 @@ def _register_default_generators(registry: GeneratorRegistry) -> None:
     Generation Pipeline is ever required to add a segment.
     """
     from modules.love.love_generator import LoveGenerator
+    from modules.career.career_generator import CareerGenerator
+    from modules.finance.finance_generator import FinanceGenerator
+    from modules.health.health_generator import HealthGenerator
+    from modules.family.family_generator import FamilyGenerator
 
     registry.register("LOVE", LoveGenerator())
+    registry.register("CAREER", CareerGenerator())
+    registry.register("FINANCE", FinanceGenerator())
+    registry.register("HEALTH", HealthGenerator())
+    registry.register("FAMILY", FamilyGenerator())
 
-    # Future segments -- add one line each, in the same form, once each
-    # generator exists:
-    # registry.register("CAREER", CareerGenerator())
-    # registry.register("FINANCE", FinanceGenerator())
-    # registry.register("HEALTH", HealthGenerator())
-    # registry.register("FAMILY", FamilyGenerator())
-    # registry.register("ALERTS", AlertsGenerator())
+    # LOVE/CAREER/FINANCE/HEALTH/FAMILY are the complete set for now --
+    # see modules/models_ai_reports.py's AI_REPORT_SEGMENTS. "Alerts" is
+    # deliberately not a future entry here: modules/alerts/ is a
+    # separate, independent system with its own registry, not another
+    # ReportGenerator segment.

@@ -52,6 +52,7 @@ from routes.routes_event_resource import event_resource_bp
 from routes.routes_premium_report import premium_report_bp
 from routes.routes_rtdn import routes_rtdn
 from routes.routes_google_purchase_confirm import routes_google_purchase_confirm
+from routes.routes_google_report_confirm import routes_google_report_confirm
 
 
 
@@ -111,6 +112,7 @@ app.register_blueprint(event_resource_bp)
 app.register_blueprint(premium_report_bp)
 app.register_blueprint(routes_rtdn)
 app.register_blueprint(routes_google_purchase_confirm)
+app.register_blueprint(routes_google_report_confirm)
 
 # ------------------- ROOT ------------------- #
 @app.route("/")

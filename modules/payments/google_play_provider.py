@@ -69,12 +69,14 @@ from config.google_play_config import (
 from modules.payments.google_play_models import (
     GooglePlayAcknowledgementResult,
     GooglePlayAcknowledgementStatus,
+    GooglePlayProductVerification,
     GooglePlaySubscriptionVerification,
     GooglePlayVerificationStatus,
 )
 from modules.payments.payment_logger import _mask_identifier
 from modules.payments.payment_models import (
     PaymentProviderType,
+    PaymentPurpose,
     PaymentRequest,
     PaymentStatus,
     PaymentVerificationResult,
@@ -94,6 +96,19 @@ def _parse_rfc3339(value: Optional[str]) -> Optional[datetime]:
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except (ValueError, TypeError):
+        return None
+
+
+def _parse_millis(value: Optional[Any]) -> Optional[datetime]:
+    """Google's ProductPurchase.purchaseTimeMillis is a millisecond-epoch
+    value (unlike subscriptions' RFC3339 timestamps) -- never raises for
+    anything unparseable, same degrade-gracefully contract as
+    _parse_rfc3339 above."""
+    if not value:
+        return None
+    try:
+        return datetime.fromtimestamp(int(value) / 1000)
+    except (ValueError, TypeError, OverflowError, OSError):
         return None
 
 
@@ -250,6 +265,163 @@ class GooglePlayProvider(PaymentProvider):
             return response.json()
         except ValueError:
             return {}
+
+    # ------------------------------------------------------------
+    # Google Play ONE-TIME PRODUCT verification -- the Premium PDF
+    # Report counterpart to verify_subscription_purchase() above.
+    # Implements REAL verification against the Google Play Developer
+    # API (purchases.products.get), the products-namespace sibling of
+    # purchases.subscriptionsv2.get -- a one-time consumable purchase
+    # token (e.g. "reports51") has no record in the subscriptions
+    # namespace at all, which is exactly why verify_subscription_
+    # purchase() could never verify one.
+    #
+    # Same scope discipline as verify_subscription_purchase(): verify a
+    # purchase token against Google's own record of it, return
+    # normalized structured data, grant nothing, write nothing to any
+    # database table. Never calls OrderService/PaymentService itself --
+    # this file does not import either.
+    #
+    # Reuses everything verify_subscription_purchase() already reuses:
+    # the same get_android_publisher_session() credentials/session, the
+    # same GOOGLE_PLAY_PACKAGE_NAME config, the same "never raise, always
+    # return a structured GooglePlayVerificationStatus" error contract,
+    # and the same _safe_exception_text() masking for logging.
+    # ------------------------------------------------------------
+    def verify_product_purchase(
+        self, *, purchase_token: str, product_id: str, package_name: Optional[str] = None,
+    ) -> GooglePlayProductVerification:
+        package_name = package_name or GOOGLE_PLAY_PACKAGE_NAME
+
+        if not purchase_token:
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.INVALID_TOKEN,
+                purchase_token=purchase_token or "",
+                product_id=product_id,
+                package_name=package_name,
+                error_message="purchase_token is required.",
+            )
+
+        if not product_id:
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.INVALID_TOKEN,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message="product_id is required.",
+            )
+
+        if not package_name:
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.AUTH_ERROR,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                error_message="GOOGLE_PLAY_PACKAGE_NAME is not configured.",
+            )
+
+        session = get_android_publisher_session()
+        if session is None:
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.AUTH_ERROR,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message=get_init_error() or "Google Play credentials are not configured.",
+            )
+
+        url = (
+            f"{_ANDROID_PUBLISHER_BASE}/applications/{package_name}"
+            f"/purchases/products/{product_id}/tokens/{purchase_token}"
+        )
+
+        try:
+            response = session.get(url, timeout=15)
+        except requests.exceptions.RequestException as exc:
+            # A real, expected-to-happen-sometimes network failure --
+            # structured, never raised. Same contract as
+            # verify_subscription_purchase() above.
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.NETWORK_ERROR,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message=(
+                    f"Could not reach Google Play Developer API: "
+                    f"{_safe_exception_text(exc, purchase_token)}"
+                ),
+            )
+        except Exception as exc:
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.UNKNOWN_ERROR,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message=(
+                    f"Unexpected error calling Google Play Developer API: "
+                    f"{_safe_exception_text(exc, purchase_token)}"
+                ),
+            )
+
+        return self._parse_product_response(
+            purchase_token=purchase_token, product_id=product_id,
+            package_name=package_name, response=response,
+        )
+
+    def _parse_product_response(
+        self, *, purchase_token: str, product_id: str, package_name: str, response: requests.Response,
+    ) -> GooglePlayProductVerification:
+        if response.status_code == 404:
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.NOT_FOUND,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message="Google Play has no record of this purchase token.",
+            )
+        if response.status_code == 400:
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.INVALID_TOKEN,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message="Google Play rejected this purchase token as malformed.",
+            )
+        if response.status_code in (401, 403):
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.AUTH_ERROR,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message=(
+                    f"Google Play rejected this app's own service-account credentials "
+                    f"(HTTP {response.status_code})."
+                ),
+            )
+        if response.status_code != 200:
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.UNKNOWN_ERROR,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message=f"Unexpected HTTP {response.status_code} from Google Play.",
+                raw_response=self._safe_json(response),
+            )
+
+        body = self._safe_json(response)
+
+        return GooglePlayProductVerification(
+            verification_status=GooglePlayVerificationStatus.VERIFIED,
+            purchase_token=purchase_token,
+            product_id=product_id,
+            package_name=package_name,
+            purchase_state=body.get("purchaseState"),
+            consumption_state=body.get("consumptionState"),
+            acknowledgement_state=body.get("acknowledgementState"),
+            order_id=body.get("orderId"),
+            purchase_time=_parse_millis(body.get("purchaseTimeMillis")),
+            country=body.get("regionCode"),
+            raw_response=body,
+        )
 
     # ------------------------------------------------------------
     # Subscription Purchase System -- S6. Acknowledgement ONLY: never
@@ -430,10 +602,20 @@ class GooglePlayProvider(PaymentProvider):
     # existing provider registry can resolve GOOGLE_PLAY at all.
     # PaymentService itself is unmodified; this only fills in the
     # method the abstract base class already requires.
+    #
+    # Branches on request.purpose -- exactly the field PaymentRequest
+    # already carried before this change, per PaymentProviderRegistry
+    # resolving by provider type only (one GooglePlayProvider instance
+    # for both purposes, not a second provider). The SUBSCRIPTION branch
+    # below is byte-for-byte what this method already did; only the new
+    # REPORT_PURCHASE branch is added alongside it.
     # ------------------------------------------------------------
     def verify(self, request: PaymentRequest) -> PaymentVerificationResult:
         purchase_token = request.payment_id
         package_name = (request.metadata or {}).get("package_name")
+
+        if request.purpose == PaymentPurpose.REPORT_PURCHASE:
+            return self._verify_report_purchase(request, purchase_token, package_name)
 
         result = self.verify_subscription_purchase(
             purchase_token=purchase_token, package_name=package_name,
@@ -446,5 +628,55 @@ class GooglePlayProvider(PaymentProvider):
             reference=request.reference or result.order_id or "",
             verified=verified,
             message=result.error_message or f"Google Play verification: {result.verification_status}",
+            raw_payload=result.to_dict(),
+        )
+
+    # Google Play purchaseState values (raw ints from ProductPurchase)
+    # that represent a genuinely completed, paid purchase -- see the
+    # module-level note in google_play_models.py: 0=Purchased,
+    # 1=Canceled, 2=Pending.
+    _PRODUCT_PURCHASED_STATE = 0
+
+    def _verify_report_purchase(
+        self, request: PaymentRequest, purchase_token: Optional[str], package_name: Optional[str],
+    ) -> PaymentVerificationResult:
+        """
+        REPORT_PURCHASE counterpart to the SUBSCRIPTION branch above.
+        One deliberate difference from that branch: PaymentService's
+        _apply_business_effect() has a purchase_state gate for
+        SUBSCRIPTION (_apply_subscription_business_effect only activates
+        for _GOOGLE_PLAY_ACTIVATING_STATES) but NONE for REPORT_PURCHASE
+        -- OrderService.create_paid_report_order() runs unconditionally
+        the moment this method returns PaymentStatus.VERIFIED. So,
+        unlike verify_subscription_purchase() (which only confirms "this
+        token is real" and leaves state judgment to a later phase),
+        VERIFIED here must also require purchaseState == Purchased --
+        otherwise a Canceled or still-Pending purchase token would
+        trigger real report generation, with no business-layer check
+        left to catch it. This judgment stays inside GooglePlayProvider
+        (the file this task approved extending), not inside
+        PaymentService or OrderService, both left unmodified.
+        """
+        product_id = (request.metadata or {}).get("product_id")
+
+        result = self.verify_product_purchase(
+            purchase_token=purchase_token, product_id=product_id, package_name=package_name,
+        )
+        verified = (
+            result.verification_status == GooglePlayVerificationStatus.VERIFIED
+            and result.purchase_state == self._PRODUCT_PURCHASED_STATE
+        )
+
+        if result.verification_status == GooglePlayVerificationStatus.VERIFIED and not verified:
+            message = f"Google Play purchase is not in a purchased state (purchaseState={result.purchase_state!r})."
+        else:
+            message = result.error_message or f"Google Play verification: {result.verification_status}"
+
+        return PaymentVerificationResult(
+            status=PaymentStatus.VERIFIED if verified else PaymentStatus.FAILED,
+            provider=self.provider_type,
+            reference=request.reference or result.order_id or "",
+            verified=verified,
+            message=message,
             raw_payload=result.to_dict(),
         )

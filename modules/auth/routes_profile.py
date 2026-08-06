@@ -74,7 +74,12 @@ def subscription_info():
             "plan": "free",
             "status": "inactive",
             "is_active": False,
-            "message": "No active subscription"
+            "message": "No active subscription",
+            "is_trial": False,
+            "auto_renew": None,
+            "in_grace_period": False,
+            "selected_segment": None,
+            "accessible_segments": [],
         }), 200
 
     snapshot = EntitlementService().get_current_entitlement(profile_id)
@@ -84,15 +89,24 @@ def subscription_info():
             "plan": "free",
             "status": "inactive",
             "is_active": False,
-            "message": "No active subscription"
+            "message": "No active subscription",
+            "is_trial": False,
+            "auto_renew": None,
+            "in_grace_period": False,
+            "selected_segment": snapshot.selected_segment,
+            "accessible_segments": [],
         }), 200
 
+    is_trial = False
+    auto_renew = None
     if snapshot.trial.is_active:
         plan, is_active = "free", True
         start_at, end_at = snapshot.trial.started_at, snapshot.trial.expires_at
+        is_trial = True
     elif snapshot.subscription.is_active:
         plan, is_active = snapshot.plan, True
         start_at, end_at = snapshot.subscription.started_at, snapshot.subscription.expires_at
+        auto_renew = snapshot.subscription.auto_renew
     else:
         plan = snapshot.plan or "free"
         is_active = False
@@ -105,6 +119,14 @@ def subscription_info():
         "is_active": is_active,
         "start_at": start_at.isoformat() if start_at else None,
         "end_at": end_at.isoformat() if end_at else None,
+        # Additive fields (S5.X) -- EntitlementSnapshot already computes
+        # these; this route previously just didn't serialize them. No
+        # existing field above changed shape or meaning.
+        "is_trial": is_trial,
+        "auto_renew": auto_renew,
+        "in_grace_period": snapshot.status == "GRACE",
+        "selected_segment": snapshot.selected_segment,
+        "accessible_segments": snapshot.accessible_segments,
     })
 
 @profile_bp.route('/personalized-horoscope', methods=["POST"])
