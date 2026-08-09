@@ -57,6 +57,26 @@ from modules.premium_report.exceptions import (
     TrialExpiredError,
 )
 
+# ------------------------------------------------------------
+# Centralized free-tier configuration for this service's entitlement
+# decision ONLY. A `report_type` in this set bypasses
+# EntitlementService entirely (no trial/subscription required), for
+# every segment -- this set is intentionally segment-agnostic, same as
+# every other report_type-keyed policy in this codebase.
+#
+# This lives here (not in modules/entitlement/) on purpose: it is a
+# PremiumReportService-level business rule about which report_types
+# are free, not a change to what EntitlementService itself considers
+# "access" -- EntitlementService.has_access() stays exactly as it was
+# and is simply never called for a free report_type.
+#
+# Adding a future free report_type requires exactly one change: add it
+# to this set. No other file needs to change.
+# ------------------------------------------------------------
+FREE_REPORT_TYPES = {
+    "DNA",
+}
+
 
 class PremiumReportService:
     def __init__(
@@ -94,7 +114,7 @@ class PremiumReportService:
         # only place it's called. Everything below this line (cache,
         # lifecycle manager, AI generation) only runs if access is
         # granted.
-        self.validate_entitlement_access(profile_id=profile_id, segment=segment)
+        self.validate_entitlement_access(profile_id=profile_id, segment=segment, report_type=report_type)
 
         try:
             cache_row = self._lifecycle_manager.get_report(
@@ -127,7 +147,9 @@ class PremiumReportService:
         """
         return None
 
-    def validate_entitlement_access(self, *, profile_id: Optional[int], segment: Optional[str]) -> None:
+    def validate_entitlement_access(
+        self, *, profile_id: Optional[int], segment: Optional[str], report_type: Optional[str] = None,
+    ) -> None:
         """
         THE single entitlement/access check for this service. Replaces
         what were previously two separate placeholder hooks
@@ -135,6 +157,18 @@ class PremiumReportService:
         check, since EntitlementService.has_access() already accounts
         for both an active trial and an active, segment-matching
         subscription in a single decision.
+
+        report_type awareness (free-tier bypass): if `report_type` is
+        in FREE_REPORT_TYPES (module-level constant above), access is
+        granted unconditionally -- no trial/subscription required --
+        and EntitlementService is never consulted for this call. This
+        is the ONLY report_type-specific branch in this method;
+        EntitlementService.has_access() itself remains segment-only and
+        unmodified, and every other report_type (e.g. CURRENT_PHASE,
+        DAILY_INSIGHT) falls through to the exact same check as before.
+        The segment itself is still validated first regardless of
+        report_type, so an unknown segment is always rejected even for
+        a free report_type.
 
         Reads the entitlement snapshot once (get_current_entitlement)
         purely to classify *why* access is denied for a clearer error
@@ -152,6 +186,9 @@ class PremiumReportService:
         """
         if segment not in AI_REPORT_SEGMENTS:
             raise SegmentNotSupportedError(f"Unsupported segment: {segment!r}")
+
+        if report_type in FREE_REPORT_TYPES:
+            return
 
         entitlement = self._entitlement_service.get_current_entitlement(profile_id)
 

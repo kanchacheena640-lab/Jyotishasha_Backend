@@ -80,6 +80,13 @@ def subscription_info():
             "in_grace_period": False,
             "selected_segment": None,
             "accessible_segments": [],
+            # membership_state/remaining_days (S-Trial.1) -- no profile
+            # exists at all here, so there is no EntitlementSnapshot to
+            # derive these from; NONE/None is this branch's own literal
+            # equivalent of what EntitlementSnapshot.membership_state
+            # would return for "nothing ever provisioned".
+            "membership_state": "NONE",
+            "remaining_days": None,
         }), 200
 
     snapshot = EntitlementService().get_current_entitlement(profile_id)
@@ -95,6 +102,10 @@ def subscription_info():
             "in_grace_period": False,
             "selected_segment": snapshot.selected_segment,
             "accessible_segments": [],
+            # membership_state/remaining_days (S-Trial.1) -- reused from
+            # the snapshot already fetched above, not recalculated.
+            "membership_state": snapshot.membership_state,
+            "remaining_days": snapshot.remaining_trial_days,
         }), 200
 
     is_trial = False
@@ -127,6 +138,13 @@ def subscription_info():
         "in_grace_period": snapshot.status == "GRACE",
         "selected_segment": snapshot.selected_segment,
         "accessible_segments": snapshot.accessible_segments,
+        # membership_state/remaining_days (S-Trial.1) -- first-class
+        # trial state so a client never needs to infer "on trial" vs
+        # "no subscription" from `plan` (which is "free" for both).
+        # Both are properties on the same `snapshot` already fetched
+        # above -- reused, not recalculated.
+        "membership_state": snapshot.membership_state,
+        "remaining_days": snapshot.remaining_trial_days,
     })
 
 @profile_bp.route('/personalized-horoscope', methods=["POST"])

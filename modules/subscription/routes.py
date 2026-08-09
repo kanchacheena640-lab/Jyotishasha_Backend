@@ -81,9 +81,30 @@ def get_subscription():
             "start_at": start_at.isoformat() if start_at else None,
             "end_at": end_at.isoformat() if end_at else None,
             "is_active": is_active,
+            # membership_state/remaining_days (S-Trial.1) -- same
+            # snapshot-derived properties as
+            # modules/auth/routes_profile.py::subscription_info(), so
+            # this endpoint can't disagree with that one about whether
+            # a trial user counts as "no subscription". Reused, not
+            # recalculated -- `snapshot` above already has both.
+            "membership_state": snapshot.membership_state,
+            "remaining_days": snapshot.remaining_trial_days,
         }}), 200
 
-    return jsonify({"subscription": sub.to_dict()}), 200
+    # Legacy fallback -- only reached if no profile could be resolved
+    # or System C genuinely has nothing yet (the narrow dual-write race
+    # noted above). `sub` (the legacy Subscription row) has no
+    # trial-day concept at all, so membership_state/remaining_days
+    # can't be derived from it the way the branch above derives them
+    # from `snapshot` -- literal "NONE"/None here is this branch's own
+    # equivalent of subscription_info()'s "no profile resolved" branch,
+    # keeping the contract uniform (S-Trial.2) without touching
+    # `sub.to_dict()` or any legacy business logic.
+    return jsonify({"subscription": {
+        **sub.to_dict(),
+        "membership_state": "NONE",
+        "remaining_days": None,
+    }}), 200
 
 # -------------------- Create Razorpay Order for Subscription -------------------- #
 @subscription_bp.post("/api/subscription/create-order")
