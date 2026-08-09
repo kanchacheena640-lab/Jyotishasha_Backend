@@ -18,6 +18,8 @@ person who already has one.
 
 from flask import Blueprint, request, jsonify
 from datetime import datetime
+import traceback
+import uuid
 
 from extensions import db
 from modules.user_service import get_or_create_app_user, provision_trial_for_new_profile
@@ -32,6 +34,13 @@ routes_profile_bootstrap = Blueprint("routes_profile_bootstrap", __name__)
 
 @routes_profile_bootstrap.post("/api/user/bootstrap")
 def bootstrap_user_profile():
+    # TEMPORARY DIAGNOSTIC INSTRUMENTATION -- structured logging only,
+    # to trace exactly what this endpoint receives/writes/returns per
+    # request while investigating the AppUser-missing-birth-fields
+    # issue. No business logic, API contract, or database write below
+    # was changed to add this -- every print() is purely additive.
+    trace_id = uuid.uuid4().hex[:8]
+
     # Bucket A -- Critical Fix #3. This endpoint previously trusted
     # firebase_uid directly from the request body, with no proof the
     # caller actually owns that Firebase identity -- independently
@@ -63,6 +72,9 @@ def bootstrap_user_profile():
     try:
         data = request.get_json() or {}
 
+        print(f"[BOOTSTRAP START] trace_id={trace_id} firebase_uid={firebase_uid} "
+              f"request_body_keys={list(data.keys())}")
+
         name = data.get("name")
         email = data.get("email")
         dob = data.get("dob")
@@ -71,6 +83,9 @@ def bootstrap_user_profile():
         lat = data.get("lat")
         lng = data.get("lng")
         lang = data.get("lang", "en")
+
+        print(f"[DOB CHECK] trace_id={trace_id} dob={dob!r} tob={tob!r} pob={pob!r} "
+              f"lat={lat!r} lng={lng!r}")
 
         if not dob:
             return jsonify({"ok": False, "error": "DOB is required"}), 400
@@ -96,11 +111,17 @@ def bootstrap_user_profile():
                 nakshatra = p["nakshatra"]
                 break
 
+        print(f"[KUNDALI SUCCESS] trace_id={trace_id} lagna={lagna!r} "
+              f"moon_sign={moon_sign!r} nakshatra={nakshatra!r}")
+
         # ----------------------------------------------------------
         # 2) Resolve (never create directly) the AppUser via the
         # single identity-resolution service from modules/user_service.py
         # ----------------------------------------------------------
         user, created = get_or_create_app_user(firebase_uid)
+
+        print(f"[APPUSER] trace_id={trace_id} existing_or_new={'new' if created else 'existing'} "
+              f"profile_id={user.id!r}")
 
         user.name = name
         user.email = email
@@ -116,7 +137,9 @@ def bootstrap_user_profile():
         user.moon_sign = moon_sign
         user.nakshatra = nakshatra
 
+        print(f"[BEFORE COMMIT] trace_id={trace_id}")
         db.session.commit()
+        print(f"[AFTER COMMIT] trace_id={trace_id} profile_id={user.id!r}")
 
         # ----------------------------------------------------------
         # 2b) Provision the initial free trial -- exactly once, only
@@ -125,12 +148,26 @@ def bootstrap_user_profile():
         # docstring for why a failure here does not roll back or fail
         # this request.
         # ----------------------------------------------------------
+        # NOTE (diagnostic limitation, not a behavior change):
+        # provision_trial_for_new_profile() catches and swallows its
+        # own exceptions internally (by design -- see its docstring)
+        # and always returns None, whether the trial succeeded or
+        # failed. It is not modified here (that would be a business-
+        # logic change to shared code used by other callers), so
+        # "trial success?" / "trial exception?" genuinely cannot be
+        # observed from this call site -- logged honestly as such
+        # rather than guessed.
+        trial_attempted = bool(created)
+        print(f"[TRIAL] trace_id={trace_id} trial_attempted={trial_attempted} "
+              f"trial_success=not_observable_from_this_call_site "
+              f"trial_exception=not_observable_from_this_call_site")
         if created:
             provision_trial_for_new_profile(user.id)
 
         # ----------------------------------------------------------
         # 3) Response to App
         # ----------------------------------------------------------
+        print(f"[RESPONSE] trace_id={trace_id} status=200 ok=True profile_id={user.id!r}")
         return jsonify({
             "ok": True,
             "profileId": user.id,
@@ -144,5 +181,8 @@ def bootstrap_user_profile():
         }), 200
 
     except Exception as e:
+        print(f"[BOOTSTRAP EXCEPTION] trace_id={trace_id} "
+              f"exception_type={type(e).__name__} exception_message={e}")
+        print(traceback.format_exc())
         print("❌ Bootstrap Error:", e)
         return jsonify({"ok": False, "error": "Internal Server Error"}), 500
