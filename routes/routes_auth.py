@@ -3,6 +3,7 @@
 from flask import Blueprint, request, jsonify
 from extensions import db
 from modules.auth.models import User
+from modules.models_user import AppUser
 from flask_jwt_extended import create_access_token
 from firebase_admin import auth as firebase_auth
 
@@ -50,11 +51,29 @@ def register_user():
     name = data.get("name")
 
     # -----------------------------------------
-    # CHECK IF USER ALREADY EXISTS
+    # STEP 1: LOOK UP BY firebase_uid (unchanged identity -- the
+    # common case, exactly as before).
     # -----------------------------------------
     user = User.query.filter_by(firebase_uid=firebase_uid).first()
 
     if user:
+        # Bug fix: sync the latest name/email/provider onto the
+        # already-linked row -- additive only, never touches
+        # firebase_uid/id/any relation, so subscriptions/FKs are
+        # completely unaffected.
+        changed = False
+        if name and user.name != name:
+            user.name = name
+            changed = True
+        if email and user.email != email:
+            user.email = email
+            changed = True
+        if user.provider != "firebase":
+            user.provider = "firebase"
+            changed = True
+        if changed:
+            db.session.commit()
+
         return jsonify({
             "success": True,
             "user_id": user.id,   # existing backend_user_id
@@ -62,7 +81,48 @@ def register_user():
         }), 200
 
     # -----------------------------------------
-    # CREATE NEW USER
+    # STEP 2: LOOK UP BY email. Firebase can issue a new uid for the
+    # same person (re-registration, provider change, reinstall,
+    # etc.) -- re-link the existing row to the newly-verified
+    # firebase_uid instead of inserting a second row, which is
+    # exactly what was hitting users.email's UNIQUE constraint
+    # before this fix. Same user.id preserved, so every existing FK
+    # (subscriptions, etc.) keeps pointing at the same row.
+    # -----------------------------------------
+    if email:
+        existing_by_email = User.query.filter_by(email=email).first()
+        if existing_by_email:
+            old_firebase_uid = existing_by_email.firebase_uid
+            existing_by_email.firebase_uid = firebase_uid
+            if existing_by_email.provider != "firebase":
+                existing_by_email.provider = "firebase"
+
+            # Keep app_users in lockstep, in the SAME transaction as
+            # the users update above. Without this, users.firebase_uid
+            # and app_users.firebase_uid diverge for the same person,
+            # breaking resolve_profile_id_from_account_user_id()'s
+            # join (confirmed by prior verification). Both writes are
+            # flushed and committed together by the single commit()
+            # below -- if it fails, both roll back together; neither
+            # is ever persisted alone.
+            AppUser.query.filter_by(firebase_uid=old_firebase_uid).update(
+                {"firebase_uid": firebase_uid}
+            )
+
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                raise
+
+            return jsonify({
+                "success": True,
+                "user_id": existing_by_email.id,   # SAME id -- no second account
+                "new": False
+            }), 200
+
+    # -----------------------------------------
+    # STEP 3: CREATE NEW USER (unchanged from before)
     # -----------------------------------------
     new_user = User(
         firebase_uid=firebase_uid,
