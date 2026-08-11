@@ -33,12 +33,29 @@ def _reasons_to_text(reasons: List[str]) -> str:
     return "; ".join(reasons) if reasons else "None"
 
 
+def _language_instruction(language: str) -> str:
+    # Additive fix -- language was never previously threaded into this
+    # builder (the .txt template had no language placeholder at all), so
+    # every CURRENT_PHASE call silently ignored the caller's requested
+    # language. Only two languages are handled, matching this project's
+    # existing `language` convention elsewhere ("en"/"hi"); anything else
+    # falls back to English rather than guessing.
+    if language == "hi":
+        return (
+            "Write your ENTIRE response in Hindi, using Devanagari script "
+            "only. Do not use any English sentence or phrase anywhere in "
+            "the response (except a proper noun that has no Hindi form)."
+        )
+    return "Write your ENTIRE response in English."
+
+
 def build_current_family_phase_prompt(
     birth_date: str,
     birth_time: str,
     birth_place: str,
     family_dna: str,
     context: Dict[str, Any],
+    language: str = "en",
 ) -> str:
     template = _load_template(_CURRENT_FAMILY_PHASE_TEMPLATE)
 
@@ -56,6 +73,7 @@ def build_current_family_phase_prompt(
         "birth_time": sanitize_prompt_text(birth_time),
         "birth_place": sanitize_prompt_text(birth_place),
         "family_dna": family_dna,
+        "language_instruction": _language_instruction(language),
 
         "mahadasha_planet": mahadasha.get("planet") or "Unknown",
         "mahadasha_start": mahadasha.get("start") or "Unknown",

@@ -166,6 +166,7 @@ class CareerGenerator(BaseAIGenerator):
                 birth_place=details["pob"],
                 career_dna=context["career_dna"],
                 context=context["phase_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "DAILY_INSIGHT":

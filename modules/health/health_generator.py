@@ -178,6 +178,7 @@ class HealthGenerator(BaseAIGenerator):
                 birth_place=details["pob"],
                 health_dna=context["health_dna"],
                 context=context["phase_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "DAILY_INSIGHT":

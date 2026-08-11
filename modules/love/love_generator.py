@@ -155,6 +155,7 @@ class LoveGenerator(BaseAIGenerator):
                 birth_place=details["pob"],
                 relationship_dna=context["relationship_dna"],
                 context=context["phase_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "DAILY_INSIGHT":

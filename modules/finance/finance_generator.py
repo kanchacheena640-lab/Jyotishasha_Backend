@@ -168,6 +168,7 @@ class FinanceGenerator(BaseAIGenerator):
                 birth_place=details["pob"],
                 financial_dna=context["financial_dna"],
                 context=context["phase_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "DAILY_INSIGHT":
