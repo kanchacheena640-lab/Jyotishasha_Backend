@@ -12,6 +12,13 @@ from modules.subscription.dual_write_adapter import (
     resolve_profile_id_from_account_user_id,
 )
 
+# Welcome Gift Trial (S-Trial.3) -- the approved single entry point for
+# every subscription WRITE (see subscription_service.py's own module
+# docstring: "nobody should call EntitlementWriteService directly").
+# start-trial below is a thin controller in front of this, exactly like
+# every other write already in this codebase.
+from modules.subscription.subscription_service import SubscriptionService
+
 subscription_bp = Blueprint("subscription_bp", __name__)
 
 # -------------------- GET Subscription Status -------------------- #
@@ -133,4 +140,78 @@ def create_subscription_order():
         "amount": razorpay_order["amount"],
         "currency": razorpay_order["currency"],
         "plan": plan
+    }), 200
+
+# -------------------- Start Free Trial (Welcome Gift) -------------------- #
+# NOTE: this blueprint is registered with url_prefix="/api/subscription"
+# (modules/subscription/__init__.py::register_subscription) while every
+# route ABOVE this one also bakes "/api/subscription" into its own
+# decorator path -- a documented, intentionally-preserved quirk (see
+# that file's own S4.0 comment) that makes their live URLs doubled
+# (e.g. "/api/subscription/api/subscription"). This new route does NOT
+# repeat that mistake: its decorator path is relative ("/start-trial"),
+# so combined with the blueprint's url_prefix it resolves to exactly
+# the required "/api/subscription/start-trial" -- not a doubled path.
+@subscription_bp.post("/start-trial")
+@jwt_required()
+def start_trial():
+    """
+    Welcome Gift Trial (S-Trial.3). The client calls this ONLY when the
+    user explicitly taps "Activate Free Gift" on the Explore page --
+    there is no automatic trigger anywhere (not on login, not on
+    bootstrap). This route itself has no opinion about that; it simply
+    starts a trial for whichever authenticated profile calls it, exactly
+    once, ever.
+
+    Identity resolution reuses the exact same three calls already used
+    by get_subscription() above and routes/routes_premium_report.py::
+    get_premium_report() -- @jwt_required() + get_jwt_identity() +
+    resolve_profile_id_from_account_user_id() (dual_write_adapter.py).
+    No new auth mechanism.
+
+    All trial-eligibility business rules (one-time-per-profile, never
+    overwriting an active/grace paid subscription) live entirely in
+    EntitlementWriteService.start_trial() and are not duplicated here --
+    this route only calls SubscriptionService.start_trial() (the
+    approved single write entry point) and translates its structured
+    EntitlementWriteResult into HTTP:
+        action == "TRIAL_STARTED" -> 200, the new trial window.
+        action == "TRIAL_SKIPPED" -> 409 trial_already_claimed. Covers
+            both sub-cases EntitlementWriteService already merges into
+            one outcome -- this profile already trialed before (even if
+            it has since expired), or already has an ACTIVE/GRACE paid
+            subscription. Either way nothing about the existing state
+            changes (the write service returns before touching the
+            row), which is exactly "existing paid subscription:
+            behavior remains unchanged."
+    """
+    user_id = get_jwt_identity()
+    profile_id = resolve_profile_id_from_account_user_id(user_id)
+
+    if profile_id is None:
+        return jsonify({
+            "ok": False,
+            "error": "forbidden",
+            "message": "No profile is associated with this account.",
+        }), 403
+
+    result = SubscriptionService().start_trial(profile_id)
+
+    if result.action != "TRIAL_STARTED":
+        return jsonify({"ok": False, "error": "trial_already_claimed"}), 409
+
+    # Re-read the just-committed state via the existing read API rather
+    # than re-deriving trial_started_at from business rules a second
+    # time -- EntitlementWriteResult doesn't carry started_at, and this
+    # is the exact same EntitlementService.get_current_entitlement() read
+    # get_subscription() above already uses.
+    from modules.entitlement import EntitlementService
+
+    snapshot = EntitlementService().get_current_entitlement(profile_id)
+
+    return jsonify({
+        "ok": True,
+        "status": "TRIAL",
+        "trial_started_at": snapshot.trial.started_at.isoformat() if snapshot.trial.started_at else None,
+        "trial_expires_at": snapshot.trial.expires_at.isoformat() if snapshot.trial.expires_at else None,
     }), 200
