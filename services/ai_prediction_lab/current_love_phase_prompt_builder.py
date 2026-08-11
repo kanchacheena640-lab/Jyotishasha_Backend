@@ -19,7 +19,7 @@ from services.ai_prediction_lab.prompt_input_sanitizer import sanitize_prompt_te
 _TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "prompts")
 _CURRENT_LOVE_PHASE_TEMPLATE = os.path.join(_TEMPLATE_DIR, "current_love_phase_v1.txt")
 
-_TRANSIT_PLANETS = ["jupiter", "saturn", "rahu", "ketu"]
+_TRANSIT_PLANETS = ["jupiter", "saturn", "rahu", "ketu", "moon"]
 
 
 def _load_template(path: str) -> str:
@@ -68,7 +68,7 @@ def build_current_love_phase_prompt(
         "relationship_phase_reasons": _reasons_to_text(phase.get("reasons", [])),
     }
 
-    planet_name_map = {"jupiter": "Jupiter", "saturn": "Saturn", "rahu": "Rahu", "ketu": "Ketu"}
+    planet_name_map = {"jupiter": "Jupiter", "saturn": "Saturn", "rahu": "Rahu", "ketu": "Ketu", "moon": "Moon"}
     for key in _TRANSIT_PLANETS:
         t = transits.get(planet_name_map[key], {}) or {}
         values[f"{key}_sign"] = t.get("sign") or "Unknown"

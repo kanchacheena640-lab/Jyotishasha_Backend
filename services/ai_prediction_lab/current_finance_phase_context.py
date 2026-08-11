@@ -53,6 +53,16 @@ PLANET_FINANCE_ROLE = {
     "Mercury": "transactions, calculations and day-to-day money decisions",
     "Saturn": "discipline, delay and long-term financial structure",
     "Rahu": "sudden gain, ambition and unconventional financial risk",
+    # Added for Remedy For This Phase (Current Phase refinement). Moon is
+    # deliberately NOT added to FINANCE_TRANSIT_PLANETS below -- that list
+    # also drives _score_finance_phase()'s house-transit signal count, and
+    # Moon changes sign every ~2.25 days, so including it there would
+    # silently change the existing phase-scoring calculation (forbidden).
+    # Moon's transit is instead computed once, separately, in
+    # build_current_finance_phase_context() below, using the exact same
+    # _transit_summary() helper -- exposed for the prompt only, never fed
+    # into scoring.
+    "Moon": "day-to-day mindset around spending and money decisions",
 }
 
 
@@ -151,6 +161,12 @@ def build_current_finance_phase_context(kundali: Dict[str, Any], finance_context
         finance_context,
         transits,
     )
+
+    # Moon, for Remedy For This Phase only -- computed AFTER scoring, via
+    # the same _transit_summary() helper, so it can never influence
+    # finance_phase's level/confidence/reasons above (unchanged
+    # calculation) while still being available to the prompt.
+    transits["Moon"] = _transit_summary("Moon", lagna_sign)
 
     return {
         "mahadasha": {

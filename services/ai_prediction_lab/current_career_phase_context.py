@@ -48,6 +48,16 @@ PLANET_CAREER_ROLE = {
     "Saturn": "discipline, structure and long-term career stability",
     "Jupiter": "growth, opportunity and expansion of career prospects",
     "Mercury": "skill, communication and decision-making at work",
+    # Added for Remedy For This Phase (Current Phase refinement). Moon is
+    # deliberately NOT added to CAREER_TRANSIT_PLANETS below -- that list
+    # also drives _score_career_phase()'s house-transit signal count, and
+    # Moon changes sign every ~2.25 days, so including it there would
+    # silently change the existing phase-scoring calculation (forbidden).
+    # Moon's transit is instead computed once, separately, in
+    # build_current_career_phase_context() below, using the exact same
+    # _transit_summary() helper -- exposed for the prompt only, never fed
+    # into scoring.
+    "Moon": "day-to-day mindset, focus and mood at work",
 }
 
 
@@ -141,6 +151,12 @@ def build_current_career_phase_context(kundali: Dict[str, Any], career_context: 
         career_context,
         transits,
     )
+
+    # Moon, for Remedy For This Phase only -- computed AFTER scoring, via
+    # the same _transit_summary() helper, so it can never influence
+    # career_phase's level/confidence/reasons above (unchanged
+    # calculation) while still being available to the prompt.
+    transits["Moon"] = _transit_summary("Moon", lagna_sign)
 
     return {
         "mahadasha": {

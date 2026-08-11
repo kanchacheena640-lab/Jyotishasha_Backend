@@ -47,6 +47,16 @@ PLANET_RELATIONSHIP_ROLE = {
     "Saturn": "commitment, responsibility and long-term stability",
     "Rahu": "intense desire and unconventional attraction",
     "Ketu": "detachment, release and completion of old patterns",
+    # Added for Remedy For This Phase (Current Phase refinement). Moon is
+    # deliberately NOT added to LOVE_TRANSIT_PLANETS above -- that list
+    # also drives _score_relationship_phase()'s house-transit signal
+    # count below, and Moon changes sign every ~2.25 days, so including
+    # it there would silently change the existing phase-scoring
+    # calculation (forbidden). Moon's transit is instead computed once,
+    # separately, in build_current_love_phase_context() below, using the
+    # exact same _transit_summary() helper -- exposed for the prompt only,
+    # never fed into scoring.
+    "Moon": "emotional mood and day-to-day openness in relationships",
 }
 
 
@@ -138,6 +148,12 @@ def build_current_love_phase_context(kundali: Dict[str, Any], love_context: Dict
         love_context,
         transits,
     )
+
+    # Moon, for Remedy For This Phase only -- computed AFTER scoring, via
+    # the same _transit_summary() helper, so it can never influence
+    # relationship_phase's level/confidence/reasons above (unchanged
+    # calculation) while still being available to the prompt.
+    transits["Moon"] = _transit_summary("Moon", lagna_sign)
 
     return {
         "mahadasha": {

@@ -20,7 +20,7 @@ from services.ai_prediction_lab.prompt_input_sanitizer import sanitize_prompt_te
 _TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "prompts")
 _CURRENT_CAREER_PHASE_TEMPLATE = os.path.join(_TEMPLATE_DIR, "current_career_phase_v1.txt")
 
-_TRANSIT_PLANETS = ["sun", "saturn", "jupiter", "mercury"]
+_TRANSIT_PLANETS = ["sun", "saturn", "jupiter", "mercury", "moon"]
 
 
 def _load_template(path: str) -> str:
@@ -69,7 +69,7 @@ def build_current_career_phase_prompt(
         "career_phase_reasons": _reasons_to_text(phase.get("reasons", [])),
     }
 
-    planet_name_map = {"sun": "Sun", "saturn": "Saturn", "jupiter": "Jupiter", "mercury": "Mercury"}
+    planet_name_map = {"sun": "Sun", "saturn": "Saturn", "jupiter": "Jupiter", "mercury": "Mercury", "moon": "Moon"}
     for key in _TRANSIT_PLANETS:
         t = transits.get(planet_name_map[key], {}) or {}
         values[f"{key}_sign"] = t.get("sign") or "Unknown"

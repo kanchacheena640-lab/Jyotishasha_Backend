@@ -21,7 +21,7 @@ from services.ai_prediction_lab.prompt_input_sanitizer import sanitize_prompt_te
 _TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "prompts")
 _CURRENT_FINANCE_PHASE_TEMPLATE = os.path.join(_TEMPLATE_DIR, "current_finance_phase_v1.txt")
 
-_TRANSIT_PLANETS = ["jupiter", "venus", "mercury", "saturn", "rahu"]
+_TRANSIT_PLANETS = ["jupiter", "venus", "mercury", "saturn", "rahu", "moon"]
 
 
 def _load_template(path: str) -> str:
@@ -72,7 +72,7 @@ def build_current_finance_phase_prompt(
 
     planet_name_map = {
         "jupiter": "Jupiter", "venus": "Venus", "mercury": "Mercury",
-        "saturn": "Saturn", "rahu": "Rahu",
+        "saturn": "Saturn", "rahu": "Rahu", "moon": "Moon",
     }
     for key in _TRANSIT_PLANETS:
         t = transits.get(planet_name_map[key], {}) or {}
