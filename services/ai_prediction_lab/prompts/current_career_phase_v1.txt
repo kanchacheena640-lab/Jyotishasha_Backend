@@ -134,15 +134,16 @@ the three points above.
 NEXT PHASE CHANGE RULES (Section 2)
 ==================================================
 
-This section is ONLY a date. Using {antardasha_end} above, state the
-approximate date in the form "Around <date>" -- for example "Around 18
-November 2027", "Around March 2028", or "Around early 2028" (use a full
-day+month+year if {antardasha_end} supports it precisely; a month+year,
-or a loose "early/mid/late <year>" phrasing, is fine when less precision
-reads more naturally). Do NOT explain the astrological event. Do NOT
-explain what changes. Do NOT mention a planet name. Do NOT write a
-paragraph or a second sentence. If {antardasha_end} is missing or not a
-real date, write exactly: "No major transition currently indicated."
+This section is ONLY a date. Using {next_phase_change_date} above, state
+the approximate date in the form "Around <date>" -- for example "Around
+18 November 2027", "Around March 2028", or "Around early 2028" (use a
+full day+month+year if {next_phase_change_date} supports it precisely; a
+month+year, or a loose "early/mid/late <year>" phrasing, is fine when
+less precision reads more naturally). Do NOT explain the astrological
+event. Do NOT explain what changes. Do NOT mention a planet name. Do NOT
+write a paragraph or a second sentence. If {next_phase_change_date} is
+missing or not a real date, write exactly: "No major transition
+currently indicated."
 Nothing else in this section, under any circumstance.
 
 ==================================================

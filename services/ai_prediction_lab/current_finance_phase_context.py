@@ -35,6 +35,7 @@ from typing import Any, Dict, List
 from full_kundali_api import get_nakshatra_pada
 from transit_engine import RASHIS, get_current_positions
 from modules.smartchat.chart_summarizer import _rashi_to_house
+from services.ai_prediction_lab.next_phase_change import compute_next_phase_change_date
 
 # Jupiter/Venus/Mercury/Saturn/Rahu -- the five finance-significator
 # planets this segment's context is scoped to (see FINANCE CONTEXT
@@ -168,6 +169,16 @@ def build_current_finance_phase_context(kundali: Dict[str, Any], finance_context
     # calculation) while still being available to the prompt.
     transits["Moon"] = _transit_summary("Moon", lagna_sign)
 
+    # Next Phase Change -- nearest of the Antardasha end date or the next
+    # rashi transit of a FINANCE_TRANSIT_PLANETS planet (Moon excluded;
+    # see next_phase_change.py). Computed as a sibling field, never
+    # mutating antardasha["end"] above, so compute_expires_at()'s
+    # cache-expiry logic (FinanceGenerator.compute_expires_at) is
+    # completely unaffected.
+    next_phase_change_date = compute_next_phase_change_date(
+        antardasha.get("end"), FINANCE_TRANSIT_PLANETS,
+    )
+
     return {
         "mahadasha": {
             "planet": mahadasha.get("mahadasha"),
@@ -181,4 +192,5 @@ def build_current_finance_phase_context(kundali: Dict[str, Any], finance_context
         },
         "finance_phase": finance_phase,
         "transits": transits,
+        "next_phase_change_date": next_phase_change_date,
     }

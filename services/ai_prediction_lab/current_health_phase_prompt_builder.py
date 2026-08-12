@@ -81,7 +81,19 @@ def build_current_health_phase_prompt(
 
         "antardasha_planet": antardasha.get("planet") or "Unknown",
         "antardasha_start": antardasha.get("start") or "Unknown",
+        # Raw Antardasha end date -- unchanged, still feeds the factual
+        # "CURRENT PLANETARY PERIOD" block in the template.
         "antardasha_end": antardasha.get("end") or "Unknown",
+
+        # Next Phase Change value -- the nearest of the Antardasha end
+        # date or the next major transit date (see next_phase_change_date,
+        # computed in current_health_phase_context.py). Falls back to the
+        # raw Antardasha end date, then "Unknown", if that computation
+        # returned nothing. Feeds a DIFFERENT template placeholder
+        # ({next_phase_change_date}, only in the NEXT PHASE CHANGE RULES
+        # section) so it never overwrites the factual Antardasha display
+        # above.
+        "next_phase_change_date": context.get("next_phase_change_date") or antardasha.get("end") or "Unknown",
 
         "health_phase_level": phase.get("level") or "Unknown",
         "health_phase_confidence": phase.get("confidence") or "Unknown",

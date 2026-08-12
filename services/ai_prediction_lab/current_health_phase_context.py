@@ -34,6 +34,7 @@ from typing import Any, Dict, List
 from full_kundali_api import get_nakshatra_pada
 from transit_engine import RASHIS, get_current_positions
 from modules.smartchat.chart_summarizer import _rashi_to_house
+from services.ai_prediction_lab.next_phase_change import compute_next_phase_change_date
 
 # Moon/Sun/Mars/Saturn/Jupiter -- the five health-significator planets
 # this segment's context is scoped to (see HEALTH CONTEXT spec). All
@@ -153,6 +154,18 @@ def build_current_health_phase_context(kundali: Dict[str, Any], health_context: 
         transits,
     )
 
+    # Next Phase Change -- nearest of the Antardasha end date or the next
+    # rashi transit of a HEALTH_TRANSIT_PLANETS planet (Moon excluded;
+    # see next_phase_change.py -- HEALTH_TRANSIT_PLANETS includes Moon
+    # for scoring purposes above, but Moon is never a "major" transit
+    # candidate here). Computed as a sibling field, never mutating
+    # antardasha["end"] above, so compute_expires_at()'s cache-expiry
+    # logic (HealthGenerator.compute_expires_at) is completely
+    # unaffected.
+    next_phase_change_date = compute_next_phase_change_date(
+        antardasha.get("end"), HEALTH_TRANSIT_PLANETS,
+    )
+
     return {
         "mahadasha": {
             "planet": mahadasha.get("mahadasha"),
@@ -166,4 +179,5 @@ def build_current_health_phase_context(kundali: Dict[str, Any], health_context: 
         },
         "health_phase": health_phase,
         "transits": transits,
+        "next_phase_change_date": next_phase_change_date,
     }
