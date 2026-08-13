@@ -425,6 +425,30 @@ class AlertPersistenceRepository:
         return SyncCounts(created=created, updated=updated, reactivated=reactivated, expired=expired)
 
     # ------------------------------------------------------------
+    # Alerts Product Hardening addition -- read-only, scoped PURELY to
+    # AlertMicroEvent.last_delivered_at. Used by
+    # modules/alerts/user_alert_selection.py's orchestration (in
+    # alerts_scheduler.py) to enforce the max-2-per-alert-day cap
+    # independent of any single event's own cooldown clock -- a rerun
+    # must not bypass the daily cap just because some OTHER event's
+    # cooldown happened to elapse. Does not change any existing method.
+    # ------------------------------------------------------------
+    def count_delivered_since(self, *, profile_id: int, since: datetime) -> int:
+        """Count of this profile's AlertMicroEvent rows whose
+        last_delivered_at falls on/after `since` -- i.e. how many
+        distinct alerts have already been delivered within the caller-
+        supplied window (typically the current alert day's start)."""
+        return (
+            AlertMicroEvent.query
+            .filter(
+                AlertMicroEvent.profile_id == profile_id,
+                AlertMicroEvent.last_delivered_at.isnot(None),
+                AlertMicroEvent.last_delivered_at >= since,
+            )
+            .count()
+        )
+
+    # ------------------------------------------------------------
     # Phase 5 addition -- scoped PURELY to AlertMicroEvent.last_delivered_at,
     # matching this file's own single-table discipline (every other
     # method here only ever touches AlertMicroEvent too). The

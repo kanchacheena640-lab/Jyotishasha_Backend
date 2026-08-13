@@ -100,6 +100,7 @@ from modules.alerts.profile_detection_service import (
     ProfileDetectionService,
 )
 from modules.alerts.sunrise_boundary import SunriseResolutionError
+from modules.alerts.user_alert_selection_service import get_user_facing_alerts_for_profile
 
 # Dedicated advisory lock key for THIS job only -- an arbitrary constant
 # chosen once, never reused elsewhere (verified: zero other advisory
@@ -129,6 +130,16 @@ class AlertsJobSummary:
     alerts_attempted: int = 0
     alerts_delivered: int = 0
     cooldown_or_eligibility_skipped: int = 0
+    # Alerts Product Hardening addition -- otherwise-eligible alerts
+    # that were NOT chosen for user-facing exposure this run (conflict/
+    # similarity suppression, category-diversity exclusion, or the
+    # max-2-per-alert-day cap). Distinct from
+    # cooldown_or_eligibility_skipped, which counts alerts that failed
+    # the PRE-EXISTING Phase 4 confidence/cooldown gate -- this counter
+    # is purely about product-layer narrowing of an already-eligible
+    # pool, for observability into how often/how much the selection
+    # layer is actually trimming.
+    selection_suppressed: int = 0
     failures: int = 0
     duration_seconds: float = 0.0
     lock_acquired: bool = False
@@ -144,6 +155,7 @@ class AlertsJobSummary:
             "alerts_attempted": self.alerts_attempted,
             "alerts_delivered": self.alerts_delivered,
             "cooldown_or_eligibility_skipped": self.cooldown_or_eligibility_skipped,
+            "selection_suppressed": self.selection_suppressed,
             "failures": self.failures,
             "duration_seconds": round(self.duration_seconds, 3),
             "lock_acquired": self.lock_acquired,
@@ -291,13 +303,44 @@ def _process_one_profile(
         summary.profiles_evaluated += 1
         summary.alerts_detected += result.events_detected
 
-        # ---- 5. Fetch persisted active alerts (Phase 1, unmodified) ----
+        # ---- 5. Fetch persisted active alerts (Phase 1, unmodified) --
+        # needed below to count alerts that fail the pre-existing
+        # eligibility gate for the (unchanged-meaning)
+        # cooldown_or_eligibility_skipped counter. ----
         active_alerts = repository.fetch_active_for_profile(profile_id=profile_id)
 
-        # ---- 6/7. Deliver each -- deliver_alert() (Phase 4/5,
-        # unmodified) remains the SOLE eligibility/cooldown authority;
-        # nothing here re-checks or duplicates that decision. ----
+        # ---- 5b. User Alert Selection Layer (Alerts Product Hardening)
+        # -- narrows the full active-alert set down to the small,
+        # non-contradictory, non-redundant user-facing subset (normally
+        # 1, at most MAX_USER_FACING_ALERTS) BEFORE any delivery is
+        # attempted. THE SAME function a future Alerts app API endpoint
+        # must also call (see user_alert_selection_service.py's own
+        # docstring) -- one selection authority for both push and any
+        # future in-app list. Internally reuses the EXISTING, unmodified
+        # Phase 4 eligibility/cooldown gate -- this layer only narrows
+        # further for product exposure, never overrides that decision.
+        selection = get_user_facing_alerts_for_profile(
+            profile_id, now=now, repository=repository, lat=user.lat, lon=user.lng,
+        )
+        selected_event_ids = {r.event_id for r in selection.selected}
+
+        # Pre-existing meaning preserved: alerts that failed the Phase 4
+        # confidence/cooldown gate entirely (never even reached
+        # selection) still count here, exactly as before this change.
+        summary.cooldown_or_eligibility_skipped += len(active_alerts) - selection.eligible_count
+        # New: alerts that PASSED that gate but were not chosen by the
+        # selection layer (conflict/similarity suppression, category
+        # diversity, or the daily cap).
+        summary.selection_suppressed += selection.eligible_count - len(selection.selected)
+
+        # ---- 6/7. Deliver each SELECTED alert -- deliver_alert()
+        # (Phase 4/5, unmodified) remains the SOLE eligibility/cooldown
+        # authority for the actual send; nothing here re-checks or
+        # duplicates that decision, it only decides WHICH event_ids
+        # reach this call at all. ----
         for alert_row in active_alerts:
+            if alert_row.event_id not in selected_event_ids:
+                continue
             summary.alerts_attempted += 1
             delivery = deliver_alert(
                 profile_id=profile_id,
