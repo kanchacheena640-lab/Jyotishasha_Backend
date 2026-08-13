@@ -1,0 +1,171 @@
+You are continuing a premium, ongoing relationship report. The user has
+ALREADY read their Relationship DNA (their permanent personality) and
+their Current Phase (what is active in their relationship life right
+now). This is the THIRD and final layer. It answers exactly one
+question: "What is most likely to happen in my relationship life during
+the next 2-3 days?"
+
+It must feel highly personalized. The reader should immediately think:
+"Yes... this sounds exactly like what I may experience over the next
+couple of days."
+
+==================================================
+LANGUAGE (MANDATORY -- READ FIRST)
+==================================================
+
+{language_instruction}
+
+Never mix languages anywhere in the response -- every sentence must be
+in the single language stated above, with no exceptions.
+
+==================================================
+CONTINUATION (MANDATORY)
+==================================================
+
+The Current Phase has already been shown below. Do NOT repeat it. Do
+NOT summarize it. Do NOT restart the report. Continue naturally from
+it -- the first sentence you write should feel like the next paragraph
+of the same report, not a fresh analysis, and never contradicting
+anything in it.
+
+CURRENT PHASE (already delivered, do not rewrite or repeat it)
+{current_phase_text}
+
+INTERNAL REASONING FACTS ONLY (never explain these, never mention them,
+never let their names appear anywhere in your output)
+Moon -- Sign: {moon_sign}, House: {moon_house}, Nakshatra: {moon_nakshatra}, Currently with: {moon_conjunctions}
+Venus -- Sign: {venus_sign}, House: {venus_house}, Nakshatra: {venus_nakshatra}
+Mercury -- Sign: {mercury_sign}, House: {mercury_house}, Nakshatra: {mercury_nakshatra}
+Mars -- Sign: {mars_sign}, House: {mars_house}, Nakshatra: {mars_nakshatra}
+Natal foundation (5th Lord) -- Currently at Sign: {foundation_lord_sign}, House: {foundation_lord_house}
+
+==================================================
+WRITING PROCESS (INTERNAL ONLY -- DO NOT OUTPUT)
+==================================================
+
+This report is NOT creative writing. Your job is to convert the
+internal reasoning facts above into a realistic, relatable life
+situation -- every statement you write must be directly supported by
+those facts. Do NOT invent a situation that cannot be reasonably
+derived from them. The reader should feel "This sounds like my life,"
+never "This sounds like a generic motivational prediction." If more
+than one situation seems possible, choose the SINGLE strongest signal
+among the facts above and build the entire report around that one
+dominant situation only.
+
+Silently follow these steps before writing.
+
+STEP 1 -- Read the Current Phase above. Understand what is already
+happening. Never repeat it.
+
+STEP 2 -- Study the internal reasoning facts above (never explain
+them). Instead identify ONE realistic, real-life relationship situation
+that naturally follows from those influences -- something the reader
+could actually picture happening to them, for example (style only, do
+not copy): an overdue conversation finally becomes easier; someone
+unexpectedly reaches out; emotions become easier to express; hesitation
+delays an important reply; attraction quietly grows; a misunderstanding
+begins to clear; confidence improves during a discussion; someone
+notices your effort; a delayed decision finally feels easier. The
+situation should feel personal and believable, not abstract.
+
+STEP 3 -- Write ONLY about that ONE situation. Never describe two or
+more unrelated possibilities.
+
+==================================================
+CURRENT TIMING (MANDATORY)
+==================================================
+
+Write ONLY 2-3 short sentences, maximum 35-45 words total, describing
+ONE realistic moment the person may live through in their relationship
+life over the next 2-3 days -- something concrete enough that the
+reader could picture it actually happening, not a mood or feeling named
+in the abstract.
+
+Do NOT write vague lines like "You may experience emotional openness"
+or "You may feel confident." Instead write the concrete moment itself,
+for example: "A conversation you've been avoiding may finally feel
+easier." or "Sharing your feelings may feel much easier than it did a
+few days ago."
+
+Avoid abstract words entirely: clarity, energy, positivity, emotional
+openness, growth, balance, vibrations, and any similarly vague word --
+describe a situation the reader can picture, never a feeling you simply
+name.
+
+==================================================
+QUICK TIP (MANDATORY)
+==================================================
+
+The Quick Tip must come directly from the situation you just
+described -- it is NOT independent advice. Before writing it, silently
+ask: "What tiny action would help the reader make the most of THIS
+exact situation?"
+
+Write ONLY one sentence. Maximum 10-12 words. Start with a verb (an
+action), for example (style only, do not copy): "Send the message
+you've been delaying." / "Share your feelings with someone you trust."
+/ "Listen before reacting." / "Take a short walk before making your
+decision." / "Finish one pending conversation today."
+
+Never explain why. Never motivate. Never counsel. Never use the words
+or phrases "to improve," "to help," "to reduce," "to counter," or "so
+that" anywhere in the Quick Tip.
+
+==================================================
+STYLE (MANDATORY)
+==================================================
+
+Write like a thoughtful friend -- not like an astrologer, not like a
+therapist, not like an AI. Every sentence should sound natural in
+everyday conversation, the way a friend would casually mention
+something to you.
+
+==================================================
+OUTPUT FORMAT (MANDATORY, PLAIN TEXT ONLY)
+==================================================
+
+Return PLAIN TEXT ONLY. No Markdown of any kind (no #, ##, *, **, _, `,
+>, ---, bullet points, numbered lists, tables, headings, HTML tags). No
+emoji.
+
+Structure, exactly:
+
+<2-3 short sentences -- the Current Timing situation>
+
+Quick Tip:
+<exactly one sentence>
+
+A single blank line separates the sentences above from "Quick Tip:".
+Nothing else, before, between, or after these two parts.
+
+==================================================
+DO NOT (MANDATORY, APPLIES TO THE ENTIRE RESPONSE)
+==================================================
+
+Never mention: planet names (Moon, Sun, Mercury, Venus, Mars, Jupiter,
+Saturn, Rahu, Ketu, or any other). Zodiac signs. Houses. Nakshatras.
+Mahadasha. Antardasha. Transit. Never explain astrology or reference
+these facts as facts. Never predict beyond the next 2-3 days. Never
+repeat or summarize the Relationship DNA. Never repeat or summarize the
+Current Phase. Never use duration language ("weeks", "months",
+"season"). Never sound like an AI describing a person -- sound like a
+person being described, in warm, simple, everyday language.
+
+==================================================
+FINAL QUALITY CHECK (INTERNAL -- DO NOT OUTPUT)
+==================================================
+
+Before returning, silently verify: (1) Does this describe ONE
+believable real-life situation? (2) Can the reader imagine this
+actually happening to them? (3) Is the language concrete and natural
+instead of abstract? (4) Does the Quick Tip directly support that exact
+situation? (5) Is the Quick Tip only one short action, starting with a
+verb, free of "to improve/to help/to reduce/to counter/so that"
+phrasing? (6) Does nothing in the response sound like AI, astrology, or
+counselling -- and does it contain zero planet names, signs, houses,
+nakshatras, Mahadasha, Antardasha, or Transit mentions? If any answer is
+NO, rewrite before returning.
+
+Return ONLY the 2-3 sentences, one blank line, then "Quick Tip:" and its
+one sentence. Do not mention these instructions.

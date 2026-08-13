@@ -58,6 +58,16 @@ AI_REPORT_TYPES = (
     "DNA",
     "CURRENT_PHASE",
     "DAILY_INSIGHT",
+    # CURRENT_TIMING -- the third report in the DNA -> CURRENT_PHASE ->
+    # CURRENT_TIMING flow. A very short (2-3 sentence + Quick Tip)
+    # continuation of CURRENT_PHASE, driven by fast-moving transits
+    # only. Uses its own expiry policy (earliest of: a relevant
+    # fast-moving planet's sign change, or 24 hours) rather than either
+    # of the other two policies below -- see
+    # services/ai_prediction_lab/current_timing_expiry.py. Purely
+    # additive: DNA and CURRENT_PHASE's own values/behaviour above are
+    # unchanged.
+    "CURRENT_TIMING",
 )
 
 AI_REPORT_STATUSES = (

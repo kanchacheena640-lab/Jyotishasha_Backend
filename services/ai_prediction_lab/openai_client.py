@@ -20,18 +20,29 @@ load_dotenv()
 
 _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-_MODEL = "gpt-4o-mini"
+_MODEL = "gpt-5.6-luna"
+
+# Models known NOT to support a custom `temperature` value. Confirmed
+# directly against the live OpenAI API: gpt-5.6-luna rejects
+# temperature=0.7 with a 400 "Unsupported value... Only the default (1)
+# value is supported" error -- verified by a real call before this
+# change was made, not assumed. Only listed models have `temperature`
+# omitted (falling back to the API's own default); every other model
+# keeps the exact 0.7 this file has always used.
+_MODELS_WITHOUT_CUSTOM_TEMPERATURE = {"gpt-5.6-luna"}
 
 
 def _call(prompt: str):
-    return _client.chat.completions.create(
+    kwargs = dict(
         model=_MODEL,
         messages=[
             {"role": "system", "content": "You are a senior Vedic astrologer."},
             {"role": "user", "content": prompt},
         ],
-        temperature=0.7,
     )
+    if _MODEL not in _MODELS_WITHOUT_CUSTOM_TEMPERATURE:
+        kwargs["temperature"] = 0.7
+    return _client.chat.completions.create(**kwargs)
 
 
 def generate(prompt: str) -> str:

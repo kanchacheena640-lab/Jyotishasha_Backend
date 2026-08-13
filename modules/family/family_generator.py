@@ -57,6 +57,9 @@ from services.ai_prediction_lab.current_family_phase_context import build_curren
 from services.ai_prediction_lab.current_family_phase_prompt_builder import build_current_family_phase_prompt
 from services.ai_prediction_lab.family_action_context import build_family_action_context
 from services.ai_prediction_lab.family_action_guidance_prompt_builder import build_family_action_guidance_prompt
+from services.ai_prediction_lab.current_family_timing_context import build_current_family_timing_context
+from services.ai_prediction_lab.current_family_timing_prompt_builder import build_current_family_timing_prompt
+from services.ai_prediction_lab.current_timing_expiry import compute_current_timing_expiry
 
 from modules.ai_report_engine.base_generator import BaseAIGenerator
 from modules.ai_report_engine.cache_repository import ReportCacheRepository
@@ -79,6 +82,10 @@ class FamilyGenerator(BaseAIGenerator):
         "DNA": "family_profile_v1",
         "CURRENT_PHASE": "current_family_phase_v1",
         "DAILY_INSIGHT": "family_action_guidance_v1",
+        # CURRENT_TIMING -- third layer (DNA -> CURRENT_PHASE ->
+        # CURRENT_TIMING). Purely additive; DNA/CURRENT_PHASE entries
+        # above are unchanged.
+        "CURRENT_TIMING": "current_family_timing_v1",
     }
 
     def __init__(self, *args, repository: Optional[ReportCacheRepository] = None, **kwargs):
@@ -155,6 +162,16 @@ class FamilyGenerator(BaseAIGenerator):
                 "family_action_context": family_action_ctx,
             }
 
+        if report_type == "CURRENT_TIMING":
+            current_family_phase_text = self._read_upstream_text(
+                profile_id=profile_id, report_type="CURRENT_PHASE", language=language,
+            )
+            timing_context = build_current_family_timing_context(kundali)  # existing Lab context builder
+            return {
+                "current_family_phase": current_family_phase_text,
+                "timing_context": timing_context,
+            }
+
         raise ContextBuildError(f"FamilyGenerator does not support report_type={report_type!r}")
 
     # ------------------------------------------------------------
@@ -189,6 +206,13 @@ class FamilyGenerator(BaseAIGenerator):
                 family_action_context=context["family_action_context"],
             )  # existing Lab prompt builder
 
+        if report_type == "CURRENT_TIMING":
+            return build_current_family_timing_prompt(
+                current_family_phase=context["current_family_phase"],
+                context=context["timing_context"],
+                language=language,
+            )  # existing Lab prompt builder
+
         raise PromptBuildError(f"FamilyGenerator does not support report_type={report_type!r}")
 
     # ------------------------------------------------------------
@@ -206,6 +230,13 @@ class FamilyGenerator(BaseAIGenerator):
         context: Dict[str, Any],
         report_type: str,
     ) -> Optional[datetime]:
+        if report_type == "CURRENT_TIMING":
+            # Own expiry policy -- earliest of a relevant fast-moving
+            # planet's sign change, or 24 hours. Never None (see
+            # current_timing_expiry.py), so this never falls back to
+            # the Lifecycle Manager's generic report_type policy.
+            return compute_current_timing_expiry(SEGMENT)
+
         if report_type != "CURRENT_PHASE":
             return None
 

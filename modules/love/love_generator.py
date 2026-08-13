@@ -38,6 +38,9 @@ from services.ai_prediction_lab.current_love_phase_context import build_current_
 from services.ai_prediction_lab.current_love_phase_prompt_builder import build_current_love_phase_prompt
 from services.ai_prediction_lab.daily_transit_context import build_daily_transit_context
 from services.ai_prediction_lab.daily_love_prediction_prompt_builder import build_daily_love_prediction_prompt
+from services.ai_prediction_lab.current_love_timing_context import build_current_love_timing_context
+from services.ai_prediction_lab.current_love_timing_prompt_builder import build_current_love_timing_prompt
+from services.ai_prediction_lab.current_timing_expiry import compute_current_timing_expiry
 
 from modules.ai_report_engine.base_generator import BaseAIGenerator
 from modules.ai_report_engine.cache_repository import ReportCacheRepository
@@ -55,6 +58,10 @@ class LoveGenerator(BaseAIGenerator):
         "DNA": "love_profile_v1",
         "CURRENT_PHASE": "current_love_phase_v1",
         "DAILY_INSIGHT": "daily_love_prediction_v1",
+        # CURRENT_TIMING -- third layer (DNA -> CURRENT_PHASE ->
+        # CURRENT_TIMING). Purely additive; DNA/CURRENT_PHASE entries
+        # above are unchanged.
+        "CURRENT_TIMING": "current_love_timing_v1",
     }
 
     def __init__(self, *args, repository: Optional[ReportCacheRepository] = None, **kwargs):
@@ -131,6 +138,16 @@ class LoveGenerator(BaseAIGenerator):
                 "daily_transit_context": daily_transit_context,
             }
 
+        if report_type == "CURRENT_TIMING":
+            current_love_phase_text = self._read_upstream_text(
+                profile_id=profile_id, report_type="CURRENT_PHASE", language=language,
+            )
+            timing_context = build_current_love_timing_context(kundali)  # existing Lab context builder
+            return {
+                "current_love_phase": current_love_phase_text,
+                "timing_context": timing_context,
+            }
+
         raise ContextBuildError(f"LoveGenerator does not support report_type={report_type!r}")
 
     # ------------------------------------------------------------
@@ -165,6 +182,13 @@ class LoveGenerator(BaseAIGenerator):
                 daily_transit_context=context["daily_transit_context"],
             )  # existing Lab prompt builder
 
+        if report_type == "CURRENT_TIMING":
+            return build_current_love_timing_prompt(
+                current_love_phase=context["current_love_phase"],
+                context=context["timing_context"],
+                language=language,
+            )  # existing Lab prompt builder
+
         raise PromptBuildError(f"LoveGenerator does not support report_type={report_type!r}")
 
     # ------------------------------------------------------------
@@ -180,6 +204,13 @@ class LoveGenerator(BaseAIGenerator):
         context: Dict[str, Any],
         report_type: str,
     ) -> Optional[datetime]:
+        if report_type == "CURRENT_TIMING":
+            # Own expiry policy -- earliest of a relevant fast-moving
+            # planet's sign change, or 24 hours. Never None (see
+            # current_timing_expiry.py), so this never falls back to
+            # the Lifecycle Manager's generic report_type policy.
+            return compute_current_timing_expiry(SEGMENT)
+
         if report_type != "CURRENT_PHASE":
             return None
 

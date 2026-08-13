@@ -134,17 +134,40 @@ the three points above.
 NEXT PHASE CHANGE RULES (Section 2)
 ==================================================
 
-This section is ONLY a date. Using {next_phase_change_date} above, state
-the approximate date in the form "Around <date>" -- for example "Around
-18 November 2027", "Around March 2028", or "Around early 2028" (use a
-full day+month+year if {next_phase_change_date} supports it precisely; a
+NEXT_PHASE_CHANGE_DATE = {next_phase_change_date}
+
+NEXT_PHASE_CHANGE_DATE above has ALREADY been calculated by the backend
+system, using calculations you do not have access to. It is an
+AUTHORITATIVE SYSTEM FACT, not a suggestion, not a starting point for
+your own reasoning, and not something you are qualified to check,
+question, or improve on. This value is FINAL.
+
+You are NOT calculating a date in this section. You are ONLY converting
+the date already given above into a natural sentence. Never calculate,
+guess, or derive a different date. Never derive a date from the
+Mahadasha shown above. Never derive a date from the Antardasha shown
+above. Never derive a date from any transit or planetary position shown
+above. Never replace NEXT_PHASE_CHANGE_DATE with any other date for any
+reason, even if a different date seems more relevant or more
+astrologically significant to you -- that judgment has already been made
+for you, upstream, and is not yours to make here.
+
+This section is ONLY a date. Using NEXT_PHASE_CHANGE_DATE above, state
+that SAME date in the form "Around <date>" -- for example "Around 18
+November 2027", "Around March 2028", or "Around early 2028" (use a full
+day+month+year if NEXT_PHASE_CHANGE_DATE supports it precisely; a
 month+year, or a loose "early/mid/late <year>" phrasing, is fine when
-less precision reads more naturally). Do NOT explain the astrological
-event. Do NOT explain what changes. Do NOT mention a planet name. Do NOT
-write a paragraph or a second sentence. If {next_phase_change_date} is
-missing or not a real date, write exactly: "No major transition
-currently indicated."
+less precision reads more naturally) -- but the day, month, and year
+underneath must always match NEXT_PHASE_CHANGE_DATE exactly; only the
+WORDING/PRECISION of how it is written may vary, never the date itself.
+Do NOT explain the astrological event. Do NOT explain what changes. Do
+NOT mention a planet name. Do NOT write a paragraph or a second
+sentence. If NEXT_PHASE_CHANGE_DATE is missing or not a real date, write
+exactly: "No major transition currently indicated."
 Nothing else in this section, under any circumstance.
+
+If your output contains any date different from NEXT_PHASE_CHANGE_DATE,
+your answer is incorrect.
 
 ==================================================
 WATCH OUT FOR RULES (Section 3)
