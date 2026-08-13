@@ -1,0 +1,57 @@
+name: Run Alerts Cron
+
+# Completely separate workflow from notifications.yml -- invokes only
+# modules.alerts.alerts_scheduler.run_daily_alerts_job(), never
+# services.event_scheduler.run_daily_event_job(). Does not modify
+# notifications.yml or share a job with it.
+
+on:
+  schedule:
+    # 8:00 AM IST -> a single daily run, chosen to sit safely after
+    # sunrise across all of India's longitude/season range (India's
+    # latest seasonal sunrise is ~7:15-7:30 AM IST in the west; 8:00 AM
+    # IST leaves a buffer so every profile's sunrise-to-sunrise alert
+    # day (modules/alerts/sunrise_boundary.py) has already rolled over
+    # before the job runs). Single daily run only -- do not add more
+    # schedule entries without deliberately revisiting cadence.
+    - cron: "30 2 * * *"
+
+  workflow_dispatch: {}
+    # Manual, controlled execution -- no inputs needed (unlike
+    # notifications.yml's slot picker): run_daily_alerts_job() takes no
+    # slot concept, it always evaluates all currently-eligible profiles.
+
+jobs:
+  run-alerts-cron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Alerts Job
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+
+        run: |
+          python - <<EOF
+          from factory import create_app
+          from modules.alerts.alerts_scheduler import run_daily_alerts_job
+
+          app = create_app()
+
+          with app.app_context():
+              run_daily_alerts_job()
+          EOF
