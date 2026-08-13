@@ -88,23 +88,55 @@ class PlanningWindowEngine:
     def window_days(self) -> int:
         return self._window_days
 
-    def plan(self, kundali: Dict[str, Any]) -> List[PlannedMicroEvent]:
+    def plan(
+        self,
+        kundali: Dict[str, Any],
+        day_anchors: Optional[List[datetime.datetime]] = None,
+    ) -> List[PlannedMicroEvent]:
         """Simulates `self.window_days` days starting today (day_offset
         0) and returns one PlannedMicroEvent per event that is NEW or
         ACTIVE somewhere in that window (EXPIRED events -- never active
         at all within the window -- are excluded, same exit criterion
         Phase 1/2 already used for a single moment). Falls back to
         Stable Phase if nothing else qualifies. `kundali` must be the
-        dict full_kundali_api.calculate_full_kundali() returns."""
-        contexts_by_day = self._build_daily_contexts(kundali)
+        dict full_kundali_api.calculate_full_kundali() returns.
 
-        planned = self._plan_from(self._registry.all_events(), contexts_by_day)
+        `day_anchors` (Phase 3, optional): a list of exactly
+        `self.window_days` timezone-aware datetimes, one per simulated
+        day (day_offset 0..N-1), each the moment that day's
+        astrological "day" actually starts -- e.g.
+        modules/alerts/sunrise_boundary.py::resolve_alert_day_sequence()'s
+        output, for a sunrise-to-sunrise alert day instead of an IST
+        midnight-to-midnight one. When omitted (every existing caller,
+        including test_alerts_planning_window.py), falls back to the
+        ORIGINAL Phase 1/2 behavior -- consecutive IST midnights,
+        computed by _default_day_anchors() below -- entirely unchanged,
+        so no existing caller or test needs to change."""
+        if day_anchors is not None and len(day_anchors) != self._window_days:
+            raise ValueError(
+                f"day_anchors must have exactly window_days={self._window_days} "
+                f"entries, got {len(day_anchors)}"
+            )
+        anchors = day_anchors if day_anchors is not None else self._default_day_anchors()
+
+        contexts_by_day = self._build_daily_contexts(kundali, anchors)
+
+        planned = self._plan_from(self._registry.all_events(), contexts_by_day, anchors)
         if planned:
             return planned
 
-        return self._plan_from(self._registry.fallback_events(), contexts_by_day)
+        return self._plan_from(self._registry.fallback_events(), contexts_by_day, anchors)
 
-    def _build_daily_contexts(self, kundali: Dict[str, Any]) -> List[EvaluationContext]:
+    def _default_day_anchors(self) -> List[datetime.datetime]:
+        """Backward-compatible fallback -- the ORIGINAL Phase 1/2 day
+        boundary (IST midnight, +1 day each), byte-for-byte unchanged,
+        used whenever a caller does not supply its own `day_anchors`."""
+        today_midnight = _ist_midnight_today()
+        return [today_midnight + datetime.timedelta(days=i) for i in range(self._window_days)]
+
+    def _build_daily_contexts(
+        self, kundali: Dict[str, Any], day_anchors: List[datetime.datetime],
+    ) -> List[EvaluationContext]:
         """Builds one EvaluationContext per day in the window. Every
         field EXCEPT `planet_snapshots` is a natal/dasha/yoga fact that
         does not meaningfully change across a several-day window (a
@@ -112,9 +144,14 @@ class PlanningWindowEngine:
         lords are natal, permanent facts) -- computed once here and
         reused across every day, exactly like every Premium Generator's
         own phase-context builder already treats natal facts as
-        computed once per run. Only `planet_snapshots` (today's/each
-        day's transits) is recomputed per day, via
-        future_planet_data.build_planet_snapshots_for_day()."""
+        computed once per run. Only `planet_snapshots` (each day's
+        transits, taken AT that day's own `day_anchors` moment -- e.g.
+        sunrise, or IST midnight for the default/original behavior) is
+        recomputed per day, via
+        future_planet_data.build_planet_snapshots_for_day(), which
+        already accepts an arbitrary timezone-aware moment -- it has no
+        assumption of "midnight" built in, so no change was needed
+        there."""
         lagna_sign = kundali.get("lagna_sign")
         mahadasha = kundali.get("current_mahadasha") or {}
         antardasha = kundali.get("current_antardasha") or {}
@@ -125,14 +162,11 @@ class PlanningWindowEngine:
         antardasha_lord = antardasha.get("planet")
         active_yogas = _active_yogas(kundali)
 
-        today_midnight = _ist_midnight_today()
-
         contexts = []
-        for day_offset in range(self._window_days):
-            day_ist = today_midnight + datetime.timedelta(days=day_offset)
+        for day_moment in day_anchors:
             contexts.append(EvaluationContext(
                 lagna_sign=lagna_sign,
-                planet_snapshots=build_planet_snapshots_for_day(lagna_sign, day_ist),
+                planet_snapshots=build_planet_snapshots_for_day(lagna_sign, day_moment),
                 natal_planets_by_name=natal_planets_by_name,
                 house_lords=house_lords,
                 mahadasha_lord=mahadasha_lord,
@@ -141,15 +175,16 @@ class PlanningWindowEngine:
             ))
         return contexts
 
-    def _plan_from(self, events, contexts_by_day: List[EvaluationContext]) -> List[PlannedMicroEvent]:
-        today_midnight = _ist_midnight_today()
+    def _plan_from(
+        self, events, contexts_by_day: List[EvaluationContext], day_anchors: List[datetime.datetime],
+    ) -> List[PlannedMicroEvent]:
         thresholds = self._registry.priority_thresholds
 
         planned: List[PlannedMicroEvent] = []
         for event in events:
             day_results: List[DayResult] = []
             for day_offset, context in enumerate(contexts_by_day):
-                date_str = (today_midnight + datetime.timedelta(days=day_offset)).strftime("%Y-%m-%d")
+                date_str = day_anchors[day_offset].strftime("%Y-%m-%d")
 
                 matched_rules = evaluate_event_rules(event, context)
                 confidence = confidence_engine.score(event, matched_rules)  # Rule Engine, unmodified

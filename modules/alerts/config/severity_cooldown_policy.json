@@ -1,0 +1,30 @@
+{
+  "_comment": "Severity + Cooldown Policy config (Phase 4). Kept as its own file, separate from config/micro_events.json (the Rule Engine's own catalog) -- same reasoning config/planning_window.json already established for Phase 3 (see planning_window_engine.py's docstring): so this phase never touches that file, or event_registry.py/event_models.py/rule_interface.py/rule_evaluator.py/confidence_engine.py. severity_cooldown_registry.py validates this file's 'events' object is in exact 1:1 correspondence with the real catalog's event_ids at load time -- every catalog event MUST appear here, and every entry here MUST be a real catalog event_id.",
+  "_severity_reasoning": "Severity reflects each event's expected real-world importance/impact, judged from its own definition -- never derived from confidence or priority. HIGH: a genuine opportunity or risk worth acting on (financial_gain_opportunity, unexpected_expense, minor_injury_caution -- a safety-relevant caution, foreign_travel_opportunity -- rare and significant). MEDIUM: a real but moderate signal (energy_low, stress_high, financial_caution, good_time_to_start_something_new, health_slightly_weak, relationship_tension, travel_opportunity, decision_window, opportunity_window). LOW: gentle, everyday mood/timing/feel-good signals that don't need urgent attention (mood_positive, mood_low, energy_high, mental_clarity, delay_possible, recovery_phase, relationship_harmony, good_communication_window, learning_focus, stable_phase). CRITICAL is a supported vocabulary level (see SEVERITY_LEVELS in severity_cooldown_registry.py) but nothing in this specific 23-event catalog is judged severe enough to warrant it -- none represent an urgent/dangerous situation; forcing an unused level onto an event just to exercise it would be exactly the 'arbitrary' assignment this phase's own instructions forbid.",
+  "_cooldown_reasoning": "cooldown_hours is the minimum elapsed time before the SAME (profile, event) becomes delivery-eligible again, independent of severity (CRITICAL does not imply zero cooldown; nothing here is zero). 12h: caution/warning-type events where a persisting condition genuinely deserves a same-day re-reminder (unexpected_expense, minor_injury_caution, stress_high). 24h: the default cadence for ordinary mood/timing/relationship signals, matching one alert-day (Phase 3's own sunrise-to-sunrise unit) -- the natural 'once per day' rhythm. 48h: signals describing a multi-day window or a gentler, non-urgent state where daily re-notification would feel like spam (financial_gain_opportunity, good_time_to_start_something_new, health_slightly_weak, recovery_phase, relationship_harmony, learning_focus). 72h: travel-related events, since travel planning/opportunity windows don't benefit from daily repetition and the user typically can't act on them immediately (travel_opportunity, foreign_travel_opportunity).",
+  "events": {
+    "mood_positive":                     {"severity": "LOW",    "cooldown_hours": 24},
+    "mood_low":                          {"severity": "LOW",    "cooldown_hours": 24},
+    "energy_high":                       {"severity": "LOW",    "cooldown_hours": 24},
+    "energy_low":                        {"severity": "MEDIUM", "cooldown_hours": 24},
+    "stress_high":                       {"severity": "MEDIUM", "cooldown_hours": 12},
+    "mental_clarity":                    {"severity": "LOW",    "cooldown_hours": 24},
+    "financial_gain_opportunity":        {"severity": "HIGH",   "cooldown_hours": 48},
+    "financial_caution":                 {"severity": "MEDIUM", "cooldown_hours": 24},
+    "unexpected_expense":                {"severity": "HIGH",   "cooldown_hours": 12},
+    "good_time_to_start_something_new":  {"severity": "MEDIUM", "cooldown_hours": 48},
+    "delay_possible":                    {"severity": "LOW",    "cooldown_hours": 24},
+    "minor_injury_caution":              {"severity": "HIGH",   "cooldown_hours": 12},
+    "health_slightly_weak":              {"severity": "MEDIUM", "cooldown_hours": 48},
+    "recovery_phase":                    {"severity": "LOW",    "cooldown_hours": 48},
+    "relationship_harmony":              {"severity": "LOW",    "cooldown_hours": 48},
+    "relationship_tension":              {"severity": "MEDIUM", "cooldown_hours": 24},
+    "good_communication_window":         {"severity": "LOW",    "cooldown_hours": 24},
+    "travel_opportunity":                {"severity": "MEDIUM", "cooldown_hours": 72},
+    "foreign_travel_opportunity":        {"severity": "HIGH",   "cooldown_hours": 72},
+    "learning_focus":                    {"severity": "LOW",    "cooldown_hours": 48},
+    "decision_window":                   {"severity": "MEDIUM", "cooldown_hours": 24},
+    "opportunity_window":                {"severity": "MEDIUM", "cooldown_hours": 24},
+    "stable_phase":                      {"severity": "LOW",    "cooldown_hours": 24}
+  }
+}
