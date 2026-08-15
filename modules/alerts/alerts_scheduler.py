@@ -101,6 +101,11 @@ from modules.alerts.profile_detection_service import (
 )
 from modules.alerts.sunrise_boundary import SunriseResolutionError
 from modules.alerts.user_alert_selection_service import get_user_facing_alerts_for_profile
+from services.attention_policy import (
+    DAILY_PUSH_CAP,
+    count_pushes_sent_today,
+    tier_for_alert_severity,
+)
 
 # Dedicated advisory lock key for THIS job only -- an arbitrary constant
 # chosen once, never reused elsewhere (verified: zero other advisory
@@ -140,6 +145,16 @@ class AlertsJobSummary:
     # pool, for observability into how often/how much the selection
     # layer is actually trimming.
     selection_suppressed: int = 0
+    # N4 -- Global User Attention Policy addition. Distinct from
+    # selection_suppressed (Alerts' OWN local max-2/conflict narrowing,
+    # unchanged): this counts an alert that PASSED Alerts' own selection
+    # (i.e. Alerts wanted to send it) but was not attempted because the
+    # user's GLOBAL daily push budget (shared with
+    # services/event_scheduler.py's pipeline -- see
+    # services/attention_policy.py) was already spent by an earlier
+    # send today. Purely observability; does not change eligibility,
+    # confidence, cooldown, or Alerts' own selection outcome.
+    global_cap_suppressed: int = 0
     failures: int = 0
     duration_seconds: float = 0.0
     lock_acquired: bool = False
@@ -156,6 +171,7 @@ class AlertsJobSummary:
             "alerts_delivered": self.alerts_delivered,
             "cooldown_or_eligibility_skipped": self.cooldown_or_eligibility_skipped,
             "selection_suppressed": self.selection_suppressed,
+            "global_cap_suppressed": self.global_cap_suppressed,
             "failures": self.failures,
             "duration_seconds": round(self.duration_seconds, 3),
             "lock_acquired": self.lock_acquired,
@@ -333,14 +349,37 @@ def _process_one_profile(
         # diversity, or the daily cap).
         summary.selection_suppressed += selection.eligible_count - len(selection.selected)
 
-        # ---- 6/7. Deliver each SELECTED alert -- deliver_alert()
-        # (Phase 4/5, unmodified) remains the SOLE eligibility/cooldown
-        # authority for the actual send; nothing here re-checks or
-        # duplicates that decision, it only decides WHICH event_ids
-        # reach this call at all. ----
-        for alert_row in active_alerts:
-            if alert_row.event_id not in selected_event_ids:
-                continue
+        # ---- N4 (Global User Attention Policy) -- BEFORE attempting
+        # delivery, narrow Alerts' own already-selected set (at most
+        # MAX_USER_FACING_ALERTS, unchanged) against the user's GLOBAL
+        # remaining daily push budget, shared with
+        # services/event_scheduler.py's pipeline via the same persisted
+        # signal (services/attention_policy.py::count_pushes_sent_today()
+        # -- re-read fresh here, every call, so this can never see a
+        # stale count from an earlier run). This does NOT touch Alerts'
+        # own eligibility, confidence, cooldown, or selection algorithm
+        # (user_alert_selection.py, unmodified) -- it only decides, of
+        # the alerts Alerts already wants to send, how many actually fit
+        # in what's left of today's budget. If only one slot remains and
+        # two were selected, the higher-severity one is attempted first
+        # (Alerts' own config-driven severity -- see
+        # severity_cooldown_registry.py -- not re-derived here).
+        global_remaining = max(
+            0, DAILY_PUSH_CAP - count_pushes_sent_today(profile_id, now=now)
+        )
+        selected_rows = sorted(
+            (r for r in active_alerts if r.event_id in selected_event_ids),
+            key=lambda r: tier_for_alert_severity(r.severity),
+        )
+        attemptable_rows = selected_rows[:global_remaining]
+        summary.global_cap_suppressed += len(selected_rows) - len(attemptable_rows)
+
+        # ---- 6/7. Deliver each SELECTED-AND-GLOBALLY-BUDGETED alert --
+        # deliver_alert() (Phase 4/5, unmodified) remains the SOLE
+        # eligibility/cooldown authority for the actual send; nothing
+        # here re-checks or duplicates that decision, it only decides
+        # WHICH event_ids reach this call at all. ----
+        for alert_row in attemptable_rows:
             summary.alerts_attempted += 1
             delivery = deliver_alert(
                 profile_id=profile_id,

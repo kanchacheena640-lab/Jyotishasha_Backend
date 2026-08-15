@@ -20,6 +20,12 @@ from services.notification_lifecycle import (
     expiry_for_same_day_notification,
     expiry_for_dasha_pre_notification,
 )
+from services.attention_policy import (
+    AttentionCandidate,
+    count_pushes_sent_today,
+    select_for_push,
+    tier_for_event_scheduler_type,
+)
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -232,6 +238,16 @@ def run_daily_event_job():
 
                     seen_events = set()
                     user_sent = 0
+                    user_wrote_anything = False
+
+                    # 🔥 N4 -- PASS 1: compute expiry/identity for every
+                    # candidate exactly as before N4, and run the SAME
+                    # local + DB dedup checks BEFORE any push/priority
+                    # decision -- an already-logged candidate (from a
+                    # previous run, whether it was PUSHED or written
+                    # Bell-only) must never be reprocessed, so dedup
+                    # stays the very first gate, unchanged in meaning.
+                    eligible = []
 
                     for n in user_notifications:
                         data = n.get("data", {}) or {}
@@ -388,45 +404,131 @@ def run_daily_event_job():
                         if existing_log:
                             continue
 
+                        eligible.append({
+                            "n": n,
+                            "data": data,
+                            "expires_at": expires_at,
+                            "android_tag": android_tag,
+                            "event_id": event_id,
+                            "ntype": ntype,
+                        })
+
+                    # 🔥 N4 -- PASS 2: GLOBAL ATTENTION POLICY. Narrows
+                    # this run's own already-eligible candidates against
+                    # the user's REMAINING daily push budget -- shared
+                    # with Alerts' own delivery path via the SAME
+                    # persisted signal (services/attention_policy.py::
+                    # count_pushes_sent_today(), re-read fresh here, not
+                    # cached in memory, so a rerun/delayed run/second
+                    # slot can never see a stale count). Everything
+                    # below this point is the UNCHANGED send/log/bell
+                    # logic that already existed pre-N4 -- only WHICH
+                    # candidates reach it, and whether they reach it as
+                    # a push or a Bell-only row, is new.
+                    already_sent_today = count_pushes_sent_today(user.id)
+                    attention_candidates = [
+                        AttentionCandidate(
+                            key=c,
+                            tier=tier_for_event_scheduler_type(c["ntype"]),
+                            label=c["ntype"],
+                        )
+                        for c in eligible
+                    ]
+                    selection = select_for_push(
+                        attention_candidates,
+                        already_sent_today=already_sent_today,
+                    )
+
+                    token = getattr(user, "fcm_token", None)
+
+                    for c in selection.approved:
                         success = False
-                        token = getattr(user, "fcm_token", None)
 
                         if token:
                             success = send_push_notification(
                                 token=token,
-                                title=n.get("title"),
-                                body=n.get("body"),
-                                data=data,
-                                android_tag=android_tag
+                                title=c["n"].get("title"),
+                                body=c["n"].get("body"),
+                                data=c["data"],
+                                android_tag=c["android_tag"]
                             )
 
                         if success:
                             total_sent += 1
                             user_sent += 1
+                            user_wrote_anything = True
 
                             # 🔹 SAVE LOG
                             db.session.add(NotificationLog(
                                 user_id=user.id,
-                                event_id=event_id,
+                                event_id=c["event_id"],
                                 slot=slot
                             ))
 
                             # 🔹 SAVE USER NOTIFICATION (Bell UI)
                             db.session.add(UserNotification(
                                 user_id=user.id,
-                                title=n.get("title"),
-                                body=n.get("body"),
-                                data=data,
+                                title=c["n"].get("title"),
+                                body=c["n"].get("body"),
+                                data=c["data"],
                                 is_read=False,
-                                expires_at=expires_at
+                                expires_at=c["expires_at"]
                             ))
+                        # A push that was attempted (token existed) but
+                        # failed (`success is False`) is intentionally
+                        # NOT logged/persisted here -- exactly the
+                        # pre-N4 behavior: a failed send must never be
+                        # recorded as delivered, so a later run can
+                        # still retry it.
+
+                    for c in selection.bell_only:
+                        # 🔥 N4 -- suppressed from PUSH purely by the
+                        # global daily cap (never for a redundant/
+                        # routine reason -- see attention_policy.py's
+                        # BELL_ONLY_ELIGIBLE_TIERS), but still genuinely
+                        # useful, so it is still written to Bell. No FCM
+                        # call at all. NotificationLog is still written
+                        # so a rerun can never insert this twice, and
+                        # the SAME N2 expires_at this notification would
+                        # have carried as a push is preserved unchanged
+                        # -- N2 lifecycle stays the sole authority on
+                        # when it disappears from Bell.
+                        bell_only_data = dict(c["data"])
+                        bell_only_data["delivery_channel"] = "bell_only"
+
+                        db.session.add(NotificationLog(
+                            user_id=user.id,
+                            event_id=c["event_id"],
+                            slot=slot
+                        ))
+                        db.session.add(UserNotification(
+                            user_id=user.id,
+                            title=c["n"].get("title"),
+                            body=c["n"].get("body"),
+                            data=bell_only_data,
+                            is_read=False,
+                            expires_at=c["expires_at"]
+                        ))
+                        user_wrote_anything = True
+
+                    # selection.dropped: Tier 3 / routine candidates
+                    # suppressed by the cap -- intentionally NO
+                    # persistence of any kind (no push, no Bell row, no
+                    # NotificationLog entry), so a later run with more
+                    # remaining budget can still reconsider them. See
+                    # attention_policy.py's own PUSH VS BELL policy for
+                    # why Panchang specifically is never Bell-only-only
+                    # clutter.
 
                     # 🔥 Commit ALL of this user's notifications first --
                     # retention must never run against uncommitted/in-flight
                     # rows from this same loop (that race is what silently
                     # deleted a just-sent notification before the Bell
-                    # could ever read it).
-                    if user_sent:
+                    # could ever read it). N4: gated on user_wrote_anything,
+                    # not user_sent -- a Bell-only write (no push at all)
+                    # still needs committing and still needs to participate
+                    # in the retention trim below.
+                    if user_wrote_anything:
                         db.session.commit()
 
                         # 🔥 KEEP ONLY LAST 10 NOTIFICATIONS PER USER
