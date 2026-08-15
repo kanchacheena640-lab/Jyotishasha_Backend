@@ -1,7 +1,8 @@
 # modules/alerts/entitlement_gate.py
 
 """
-Alerts Entitlement Gate (Phase 5).
+Alerts Entitlement Gate (Phase 5; revised for the "Alerts & Opportunities"
+premium subscription section).
 
 The ONLY question this module answers: does this profile currently
 have legitimate access to the premium "Alerts & Opportunities"
@@ -11,36 +12,26 @@ reimplemented here. This file contains zero business logic of its
 own beyond reading EntitlementService's own output.
 
 ======================================================================
-WHY "access to ALL segments" IS THE GATE (verified from real code,
-not invented -- confirmed with the user before implementation)
+REVISION -- Alerts is now a real, selectable subscription section
 ======================================================================
-"Alerts & Opportunities" is NOT one of the 5 selectable premium
-segments (modules/models_ai_reports.py::AI_REPORT_SEGMENTS =
-LOVE/CAREER/FINANCE/HEALTH/FAMILY). Confirmed directly from code:
-EntitlementService.has_access() itself raises ValueError for any
-segment outside that list, and
-modules/entitlement/entitlement_write_service.py's own write path
-(line ~220) rejects any `selected_segment` outside AI_REPORT_SEGMENTS
-at write time -- so a profile can NEVER have "ALERTS" as its
-selected_segment today. Adding a 6th segment would be inventing/
-modifying subscription business rules, explicitly forbidden for this
-phase.
+Previously, "Alerts & Opportunities" was not one of the selectable
+premium segments, so this gate treated it as an all-or-nothing bonus
+granted only alongside every other segment (an active trial, or an
+ACCESS_ALL-type plan). That constraint has been explicitly lifted per a
+locked product decision: Alerts & Opportunities is now the sixth
+canonical subscription section (modules/entitlement/
+subscription_sections.py::SUBSCRIPTION_SECTIONS = LOVE/CAREER/FINANCE/
+HEALTH/FAMILY/ALERTS), selectable exactly like any of the other five --
+a Prime/Silver profile that selected "ALERTS" as its `selected_segment`
+is entitled; one that selected anything else is not.
 
-Given that hard constraint, this gate treats Alerts access as granted
-exactly when the profile's CurrentEntitlement already grants access to
-EVERY existing segment:
-  - an active trial (EntitlementService.get_current_entitlement()
-    already grants all 5 segments to any active trial, unconditionally
-    -- see that method's own code), or
-  - an ACCESS_ALL-type plan (PRIME_PLUS_*, GOLD_*, PLATINUM_YEARLY,
-    per modules/entitlement/plan_access_policy.py -- unmodified).
-A single-section (ACCESS_SELECTED) plan -- PRIME_*, SILVER_* -- never
-grants Alerts, regardless of which one segment it selected, because
-none of the 5 selectable segments IS Alerts.
-
-This is derived ENTIRELY from EntitlementSnapshot.accessible_segments,
-already computed by EntitlementService -- no new access rule, no new
-plan table, no change to any entitlement file.
+This gate's own logic is now IDENTICAL in shape to how any other single
+section's access is decided (`section in accessible_segments`) -- no
+special-cased "all segments" rule remains. `accessible_segments` itself
+is still entirely computed by EntitlementService (unmodified logic,
+only its own SUBSCRIPTION_SECTIONS-vs-AI_REPORT_SEGMENTS source swapped
+-- see entitlement_service.py and plan_access_policy.py), so this file
+still introduces no new access rule of its own.
 """
 
 from __future__ import annotations
@@ -48,7 +39,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from modules.models_ai_reports import AI_REPORT_SEGMENTS
+from modules.entitlement.subscription_sections import ALERTS_SECTION
 from modules.entitlement.entitlement_service import EntitlementService
 
 
@@ -73,25 +64,13 @@ def has_alerts_access(
     entitlement_service = entitlement_service or EntitlementService()
     snapshot = entitlement_service.get_current_entitlement(profile_id)
 
-    all_segments_accessible = set(snapshot.accessible_segments) == set(AI_REPORT_SEGMENTS)
-
-    if all_segments_accessible:
+    if ALERTS_SECTION in snapshot.accessible_segments:
         return AlertsEntitlementResult(
             entitled=True,
-            reason=f"profile has access to all segments (membership_state={snapshot.membership_state})",
-            membership_state=snapshot.membership_state,
-        )
-
-    if snapshot.trial.is_active:
-        # Should be structurally unreachable (an active trial already
-        # grants all segments per EntitlementService.get_current_entitlement()
-        # itself, so the branch above should always catch it first) --
-        # kept as an explicit, defensive fallback rather than silently
-        # falling through to "denied" if that invariant is ever changed
-        # elsewhere in EntitlementService without this file's knowledge.
-        return AlertsEntitlementResult(
-            entitled=True,
-            reason="profile has an active trial",
+            reason=(
+                f"profile has access to the {ALERTS_SECTION} section "
+                f"(membership_state={snapshot.membership_state})"
+            ),
             membership_state=snapshot.membership_state,
         )
 
@@ -99,9 +78,9 @@ def has_alerts_access(
         return AlertsEntitlementResult(
             entitled=False,
             reason=(
-                f"active subscription grants only segment(s) "
-                f"{snapshot.accessible_segments!r} -- Alerts requires "
-                f"an all-segments plan or an active trial"
+                f"active subscription grants only section(s) "
+                f"{snapshot.accessible_segments!r} -- Alerts & Opportunities "
+                f"was not the selected section"
             ),
             membership_state=snapshot.membership_state,
         )

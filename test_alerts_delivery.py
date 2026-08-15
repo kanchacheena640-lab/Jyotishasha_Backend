@@ -34,7 +34,7 @@ from app import app  # noqa: E402
 from extensions import db  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
-from modules.models_ai_reports import AI_REPORT_SEGMENTS  # noqa: E402
+from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS, ALERTS_SECTION  # noqa: E402
 from modules.entitlement.entitlement_models import (  # noqa: E402
     EntitlementSnapshot, TrialStatus, SubscriptionStatus,
 )
@@ -85,7 +85,7 @@ def _snapshot(accessible_segments, trial_active=False, subscription_active=False
     )
 
 
-ALL_SEGMENTS = list(AI_REPORT_SEGMENTS)
+ALL_SEGMENTS = list(SUBSCRIPTION_SECTIONS)  # all 6 sections, including Alerts & Opportunities
 
 
 class FakeFcmSender:
@@ -139,11 +139,23 @@ def main():
             _snapshot(["LOVE"], subscription_active=True, plan="PRIME_MONTHLY", selected_segment="LOVE")
         ))
         check(
-            "Test: single-section subscription (any of the 5 real segments) -> ALWAYS blocked "
-            "(Alerts cannot be the selected segment -- proven, not assumed)",
+            "Test: Prime with a DIFFERENT section selected (LOVE) -> Alerts locked",
             not r.entitled,
         )
         check("single-section rejection reason names the actual accessible segment(s)", "LOVE" in r.reason)
+
+        # Alerts & Opportunities is now the sixth selectable subscription
+        # section (locked product decision) -- a Prime profile that
+        # selected it is entitled, exactly like selecting any of the
+        # other five would entitle that section.
+        r = has_alerts_access(1, entitlement_service=FakeEntitlementService(
+            _snapshot([ALERTS_SECTION], subscription_active=True, plan="PRIME_MONTHLY", selected_segment=ALERTS_SECTION)
+        ))
+        check(
+            "Test: Prime with Alerts & Opportunities selected -> entitled=True "
+            "(no longer requires an all-segments plan)",
+            r.entitled,
+        )
 
         r = has_alerts_access(1, entitlement_service=FakeEntitlementService(_snapshot([], subscription_active=False, trial_active=False)))
         check("Test: expired/no entitlement -> blocked", not r.entitled)

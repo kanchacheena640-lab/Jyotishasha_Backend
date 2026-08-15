@@ -64,8 +64,11 @@ client's product_id is carried through only in PaymentRequest.metadata
 for logging/traceability.
 
 selected_segment (Subscription Purchase System -- S12) is REQUEST-shape
-validated here only -- is the string one of AI_REPORT_SEGMENTS
-(modules/models_ai_reports.py, reused verbatim, not reinvented). Whether
+validated here only -- is the string one of SUBSCRIPTION_SECTIONS
+(modules/entitlement/subscription_sections.py -- the six selectable
+subscription sections, including Alerts & Opportunities; deliberately
+NOT AI_REPORT_SEGMENTS, which is the AI Report Engine's own, narrower,
+5-value generation domain -- see that file's own docstring). Whether
 a given purchase's plan actually REQUIRES one is a business rule this
 route does not know and does not duplicate: that decision already lives
 entirely inside EntitlementWriteService's existing, unmodified
@@ -113,7 +116,7 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from modules.models_ai_reports import AI_REPORT_SEGMENTS
+from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS
 from modules.payments import (
     PaymentProviderType,
     PaymentPurpose,
@@ -213,9 +216,9 @@ def confirm_google_purchase():
         if not isinstance(selected_segment_raw, str):
             return _bad_request("selected_segment must be a string.")
         selected_segment = selected_segment_raw.strip().upper()
-        if selected_segment not in AI_REPORT_SEGMENTS:
+        if selected_segment not in SUBSCRIPTION_SECTIONS:
             return _bad_request(
-                f"selected_segment must be one of {AI_REPORT_SEGMENTS!r}."
+                f"selected_segment must be one of {SUBSCRIPTION_SECTIONS!r}."
             )
 
     payment_request = PaymentRequest(

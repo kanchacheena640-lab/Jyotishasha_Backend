@@ -5,21 +5,28 @@ Section-access rules for the finalized plans -- centralized here so
 segment-access logic is never duplicated or hardcoded elsewhere in the
 codebase (EntitlementService is the only caller).
 
-    Prime Monthly       -> only the profile's selected segment
-    Prime Yearly        -> only the profile's selected segment
-    Prime Plus Monthly  -> all segments
-    Prime Plus Yearly   -> all segments
+    Prime Monthly       -> only the profile's selected section (six choices)
+    Prime Yearly        -> only the profile's selected section (six choices)
+    Prime Plus Monthly  -> all six sections
+    Prime Plus Yearly   -> all six sections
 
-    Silver (Monthly/Yearly)    -> only the profile's selected segment
-    Gold (Monthly/Yearly)      -> all segments
-    Platinum (Yearly)          -> all segments
+    Silver (Monthly/Yearly)    -> only the profile's selected section
+    Gold (Monthly/Yearly)      -> all six sections
+    Platinum (Yearly)          -> all six sections
 
 Silver/Gold/Platinum (Subscription Purchase System -- S11) are the
 real, finalized Google Play Console product lineup -- a new 3-tier
 ladder sold alongside the original Prime/Prime Plus system, not a
 replacement for it. Added here as an explicit, user-authorized
 exception rather than silently guessed: Silver keeps the
-single-segment restriction, Gold and Platinum grant every segment.
+single-section restriction, Gold and Platinum grant every section.
+
+"Sections" here means modules/entitlement/subscription_sections.py::
+SUBSCRIPTION_SECTIONS (LOVE/CAREER/FINANCE/HEALTH/FAMILY/ALERTS) --
+deliberately NOT modules/models_ai_reports.py::AI_REPORT_SEGMENTS (5
+values only). This module decides subscription access, never what the
+AI Report Engine can generate -- see subscription_sections.py's own
+docstring for the full reasoning.
 
 Adding a future plan requires exactly one change: one new entry in
 PLAN_SEGMENT_ACCESS below.
@@ -29,7 +36,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from modules.models_ai_reports import AI_REPORT_SEGMENTS
+from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS
 
 ACCESS_ALL = "ALL"
 ACCESS_SELECTED = "SELECTED"
@@ -59,7 +66,7 @@ def resolve_accessible_segments(plan: Optional[str], selected_segment: Optional[
     mode = PLAN_SEGMENT_ACCESS.get(plan)
 
     if mode == ACCESS_ALL:
-        return list(AI_REPORT_SEGMENTS)
+        return list(SUBSCRIPTION_SECTIONS)
 
     if mode == ACCESS_SELECTED:
         return [selected_segment] if selected_segment else []

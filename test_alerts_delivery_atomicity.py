@@ -27,7 +27,7 @@ from app import app  # noqa: E402
 from extensions import db  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
-from modules.models_ai_reports import AI_REPORT_SEGMENTS  # noqa: E402
+from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS  # noqa: E402
 from modules.entitlement.entitlement_models import EntitlementSnapshot, TrialStatus, SubscriptionStatus  # noqa: E402
 from modules.alerts.persistence_repository import AlertPersistenceRepository, AlertPersistenceError  # noqa: E402
 import modules.alerts.alert_delivery_service as delivery_module  # noqa: E402
@@ -35,7 +35,7 @@ from modules.alerts.alert_delivery_service import deliver_alert  # noqa: E402
 from notifications.notification_models import UserNotification  # noqa: E402
 
 PROFILE = 9501
-ALL_SEGMENTS = list(AI_REPORT_SEGMENTS)
+ALL_SEGMENTS = list(SUBSCRIPTION_SECTIONS)  # all 6 sections, including Alerts & Opportunities
 
 passed = 0
 failed = 0

@@ -29,7 +29,7 @@ from app import app  # noqa: E402
 from extensions import db  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
-from modules.models_ai_reports import AI_REPORT_SEGMENTS  # noqa: E402
+from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS  # noqa: E402
 from modules.entitlement.entitlement_models import EntitlementSnapshot, TrialStatus, SubscriptionStatus  # noqa: E402
 from modules.alerts.persistence_repository import AlertPersistenceRepository  # noqa: E402
 from modules.alerts.profile_detection_service import ProfileDataError, DetectionRunFailedError  # noqa: E402
@@ -40,7 +40,7 @@ from modules.alerts.user_alert_selection_service import (  # noqa: E402
     resolve_daily_cap_window_start,
 )
 
-ALL_SEGMENTS = list(AI_REPORT_SEGMENTS)
+ALL_SEGMENTS = list(SUBSCRIPTION_SECTIONS)  # all 6 sections, including Alerts & Opportunities
 
 P_MULTI = 9701          # many eligible, non-conflicting candidates
 P_CONFLICT = 9702       # a real conflicting pair + one distinct-category candidate

@@ -68,7 +68,7 @@ from modules.models_premium_subscription import (
     SubscriptionEvent,
     SUBSCRIPTION_PLANS,
 )
-from modules.models_ai_reports import AI_REPORT_SEGMENTS
+from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS
 from modules.entitlement.entitlement_write_models import EntitlementWriteResult
 from modules.entitlement.plan_access_policy import ACCESS_SELECTED, PLAN_SEGMENT_ACCESS
 
@@ -217,7 +217,7 @@ class EntitlementWriteService:
                     message=f"Unknown plan: {plan!r}",
                 )
             if PLAN_SEGMENT_ACCESS.get(plan) == ACCESS_SELECTED:
-                if not selected_segment or selected_segment not in AI_REPORT_SEGMENTS:
+                if not selected_segment or selected_segment not in SUBSCRIPTION_SECTIONS:
                     return EntitlementWriteResult(
                         success=False, action="ERROR", profile_id=profile_id,
                         message=f"{plan} requires a valid selected_segment.",

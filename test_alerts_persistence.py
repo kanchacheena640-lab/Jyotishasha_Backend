@@ -84,7 +84,24 @@ def cleanup():
     db.session.execute(text(
         "DELETE FROM alert_micro_events WHERE profile_id IN (:a, :b)"
     ), {"a": TEST_PROFILE_A, "b": TEST_PROFILE_B})
+    db.session.execute(text(
+        "DELETE FROM app_users WHERE id IN (:a, :b)"
+    ), {"a": TEST_PROFILE_A, "b": TEST_PROFILE_B})
     db.session.commit()
+
+
+def setup_fixture_profiles():
+    # This script's own profile_id FKs (app_users.id) must exist for the
+    # inserts below to satisfy alert_micro_events_profile_id_fkey --
+    # created and torn down by this script itself, same convention as
+    # every other test_alerts_*.py script's own app_users fixture rows.
+    with db.engine.connect() as conn:
+        for p in (TEST_PROFILE_A, TEST_PROFILE_B):
+            conn.execute(text(
+                "INSERT INTO app_users (id, tz, subscription, asknow_tokens, fcm_token) "
+                "VALUES (:id, 'IST', 'free', 0, :token)"
+            ), {"id": p, "token": f"fake-fcm-token-{p}"})
+        conn.commit()
 
 
 def main():
@@ -98,6 +115,7 @@ def main():
         )
 
         cleanup()
+        setup_fixture_profiles()
         repo = AlertPersistenceRepository()
 
         print("\n=== Test 1: first insert succeeds ===")

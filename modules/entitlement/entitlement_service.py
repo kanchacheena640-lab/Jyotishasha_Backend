@@ -30,6 +30,7 @@ from datetime import datetime
 from typing import Optional
 
 from modules.models_ai_reports import AI_REPORT_SEGMENTS
+from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS
 from modules.models_premium_subscription import CurrentEntitlement
 from modules.entitlement.entitlement_models import (
     EntitlementSnapshot,
@@ -86,10 +87,14 @@ class EntitlementService:
 
         if trial.is_active:
             # A trial is a promotional window, not plan-restricted --
-            # it grants every segment. See this phase's report for why
-            # this default was chosen (not explicitly specified by the
-            # task).
-            accessible_segments = list(AI_REPORT_SEGMENTS)
+            # it grants every SUBSCRIPTION section, including Alerts &
+            # Opportunities (the 6th section, added when Alerts became a
+            # selectable section -- see
+            # modules/entitlement/subscription_sections.py). Deliberately
+            # SUBSCRIPTION_SECTIONS, not AI_REPORT_SEGMENTS: a trial
+            # grants access to every premium SECTION, not literally every
+            # AI-report generator (Alerts has none, by design).
+            accessible_segments = list(SUBSCRIPTION_SECTIONS)
         elif subscription_is_active:
             accessible_segments = resolve_accessible_segments(row.plan, row.selected_segment)
         else:
