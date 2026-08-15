@@ -84,6 +84,7 @@ from extensions import db
 from notifications.notification_models import UserNotification
 
 from modules.alerts.persistence_models import AlertMicroEvent
+from services.notification_lifecycle import expiry_for_alert_notification
 
 
 class AlertPersistenceError(Exception):
@@ -526,6 +527,16 @@ class AlertPersistenceRepository:
         convention of using AppUser.id despite the column's generic
         name). Either both writes land, or neither does.
 
+        N2 (lifecycle/expiry): the inserted UserNotification row's
+        `expires_at` is derived from THIS row's own `active_until`
+        (never NULL -- see persistence_models.py) via
+        services/notification_lifecycle.py::expiry_for_alert_notification()
+        -- not the previous hardcoded `None`. Touches only the Bell
+        row's visibility; `active_until`/`active_from`/`state`/
+        `confidence`/`severity`/`priority` themselves, and every other
+        Alerts detection/selection/cooldown/scheduler file, are
+        untouched by this change.
+
         Raises AlertPersistenceError -- never silently swallowed -- if
         either write fails, OR if no AlertMicroEvent row exists for
         this key. The caller MUST treat this as a distinct,
@@ -558,7 +569,7 @@ class AlertPersistenceRepository:
             body=notification_body,
             data=notification_data,
             is_read=False,
-            expires_at=None,
+            expires_at=expiry_for_alert_notification(active_until=row.active_until),
         ))
         try:
             db.session.commit()

@@ -131,6 +131,15 @@ def bootstrap_user_profile():
         user.lat = lat
         user.lng = lng
 
+        # N3 -- persist the content-language preference this request
+        # already carries (`lang`, used above only to render the kundali)
+        # so downstream personalized-content notifications can read a real
+        # per-user language instead of guessing. Only "en"/"hi" are
+        # recognized; anything else is ignored rather than stored, leaving
+        # the existing value (or NULL) untouched.
+        if str(lang).strip().lower() in ("en", "hi"):
+            user.lang = str(lang).strip().lower()
+
         # STORE personalized fields
         # (Your AppUser table MUST add these 3 columns)
         user.lagna = lagna

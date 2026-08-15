@@ -80,7 +80,13 @@ def get_users_for_dasha_change(days_before=0):
             "mahadasha": r.mahadasha,
             "antardasha": r.antardasha,
             "type": "dasha_change",
-            "days_before": days_before
+            "days_before": days_before,
+            # N2.1 -- the authoritative transition date this row is
+            # ALREADY queried by (UserDashaTimeline.start_date, above),
+            # simply surfaced rather than recomputed/guessed downstream.
+            # Query/selection logic itself (who matches, days_before
+            # semantics) is completely unchanged.
+            "start_date": r.start_date,
         })
 
     return result

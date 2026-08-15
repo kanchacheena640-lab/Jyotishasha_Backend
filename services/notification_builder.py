@@ -22,6 +22,91 @@ _DAY_WORD = {
     YESTERDAY: "Yesterday",
 }
 
+# ---------------------------------------------------------------------------
+# N3 -- Personalized Planetary Transit content.
+#
+# Source of truth for every value below (do not hand-edit without re-checking
+# the source): planet slugs, house-ordinal strings and the
+# "{slug}-in-{ordinal}-house" URL formula are the EXACT conventions verified
+# against jyotishasha-frontend/lib/planetInHouse/*/skeleton.ts (PLANET_SLUG/
+# PLANET_EN/PLANET_HI, identical across all 9 planet directories) and
+# lib/planetInHouse/houseData.ts (ORDINALS, HOUSE_LABELS). Reusing these
+# verbatim is what guarantees the constructed URL always resolves to a real,
+# existing article, and that the push copy's house wording matches the
+# article it links to.
+# ---------------------------------------------------------------------------
+SITE_URL = "https://www.jyotishasha.com"
+
+_HOUSE_ORDINALS = [
+    "1st", "2nd", "3rd", "4th", "5th", "6th",
+    "7th", "8th", "9th", "10th", "11th", "12th",
+]
+
+_HOUSE_LABEL_HI = [
+    "प्रथम भाव", "द्वितीय भाव", "तृतीय भाव", "चतुर्थ भाव",
+    "पंचम भाव", "षष्ठ भाव", "सप्तम भाव", "अष्टम भाव",
+    "नवम भाव", "दशम भाव", "एकादश भाव", "द्वादश भाव",
+]
+
+_PLANET_HI = {
+    "Sun": "सूर्य", "Moon": "चंद्र", "Mars": "मंगल", "Mercury": "बुध",
+    "Jupiter": "बृहस्पति", "Venus": "शुक्र", "Saturn": "शनि",
+    "Rahu": "राहु", "Ketu": "केतु",
+}
+
+
+def _planet_in_house_url(planet: str, house: int, lang: str) -> str | None:
+    """
+    Deterministic Planet-in-House article URL, matching the website's own
+    slug formula exactly (`${planetSlug}-in-${ordinal}-house`). Returns None
+    for an out-of-range house or unrecognized planet rather than guessing a
+    URL that might not exist.
+    """
+    if not planet or not (1 <= house <= 12):
+        return None
+
+    planet_slug = planet.strip().lower()
+    if planet_slug not in {p.lower() for p in _PLANET_HI}:
+        return None
+
+    slug = f"{planet_slug}-in-{_HOUSE_ORDINALS[house - 1]}-house"
+    prefix = "/hi" if lang == "hi" else ""
+    return f"{SITE_URL}{prefix}/planet-in-house/{slug}"
+
+
+def build_transit_content(planet: str, house: int, lang: str):
+    """
+    The single place that turns a personalized (planet, house) transit
+    result into T-1 notification title/body/url -- shared by both the
+    Bell/push content below and any future caller, the same pattern
+    build_event_content()/build_panchang_content() already establish.
+
+    This is NOT a fully personalized prediction -- the destination article
+    is generic Planet-in-House educational content. The personalization is
+    solely which house applies to this user's own natal chart; the copy
+    below is careful to only ever claim that (WHAT transits, WHERE in this
+    user's chart, WHY to look), never a specific outcome.
+
+    `lang` must already be resolved to "en" or "hi" by the caller (see
+    get_user_notifications() below) -- this function does no further
+    fallback/guessing, matching every other content builder in this file.
+    """
+    if lang == "hi":
+        planet_label = _PLANET_HI.get(planet, planet)
+        house_label = _HOUSE_LABEL_HI[house - 1]
+        title = f"{planet_label} कल आपके {house_label} में प्रवेश करेगा"
+        body = f"यह गोचर आपके {house_label} को प्रभावित करेगा। पूरी जानकारी के लिए टैप करें।"
+    else:
+        house_label = f"{_HOUSE_ORDINALS[house - 1]} House"
+        title = f"{planet} Transit Tomorrow: {house_label}"
+        body = f"{planet} moves into your {house_label} tomorrow. Tap to see what this means for you."
+
+    return {
+        "title": title,
+        "body": body,
+        "url": _planet_in_house_url(planet, house, lang),
+    }
+
 
 def build_event_content(event):
     """
@@ -171,11 +256,20 @@ def get_user_notifications(user, events):
         final_notifications.append(content)
 
     # ---------------------------
-    # 🔹 TRANSIT
+    # 🔹 TRANSIT (N3 -- personalized, T-1)
     # ---------------------------
+    # Product rule: exactly ONE notification per (user, transit), delivered
+    # the day BEFORE the transit date -- not a same-day "already happened"
+    # notice (the pre-N3 wording/timing this replaces). Mirrors the EVENT
+    # section's own TOMORROW-reminder gating above (relative_day.py, never
+    # hand-rolled): only the evening slot may select a transit AstroEvent
+    # dated TOMORROW (relative to the actual moment this job runs, not
+    # target_date) -- this is also what makes a late-running evening job
+    # refuse to send once the transit day has actually begun (delayed-cron
+    # safety), and what stops the morning slot from ever double-sending the
+    # same transit later the same day.
     transit_map = {}
 
-    # 🔹 Build map (1 DB call per event)
     for event in events:
         event_type = getattr(event, "type", None)
         event_id = getattr(event, "id", None)
@@ -189,12 +283,19 @@ def get_user_notifications(user, events):
             print(f"❌ Transit map error for event {event_id}: {str(e)}")
             continue
 
-    # 🔹 Assign to current user
+    transit_slot = os.getenv("NOTIFICATION_SLOT", "").strip().lower()
+
     for event in events:
         event_type = getattr(event, "type", None)
         event_id = getattr(event, "id", None)
+        event_date = getattr(event, "date", None)
 
         if event_type != "transit" or not event_id:
+            continue
+
+        if transit_slot != "evening":
+            continue
+        if get_relative_day(event_date) != TOMORROW:
             continue
 
         for u in transit_map.get(event_id, []):
@@ -208,15 +309,34 @@ def get_user_notifications(user, events):
                     continue
                 seen.add(event_id_str)
 
+                # Language: resolved once, deterministically, from the
+                # user's own persisted preference (modules/models_user.py::
+                # AppUser.lang, N3) -- never device guesswork. Unset/
+                # unrecognized values fall back to "en", matching this
+                # project's existing default (see routes_profile_bootstrap.py
+                # ::bootstrap_user_profile()'s own `data.get("lang", "en")`).
+                lang = (getattr(user, "lang", None) or "en").strip().lower()
+                if lang not in ("en", "hi"):
+                    lang = "en"
+
+                content = build_transit_content(u["planet"], u["house"], lang)
+
+                data = {
+                    "type": "transit",
+                    "event_id": str(event_id),
+                    "planet": u["planet"],
+                    "house": str(u["house"]),
+                    "language": lang,
+                }
+                if event_date is not None:
+                    data["transit_date"] = str(event_date)
+                if content["url"]:
+                    data["url"] = content["url"]
+
                 final_notifications.append({
-                    "title": f"{u['planet']} Transit Alert",
-                    "body": f"{u['planet']} आपके {u['house']} भाव में प्रवेश कर चुका है",
-                    "data": {
-                        "type": "transit",
-                        "event_id": str(event_id),
-                        "planet": u["planet"],
-                        "house": str(u["house"])
-                    }
+                    "title": content["title"],
+                    "body": content["body"],
+                    "data": data,
                 })
 
             except Exception as e:
@@ -245,7 +365,15 @@ def get_user_notifications(user, events):
                 "type": "dasha_pre",
                 "event_id": event_id_str,
                 "mahadasha": d["mahadasha"],
-                "antardasha": d["antardasha"]
+                "antardasha": d["antardasha"],
+                # N2.1 -- the authoritative UserDashaTimeline.start_date
+                # this warning is about (services/personalization_engine.py
+                # ::get_users_for_dasha_change(), unmodified query/selection
+                # logic), so services/event_scheduler.py can derive this
+                # notification's expires_at from the real transition date
+                # instead of leaving it unexpired. Purely additive: event_id
+                # (dedup identity), title, and body are all unchanged.
+                "start_date": d["start_date"].isoformat(),
             }
         })
 

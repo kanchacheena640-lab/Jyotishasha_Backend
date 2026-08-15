@@ -34,6 +34,15 @@ class AppUser(db.Model):
 
     # App prefs/state
     tz = db.Column(db.String(10), nullable=False, default="+05:30")
+    # N3 -- persisted content-language preference ("en" / "hi"), so
+    # personalized-content notifications (e.g. Transit) can deterministically
+    # pick EN vs HI copy/article server-side instead of guessing from the
+    # device. Nullable/no DB default: every existing row reads as NULL until
+    # that user's next bootstrap/profile save; callers must treat NULL as
+    # "unknown" and fall back to "en" themselves (see
+    # services/notification_builder.py) rather than this column silently
+    # defaulting everyone to a language they never chose.
+    lang = db.Column(db.String(5), nullable=True)
     subscription = db.Column(db.String(50), nullable=False, default="free")
     asknow_tokens = db.Column(db.Integer, nullable=False, default=0)
     fcm_token = db.Column(db.String(255), nullable=True)

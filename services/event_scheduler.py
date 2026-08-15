@@ -14,6 +14,12 @@ from services.notification_builder import get_user_notifications, build_event_co
 from services.notification_engine import send_topic_notification
 from notifications.notification_models import UserNotification, NotificationLog
 from services.event_adapters.festival_adapter import normalize_events
+from services.relative_day import get_relative_day, TOMORROW
+from services.notification_lifecycle import (
+    expiry_for_astro_event_notification,
+    expiry_for_same_day_notification,
+    expiry_for_dasha_pre_notification,
+)
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -233,15 +239,24 @@ def run_daily_event_job():
                         ntype = data.get("type", "general")
                         raw_event_id = data.get("event_id", "0")
 
-                        # 🔥 AUTO-DISMISS (Panchang only): expires the
-                        # same day at PANCHANG_AUTO_DISMISS_HOUR_IST, so
-                        # it disappears from the Bell (query-time filter
-                        # in user_notification_routes.py) and carries the
-                        # cutoff in the payload so the app can also clear
-                        # it from the tray, even if never tapped.
+                        # 🔥 N2 -- LIFECYCLE / VISIBILITY EXPIRY. Every
+                        # branch below only ever WRITES expires_at; the
+                        # Bell query that reads it
+                        # (notifications/user_notification_routes.py,
+                        # `expires_at IS NULL OR expires_at > now`) is
+                        # unchanged -- it already correctly consumes
+                        # whatever value lands here. See
+                        # services/notification_lifecycle.py for the
+                        # actual policy/reasoning per type.
                         expires_at = None
                         android_tag = None
+
                         if ntype == "panchang":
+                            # Unchanged (pre-N2): same-day utility,
+                            # expires at PANCHANG_AUTO_DISMISS_HOUR_IST,
+                            # also carries the cutoff in the payload so
+                            # the app can clear the tray even if never
+                            # tapped (see PanchangDismissBridge).
                             expires_at = datetime.combine(
                                 target_date,
                                 time(hour=PANCHANG_AUTO_DISMISS_HOUR_IST),
@@ -249,6 +264,99 @@ def run_daily_event_job():
                             ).astimezone(timezone.utc).replace(tzinfo=None)
                             data["auto_dismiss_at"] = expires_at.isoformat() + "Z"
                             android_tag = "panchang_morning"
+
+                        elif ntype in ("event", "transit", "panchak"):
+                            # All three are backed by a real AstroEvent
+                            # row -- raw_event_id IS that AstroEvent's own
+                            # id for all three (see
+                            # services/notification_builder.py's EVENT/
+                            # TRANSIT/PANCHAK sections), so its actual
+                            # .date is available via the SAME events_by_id
+                            # map STEP 5A already built -- never guessed,
+                            # never re-derived from target_date (which
+                            # would be wrong for a late-running job).
+                            astro_event = (
+                                events_by_id.get(int(raw_event_id))
+                                if str(raw_event_id).isdigit() else None
+                            )
+                            if astro_event is not None:
+                                # `event`'s own content says "Tomorrow" only
+                                # for its evening-slot reminder
+                                # (build_event_content()); `panchak` carries
+                                # no today/tomorrow wording, so it always
+                                # uses the "valid through end of its own day"
+                                # rule. `transit` (N3) is now ALWAYS a T-1
+                                # "tomorrow" framed notice (see
+                                # notification_builder.py's TRANSIT section --
+                                # it only ever selects a transit dated
+                                # TOMORROW), so it must always expire the
+                                # instant that transit day begins, same as
+                                # event's forward-looking case.
+                                is_forward_looking = (
+                                    ntype == "transit"
+                                    or (
+                                        ntype == "event"
+                                        and get_relative_day(astro_event.date) == TOMORROW
+                                    )
+                                )
+                                expires_at = expiry_for_astro_event_notification(
+                                    event_date=astro_event.date,
+                                    is_forward_looking=is_forward_looking,
+                                )
+                            # else: astro_event lookup failed (should not
+                            # happen -- defensive only) -- expires_at
+                            # stays None, matching this notification's
+                            # pre-N2 behavior rather than guessing.
+
+                        elif ntype == "dasha":
+                            # Same-day "phase started today" announcement
+                            # -- no AstroEvent backing; anchored to the
+                            # REAL calendar day this specific notification
+                            # was built on (services/personalization_engine.py
+                            # ::get_users_for_dasha_change() reads
+                            # datetime.now(IST).date() internally, NOT
+                            # target_date -- recomputed the same way here
+                            # so an evening-slot run still expires this
+                            # correctly rather than one day too late).
+                            expires_at = expiry_for_same_day_notification(
+                                generated_on=datetime.now(IST).date(),
+                            )
+
+                        elif ntype == "dasha_pre":
+                            # N2.1 -- resolves the N2 STOP case. The
+                            # authoritative transition date
+                            # (UserDashaTimeline.start_date) is now
+                            # surfaced through
+                            # get_users_for_dasha_change()'s own return
+                            # dict and threaded into this notification's
+                            # data["start_date"]
+                            # (services/notification_builder.py) --
+                            # never recomputed or guessed here, only
+                            # parsed back out.
+                            raw_start_date = data.get("start_date")
+                            if raw_start_date:
+                                try:
+                                    transition_date = datetime.strptime(
+                                        raw_start_date, "%Y-%m-%d",
+                                    ).date()
+                                    expires_at = expiry_for_dasha_pre_notification(
+                                        transition_date=transition_date,
+                                    )
+                                except ValueError:
+                                    pass  # malformed date string -- defensive
+                                          # only; stays None rather than guessing
+                            # else: no start_date in payload (should not
+                            # happen post-N2.1) -- expires_at stays None
+                            # rather than guessing.
+
+                        # Every other type (admin/marketing broadcasts --
+                        # a different code path, notifications/
+                        # notification_service.py, not this loop at all --
+                        # and any future/unrecognized type reaching this
+                        # loop) is intentionally left at expires_at = None:
+                        # per N2 Step 2's own instruction, transactional/
+                        # unclassified notifications must not be given a
+                        # short astrology-style expiry.
 
                         # 🔥 SINGLE NOTIFICATION IDENTITY
                         # AstroEvent-based notifications ("event" type) are

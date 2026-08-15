@@ -130,7 +130,16 @@ def get_all_planets_next_12():
 # 🔹 ASTRO EVENT WRAPPER
 # -------------------------------
 def get_transit_events(date):
-    planets = ["Sun","Mercury","Venus","Mars","Jupiter","Saturn","Rahu","Ketu"]
+    # N3 -- Moon was previously excluded here (while already fully supported
+    # by _planet_rashi_on_day/_planet_motion_on_day above, and already
+    # included by get_all_planets_next_12()'s /api/transit/current). Moon is
+    # not a special product exception; it goes through the exact same
+    # sign-ingress detection, personalized-house calculation
+    # (services/personalization_engine.py::get_users_for_transit(), which
+    # already filters to houses [1,4,7,8,10,12] uniformly for every planet
+    # and needed no change), and notification pipeline as every other
+    # planet. Its faster ~2-3 day cadence is expected and intentional.
+    planets = ["Sun","Moon","Mercury","Venus","Mars","Jupiter","Saturn","Rahu","Ketu"]
 
     events = []
 

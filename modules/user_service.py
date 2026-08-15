@@ -127,6 +127,14 @@ def register_or_update_user(data: dict) -> AppUser:
     user.lat = data.get("lat", user.lat)
     user.lng = data.get("lng", user.lng)
     user.tz = data.get("tz", user.tz or "+05:30")
+
+    # N3 -- same content-language preference routes/routes_profile_bootstrap.py
+    # persists, accepted here too for symmetry (this is the other AppUser
+    # write path). Only "en"/"hi" recognized; anything else/missing leaves
+    # the existing value untouched rather than guessing.
+    incoming_lang = str(data.get("lang", "")).strip().lower()
+    if incoming_lang in ("en", "hi"):
+        user.lang = incoming_lang
     # Security fix: subscription state must be server-controlled only --
     # never read from client-supplied request data (that previously let
     # any caller set their own subscription tier with no payment
