@@ -93,6 +93,7 @@ from modules.entitlement.entitlement_service import EntitlementService
 
 from modules.alerts.alert_delivery_service import deliver_alert
 from modules.alerts.entitlement_gate import has_alerts_access
+from modules.alerts.notification_content_adapter import AlertContentError, build_alert_notification_content
 from modules.alerts.persistence_repository import AlertPersistenceRepository
 from modules.alerts.profile_detection_service import (
     DetectionRunFailedError,
@@ -155,6 +156,14 @@ class AlertsJobSummary:
     # send today. Purely observability; does not change eligibility,
     # confidence, cooldown, or Alerts' own selection outcome.
     global_cap_suppressed: int = 0
+    # N5 -- of the global_cap_suppressed alerts above, how many were
+    # still written to Bell (via AlertPersistenceRepository.
+    # record_bell_only(), never a real delivery -- see that method's own
+    # docstring). Always <= global_cap_suppressed; the gap between the
+    # two is alerts that were suppressed AND already had a still-active
+    # bell-only row from an earlier run today (idempotent skip, not a
+    # failure).
+    alerts_bell_only: int = 0
     failures: int = 0
     duration_seconds: float = 0.0
     lock_acquired: bool = False
@@ -172,6 +181,7 @@ class AlertsJobSummary:
             "cooldown_or_eligibility_skipped": self.cooldown_or_eligibility_skipped,
             "selection_suppressed": self.selection_suppressed,
             "global_cap_suppressed": self.global_cap_suppressed,
+            "alerts_bell_only": self.alerts_bell_only,
             "failures": self.failures,
             "duration_seconds": round(self.duration_seconds, 3),
             "lock_acquired": self.lock_acquired,
@@ -372,7 +382,42 @@ def _process_one_profile(
             key=lambda r: tier_for_alert_severity(r.severity),
         )
         attemptable_rows = selected_rows[:global_remaining]
-        summary.global_cap_suppressed += len(selected_rows) - len(attemptable_rows)
+        bell_only_rows = selected_rows[global_remaining:]
+        summary.global_cap_suppressed += len(bell_only_rows)
+
+        # ---- N5 -- Bell-only fallback for the rest. Every row here
+        # ALREADY passed Alerts' own hardened eligibility + selection
+        # (user_alert_selection.py, unmodified) in this exact run -- the
+        # only reason it isn't being pushed is that today's global
+        # budget ran out. A genuinely useful, already-vetted Alert
+        # should not vanish completely just because the push slot was
+        # spent elsewhere; see persistence_repository.py::
+        # record_bell_only()'s own docstring for why this can never
+        # touch cooldown/dedup or be mistaken for a real delivery. Never
+        # attempted for a row that failed eligibility or was excluded by
+        # Alerts' own selection -- bell_only_rows is a strict suffix of
+        # selected_rows, both already-vetted sets.
+        for alert_row in bell_only_rows:
+            try:
+                content = build_alert_notification_content(
+                    event_id=alert_row.event_id,
+                    category=alert_row.category,
+                    severity=alert_row.severity,
+                )
+            except AlertContentError:
+                continue  # same defensive posture as deliver_alert()'s own content stage
+
+            bell_row = repository.record_bell_only(
+                profile_id=profile_id,
+                event_id=alert_row.event_id,
+                notification_title=content["title"],
+                notification_body=content["body"],
+                notification_data=content["data"],
+                active_until=alert_row.active_until,
+                now=now,
+            )
+            if bell_row is not None:
+                summary.alerts_bell_only += 1
 
         # ---- 6/7. Deliver each SELECTED-AND-GLOBALLY-BUDGETED alert --
         # deliver_alert() (Phase 4/5, unmodified) remains the SOLE

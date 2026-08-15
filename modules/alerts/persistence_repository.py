@@ -581,3 +581,76 @@ class AlertPersistenceRepository:
                 f"insert both rolled back): {exc}"
             ) from exc
         return row
+
+    def record_bell_only(
+        self,
+        *,
+        profile_id: int,
+        event_id: str,
+        notification_title: str,
+        notification_body: str,
+        notification_data: dict,
+        active_until: date,
+        now: Optional[datetime] = None,
+    ) -> Optional[UserNotification]:
+        """
+        N5 -- Bell-only fallback for an alert that ALREADY passed
+        Alerts' own hardened eligibility + selection
+        (delivery_eligibility_policy.py / user_alert_selection.py, both
+        unmodified) but was not attempted this run because the user's
+        GLOBAL push budget (N4, services/attention_policy.py) was
+        already spent elsewhere. Deliberately separate from
+        finalize_delivery() above: inserts ONLY the UserNotification
+        (Bell) row and explicitly does NOT touch
+        AlertMicroEvent.last_delivered_at -- a Bell-only insert must
+        never start, extend, or otherwise affect this event's cooldown,
+        and must never be mistaken for a real delivery by
+        evaluate_delivery_eligibility() (which reads last_delivered_at
+        exclusively) or count_delivered_since() (the daily-cap counter,
+        which reads it too). Never called for a raw/unselected
+        detection -- the caller (alerts_scheduler.py) only reaches this
+        for rows already present in that run's own selected set.
+
+        Idempotent per (profile_id, event_id): if a still-active
+        (unexpired) bell-only row already exists for this exact pair,
+        this is a no-op and returns None -- a rerun, or the same
+        globally-suppressed alert surviving into a later run the same
+        day, can never insert a duplicate Bell row.
+
+        expires_at reuses the EXACT same N2 policy
+        (expiry_for_alert_notification(), unmodified) a normally-pushed
+        alert's Bell row already gets, from this row's own
+        `active_until` -- N2 lifecycle remains the sole authority on
+        when it disappears, whether it arrived via push or Bell-only.
+        """
+        now = now or datetime.utcnow()
+
+        existing = (
+            UserNotification.query
+            .filter(UserNotification.user_id == profile_id)
+            .filter(UserNotification.data["type"].astext == "alert")
+            .filter(UserNotification.data["event_id"].astext == event_id)
+            .filter(UserNotification.data["delivery_channel"].astext == "bell_only")
+            .filter(db.or_(
+                UserNotification.expires_at.is_(None),
+                UserNotification.expires_at > now,
+            ))
+            .first()
+        )
+        if existing is not None:
+            return None
+
+        bell_only_data = dict(notification_data)
+        bell_only_data["delivery_channel"] = "bell_only"
+
+        row = UserNotification(
+            user_id=profile_id,
+            title=notification_title,
+            body=notification_body,
+            data=bell_only_data,
+            is_read=False,
+            expires_at=expiry_for_alert_notification(active_until=active_until),
+        )
+        db.session.add(row)
+        db.session.commit()
+        return row

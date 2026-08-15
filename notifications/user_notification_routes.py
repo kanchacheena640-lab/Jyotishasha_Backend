@@ -44,13 +44,22 @@ def get_unread_count():
     if not user_id:
         return jsonify({"error": "User not found"}), 404
 
-    cutoff = datetime.utcnow() - timedelta(hours=5)
     now = datetime.utcnow()
 
+    # N5 -- previously also required `created_at > cutoff` (a 5-hour
+    # window), which the LIST query below does NOT apply to its own
+    # `is_read == False` branch -- an unread item older than 5 hours
+    # would still appear (bold/unread) in the Bell list, but silently
+    # stop counting toward this badge, so the badge could under-report
+    # relative to what the list actually shows. N2's expires_at is now
+    # the single, authoritative "is this still relevant" signal for
+    # every notification type (see services/notification_lifecycle.py),
+    # so the count and the list now use the exact same two conditions:
+    # unread AND not expired. Read items are correctly never counted,
+    # regardless of age.
     count = db.session.query(UserNotification)\
         .filter(UserNotification.user_id == user_id)\
         .filter(UserNotification.is_read == False)\
-        .filter(UserNotification.created_at > cutoff)\
         .filter(
             (UserNotification.expires_at.is_(None)) |
             (UserNotification.expires_at > now)
