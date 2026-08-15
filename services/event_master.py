@@ -54,7 +54,18 @@ def generate_events_for_date(date, lat, lon, language="en"):
             "name_en": t.get("name"),   # keep
             "type": "transit",
             "date": str(t.get("date"))[:10],
-            "meta": t   # 🔥 FULL meta pass karo
+            # N3 production-activation fix: this previously stored the
+            # WHOLE raw transit dict `t` (including its own nested "meta"
+            # key) as this event's meta, one level too deep. The one and
+            # only reader anywhere in the codebase --
+            # services/personalization_engine.py::get_users_for_transit()
+            # -- reads event.meta.get("planet")/.get("rashi") directly, so
+            # every transit AstroEvent ever saved silently produced zero
+            # personalized recipients (verified against a real,
+            # pipeline-generated production row). Storing just the inner
+            # {"planet", "rashi"} dict is what that (and only that) reader
+            # has always expected.
+            "meta": t.get("meta", {})
         })
     # 🔥 TRANSIT ADD END
 
