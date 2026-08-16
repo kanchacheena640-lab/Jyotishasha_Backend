@@ -29,16 +29,31 @@ def _load_template(path: str) -> str:
         return f.read()
 
 
+def _language_instruction(language: str) -> str:
+    # Bilingual Contract fix -- same convention as every other prompt
+    # builder in this package ("en"/"hi" only, anything else falls back
+    # to English).
+    if language == "hi":
+        return (
+            "Write your ENTIRE response in Hindi, using Devanagari script "
+            "only. Do not use any English sentence or phrase anywhere in "
+            "the response (except a proper noun that has no Hindi form)."
+        )
+    return "Write your ENTIRE response in English."
+
+
 def build_family_action_guidance_prompt(
     family_dna: str,
     current_family_phase: str,
     family_action_context: Dict[str, Any],
+    language: str = "en",
 ) -> str:
     template = _load_template(_FAMILY_ACTION_GUIDANCE_TEMPLATE)
 
     values: Dict[str, str] = {
         "family_dna": family_dna,
         "current_family_phase": current_family_phase,
+        "language_instruction": _language_instruction(language),
     }
 
     for planet in _ACTION_PLANETS:

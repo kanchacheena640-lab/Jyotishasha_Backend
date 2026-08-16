@@ -27,16 +27,32 @@ def _load_template(path: str) -> str:
         return f.read()
 
 
+def _language_instruction(language: str) -> str:
+    # Bilingual Contract fix -- same convention as every other prompt
+    # builder in this package ("en"/"hi" only, anything else falls back
+    # to English). Previously this builder unconditionally instructed
+    # "plain, everyday English" with no language placeholder at all.
+    if language == "hi":
+        return (
+            "Write your ENTIRE response in Hindi, using Devanagari script "
+            "only. Do not use any English sentence or phrase anywhere in "
+            "the response (except a proper noun that has no Hindi form)."
+        )
+    return "Write your ENTIRE response in English."
+
+
 def build_daily_love_prediction_prompt(
     relationship_dna: str,
     current_love_phase: str,
     daily_transit_context: Dict[str, Any],
+    language: str = "en",
 ) -> str:
     template = _load_template(_DAILY_LOVE_PREDICTION_TEMPLATE)
 
     values: Dict[str, str] = {
         "relationship_dna": relationship_dna,
         "current_love_phase": current_love_phase,
+        "language_instruction": _language_instruction(language),
     }
 
     for planet in _DAILY_TRANSIT_PLANETS:

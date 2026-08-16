@@ -48,6 +48,26 @@ from modules.subscription.dual_write_adapter import (
 
 premium_report_bp = Blueprint("premium_report", __name__)
 
+# Bilingual Contract fix -- smallest backward-compatible language
+# normalization at the API boundary. Previously `language` was taken
+# verbatim from the query string with no validation at all: any
+# arbitrary string flowed straight through to the generator/prompt
+# chain. Downstream, every prompt builder's own `_language_instruction()`
+# already treats anything other than the literal string "hi" as English
+# (never as "invalid Hindi") -- so this normalization does not change
+# any generation behavior, it only makes the API boundary itself
+# explicit and robust to casing/whitespace ("HI", " hi ", "Hi" all now
+# correctly resolve to Hindi, matching user intent, instead of silently
+# falling through to English with no indication why). A genuinely
+# unsupported value (e.g. "fr", "xx") is never treated as Hindi -- it
+# safely normalizes to "en", the same default this endpoint already had.
+SUPPORTED_LANGUAGES = ("en", "hi")
+
+
+def _normalize_language(raw_language: str) -> str:
+    normalized = (raw_language or "en").strip().lower()
+    return normalized if normalized in SUPPORTED_LANGUAGES else "en"
+
 
 @premium_report_bp.route("/api/premium-report", methods=["GET"])
 @jwt_required()
@@ -66,7 +86,7 @@ def get_premium_report():
     profile_id_raw = request.args.get("profile_id")
     segment = request.args.get("segment")
     report_type = request.args.get("report_type")
-    language = request.args.get("language", "en")
+    language = _normalize_language(request.args.get("language", "en"))
 
     if profile_id_raw is not None:
         try:

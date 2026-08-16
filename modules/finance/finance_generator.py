@@ -175,7 +175,7 @@ class FinanceGenerator(BaseAIGenerator):
         language: str,
     ) -> str:
         if report_type == "DNA":
-            return build_finance_profile_prompt(context["finance_summary"])  # existing Lab prompt builder
+            return build_finance_profile_prompt(context["finance_summary"], language=language)  # existing Lab prompt builder
 
         if report_type == "CURRENT_PHASE":
             details = context["birth_details"]
@@ -193,6 +193,7 @@ class FinanceGenerator(BaseAIGenerator):
                 financial_dna=context["financial_dna"],
                 current_finance_phase=context["current_finance_phase"],
                 finance_action_context=context["finance_action_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "CURRENT_TIMING":

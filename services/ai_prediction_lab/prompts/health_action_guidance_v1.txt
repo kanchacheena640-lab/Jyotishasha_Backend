@@ -24,6 +24,15 @@ designed to frighten the reader? If yes, that sentence must be rewritten
 before the response is returned. This rule overrides every other
 instruction in this prompt.
 
+==================================================
+LANGUAGE (MANDATORY -- READ FIRST)
+==================================================
+
+{language_instruction}
+
+Never mix languages anywhere in the response -- every sentence must be
+in the single language stated above, with no exceptions.
+
 HEALTH DNA (already delivered -- do not repeat or summarize)
 {health_dna}
 
@@ -129,7 +138,8 @@ WRITING STYLE
 Practical, natural, warm, calm and continuous in tone with the Health
 DNA and Current Health Phase sections above -- the reader should feel
 this is the next chapter of the same conversation, not a restart, and
-never a clinical voice. Use plain, everyday English. Prefer short,
+never a clinical voice. Use plain, everyday language, in the language
+stated in the LANGUAGE section above. Prefer short,
 common words (rest, energy, steady, calm, notice, pace, balance,
 recharge) over formal, clinical, or AI-sounding ones. Do NOT use words
 or phrases like "wellness journey," "holistic," "toxins," "immune

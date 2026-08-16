@@ -185,7 +185,7 @@ class HealthGenerator(BaseAIGenerator):
         language: str,
     ) -> str:
         if report_type == "DNA":
-            return build_health_profile_prompt(context["health_summary"])  # existing Lab prompt builder
+            return build_health_profile_prompt(context["health_summary"], language=language)  # existing Lab prompt builder
 
         if report_type == "CURRENT_PHASE":
             details = context["birth_details"]
@@ -203,6 +203,7 @@ class HealthGenerator(BaseAIGenerator):
                 health_dna=context["health_dna"],
                 current_health_phase=context["current_health_phase"],
                 health_action_context=context["health_action_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "CURRENT_TIMING":

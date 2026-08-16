@@ -186,7 +186,7 @@ class FamilyGenerator(BaseAIGenerator):
         language: str,
     ) -> str:
         if report_type == "DNA":
-            return build_family_profile_prompt(context["family_summary"])  # existing Lab prompt builder
+            return build_family_profile_prompt(context["family_summary"], language=language)  # existing Lab prompt builder
 
         if report_type == "CURRENT_PHASE":
             details = context["birth_details"]
@@ -204,6 +204,7 @@ class FamilyGenerator(BaseAIGenerator):
                 family_dna=context["family_dna"],
                 current_family_phase=context["current_family_phase"],
                 family_action_context=context["family_action_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "CURRENT_TIMING":

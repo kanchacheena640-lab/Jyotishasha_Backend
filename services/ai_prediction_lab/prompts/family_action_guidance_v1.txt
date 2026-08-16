@@ -24,6 +24,15 @@ loss, or something designed to frighten the reader about their family?
 If yes, that sentence must be rewritten before the response is returned.
 This rule overrides every other instruction in this prompt.
 
+==================================================
+LANGUAGE (MANDATORY -- READ FIRST)
+==================================================
+
+{language_instruction}
+
+Never mix languages anywhere in the response -- every sentence must be
+in the single language stated above, with no exceptions.
+
 FAMILY DNA (already delivered -- do not repeat or summarize)
 {family_dna}
 
@@ -130,7 +139,8 @@ WRITING STYLE
 Practical, natural, warm, and continuous in tone with the Family DNA and
 Current Family Phase sections above -- the reader should feel this is
 the next chapter of the same conversation, not a restart. Use plain,
-everyday English. Prefer short, common words (home, family, close,
+everyday language, in the language stated in the LANGUAGE section above.
+Prefer short, common words (home, family, close,
 warm, steady, notice, reach out, together) over formal or AI-sounding
 ones. Do NOT use words or phrases like "family dynamics," "nuanced,"
 "profound," "navigate," "cultivate," "embrace," "transformative,"

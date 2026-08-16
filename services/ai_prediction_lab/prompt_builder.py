@@ -27,6 +27,22 @@ def _load_template(path: str) -> str:
         return f.read()
 
 
+def _language_instruction(language: str) -> str:
+    # Bilingual Contract fix -- language was never previously threaded
+    # into this builder (the .txt template had no language placeholder
+    # at all, and unconditionally instructed "conversational English"),
+    # so every DNA call silently ignored the caller's requested
+    # language. Same convention as current_love_phase_prompt_builder.py
+    # ("en"/"hi" only; anything else falls back to English).
+    if language == "hi":
+        return (
+            "Write your ENTIRE response in Hindi, using Devanagari script "
+            "only. Do not use any English sentence or phrase anywhere in "
+            "the response (except a proper noun that has no Hindi form)."
+        )
+    return "Write your ENTIRE response in English."
+
+
 def _flatten_love_profile_context(context: Dict[str, Any]) -> Dict[str, str]:
     ascendant = context.get("ascendant", {})
     fifth_house = context.get("fifth_house", {})
@@ -70,8 +86,9 @@ def _flatten_love_profile_context(context: Dict[str, Any]) -> Dict[str, str]:
     }
 
 
-def build_love_profile_prompt(context: Dict[str, Any]) -> str:
+def build_love_profile_prompt(context: Dict[str, Any], language: str = "en") -> str:
     """Load the love_profile.txt template and fill it with `context`."""
     template = _load_template(_LOVE_PROFILE_TEMPLATE)
     values = _flatten_love_profile_context(context)
+    values["language_instruction"] = _language_instruction(language)
     return template.format(**values)

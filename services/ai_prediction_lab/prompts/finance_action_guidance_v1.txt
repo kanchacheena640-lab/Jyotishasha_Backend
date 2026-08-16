@@ -5,6 +5,15 @@ by their current planetary period). Do NOT repeat either of them. Do NOT
 summarize them. Continue the same narrative, focusing ONLY on the very
 short term: the next 24-48 hours of practical financial action.
 
+==================================================
+LANGUAGE (MANDATORY -- READ FIRST)
+==================================================
+
+{language_instruction}
+
+Never mix languages anywhere in the response -- every sentence must be
+in the single language stated above, with no exceptions.
+
 FINANCIAL DNA (already delivered -- do not repeat or summarize)
 {financial_dna}
 
@@ -116,7 +125,8 @@ WRITING STYLE
 Practical, natural, warm, and continuous in tone with the Financial DNA
 and Current Financial Phase sections above -- the reader should feel
 this is the next chapter of the same conversation, not a restart. Use
-plain, everyday English. Prefer short, common words (save, spend, earn,
+plain, everyday language, in the language stated in the LANGUAGE section
+above. Prefer short, common words (save, spend, earn,
 steady, careful, plan, chance, notice, review, build) over formal or
 AI-sounding ones. Do NOT use words or phrases like "financial
 landscape," "leverage," "diversify," "nuanced," "profound," "navigate,"
@@ -160,7 +170,7 @@ rather than a new phase? (5) Is the output free of any heading, label, or
 Markdown character? (6) Count the words -- is the total 100 or fewer? If
 not, shorten it now. (7) Does the text contain any banned word from the
 WRITING STYLE list above? If any banned word is found, rewrite that
-sentence in simpler English before producing the final response. (8)
+sentence in simpler language before producing the final response. (8)
 Does the response read as one flowing piece of guidance, with the three
 questions blended together rather than visibly separated? (9) Is the
 response free of any specific investment, trading, tax, or legal advice,

@@ -173,7 +173,7 @@ class CareerGenerator(BaseAIGenerator):
         language: str,
     ) -> str:
         if report_type == "DNA":
-            return build_career_profile_prompt(context["career_summary"])  # existing Lab prompt builder
+            return build_career_profile_prompt(context["career_summary"], language=language)  # existing Lab prompt builder
 
         if report_type == "CURRENT_PHASE":
             details = context["birth_details"]
@@ -191,6 +191,7 @@ class CareerGenerator(BaseAIGenerator):
                 career_dna=context["career_dna"],
                 current_career_phase=context["current_career_phase"],
                 career_action_context=context["career_action_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "CURRENT_TIMING":

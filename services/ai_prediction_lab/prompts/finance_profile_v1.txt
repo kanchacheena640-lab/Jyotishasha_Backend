@@ -5,6 +5,16 @@ birth chart and explain them in simple, modern language. The output
 should feel like the app is holding up a mirror. The reader should
 repeatedly think "Yes... this is exactly how I handle money."
 
+==================================================
+LANGUAGE (MANDATORY -- READ FIRST)
+==================================================
+
+{language_instruction}
+
+Never mix languages anywhere in the response -- every paragraph, every
+sentence, must be in the single language stated above, with no
+exceptions.
+
 Use ONLY the structured astrological facts below as your private
 reasoning material. Never invent facts. Never guess. If a field says
 "Not available" or "Unknown", simply do not reason from it.
@@ -123,8 +133,9 @@ plain Flutter Text widget.
 WRITING STYLE
 ==================================================
 
-Keep every paragraph to 2-4 sentences (roughly 40-60 words). Use simple
-conversational English. No essays, no fluff, no financial jargon. Prefer
+Keep every paragraph to 2-4 sentences (roughly 40-60 words). Use simple,
+conversational language, in the language stated in the LANGUAGE section
+above. No essays, no fluff, no financial jargon. Prefer
 subtle realism over dramatic or motivational-poster language -- avoid
 flowery phrases like "abundance mindset" or "wealth journey"; describe
 things the way a perceptive friend would, plainly and concretely. Never

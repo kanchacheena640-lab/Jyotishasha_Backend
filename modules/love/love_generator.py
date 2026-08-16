@@ -162,7 +162,7 @@ class LoveGenerator(BaseAIGenerator):
         language: str,
     ) -> str:
         if report_type == "DNA":
-            return build_love_profile_prompt(context["birth_summary"])  # existing Lab prompt builder
+            return build_love_profile_prompt(context["birth_summary"], language=language)  # existing Lab prompt builder
 
         if report_type == "CURRENT_PHASE":
             details = context["birth_details"]
@@ -180,6 +180,7 @@ class LoveGenerator(BaseAIGenerator):
                 relationship_dna=context["relationship_dna"],
                 current_love_phase=context["current_love_phase"],
                 daily_transit_context=context["daily_transit_context"],
+                language=language,
             )  # existing Lab prompt builder
 
         if report_type == "CURRENT_TIMING":

@@ -18,6 +18,14 @@ LANGUAGE (MANDATORY -- READ FIRST)
 Never mix languages anywhere in the response -- every sentence must be
 in the single language stated above, with no exceptions.
 
+STRUCTURAL MARKER (EXEMPT FROM THE LANGUAGE INSTRUCTION ABOVE):
+The literal label "Quick Tip:" in the OUTPUT FORMAT below is a
+machine-readable structural delimiter read by the app's parser, not
+part of the narrative. It MUST remain EXACTLY "Quick Tip:", in English,
+character-for-character, even when the language instruction above is
+Hindi. Only the situation sentences and the tip sentence itself should
+be written in the language stated above.
+
 ==================================================
 CONTINUATION (MANDATORY)
 ==================================================
