@@ -65,8 +65,10 @@ SUBSCRIPTION_PLANS = (
 # Active/Expired/Grace/Cancelled/Pending/Refunded separately from
 # "Trial") because CurrentEntitlement represents the profile's single,
 # current access level end-to-end -- a profile that has never purchased
-# anything but is still inside its 15-day window IS currently
-# entitled, and TRIAL is the only status value that says so.
+# anything but is still inside its trial window (see
+# EntitlementWriteService.DEFAULT_TRIAL_DURATION_DAYS for the current
+# length) IS currently entitled, and TRIAL is the only status value
+# that says so.
 ENTITLEMENT_STATUSES = (
     "TRIAL",
     "ACTIVE",

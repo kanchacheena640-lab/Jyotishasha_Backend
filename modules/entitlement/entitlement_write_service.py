@@ -72,7 +72,7 @@ from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS
 from modules.entitlement.entitlement_write_models import EntitlementWriteResult
 from modules.entitlement.plan_access_policy import ACCESS_SELECTED, PLAN_SEGMENT_ACCESS
 
-DEFAULT_TRIAL_DURATION_DAYS = 15
+DEFAULT_TRIAL_DURATION_DAYS = 7
 
 # Statuses that mean "this profile is currently paying" -- start_trial
 # must never overwrite either of these.
