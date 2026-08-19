@@ -31,8 +31,18 @@ class ProcessedPayment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     provider = db.Column(db.String(20), nullable=False)          # PaymentProviderType
-    payment_id = db.Column(db.String(120), nullable=False, index=True)  # e.g. razorpay_payment_id
-    reference = db.Column(db.String(120), nullable=True)         # e.g. razorpay_order_id
+
+    # Widened 120 -> 255 (migration 9f4d2a7e1c6b): a real Google Play
+    # purchase_token is commonly 150-190+ characters -- VARCHAR(120)
+    # (a bound copied from the short razorpay_payment_id example)
+    # silently raised a DataError on insert for GOOGLE_PLAY payments,
+    # uncaught by _try_claim()'s own except IntegrityError (a
+    # different exception class), producing an unlogged 500. 255
+    # matches every other Google Play purchase-token column already in
+    # this codebase (SubscriptionPurchaseMapping.purchase_token,
+    # CurrentEntitlement.purchase_token, SubscriptionEvent.purchase_token).
+    payment_id = db.Column(db.String(255), nullable=False, index=True)  # e.g. razorpay_payment_id or a Google Play purchase_token
+    reference = db.Column(db.String(255), nullable=True)         # e.g. razorpay_order_id or the same Google Play purchase_token
 
     # Populated once the business effect completes -- nullable because
     # a row is first inserted as a "claim" (see _try_claim) before the

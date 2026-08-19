@@ -235,16 +235,43 @@ class PaymentService:
         if result.status != PaymentStatus.VERIFIED:
             return result
 
-        existing = self._find_processed_payment(request)
+        existing = self._find_processed_payment_logged(request, log_ctx)
         if existing is not None:
             return self._handle_retry(request, existing, log_ctx)
 
-        if not self._try_claim(request):
+        try:
+            claimed = self._try_claim(request)
+        except Exception as exc:
+            # Diagnostic-loss fix (production incident,
+            # correlation_id 8c85db26...): everything between
+            # verification_result=VERIFIED and this point previously
+            # had NO logging of its own -- a real production case was
+            # a Google Play purchase_token (~171 chars) exceeding
+            # ProcessedPayment.payment_id's old VARCHAR(120) bound,
+            # raising sqlalchemy.exc.DataError. That is a DIFFERENT
+            # exception class from the IntegrityError _try_claim()
+            # already handles for its own, unrelated purpose (a
+            # genuine concurrent-claim race), so it was never caught
+            # there -- it propagated silently past every
+            # log_payment_event() call in this method straight to the
+            # caller's generic except-Exception-500, with zero trace
+            # anywhere in the logs. The column is now widened
+            # (migration 9f4d2a7e1c6b) -- this log line is the
+            # defense-in-depth half of the fix, so ANY future
+            # exception in this exact zone (whatever its cause) is now
+            # loud and diagnosable, never silent again.
+            log_payment_event(
+                "idempotency_claim_exception", status="FAILED",
+                error=str(exc), exc_info=True, **log_ctx,
+            )
+            raise
+
+        if not claimed:
             # Lost a concurrent race for this exact payment_id --
             # someone else's request is (or just finished) processing
             # it. Re-check rather than proceed, so we never create a
             # second Order for the same payment.
-            existing = self._find_processed_payment(request)
+            existing = self._find_processed_payment_logged(request, log_ctx)
             if existing is not None:
                 return self._handle_retry(request, existing, log_ctx)
             log_payment_event(
@@ -726,11 +753,39 @@ class PaymentService:
             provider=request.provider, payment_id=request.payment_id,
         ).first()
 
+    def _find_processed_payment_logged(
+        self, request: PaymentRequest, log_ctx: Dict[str, Any],
+    ) -> Optional[ProcessedPayment]:
+        """Same as _find_processed_payment(), with the diagnostic-loss
+        fix: any exception here (DB connectivity, schema mismatch,
+        etc.) is now logged with a full traceback before propagating,
+        instead of silently reaching the caller's generic
+        except-Exception-500 with no trace anywhere in the logs. See
+        process_payment()'s own comment on the _try_claim() call site
+        for the production incident this class of gap caused."""
+        try:
+            return self._find_processed_payment(request)
+        except Exception as exc:
+            log_payment_event(
+                "idempotency_lookup_exception", status="FAILED",
+                error=str(exc), exc_info=True, **log_ctx,
+            )
+            raise
+
     def _try_claim(self, request: PaymentRequest) -> bool:
         """Attempt to atomically claim (provider, payment_id) by
         inserting a placeholder row. Returns True if this call won the
         claim, False if a concurrent request already holds it (the
-        UNIQUE constraint made our insert fail)."""
+        UNIQUE constraint made our insert fail -- IntegrityError,
+        specifically -- a genuine, expected race, not an error).
+
+        Any OTHER database exception (e.g. DataError from a value
+        exceeding a column's length -- the production incident this
+        fix addresses) is NOT a race and must not be treated like one;
+        it is rolled back here (so the session is left clean for the
+        caller's own exception logging and anything that runs
+        afterward) and re-raised, letting process_payment()'s own
+        try/except around this call log it properly."""
         claim = ProcessedPayment(
             provider=request.provider,
             payment_id=request.payment_id,
@@ -743,6 +798,9 @@ class PaymentService:
         except IntegrityError:
             db.session.rollback()
             return False
+        except Exception:
+            db.session.rollback()
+            raise
 
     def _finalize_claim(self, request: PaymentRequest, business_details: Dict[str, Any]) -> None:
         claim = ProcessedPayment.query.filter_by(
