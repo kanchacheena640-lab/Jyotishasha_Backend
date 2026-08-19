@@ -57,6 +57,7 @@ from modules.payments import (
     PaymentService,
     PaymentStatus,
 )
+from modules.payments.google_play_models import GooglePlayVerificationStatus
 
 routes_google_report_confirm = Blueprint("routes_google_report_confirm", __name__)
 
@@ -121,7 +122,41 @@ def confirm_google_report_purchase():
         return jsonify({"error": "Internal error processing this purchase."}), 500
 
     if result.status not in (PaymentStatus.VERIFIED, PaymentStatus.DUPLICATE):
-        return jsonify({"error": "Payment verification failed", "message": result.message}), 400
+        # Report Purchase CANCELED Recovery Dead-End fix: the data below
+        # already exists on every REPORT_PURCHASE verification failure --
+        # GooglePlayProvider._verify_report_purchase() sets raw_payload=
+        # result.to_dict() unconditionally, both on success and failure
+        # (see GooglePlayProductVerification.to_dict()) -- it just wasn't
+        # surfaced past this route before. Additive fields only; `error`
+        # and `message` are unchanged so any existing client that only
+        # reads those two keeps working exactly as before.
+        raw = result.raw_payload or {}
+        verification_status = raw.get("verification_status")
+        purchase_state = raw.get("purchase_state")
+
+        # Only Google's own TERMINAL verdict on this exact token --
+        # verification_status VERIFIED (Google definitely has a record
+        # of it) AND purchase_state == 1 (Canceled) -- may ever tell a
+        # client this purchase can never succeed. Everything else
+        # (AUTH_ERROR, NETWORK_ERROR, NOT_FOUND/propagation delay,
+        # UNKNOWN_ERROR, or a still-Pending purchase) must stay
+        # classified as retryable, or as "pending" (also not terminal,
+        # but not identical to a plain retryable failure either) --
+        # never as canceled.
+        if verification_status == GooglePlayVerificationStatus.VERIFIED and purchase_state == 1:
+            error_code = "purchase_canceled"
+        elif verification_status == GooglePlayVerificationStatus.VERIFIED and purchase_state == 2:
+            error_code = "purchase_pending"
+        else:
+            error_code = "verification_failed"
+
+        return jsonify({
+            "error": "Payment verification failed",
+            "message": result.message,
+            "error_code": error_code,
+            "verification_status": verification_status,
+            "purchase_state": purchase_state,
+        }), 400
 
     if not result.raw_payload:
         # Extremely narrow race window: a concurrent request for the same
