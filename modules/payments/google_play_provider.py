@@ -112,6 +112,62 @@ def _parse_millis(value: Optional[Any]) -> Optional[datetime]:
         return None
 
 
+def _extract_google_error(body: Dict[str, Any]) -> Dict[str, Optional[Any]]:
+    """
+    Diagnostic hardening -- 401/403 responses previously discarded
+    Google's own response body entirely, collapsing every distinct
+    auth-rejection reason (wrong service account, API not enabled,
+    missing Play Console permission, disabled key, ...) into one fixed
+    string. Render's logs showed only that fixed string, with nothing
+    to distinguish *why* Google rejected the request.
+
+    Extracts ONLY the three safe, non-secret fields from Google's
+    standard API error envelope:
+        {"error": {"code": ..., "status": ..., "message": ...}}
+    Nothing else from the response body is ever read or returned here
+    -- no token, no credential, no header, no request echo -- even if
+    Google's body happened to contain more. A 401/403 error body is
+    Google's own diagnostic text about the credential/permission
+    problem itself (e.g. "The caller does not have permission",
+    "PERMISSION_DENIED"); it does not carry any of this app's secrets.
+
+    Never raises -- missing/malformed/empty input degrades to
+    all-None, matching every other parsing helper in this file's own
+    "never raise" contract.
+    """
+    error = body.get("error") if isinstance(body, dict) else None
+    if not isinstance(error, dict):
+        return {"code": None, "status": None, "message": None}
+    return {
+        "code": error.get("code"),
+        "status": error.get("status"),
+        "message": error.get("message"),
+    }
+
+
+def _auth_error_message(body: Dict[str, Any], status_code: int) -> str:
+    """Shared, consistent 401/403 diagnostic message -- used by all
+    three AUTH_ERROR branches below (subscription verify, product
+    verify, acknowledge) so Render's logs carry the same safe detail
+    regardless of which Google Play API call failed. Built entirely
+    from _extract_google_error()'s already-safe fields; see that
+    function's own docstring for exactly what can and cannot appear
+    here. Takes the already-parsed body (not the raw response) so
+    every call site parses the response exactly once, reusing the same
+    parsed dict for both this message and raw_response."""
+    google_error = _extract_google_error(body)
+    base = (
+        f"Google Play rejected this app's own service-account credentials "
+        f"(HTTP {status_code})."
+    )
+    if any(google_error.values()):
+        base += (
+            f" Google error: code={google_error['code']!r} "
+            f"status={google_error['status']!r} message={google_error['message']!r}"
+        )
+    return base
+
+
 def _safe_exception_text(exc: Exception, purchase_token: str) -> str:
     """S18: both requests URLs below (verify + acknowledge) embed
     purchase_token directly as a path segment, so a connection/timeout
@@ -219,14 +275,13 @@ class GooglePlayProvider(PaymentProvider):
                 error_message="Google Play rejected this purchase token as malformed.",
             )
         if response.status_code in (401, 403):
+            error_body = self._safe_json(response)
             return GooglePlaySubscriptionVerification(
                 verification_status=GooglePlayVerificationStatus.AUTH_ERROR,
                 purchase_token=purchase_token,
                 package_name=package_name,
-                error_message=(
-                    f"Google Play rejected this app's own service-account credentials "
-                    f"(HTTP {response.status_code})."
-                ),
+                error_message=_auth_error_message(error_body, response.status_code),
+                raw_response=_extract_google_error(error_body),
             )
         if response.status_code != 200:
             return GooglePlaySubscriptionVerification(
@@ -387,15 +442,14 @@ class GooglePlayProvider(PaymentProvider):
                 error_message="Google Play rejected this purchase token as malformed.",
             )
         if response.status_code in (401, 403):
+            error_body = self._safe_json(response)
             return GooglePlayProductVerification(
                 verification_status=GooglePlayVerificationStatus.AUTH_ERROR,
                 purchase_token=purchase_token,
                 product_id=product_id,
                 package_name=package_name,
-                error_message=(
-                    f"Google Play rejected this app's own service-account credentials "
-                    f"(HTTP {response.status_code})."
-                ),
+                error_message=_auth_error_message(error_body, response.status_code),
+                raw_response=_extract_google_error(error_body),
             )
         if response.status_code != 200:
             return GooglePlayProductVerification(
@@ -570,10 +624,8 @@ class GooglePlayProvider(PaymentProvider):
                 status=GooglePlayAcknowledgementStatus.AUTH_ERROR,
                 purchase_token=purchase_token,
                 purchase_state=purchase_state,
-                error_message=(
-                    f"Google Play rejected this app's own service-account credentials "
-                    f"(HTTP {response.status_code})."
-                ),
+                error_message=_auth_error_message(body, response.status_code),
+                raw_response=_extract_google_error(body),
             )
         return GooglePlayAcknowledgementResult(
             status=GooglePlayAcknowledgementStatus.UNKNOWN_ERROR,
