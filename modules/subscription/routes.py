@@ -5,10 +5,12 @@ from modules.subscription.models import Subscription
 from config.razorpay_config import razorpay_client
 from datetime import datetime, timedelta
 
-# Subscription Migration Phase 1 -- temporary dual-write, see
-# modules/subscription/dual_write_adapter.py for what this is and why.
+# Subscription Migration Phase 1 -- resolve_profile_id_from_account_
+# user_id is still used below for identity resolution. mirror_trial_
+# start is no longer imported here -- Manual Trial Activation removed
+# this file's own automatic trial-start call (see get_subscription()'s
+# own comment on why).
 from modules.subscription.dual_write_adapter import (
-    mirror_trial_start,
     resolve_profile_id_from_account_user_id,
 )
 
@@ -45,12 +47,20 @@ def get_subscription():
         db.session.add(sub)
         db.session.commit()
 
-        # Phase 1 dual-write: mirror this trial start into System C.
-        # Best-effort -- cannot affect the response above, which has
-        # already succeeded.
-        profile_id = resolve_profile_id_from_account_user_id(uid)
-        if profile_id is not None:
-            mirror_trial_start(profile_id)
+        # Manual Trial Activation: this used to also mirror-start a REAL
+        # System C trial here (Phase 1 dual-write, best-effort) the
+        # first time this legacy route ever ran for a profile -- an
+        # automatic trial start this task's product decision explicitly
+        # forbids, discovered as a 4th auto-provisioning path beyond the
+        # 3 originally audited (bootstrap/update-fcm/register-or-update).
+        # Confirmed unreachable from the current Flutter app (nothing
+        # calls GET /api/subscription), so this was a latent landmine,
+        # not an active bug -- removed for correctness/defense-in-depth
+        # regardless. The legacy Subscription row above is untouched
+        # (still created exactly as before -- other legacy consumers,
+        # e.g. subscription_required, depend on it existing); only the
+        # System C trial mirror is removed. A trial for this profile can
+        # now only ever start via POST /api/profile/activate-trial.
 
     # Subscription Migration Phase 3 -- this consumer is confirmed
     # READY per the approved Migration Plan. The legacy write above is

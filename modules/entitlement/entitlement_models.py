@@ -89,6 +89,31 @@ class EntitlementSnapshot:
         return "NONE"  # PENDING -- never had a trial or subscription
 
     @property
+    def trial_available(self) -> bool:
+        """
+        Manual Trial Activation (S-Trial.Manual) -- whether this profile
+        could START a trial right now via POST /api/profile/activate-trial.
+        Deliberately mirrors EntitlementWriteService.start_trial()'s own
+        `already_ineligible` eligibility check EXACTLY (inverted), field
+        for field, rather than inferring eligibility from
+        `membership_state` (which collapses several distinct raw states
+        into "NONE"/"EXPIRED" and would disagree with the write service
+        in edge cases, e.g. a profile with a cancelled/refunded paid
+        subscription that never trialed -- CANCELLED/REFUNDED reports
+        membership_state="EXPIRED", but start_trial() itself would still
+        grant a trial there, so trial_available must say True too).
+
+        True whenever this profile has never once had trial_started_at
+        set AND is not currently ACTIVE/GRACE -- i.e. exactly the
+        profiles start_trial() would actually accept right now. False
+        once a trial has ever been started (active or expired) or the
+        profile is a currently-paying subscriber.
+        """
+        if self.status == "PENDING":
+            return True  # no CurrentEntitlement row has ever existed
+        return self.trial.started_at is None and not self.subscription.is_active
+
+    @property
     def remaining_trial_days(self) -> Optional[int]:
         """
         Whole days left in the trial window -- None whenever

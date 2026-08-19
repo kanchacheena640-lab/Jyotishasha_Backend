@@ -53,9 +53,22 @@ def get_or_create_app_user(firebase_uid: str) -> tuple[AppUser, bool]:
     return user, created
 
 
-# ---------- Automatic initial-trial provisioning ----------
+# ---------- Automatic initial-trial provisioning (NO LONGER CALLED) ----------
 def provision_trial_for_new_profile(profile_id: int) -> None:
     """
+    NOT CALLED ANYWHERE as of Manual Trial Activation: the trial must
+    now only ever start via the user's own explicit
+    POST /api/profile/activate-trial (modules/auth/routes_profile.py::
+    activate_trial()), which calls SubscriptionService.start_trial()
+    directly so success/failure can be surfaced to the caller -- this
+    function's own swallow-every-exception, return-None contract is
+    exactly wrong for that use case. Kept defined, unused, rather than
+    deleted: it was not identified as part of the trial engine itself
+    (SubscriptionService/EntitlementWriteService/DEFAULT_TRIAL_
+    DURATION_DAYS), only as one of its former best-effort callers.
+
+    Original docstring, preserved for history:
+
     Best-effort side effect for brand-new profiles only: start the
     initial free trial via SubscriptionService.start_trial(). Callers
     must invoke this AFTER the AppUser row has been committed (a real,
@@ -148,8 +161,15 @@ def register_or_update_user(data: dict) -> AppUser:
 
     db.session.commit()
 
-    if created:
-        provision_trial_for_new_profile(user.id)
+    # Manual Trial Activation: this call site used to auto-provision the
+    # initial free trial for a just-created profile (`created=True`).
+    # That auto-start is REMOVED by product decision -- a brand-new
+    # profile is now intentionally left with no CurrentEntitlement row
+    # (trial_available=True) until the user explicitly activates it via
+    # POST /api/profile/activate-trial. `created` is intentionally
+    # unused for that purpose now; kept as a return-relevant local only
+    # incidentally (it's still exactly what get_or_create_app_user()
+    # reports, unchanged).
 
     return user
 

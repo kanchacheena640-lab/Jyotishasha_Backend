@@ -22,7 +22,7 @@ import traceback
 import uuid
 
 from extensions import db
-from modules.user_service import get_or_create_app_user, provision_trial_for_new_profile
+from modules.user_service import get_or_create_app_user
 from firebase_admin import auth as firebase_auth
 
 # 🟢 Correct kundali calculator (confirmed by you)
@@ -151,27 +151,16 @@ def bootstrap_user_profile():
         print(f"[AFTER COMMIT] trace_id={trace_id} profile_id={user.id!r}")
 
         # ----------------------------------------------------------
-        # 2b) Provision the initial free trial -- exactly once, only
-        # for a profile that was just created (never for an existing
-        # one being updated). See provision_trial_for_new_profile()'s
-        # docstring for why a failure here does not roll back or fail
-        # this request.
+        # 2b) Manual Trial Activation: this used to auto-provision the
+        # initial free trial for a just-created profile here. That
+        # auto-start is REMOVED by product decision -- a brand-new
+        # profile is now intentionally left with no CurrentEntitlement
+        # row (trial_available=True) until the user explicitly calls
+        # POST /api/profile/activate-trial themselves. Nothing else
+        # about this route's response/behavior changes.
         # ----------------------------------------------------------
-        # NOTE (diagnostic limitation, not a behavior change):
-        # provision_trial_for_new_profile() catches and swallows its
-        # own exceptions internally (by design -- see its docstring)
-        # and always returns None, whether the trial succeeded or
-        # failed. It is not modified here (that would be a business-
-        # logic change to shared code used by other callers), so
-        # "trial success?" / "trial exception?" genuinely cannot be
-        # observed from this call site -- logged honestly as such
-        # rather than guessed.
-        trial_attempted = bool(created)
-        print(f"[TRIAL] trace_id={trace_id} trial_attempted={trial_attempted} "
-              f"trial_success=not_observable_from_this_call_site "
-              f"trial_exception=not_observable_from_this_call_site")
-        if created:
-            provision_trial_for_new_profile(user.id)
+        print(f"[TRIAL] trace_id={trace_id} created={bool(created)} "
+              f"auto_trial_provisioning=disabled_by_product_decision")
 
         # ----------------------------------------------------------
         # 3) Response to App

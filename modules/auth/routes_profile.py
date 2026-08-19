@@ -4,7 +4,7 @@ from extensions import db
 from modules.auth.models import User
 from modules.subscription.utils import subscription_required
 from firebase_admin import auth as firebase_auth
-from modules.user_service import get_or_create_app_user, provision_trial_for_new_profile
+from modules.user_service import get_or_create_app_user
 
 
 
@@ -87,6 +87,12 @@ def subscription_info():
             # would return for "nothing ever provisioned".
             "membership_state": "NONE",
             "remaining_days": None,
+            # trial_available (Manual Trial Activation) -- no profile
+            # exists at all here (not even resolvable), so there is
+            # nothing to activate a trial FOR yet. False, not True --
+            # this is a distinct case from "profile exists, never
+            # trialed" (which IS True below).
+            "trial_available": False,
         }), 200
 
     snapshot = EntitlementService().get_current_entitlement(profile_id)
@@ -106,6 +112,9 @@ def subscription_info():
             # the snapshot already fetched above, not recalculated.
             "membership_state": snapshot.membership_state,
             "remaining_days": snapshot.remaining_trial_days,
+            # trial_available (Manual Trial Activation) -- reused from
+            # the same snapshot, not recalculated.
+            "trial_available": snapshot.trial_available,
         }), 200
 
     is_trial = False
@@ -145,7 +154,130 @@ def subscription_info():
         # above -- reused, not recalculated.
         "membership_state": snapshot.membership_state,
         "remaining_days": snapshot.remaining_trial_days,
+        # trial_available (Manual Trial Activation) -- lets Flutter show
+        # the FREE badge / activation card without inferring eligibility
+        # from membership_state=="NONE" alone (see EntitlementSnapshot.
+        # trial_available's own docstring for why that would disagree
+        # with start_trial() in edge cases).
+        "trial_available": snapshot.trial_available,
     })
+
+
+@profile_bp.route("/api/profile/activate-trial", methods=["POST"])
+@jwt_required()
+def activate_trial():
+    """
+    Manual Trial Activation -- the ONLY place a 7-day free trial is
+    ever started, now that automatic provisioning has been removed
+    from AppUser creation (bootstrap / update-fcm / register-or-update
+    no longer call provision_trial_for_new_profile()). This is a thin
+    controller in front of the SAME, unmodified trial engine those
+    call sites already used -- SubscriptionService.start_trial() ->
+    EntitlementWriteService.start_trial() -> CurrentEntitlement -- no
+    new business rule is introduced here.
+
+    Identity: resolves the authenticated profile the exact same way
+    /api/profile/subscription-info already does (JWT identity ->
+    resolve_profile_id_from_account_user_id()) -- never trusts a
+    client-supplied profile_id, matching this route file's existing
+    convention.
+
+    Server-authoritative + one-time, by construction, not by any new
+    logic here: EntitlementWriteService.start_trial() already refuses
+    (TRIAL_SKIPPED, success=True, no write) whenever trial_started_at
+    was ever set before OR the profile is currently ACTIVE/GRACE -- the
+    exact same check CurrentEntitlement.profile_id's DB-level UNIQUE
+    constraint backs for any genuine concurrent double-tap. This route
+    only calls that method once and reshapes its result; it never
+    re-implements eligibility.
+
+    Response is always built from a FRESH EntitlementService read taken
+    AFTER the write attempt, never from the write result's own
+    (possibly stale-relative-to-live-timestamp) fields -- so
+    membership_state/remaining_days/trial_available in the response are
+    always the true, current, live-computed state, exactly like
+    /api/profile/subscription-info's own contract.
+    """
+    from modules.entitlement import EntitlementService
+    from modules.subscription.dual_write_adapter import (
+        resolve_profile_id_from_account_user_id,
+    )
+    from modules.subscription.subscription_service import SubscriptionService
+
+    user_id = get_jwt_identity()
+    profile_id = resolve_profile_id_from_account_user_id(user_id)
+
+    if profile_id is None:
+        return jsonify({
+            "success": False,
+            "activated": False,
+            "reason": "no_profile",
+            "message": "No profile could be resolved for this account.",
+        }), 404
+
+    entitlement_service = EntitlementService()
+    before = entitlement_service.get_current_entitlement(profile_id)
+
+    # Short-circuit an already-active trial as a pure read -- never
+    # calls start_trial() again for a case that's already exactly the
+    # target state. (Calling it anyway would also be safe/no-op per
+    # its own eligibility check; this just avoids an unnecessary write
+    # attempt for the single most common repeat-tap case.)
+    if before.trial.is_active:
+        return jsonify({
+            "success": True,
+            "activated": False,
+            "reason": "already_active",
+            "message": "Trial is already active.",
+            "membership_state": before.membership_state,
+            "remaining_days": before.remaining_trial_days,
+            "accessible_segments": before.accessible_segments,
+            "trial_available": before.trial_available,
+        }), 200
+
+    if before.subscription.is_active:
+        return jsonify({
+            "success": False,
+            "activated": False,
+            "reason": "already_subscribed",
+            "message": "This profile already has an active paid subscription.",
+            "membership_state": before.membership_state,
+            "remaining_days": before.remaining_trial_days,
+            "accessible_segments": before.accessible_segments,
+            "trial_available": before.trial_available,
+        }), 400
+
+    if not before.trial_available:
+        # Never had an active trial or paid subscription right now, but
+        # trial_started_at was set at some point in the past -- a
+        # previously-claimed, now-expired trial. No second trial, ever.
+        return jsonify({
+            "success": False,
+            "activated": False,
+            "reason": "trial_already_used",
+            "message": "This profile has already used its free trial.",
+            "membership_state": before.membership_state,
+            "remaining_days": before.remaining_trial_days,
+            "accessible_segments": before.accessible_segments,
+            "trial_available": before.trial_available,
+        }), 400
+
+    result = SubscriptionService().start_trial(profile_id)
+
+    after = entitlement_service.get_current_entitlement(profile_id)
+    activated = result.action == "TRIAL_STARTED"
+
+    return jsonify({
+        "success": True,
+        "activated": activated,
+        "reason": None if activated else "already_active",
+        "message": result.message,
+        "membership_state": after.membership_state,
+        "remaining_days": after.remaining_trial_days,
+        "accessible_segments": after.accessible_segments,
+        "trial_available": after.trial_available,
+    }), 200
+
 
 @profile_bp.route('/personalized-horoscope', methods=["POST"])
 @jwt_required()
@@ -201,17 +333,22 @@ def update_fcm_token():
         # 🔥 NEW SYSTEM (ALWAYS ENSURE) -- routed through the shared
         # identity-resolution service (modules/user_service.py) instead
         # of constructing AppUser() inline, so this endpoint can never
-        # produce a second, disconnected AppUser row, and so a profile
-        # first created here also gets its initial trial provisioned.
+        # produce a second, disconnected AppUser row.
+        #
+        # Manual Trial Activation: this endpoint used to also start the
+        # free trial automatically the first time it created a brand-new
+        # AppUser row (`created=True`). That auto-provisioning is REMOVED
+        # by product decision -- the trial must now only ever start via
+        # the user's own explicit POST /api/profile/activate-trial call.
+        # A new profile created here is intentionally left with no
+        # CurrentEntitlement row at all (status effectively "PENDING",
+        # trial_available=True) until the user activates it themselves.
         app_user, created = get_or_create_app_user(firebase_uid)
 
         app_user.fcm_token = fcm_token
 
         # 🔥 SINGLE COMMIT (IMPORTANT)
         db.session.commit()
-
-        if created:
-            provision_trial_for_new_profile(app_user.id)
 
         return jsonify({
             "status": "success",
