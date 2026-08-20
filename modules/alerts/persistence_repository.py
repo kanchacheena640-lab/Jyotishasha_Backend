@@ -306,7 +306,20 @@ class AlertPersistenceRepository:
         modules/alerts/severity_cooldown_registry.py, resolved by the
         CALLER -- this repository stays a plain-values consumer and
         never imports that registry). When present, it is written to
-        the row on both insert and update. `last_delivered_at` is
+        the row on both insert and update.
+
+        AI-Written Personalized Alert Content addition: each dict MAY
+        also carry `triggered_facts` (cheap, plain-English facts,
+        supplied by profile_detection_service.py for every detected
+        event) and/or `ai_insight`/`ai_action`/`ai_generated_at`
+        (OpenAI-generated, in practice written directly onto an
+        already-persisted row by
+        alert_ai_content_service.ensure_ai_content_for_selected_rows()
+        rather than through this method -- accepted here too for
+        symmetry). Same "only touched when supplied" contract as
+        `severity` -- omitted for an ordinary continuing row so an
+        already-generated value, or a still-NULL value after a prior
+        failed generation attempt, is never overwritten. `last_delivered_at` is
         NEVER touched anywhere in this method, on any path -- it is
         set ONLY by a future Phase 5 delivery adapter after a
         CONFIRMED successful send; detection/lifecycle synchronization
@@ -379,6 +392,21 @@ class AlertPersistenceRepository:
                     confidence=detected["confidence"],
                     priority=detected["priority"],
                     severity=detected.get("severity"),  # Phase 4, optional; None if caller omits it
+                    # AI-Written Personalized Alert Content addition --
+                    # optional, same "None if caller omits it" contract
+                    # as severity above. profile_detection_service.py
+                    # supplies triggered_facts (cheap, every detected
+                    # event); ai_insight/ai_action/ai_generated_at are
+                    # supplied only by
+                    # alert_ai_content_service.ensure_ai_content_for_selected_rows()
+                    # writing directly to an already-persisted row, NOT
+                    # through this method -- kept accepted here too for
+                    # symmetry/generality, simply unexercised by that
+                    # caller.
+                    triggered_facts=detected.get("triggered_facts"),
+                    ai_insight=detected.get("ai_insight"),
+                    ai_action=detected.get("ai_action"),
+                    ai_generated_at=detected.get("ai_generated_at"),
                     active_from=detected["active_from"],
                     active_until=detected["active_until"],
                     first_detected_at=evaluated_at,
@@ -394,6 +422,22 @@ class AlertPersistenceRepository:
                 existing.priority = detected["priority"]
                 if "severity" in detected:
                     existing.severity = detected["severity"]  # Phase 4; only touched when supplied
+                # AI-Written Personalized Alert Content addition -- same
+                # "only touched when supplied" contract as severity.
+                # The caller (profile_detection_service.py) omits these
+                # keys entirely for an ordinary continuing/"updated" row
+                # (see its own _should_generate_ai_content()), so an
+                # existing row's already-generated content -- or its
+                # still-NULL state after a prior failed attempt -- is
+                # never overwritten here.
+                if "triggered_facts" in detected:
+                    existing.triggered_facts = detected["triggered_facts"]
+                if "ai_insight" in detected:
+                    existing.ai_insight = detected["ai_insight"]
+                if "ai_action" in detected:
+                    existing.ai_action = detected["ai_action"]
+                if "ai_generated_at" in detected:
+                    existing.ai_generated_at = detected["ai_generated_at"]
                 existing.active_from = detected["active_from"]
                 existing.active_until = detected["active_until"]
                 existing.last_evaluated_at = evaluated_at

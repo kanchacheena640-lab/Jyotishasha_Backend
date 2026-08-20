@@ -85,6 +85,41 @@ class AlertMicroEvent(db.Model):
     # ProfileDetectionService from Phase 4 onward always sets this.
     severity = db.Column(db.String(10), nullable=True)
 
+    # AI-Written Personalized Alert Content addition -- plain-English
+    # facts (e.g. "Jupiter is currently transiting house 10") derived
+    # from this event's actual triggered_rules + natal/transit/dasha
+    # context (modules/alerts/alert_ai_content_service.py::
+    # describe_triggered_facts()) -- computed and persisted for EVERY
+    # detected event at detection time (cheap, no OpenAI call), NOT
+    # gated on selection. This is what makes it possible to generate
+    # AI content LATER, only for the final selected alert(s), without
+    # needing to re-run detection/kundali calculation at that later
+    # point (the live PlannedMicroEvent/EvaluationContext only exist
+    # in-memory during one ProfileDetectionService.evaluate_profile()
+    # call). NULL/empty means nothing describable fired for this row.
+    triggered_facts = db.Column(db.JSON, nullable=True)
+
+    # AI-Written Personalized Alert Content addition -- generated ONLY
+    # for the FINAL, already-selected alert(s)
+    # (modules/alerts/alert_ai_content_service.py::
+    # ensure_ai_content_for_selected_rows(), called from the single
+    # selection authority both alerts_scheduler.py and
+    # routes_alerts_dashboard.py share -- see that function's own
+    # docstring for the architectural gate this enforces: detection ->
+    # selection -> THEN generation, never the reverse). NULL means "not
+    # yet generated" (a brand-new/not-yet-selected row, or a generation
+    # attempt that failed) -- modules/alerts/notification_content_adapter.py
+    # falls back to the existing deterministic per-category template
+    # whenever either is NULL, so a failed/never-run generation never
+    # breaks delivery. Never touched by synchronize_profile_events() on
+    # an ordinary continuing/"updated" row -- only set once, when
+    # generation actually runs, and never re-generated for a row that
+    # already has it (see ensure_ai_content_for_selected_rows()'s own
+    # idempotency gate).
+    ai_insight = db.Column(db.Text, nullable=True)   # SIGNAL -> real-life implication paragraph
+    ai_action = db.Column(db.Text, nullable=True)     # -> practical action sentence
+    ai_generated_at = db.Column(db.DateTime, nullable=True)
+
     # Phase 4 addition -- set ONLY by a future Phase 5 delivery adapter
     # after a CONFIRMED successful FCM send; NEVER written by anything
     # in Phase 1-4 (detection/lifecycle sync never touches this column
@@ -144,6 +179,10 @@ class AlertMicroEvent(db.Model):
             "priority": self.priority,
             "confidence": self.confidence,
             "severity": self.severity,
+            "triggered_facts": self.triggered_facts,
+            "ai_insight": self.ai_insight,
+            "ai_action": self.ai_action,
+            "ai_generated_at": self.ai_generated_at.isoformat() if self.ai_generated_at else None,
             "last_delivered_at": self.last_delivered_at.isoformat() if self.last_delivered_at else None,
             "active_from": self.active_from.isoformat() if self.active_from else None,
             "active_until": self.active_until.isoformat() if self.active_until else None,

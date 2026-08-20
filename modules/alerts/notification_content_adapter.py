@@ -1,19 +1,33 @@
 # modules/alerts/notification_content_adapter.py
 
 """
-Alerts Notification Content Adapter (Phase 5).
+Alerts Notification Content Adapter (Phase 5; AI-Written Personalized
+Alert Content addition on top).
 
-Deterministic, config/catalog-driven notification content for a
-detected micro-event -- NO OpenAI call, NO AI-generated text anywhere.
+Body text now PREFERS the AI-written `ai_insight`/`ai_action` a genuine
+new/reactivated occurrence generated at detection time (see
+modules/alerts/alert_ai_content_service.py, called from
+modules/alerts/profile_detection_service.py, persisted on
+AlertMicroEvent) -- passed in here by the caller, which already holds
+the row. This file itself still makes NO OpenAI call and generates NO
+text -- it only chooses between two ALREADY-COMPUTED sources: the
+persisted AI content when present, or the original Phase 5
+deterministic, config/catalog-driven fallback below when it is not
+(never generated yet, or a past generation attempt failed) -- the
+exact same category template every alert used before this addition,
+byte-for-byte unchanged, so a missing/failed AI generation can never
+degrade below Phase 5's own behavior.
+
 Reuses the Rule Engine's own event catalog
 (modules/alerts/event_registry.py, unmodified) for the event's fixed
 `title` (the exact same string every DetectedMicroEvent/
 PlannedMicroEvent already carries -- see event_models.py's own
 docstring: "title is always the fixed catalog string, never generated
-text"). Body text comes from a small, hardcoded, per-category template
-map -- the only new "content" this file introduces; every string is
-fixed at code-review time, same discipline config/micro_events.json's
-own `title` field already follows.
+text" -- title is NEVER AI-written, only body/action are). The
+per-category template map below is the only hardcoded "content" this
+file introduces; every string is fixed at code-review time, same
+discipline config/micro_events.json's own `title` field already
+follows.
 
 Deliberately does NOT include `confidence` anywhere in the returned
 content or payload -- per this phase's instruction not to expose
@@ -29,7 +43,7 @@ different event shape).
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from modules.alerts.event_registry import get_default_registry
 from modules.alerts.exceptions import AlertsEngineError
@@ -61,10 +75,29 @@ def build_alert_notification_content(
     event_id: str,
     category: str,
     severity: str,
+    ai_insight: Optional[str] = None,
+    ai_action: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Returns {"title": str, "body": str, "data": dict} -- deterministic,
-    catalog/config-driven, confidence never exposed.
+    Returns {"title": str, "body": str, "data": dict} -- title always
+    the fixed catalog string; body is the persisted AI-written
+    `ai_insight` when the caller supplies one (a genuine new/reactivated
+    occurrence that generated successfully), else the original Phase 5
+    deterministic per-category fallback, unchanged. `ai_insight`/
+    `ai_action` are optional purely for backward compatibility -- every
+    existing call site keeps working unmodified if it never passes
+    them; they come from AlertMicroEvent.ai_insight/.ai_action, which
+    this file does not read from the database itself (stays a plain-
+    values consumer, matching persistence_repository.py's own
+    discipline).
+
+    A top-level `action` key is included in the return value ONLY when
+    `ai_action` is supplied -- never an empty string, so a client can
+    safely treat its absence as "no action for this alert" rather than
+    parse-and-hide an empty value. It also travels inside `data`, so a
+    push/Bell payload (title+body only, no 3rd field) still carries it
+    for any consumer that reads the deep-link data instead of the
+    notification's own body.
 
     `data` follows the SAME "type" + "event_id" deep-link convention
     every existing AstroEvent-based notification already uses (see
@@ -80,15 +113,19 @@ def build_alert_notification_content(
         raise AlertContentError(f"Unknown event_id for notification content: {event_id!r}")
 
     title = catalog_event.title
-    body = _CATEGORY_BODY_TEMPLATES.get(category, _DEFAULT_BODY_TEMPLATE)
+    body = ai_insight if ai_insight else _CATEGORY_BODY_TEMPLATES.get(category, _DEFAULT_BODY_TEMPLATE)
 
-    return {
-        "title": title,
-        "body": body,
-        "data": {
-            "type": "alert",
-            "event_id": event_id,
-            "category": category,
-            "severity": severity,
-        },
+    data: Dict[str, Any] = {
+        "type": "alert",
+        "event_id": event_id,
+        "category": category,
+        "severity": severity,
     }
+
+    result: Dict[str, Any] = {"title": title, "body": body, "data": data}
+
+    if ai_action:
+        result["action"] = ai_action
+        data["action"] = ai_action
+
+    return result

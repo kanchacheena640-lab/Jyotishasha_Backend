@@ -34,6 +34,7 @@ from typing import Any, Dict, List, Optional
 from full_kundali_api import calculate_full_kundali
 from modules.models_user import AppUser
 
+from modules.alerts.alert_ai_content_service import describe_triggered_facts
 from modules.alerts.event_registry import EventRegistry, get_default_registry
 from modules.alerts.exceptions import AlertsEngineError
 from modules.alerts.persistence_repository import (
@@ -181,8 +182,24 @@ class ProfileDetectionService:
                 f"PlanningWindowEngine.plan() failed for profile_id={profile_id}: {exc}"
             ) from exc
 
-        detected_events: List[Dict[str, Any]] = [
-            {
+        # AI-Written Personalized Alert Content addition -- the SAME
+        # "today" natal/transit/dasha/yoga facts plan() itself already
+        # computed internally, exposed via the small additive accessor
+        # above (no new astrology calculation). Built once per profile
+        # evaluation. Used ONLY to derive cheap, plain-English
+        # triggered_facts below -- NEVER to call OpenAI here. See
+        # modules/alerts/alert_ai_content_service.py's own module
+        # docstring for the architectural gate this enforces: AI
+        # generation happens ONLY later, for the FINAL selected
+        # alert(s), via ensure_ai_content_for_selected_rows() -- never
+        # here, for every raw detected event.
+        evaluation_context = self._planning_engine.build_evaluation_context(
+            kundali, day_anchors=day_anchors,
+        )
+
+        detected_events: List[Dict[str, Any]] = []
+        for event in planned_events:
+            entry: Dict[str, Any] = {
                 "event_id": event.event_id,
                 "category": event.category,
                 # PlanningWindowEngine.plan() only ever returns NEW or
@@ -198,8 +215,18 @@ class ProfileDetectionService:
                 "active_from": _parse_iso_date(event.active_from),
                 "active_until": _parse_iso_date(event.active_until),
             }
-            for event in planned_events
-        ]
+
+            # Cheap, no OpenAI call, no cost -- computed for EVERY
+            # detected event regardless of whether it will later be
+            # selected. This is what lets generation happen LATER
+            # (after selection, in a separate call/request) without
+            # needing to recompute detection facts at that point -- see
+            # describe_triggered_facts()'s own docstring.
+            facts = describe_triggered_facts(event, evaluation_context)
+            if facts:
+                entry["triggered_facts"] = facts
+
+            detected_events.append(entry)
 
         counts: SyncCounts = self._repository.synchronize_profile_events(
             profile_id=profile_id,

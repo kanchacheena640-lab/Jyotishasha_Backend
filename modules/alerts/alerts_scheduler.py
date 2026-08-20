@@ -91,6 +91,7 @@ from modules.models_premium_subscription import CurrentEntitlement
 
 from modules.entitlement.entitlement_service import EntitlementService
 
+from modules.alerts.alert_ai_content_service import ensure_ai_content_for_selected_rows
 from modules.alerts.alert_delivery_service import deliver_alert
 from modules.alerts.entitlement_gate import has_alerts_access
 from modules.alerts.notification_content_adapter import AlertContentError, build_alert_notification_content
@@ -348,6 +349,16 @@ def _process_one_profile(
         selection = get_user_facing_alerts_for_profile(
             profile_id, now=now, repository=repository, lat=user.lat, lon=user.lng,
         )
+
+        # ---- Architectural gate: AI generation happens HERE, ONLY for
+        # the FINAL selected set -- never for the raw detected events
+        # above. See ensure_ai_content_for_selected_rows()'s own
+        # docstring. Runs before BOTH the push (attemptable_rows) and
+        # Bell-only (bell_only_rows) branches below, since both are
+        # subsets of selection.selected and either channel needs the
+        # content ready before building notification content. ----
+        ensure_ai_content_for_selected_rows(selection.selected)
+
         selected_event_ids = {r.event_id for r in selection.selected}
 
         # Pre-existing meaning preserved: alerts that failed the Phase 4
@@ -403,6 +414,8 @@ def _process_one_profile(
                     event_id=alert_row.event_id,
                     category=alert_row.category,
                     severity=alert_row.severity,
+                    ai_insight=alert_row.ai_insight,
+                    ai_action=alert_row.ai_action,
                 )
             except AlertContentError:
                 continue  # same defensive posture as deliver_alert()'s own content stage

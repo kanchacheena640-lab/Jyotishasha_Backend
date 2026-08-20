@@ -127,6 +127,30 @@ class PlanningWindowEngine:
 
         return self._plan_from(self._registry.fallback_events(), contexts_by_day, anchors)
 
+    def build_evaluation_context(
+        self, kundali: Dict[str, Any], day_anchors: Optional[List[datetime.datetime]] = None,
+    ) -> EvaluationContext:
+        """
+        AI-Written Personalized Alert Content addition -- exposes the
+        SAME "today" (day_offset 0) EvaluationContext plan() already
+        builds internally, for a caller that needs the underlying
+        natal/transit/dasha/yoga facts for a DIFFERENT purpose than
+        rule evaluation (content generation --
+        modules/alerts/alert_ai_content_service.py, called from
+        modules/alerts/profile_detection_service.py).
+
+        Purely additive: does not change plan()'s own behavior, return
+        shape, or any existing caller/test, and recomputes nothing new
+        -- reuses the identical private _build_daily_contexts()/
+        _default_day_anchors() helpers plan() itself already calls.
+        Accepts the same optional `day_anchors` plan() does (e.g.
+        sunrise-boundary anchors), for the same reason: so the context
+        reflects the SAME day boundary a given evaluate_profile() run
+        already resolved, not a second, independently-computed one.
+        """
+        anchors = day_anchors if day_anchors is not None else self._default_day_anchors()
+        return self._build_daily_contexts(kundali, anchors)[0]
+
     def _default_day_anchors(self) -> List[datetime.datetime]:
         """Backward-compatible fallback -- the ORIGINAL Phase 1/2 day
         boundary (IST midnight, +1 day each), byte-for-byte unchanged,

@@ -136,6 +136,7 @@ def deliver_alert(
     try:
         content = build_alert_notification_content(
             event_id=event_id, category=row.category, severity=eligibility.severity,
+            ai_insight=row.ai_insight, ai_action=row.ai_action,
         )
     except AlertContentError as exc:
         return AlertDeliveryResult(

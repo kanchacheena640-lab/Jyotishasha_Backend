@@ -39,17 +39,21 @@ left exactly as-is too: it is what makes this endpoint agree with
 what push delivery itself would show, by the selection service's own
 design -- not something this file second-guesses or re-implements.
 
-Response contract (Gate 5): stable minimal fields only. Confidence,
+Response contract (Gate 5, extended by the AI-Written Personalized
+Alert Content addition): stable minimal fields only. Confidence,
 DOB/TOB/POB, raw Kundali/rule internals, and any detection-debug
 metadata are NEVER serialized -- this file only reads
 event_id/category/severity/priority/active_from/active_until off the
-selected AlertMicroEvent rows, plus a deterministic title/body from
+selected AlertMicroEvent rows, plus title/body/(optional) action from
 the EXISTING modules/alerts/notification_content_adapter.py
-::build_alert_notification_content() (catalog/config-driven, no
-OpenAI call, confidence never included -- see that file's own
-docstring). Raw detected alerts (the full candidate pool) are never
-returned -- only the already-selected, at-most-2 rows
-get_user_facing_alerts_for_profile() itself narrowed to.
+::build_alert_notification_content() -- this route makes no OpenAI
+call itself; it only passes through the row's already-persisted
+ai_insight/ai_action (generated once, at detection time, by
+modules/alerts/alert_ai_content_service.py) or that same file's
+original deterministic per-category fallback when absent. Raw detected
+alerts (the full candidate pool) are never returned -- only the
+already-selected, at-most-2 rows get_user_facing_alerts_for_profile()
+itself narrowed to.
 """
 
 from __future__ import annotations
@@ -57,6 +61,7 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from modules.alerts.alert_ai_content_service import ensure_ai_content_for_selected_rows
 from modules.alerts.entitlement_gate import has_alerts_access
 from modules.alerts.notification_content_adapter import (
     AlertContentError,
@@ -74,8 +79,9 @@ def _serialize_alert(row):
     field."""
     content = build_alert_notification_content(
         event_id=row.event_id, category=row.category, severity=row.severity,
+        ai_insight=row.ai_insight, ai_action=row.ai_action,
     )
-    return {
+    result = {
         "alert_id": row.id,
         "event_id": row.event_id,
         "title": content["title"],
@@ -86,6 +92,14 @@ def _serialize_alert(row):
         "valid_from": row.active_from.isoformat() if row.active_from else None,
         "valid_until": row.active_until.isoformat() if row.active_until else None,
     }
+    # AI-Written Personalized Alert Content addition -- present only
+    # when this row actually has AI-generated action guidance (a
+    # genuine new/reactivated occurrence that generated successfully).
+    # Never an empty string -- see build_alert_notification_content()'s
+    # own docstring on this contract.
+    if "action" in content:
+        result["action"] = content["action"]
+    return result
 
 
 @routes_alerts_dashboard.route("/api/alerts/current", methods=["GET"])
@@ -129,6 +143,16 @@ def get_current_alerts():
             "status": "error",
             "message": "Unable to load your alerts right now. Please try again.",
         }), 500
+
+    # Architectural gate: AI generation happens HERE, ONLY for the
+    # FINAL selected set -- never for a raw detected event that this
+    # narrowing excluded. See
+    # alert_ai_content_service.ensure_ai_content_for_selected_rows()'s
+    # own docstring. A failure here (OpenAI down, etc.) never breaks
+    # this endpoint -- it just leaves ai_insight/ai_action NULL for the
+    # affected row(s), and _serialize_alert() below already falls back
+    # to the deterministic template via build_alert_notification_content().
+    ensure_ai_content_for_selected_rows(result.selected)
 
     try:
         alerts = [_serialize_alert(row) for row in result.selected]

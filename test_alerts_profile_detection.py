@@ -40,6 +40,7 @@ from app import app  # noqa: E402
 from extensions import db  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
+from modules.alerts.event_models import EvaluationContext  # noqa: E402
 from modules.alerts.persistence_models import AlertMicroEvent  # noqa: E402
 from modules.alerts.persistence_repository import (  # noqa: E402
     AlertPersistenceRepository, AlertPersistenceError,
@@ -112,6 +113,25 @@ class FakePlanningEngine:
         if self._raise_error:
             raise RuntimeError("Simulated Rule Engine failure")
         return self._events
+
+    def build_evaluation_context(self, kundali, day_anchors=None):
+        # AI-Written Personalized Alert Content addition -- matches
+        # PlanningWindowEngine.build_evaluation_context()'s real
+        # contract. Returns a minimal, valid-shape fixture; every
+        # `planned()` fixture event in this file uses triggered_rules=[]
+        # (empty), so alert_ai_content_service.build_alert_ai_content()
+        # always returns None regardless of this context's actual
+        # values -- this fake never needs to be astrologically
+        # meaningful, only structurally present.
+        return EvaluationContext(
+            lagna_sign="Aries",
+            planet_snapshots={},
+            natal_planets_by_name={},
+            house_lords={},
+            mahadasha_lord=None,
+            antardasha_lord=None,
+            active_yogas={},
+        )
 
 
 def main():
