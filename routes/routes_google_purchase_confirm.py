@@ -113,6 +113,8 @@ exactly, rather than inventing a new one:
 
 from __future__ import annotations
 
+from typing import Optional
+
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -145,13 +147,50 @@ _CLIENT_SAFE_VERIFICATION_STATUSES = (
 )
 
 
-def _bad_request(message: str):
+def _bad_request(
+    message: str,
+    *,
+    correlation_id: str,
+    reason: str,
+    purchase_token: Optional[str] = None,
+    product_id: Optional[str] = None,
+):
+    # Diagnostic logging fix: every request-validation rejection used to
+    # return silently -- Render's own access log shows only the status
+    # code and byte count (e.g. "400 121"), with no application-level
+    # reason at all, which is exactly what made the platform-field
+    # contract mismatch (S-Sub-Confirm.1) require a manual audit instead
+    # of a log read. `log_payment_event` already masks
+    # razorpay_order_id/razorpay_payment_id (purchase_token, here) via
+    # its own existing _mask_identifier() -- the same, single masking
+    # algorithm every other log line in this codebase already uses, not
+    # a second one. The Authorization header/JWT and the raw request
+    # body are never passed to this function or logged anywhere here --
+    # only the specific validation message and the caller-supplied
+    # purchase_token/product_id (both already masked/safe).
+    log_payment_event(
+        "google_purchase_confirm_rejected",
+        correlation_id=correlation_id,
+        status="INVALID_REQUEST",
+        provider=PaymentProviderType.GOOGLE_PLAY,
+        product=product_id,
+        razorpay_order_id=purchase_token,
+        razorpay_payment_id=purchase_token,
+        error=f"{reason}: {message}",
+    )
     return jsonify({"status": "INVALID_REQUEST", "message": message}), 400
 
 
 @routes_google_purchase_confirm.route("/api/subscription/google/confirm", methods=["POST"])
 @jwt_required()
 def confirm_google_purchase():
+    # Diagnostic logging fix: generated up front (moved from just before
+    # the PaymentService call) so every rejection below -- including the
+    # request-validation ones that previously logged nothing at all --
+    # carries the same one correlation_id a support/ops search would
+    # look for.
+    correlation_id = new_correlation_id()
+
     # S14 -- profile_id is resolved from the authenticated JWT identity,
     # exactly the way modules/auth/routes_profile.py::subscription_info()
     # and modules/subscription/routes.py already do (same import, same
@@ -165,22 +204,36 @@ def confirm_google_purchase():
     user_id = get_jwt_identity()
     authenticated_profile_id = resolve_profile_id_from_account_user_id(user_id)
     if authenticated_profile_id is None:
+        log_payment_event(
+            "google_purchase_confirm_rejected",
+            correlation_id=correlation_id, status="FORBIDDEN",
+            provider=PaymentProviderType.GOOGLE_PLAY,
+            error="no_profile: No profile is associated with this account.",
+        )
         return jsonify({
             "status": "FORBIDDEN", "message": "No profile is associated with this account.",
         }), 403
 
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
-        return _bad_request("Request body must be a JSON object.")
+        return _bad_request(
+            "Request body must be a JSON object.",
+            correlation_id=correlation_id, reason="not_json",
+        )
 
     purchase_token = data.get("purchase_token")
     if not purchase_token or not isinstance(purchase_token, str):
-        return _bad_request("purchase_token is required.")
+        return _bad_request(
+            "purchase_token is required.",
+            correlation_id=correlation_id, reason="missing_purchase_token",
+        )
 
     platform = data.get("platform")
     if not platform or platform.upper() not in _GOOGLE_PLAY_PLATFORMS:
         return _bad_request(
-            f"platform must be one of {_GOOGLE_PLAY_PLATFORMS!r} -- Apple is not implemented."
+            f"platform must be one of {_GOOGLE_PLAY_PLATFORMS!r} -- Apple is not implemented.",
+            correlation_id=correlation_id, reason="invalid_platform",
+            purchase_token=purchase_token, product_id=data.get("product_id"),
         )
 
     # profile_id is no longer required from the client -- the
@@ -194,8 +247,20 @@ def confirm_google_purchase():
         try:
             requested_profile_id = int(profile_id_raw)
         except (TypeError, ValueError):
-            return _bad_request("profile_id must be an integer.")
+            return _bad_request(
+                "profile_id must be an integer.",
+                correlation_id=correlation_id, reason="invalid_profile_id",
+                purchase_token=purchase_token, product_id=data.get("product_id"),
+            )
         if requested_profile_id != authenticated_profile_id:
+            log_payment_event(
+                "google_purchase_confirm_rejected",
+                correlation_id=correlation_id, status="FORBIDDEN",
+                provider=PaymentProviderType.GOOGLE_PLAY,
+                product=data.get("product_id"),
+                razorpay_order_id=purchase_token, razorpay_payment_id=purchase_token,
+                error="cross_account_profile_id: profile_id does not belong to the authenticated account.",
+            )
             return jsonify({
                 "status": "FORBIDDEN",
                 "message": "profile_id does not belong to the authenticated account.",
@@ -214,11 +279,17 @@ def confirm_google_purchase():
     selected_segment = None
     if selected_segment_raw is not None:
         if not isinstance(selected_segment_raw, str):
-            return _bad_request("selected_segment must be a string.")
+            return _bad_request(
+                "selected_segment must be a string.",
+                correlation_id=correlation_id, reason="invalid_selected_segment",
+                purchase_token=purchase_token, product_id=product_id,
+            )
         selected_segment = selected_segment_raw.strip().upper()
         if selected_segment not in SUBSCRIPTION_SECTIONS:
             return _bad_request(
-                f"selected_segment must be one of {SUBSCRIPTION_SECTIONS!r}."
+                f"selected_segment must be one of {SUBSCRIPTION_SECTIONS!r}.",
+                correlation_id=correlation_id, reason="invalid_selected_segment",
+                purchase_token=purchase_token, product_id=product_id,
             )
 
     payment_request = PaymentRequest(
@@ -231,7 +302,6 @@ def confirm_google_purchase():
         metadata={"product_id_from_client": product_id} if product_id else {},
     )
 
-    correlation_id = new_correlation_id()
     log_ctx = dict(
         correlation_id=correlation_id, provider=PaymentProviderType.GOOGLE_PLAY,
         product=product_id, razorpay_order_id=purchase_token, razorpay_payment_id=purchase_token,
