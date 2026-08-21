@@ -44,7 +44,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from modules.ai_report_engine.output_validator import OutputValidator  # noqa: E402
+from modules.ai_report_engine.output_validator import OutputValidator, _detect_meta_leak  # noqa: E402
 from modules.ai_report_engine.exceptions import OutputValidationError  # noqa: E402
 from modules.ai_report_engine.base_generator import BaseAIGenerator  # noqa: E402
 from modules.ai_report_engine.generator_interface import GeneratedReport  # noqa: E402
@@ -194,6 +194,69 @@ def main():
           raised and "meta" in error_text.lower())
 
     # ==========================================================
+    print("\n=== B2: EXACT production incident -- ai_reports.id=68 (CAREER/DNA/hi) ===")
+    # ==========================================================
+    # The verbatim excerpts below were read directly from the confirmed
+    # corrupted production row (profile_id=319, segment=CAREER,
+    # report_type=DNA, language=hi, status=READY at time of capture) --
+    # not paraphrased, not invented. Row 68 itself was never modified to
+    # build this fixture (read-only excerpt capture only); this task's
+    # own instruction explicitly forbids touching row 68 further, so the
+    # gaps between captured excerpts are bridged with "..." rather than
+    # re-querying production. Proves the P0 gap this follow-up patches:
+    # at HEAD before this patch, `valid()` for this exact content
+    # returns True (accepted) when it must return False (rejected).
+    ROW_68_EXACT_FIXTURE = (
+        "काम चुनते समय आप केवल पद या वेतन नहीं देखते; आपको ऐसा काम खींचता है जिसमें "
+        "निर्णय लेने की स्वतंत्रता हो और किसी जटिल समस्या की भीतर तक जाकर मरम्मत करनी "
+        "पड़े। किसी जिम्मेदारी को स्वीकार करने से पहले आप ...\n\n"
+        "प भीड़ में घुलने के बजाय quietly? \nNeed Hindi only. \"चुपचाप\" yes. "
+        "\"आप चुपचाप...\" Alliances. Setbacks ...\n\n"
+        "repetition reward.\n\nLet's provide final corrected. Last paragraph: "
+        "\"इसीलिए सहयोग चुनते समय...\" conne ...\n\n"
+        "fic Rahu/Ketu 11, Venus 8, Mars Saturn. Good. Ensure 40-60 words. "
+        "Count 51.\n\nUse \"चुपचाप\" not English. No forbidden markdown. "
+        "Five paragraphs exactly."
+    )
+    check("B2-1: EXACT row-68 fixture is REJECTED (the proven P0 gap this patch closes)",
+          not valid(ROW_68_EXACT_FIXTURE, report_type="DNA", language="hi"))
+
+    # Isolated proof, independent of the Hindi-sanity check (which the
+    # full fixture above also happens to trip via its "..." bridging
+    # text) -- this is the clean reproduction of the ACTUAL meta-leak
+    # (category A) gap: each of the four exact phrases the audit
+    # identified in row 68, tested alone, in English/report-agnostic
+    # form so ONLY the meta-leak detector's own coverage is exercised.
+    # Before the patch, every one of these returns None (undetected).
+    ROW_68_KNOWN_LEAKED_FORMS = [
+        ("lets_provide_final_corrected", "Let's provide final corrected."),
+        ("ensure_word_range_and_count", "Ensure 40-60 words. Count 51."),
+        ("need_language_only", "Need Hindi only."),
+        ("no_formatting_rule_paragraphs_exactly",
+         "No forbidden markdown. Five paragraphs exactly."),
+    ]
+    for label, phrase in ROW_68_KNOWN_LEAKED_FORMS:
+        check(f"B2-2 [{label}]: exact known leaked form is detected by _detect_meta_leak()",
+              _detect_meta_leak(phrase) is not None)
+
+    # ==========================================================
+    print("\n=== B3: additional grammatical variants of each leaked form (STEP 3) ===")
+    # ==========================================================
+    B3_VARIANTS = [
+        ("lets_rewrite", "Let's rewrite this properly."),
+        ("lets_correct", "Let's correct the response now."),
+        ("ensure_word_range_only", "Ensure 30-50 words for this section."),
+        ("count_bare_number", "Count 87."),
+        ("need_english_only", "Need English only."),
+        ("no_forbidden_bullet_points", "No forbidden bullet points used."),
+        ("four_paragraphs_exactly", "Four paragraphs exactly, as required."),
+        ("numeral_paragraphs_exactly", "3 paragraphs exactly."),
+    ]
+    for label, phrase in B3_VARIANTS:
+        check(f"B3 [{label}]: variant form is detected by _detect_meta_leak()",
+              _detect_meta_leak(phrase) is not None)
+
+    # ==========================================================
     print("\n=== C: meta/drafting leak detection -- each required category ===")
     # ==========================================================
     check("C-1: model planning what to write is rejected",
@@ -242,6 +305,26 @@ def main():
     check("D-6: Hindi text with a short abbreviation is not flagged",
           valid("आपकी योजना OK रहेगी और आगे बढ़ने का यह सही समय है।",
                 report_type="DNA", language="hi"))
+
+    # D-7..D-11: false-positive guards specifically for the P0 follow-up
+    # patch (STEP 4) -- each isolated word ("let's", "count", "final",
+    # "correct", "ensure") must not fail merely by appearing; only the
+    # specific meta/instruction CONTEXT the patch targets should.
+    check("D-7: 'let's' used legitimately (not followed by a drafting verb) is not flagged",
+          valid("Let's say you meet someone new at a gathering -- you would likely hold "
+                "back at first.", report_type="DNA", language="en"))
+    check("D-8: 'count' used legitimately (not followed by a bare number) is not flagged",
+          valid("You can always count on close friends when things get difficult.",
+                report_type="DNA", language="en"))
+    check("D-9: 'final' used legitimately (not announcing a corrected/final answer) is not flagged",
+          valid("This feels like the final push before a long-awaited change finally "
+                "arrives.", report_type="DNA", language="en"))
+    check("D-10: 'correct' used legitimately (not preceded by let's/i will) is not flagged",
+          valid("You quietly correct course the moment something feels off, without "
+                "making a scene about it.", report_type="DNA", language="en"))
+    check("D-11: 'ensure' used legitimately (not followed by a word-count range) is not flagged",
+          valid("You naturally ensure the people around you feel heard before moving on.",
+                report_type="DNA", language="en"))
 
     # ==========================================================
     print("\n=== E: structural validation -- proven per report_type contract ===")

@@ -70,14 +70,18 @@ _PLACEHOLDER_PATTERN = re.compile(r"\{[a-zA-Z_][a-zA-Z0-9_]*\}")
 # concrete, and about the reader's life -- cannot plausibly match it.
 _META_LEAK_PATTERNS = [
     # 1) Model planning/narrating what it is about to do, in its own
-    #    voice ("I will now write...", "Let me provide...", "I need to
-    #    revise..."). Legitimate output is never first-person about the
-    #    writing task -- it is always about the reader ("you").
+    #    voice ("I will now write...", "Let me provide...", "Let's
+    #    correct...", "I need to revise..."). Legitimate output is
+    #    never first-person (or first-person-plural "let's") about the
+    #    writing task -- it is always about the reader ("you"). "let's"/
+    #    "let us" added (P0 follow-up -- proven gap: row-68's exact
+    #    "Let's provide final corrected." used the contraction, which
+    #    the original "let me" alternative did not cover).
     (
         "task_planning_narration",
         re.compile(
-            r"\b(i will|i'll|i am going to|i'm going to|let me|i need to|"
-            r"i should now|i must now)\s+(now\s+)?"
+            r"\b(i will|i'll|i am going to|i'm going to|let me|let's|let us|"
+            r"i need to|i should now|i must now)\s+(now\s+)?"
             r"(write|provide|give|generate|produce|create|draft|compose|"
             r"revise|correct|rewrite|ensure|check|verify|count|re-?write)\b",
             re.IGNORECASE,
@@ -85,37 +89,58 @@ _META_LEAK_PATTERNS = [
     ),
     # 2) Word-count bookkeeping -- a report never talks about its own
     #    word count; the prompts enforce length as an internal
-    #    constraint, never a visible statement.
+    #    constraint, never a visible statement. Range/imperative forms
+    #    added (P0 follow-up -- proven gap: row-68's exact "Ensure
+    #    40-60 words. Count 51." used a bare number-range and a bare
+    #    "Count <N>" imperative, neither of which "word count"/"X/Y
+    #    words" covered). "count <digit>" is safe/narrow: legitimate
+    #    prose essentially never follows "count" directly with a
+    #    number.
     (
         "word_count_bookkeeping",
         re.compile(
             r"\b(word count|words? so far|total words?|word limit|"
             r"within the word|exceeds? the word|count(?:ing)? the words?|"
-            r"\d+\s*/\s*\d+\s*words|approximately \d+ words)\b",
+            r"\d+\s*/\s*\d+\s*words|approximately \d+ words|"
+            r"ensure\s+\d+[\s\-–]+\d+\s*words?|count\s+\d+)\b",
             re.IGNORECASE,
         ),
     ),
     # 3) Discussing language requirements as a meta topic (referring to
     #    "the language instruction/requirement" itself, rather than
-    #    simply writing in that language).
+    #    simply writing in that language). Terse self-instruction form
+    #    added (P0 follow-up -- proven gap: row-68's exact "Need Hindi
+    #    only." is a bare imperative note that no existing alternative
+    #    covered).
     (
         "language_requirement_discussion",
         re.compile(
             r"\b(the language (requirement|instruction)s?|"
             r"as (per|instructed|required) (by |in )?the (prompt|instructions?)|"
             r"(write|written) (this |the )?(response |answer )?in (hindi|english)"
-            r"(,| as| per)? as (required|instructed|requested))\b",
+            r"(,| as| per)? as (required|instructed|requested)|"
+            r"need\s+(hindi|english)\s+only)\b",
             re.IGNORECASE,
         ),
     ),
-    # 4) Discussing formatting requirements as a meta topic.
+    # 4) Discussing formatting/structure requirements as a meta topic.
+    #    "no forbidden X" and "<N> paragraphs exactly" added (P0
+    #    follow-up -- proven gap: row-68's exact "No forbidden
+    #    markdown. Five paragraphs exactly." matched neither the
+    #    existing "no markdown is used" phrasing nor any paragraph-
+    #    count self-statement). Both are narrow/safe: legitimate prose
+    #    never states its own paragraph count or calls something
+    #    "forbidden".
     (
         "formatting_requirement_discussion",
         re.compile(
             r"\b(no markdown (is )?(used|needed|required)|without (using )?markdown|"
             r"following the (output )?format|as (specified|required) in the format|"
             r"the output format (requires|specifies)|"
-            r"(plain text only|in plain text format)\s*[:\-])\b",
+            r"(plain text only|in plain text format)\s*[:\-]|"
+            r"no forbidden \w+|"
+            r"(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+"
+            r"paragraphs?\s+exactly)\b",
             re.IGNORECASE,
         ),
     ),
