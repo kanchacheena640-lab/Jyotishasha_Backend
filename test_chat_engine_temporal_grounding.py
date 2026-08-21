@@ -48,6 +48,8 @@ from modules.services.chat_engine import (  # noqa: E402
     chat_engine,
     _build_current_dasha_context,
     _find_next_antardasha,
+    _format_natal_chart,
+    _format_yogas_doshas,
 )
 
 passed = 0
@@ -107,6 +109,46 @@ def _fixture_dasha_summary():
     }
 
 
+# ---------------------------------------------------------------------
+# Fixture: real payload shape for the "Ask Now Natal Context Completeness"
+# fix -- mirrors the exact keys generate_full_kundali_payload() actually
+# returns (chart_data.planets with sign/house/degree/nakshatra/pada,
+# rashi, yogas with is_active/heading). Includes one planet (Ketu) with
+# nakshatra/pada deliberately omitted, to prove graceful degradation
+# (required scenario #16), and one active + one inactive yoga, to prove
+# only active ones surface.
+# ---------------------------------------------------------------------
+def _fixture_chart_data_planets():
+    return [
+        {"name": "Ascendant (Lagna)", "sign": "Leo", "house": 1, "degree": 4.5,
+         "nakshatra": "Magha", "pada": 2},
+        {"name": "Sun", "sign": "Leo", "house": 1, "degree": 12.34,
+         "nakshatra": "Magha", "pada": 3},
+        {"name": "Moon", "sign": "Scorpio", "house": 4, "degree": 8.1,
+         "nakshatra": "Anuradha", "pada": 1},
+        {"name": "Jupiter", "sign": "Cancer", "house": 12, "degree": 17.09,
+         "nakshatra": "Ashlesha", "pada": 4},
+        # Deliberately missing nakshatra/pada -- proves graceful handling
+        # of missing optional natal fields (required scenario #16).
+        {"name": "Ketu", "sign": "Taurus", "house": 10, "degree": 22.0},
+    ]
+
+
+def _fixture_yogas():
+    return {
+        "dhan_yog": {
+            "heading": "Dhan Yog is present due to a strong 2nd-11th house connection.",
+            "description": "A long descriptive paragraph that should NOT appear in the prompt.",
+            "is_active": True,
+        },
+        "vipreet_rajyog": {
+            "heading": "Vipreet Rajyog is NOT present in your Birth Chart (Kundali).",
+            "description": "Not applicable.",
+            "is_active": False,
+        },
+    }
+
+
 class _FakeCompletionResponse:
     def __init__(self, text):
         self.choices = [type("Choice", (), {
@@ -149,8 +191,9 @@ def _run_chat_engine_captured(question):
     chat_engine_module.client = _FakeOpenAIClient(captured)
     chat_engine_module.generate_full_kundali_payload = lambda payload: {
         "lagna_sign": "Leo",
-        "house_summary": {"1": ["Sun"], "10": ["Jupiter"]},
-        "chart_data": {"ascendant": "Leo"},
+        "rashi": "Scorpio",
+        "chart_data": {"ascendant": "Leo", "planets": _fixture_chart_data_planets()},
+        "yogas": _fixture_yogas(),
         "dasha_summary": _fixture_dasha_summary(),
     }
     chat_engine_module.get_current_positions = lambda: {
@@ -260,9 +303,83 @@ def main():
         "temperature" not in kwargs_c,
     )
     check("C: full dasha life table still present (non-timing-question compatibility)",
-          "Dasha Summary" in prompt_c and "Venus" in prompt_c)
+          "DASHA REFERENCE" in prompt_c and "Venus" in prompt_c)
     check("C: no real OpenAI call made (stubbed answer returned)",
           result_c.get("answer") == "stubbed answer -- no real OpenAI call made")
+
+    # ==========================================================
+    print("\n=== G: Natal Context Completeness (Ask Now natal/yoga fix) ===")
+    # ==========================================================
+    check("G-1: natal planets reach the final prompt",
+          "NATAL CHART" in prompt_c and "Planet Placements:" in prompt_c)
+    check("G-2: planet sign reaches the prompt", "Moon: Scorpio" in prompt_c)
+    check("G-3: planet house reaches the prompt", "House 4" in prompt_c)
+    check("G-4: degree reaches the prompt", "12.34°" in prompt_c)
+    check("G-5: nakshatra reaches the prompt when available", "Anuradha" in prompt_c)
+    check("G-6: pada reaches the prompt when available", "Pada 1" in prompt_c)
+    check("G-7: Moon sign (Rashi) reaches the prompt",
+          "Moon Sign (Rashi): Scorpio" in prompt_c)
+    check("G-8: computed Yoga/Dosh information reaches the prompt",
+          "YOGAS / DOSHAS" in prompt_c and "Dhan Yog is present" in prompt_c)
+    check("G-8: only the active yoga's heading is sent, not its verbose description",
+          "should NOT appear in the prompt" not in prompt_c)
+    check("G-8: an inactive yoga's heading is NOT sent",
+          "Vipreet Rajyog is NOT present" not in prompt_c)
+    check("G-9: old empty 'Key House Summary: {}' line is gone",
+          "Key House Summary" not in prompt_c and "house_summary" not in prompt_c)
+    check("G-10: natal data and transit data are clearly labeled and separated",
+          "NATAL CHART" in prompt_c
+          and "CURRENT TRANSITS (live planetary positions, NOT natal placements)" in prompt_c
+          and prompt_c.index("NATAL CHART") < prompt_c.index("CURRENT TRANSITS"))
+    check("G-11: Dasha temporal context remains intact alongside the new sections",
+          "CURRENT_DATE:" in prompt_c and "CURRENT_ANTARDASHA: Rahu" in prompt_c)
+    check("G-12: authoritative-answering rules remain intact alongside the new sections",
+          "authoritative data for this answer" in prompt_c)
+    check("G-13: model remains gpt-5.6-luna", kwargs_c.get("model") == "gpt-5.6-luna")
+    check("G-14: no custom temperature", "temperature" not in kwargs_c)
+    check("G-15: response contract unchanged",
+          set(result_c.keys()) == {"answer", "kundali_preview", "dasha_preview", "transit_preview", "disclaimer"})
+
+    # ==========================================================
+    print("\n=== G-16: missing optional natal fields do not crash Ask Now ===")
+    # ==========================================================
+    minimal_natal = _format_natal_chart({
+        "lagna_sign": "Aries",
+        "rashi": None,
+        "chart_data": {"planets": [{"name": "Sun", "sign": "Aries", "house": 1}]},
+    })
+    check("G-16: _format_natal_chart() never raises with missing degree/nakshatra/pada/rashi",
+          "Sun: Aries" in minimal_natal and "House 1" in minimal_natal)
+    check("G-16: _format_natal_chart() never raises on a totally empty kundali dict",
+          _format_natal_chart({}) == "Natal chart data not available.")
+    check("G-16: _format_yogas_doshas() never raises on a totally empty kundali dict",
+          _format_yogas_doshas({}) == "No significant yogas or doshas detected in this chart.")
+    check("G-16: _format_yogas_doshas() never raises on malformed yoga entries",
+          _format_yogas_doshas({"yogas": {"broken": "not a dict"}})
+          == "No significant yogas or doshas detected in this chart.")
+
+    result_missing, prompt_missing, kwargs_missing = None, None, None
+    original_kundali_fn = chat_engine_module.generate_full_kundali_payload
+    original_client = chat_engine_module.client
+    captured_missing = {}
+    try:
+        chat_engine_module.client = _FakeOpenAIClient(captured_missing)
+        chat_engine_module.generate_full_kundali_payload = lambda payload: {
+            "lagna_sign": "Leo",
+            # rashi, chart_data, yogas all deliberately absent entirely
+        }
+        result_missing = chat_engine(
+            {"name": "T", "dob": "1990-01-01", "tob": "10:00", "pob": "Delhi",
+             "lat": 28.6, "lng": 77.2, "tz": "+05:30"},
+            "some question",
+        )
+        prompt_missing = captured_missing.get("prompt", "")
+    finally:
+        chat_engine_module.generate_full_kundali_payload = original_kundali_fn
+        chat_engine_module.client = original_client
+    check("G-16: chat_engine() never crashes when chart_data/rashi/yogas are entirely absent",
+          result_missing is not None and "Ascendant (Lagna): Leo" in prompt_missing
+          and "No significant yogas or doshas" in prompt_missing)
 
     # ==========================================================
     print("\n=== C2: Authoritative Answering rules (Ask Now hesitancy fix) ===")
@@ -321,12 +438,12 @@ def main():
           "What does my chart say about my career strengths?" in prompt_d)
     check("D: prompt still contains CURRENT_DATE (harmless for non-timing questions)",
           "CURRENT_DATE:" in prompt_d)
-    check("D: prompt still contains birth chart summary",
-          "Birth Chart Summary" in prompt_d and "Leo" in prompt_d)
-    check("D: prompt still contains transit summary",
-          "Transit Summary" in prompt_d)
+    check("D: prompt still contains the natal chart section",
+          "NATAL CHART" in prompt_d and "Leo" in prompt_d)
+    check("D: prompt still contains the current transits section",
+          "CURRENT TRANSITS" in prompt_d)
     check("D: prompt still contains full dasha table for general-purpose questions",
-          "Dasha Summary" in prompt_d)
+          "DASHA REFERENCE" in prompt_d)
     check("D: existing non-temporal rules preserved (4-6 lines, no empty houses, etc.)",
           "4" in prompt_d and "6" in prompt_d and "DO NOT mention houses" in prompt_d)
     check("D: disclaimer instruction preserved for non-timing questions too",

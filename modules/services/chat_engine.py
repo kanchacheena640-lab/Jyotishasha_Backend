@@ -135,6 +135,79 @@ def _build_current_dasha_context(dasha: dict) -> str:
     return "\n".join(lines)
 
 
+def _format_natal_chart(kundali: dict) -> str:
+    """
+    Formats the ALREADY-COMPUTED natal chart -- no new astrology
+    calculation. Reads `kundali['lagna_sign']`, `kundali['rashi']` (moon
+    sign, computed in full_kundali_api.py::calculate_full_kundali()) and
+    `kundali['chart_data']['planets']` (each entry already carrying
+    name/sign/house/degree/nakshatra/pada, computed in
+    full_kundali_api.py::calculate_planet_positions()).
+
+    This REPLACES the old `Key House Summary: {kundali.get('house_summary', {})}`
+    line. Audited and confirmed: `generate_full_kundali_payload()` never
+    returns a `house_summary` key at all (the real per-house/per-planet
+    data lives in `chart_data['planets']`), so that line always silently
+    rendered as an empty `{}` -- a pre-existing bug, not introduced or
+    fixed here beyond routing the prompt to the real data.
+    """
+    lines = []
+
+    lagna = kundali.get("lagna_sign")
+    if lagna:
+        lines.append(f"Ascendant (Lagna): {lagna}")
+
+    moon_sign = kundali.get("rashi")
+    if moon_sign:
+        lines.append(f"Moon Sign (Rashi): {moon_sign}")
+
+    planets = (kundali.get("chart_data") or {}).get("planets") or []
+    planet_lines = []
+    for p in planets:
+        name = p.get("name")
+        if not name or "ascendant" in str(name).lower() or "lagna" in str(name).lower():
+            # Already surfaced above as "Ascendant (Lagna)" -- skip the
+            # duplicate pseudo-planet entry for the same point.
+            continue
+        detail = f"{name}: {p.get('sign')}"
+        if p.get("house") is not None:
+            detail += f", House {p['house']}"
+        if p.get("degree") is not None:
+            detail += f", {p['degree']}°"
+        if p.get("nakshatra"):
+            detail += f", {p['nakshatra']}"
+            if p.get("pada"):
+                detail += f" Pada {p['pada']}"
+        planet_lines.append(detail)
+
+    if planet_lines:
+        lines.append("Planet Placements:\n" + "\n".join(planet_lines))
+
+    return "\n".join(lines) if lines else "Natal chart data not available."
+
+
+def _format_yogas_doshas(kundali: dict) -> str:
+    """
+    Filters the ALREADY-COMPUTED yoga/dosha battery (`kundali['yogas']`,
+    each entry already carrying is_active/heading/description, computed by
+    full_kundali_api.py's yoga/dosha evaluators) down to only the entries
+    that are genuinely active, using each one's own already-computed
+    `heading` text. No new astrology calculation. Only the compact
+    `heading` is sent (not the longer `description` paragraph), per this
+    task's token-discipline instruction -- structured facts, not verbose
+    prose.
+    """
+    yogas = kundali.get("yogas") or {}
+    active_lines = []
+    for val in yogas.values():
+        if isinstance(val, dict) and val.get("is_active") and val.get("heading"):
+            active_lines.append(f"- {val['heading']}")
+
+    if not active_lines:
+        return "No significant yogas or doshas detected in this chart."
+    return "\n".join(active_lines)
+
+
 def chat_engine(birth_data: dict, question: str) -> dict:
     """
     Core chat engine used by BOTH:
@@ -195,23 +268,32 @@ def chat_engine(birth_data: dict, question: str) -> dict:
     # describing a genuinely CURRENT dasha period as "upcoming".
     current_dasha_context = _build_current_dasha_context(dasha)
 
+    # Natal chart + yoga/dosha context -- see _format_natal_chart() and
+    # _format_yogas_doshas() docstrings. Both read ONLY data already
+    # computed by generate_full_kundali_payload(); no new astrology
+    # calculation. This replaces the previously-broken, always-empty
+    # "Key House Summary: {}" line (see _format_natal_chart() docstring).
+    natal_chart_context = _format_natal_chart(kundali)
+    yogas_doshas_context = _format_yogas_doshas(kundali)
+
     # -----------------------------
     # 4) GPT Prompt
     # -----------------------------
     prompt = f"""
-User Question: {question}
-
+CURRENT TEMPORAL CONTEXT
 {current_dasha_context}
 
-Birth Chart Summary:
-- Ascendant: {kundali.get('lagna_sign')}
-- Key House Summary: {kundali.get('house_summary', {})}
+NATAL CHART
+{natal_chart_context}
 
-Dasha Summary (full life table, for reference):
-{dasha}
+YOGAS / DOSHAS
+{yogas_doshas_context}
 
-Transit Summary:
+CURRENT TRANSITS (live planetary positions, NOT natal placements)
 {transit}
+
+DASHA REFERENCE (full life table, for reference)
+{dasha}
 
 Follow these rules:
 - You are a senior Vedic astrologer.
@@ -228,6 +310,7 @@ Follow these rules:
 - Use only the 1-3 strongest relevant astrological factors. Do not dump unrelated chart information.
 - Avoid generic filler that does not answer the user's actual question.
 - Express astrology as guidance/probability/tendency where appropriate, not guaranteed certainty.
+- NATAL CHART is this person's fixed birth-chart placements (never changes). CURRENT TRANSITS are today's live planetary positions in the sky (changes daily). CURRENT/DASHA REFERENCE is the timing layer (Mahadasha/Antardasha). Never mix these three up or describe a transiting planet's position as if it were a natal placement, or vice versa.
 
 Authoritative answering rules -- act like an experienced astrologer using the
 evidence already given above, not a data-collection assistant:
@@ -241,6 +324,9 @@ evidence already given above, not a data-collection assistant:
 - This authority is about using the evidence already given confidently -- it never means inventing facts, dates, or chart details that are not present in the supplied astrology data above; the disclaimer below still applies.
 
 - End every answer with: "This answer is for astrological guidance only."
+
+USER QUESTION
+{question}
 """
 
     # -----------------------------
