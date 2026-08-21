@@ -279,6 +279,72 @@ def activate_trial():
     }), 200
 
 
+@profile_bp.route("/api/profile/completeness", methods=["GET"])
+@jwt_required()
+def profile_completeness():
+    """
+    P0 -- Recover authenticated users with incomplete birth profiles.
+
+    Read-only completeness check the Flutter app calls at Splash /
+    fresh-login time to decide Dashboard vs. BirthDetailPage, replacing
+    two previously-inconsistent, backend-blind signals (Splash: none at
+    all; Login: Firestore `profiles/default` doc existence only) with a
+    single source of truth backed by the SAME data the Premium Report
+    engine actually requires.
+
+    Identity: resolves the authenticated profile the exact same way
+    /api/profile/subscription-info and /api/profile/activate-trial
+    already do (JWT identity -> resolve_profile_id_from_account_user_id())
+    -- never trusts a client-supplied profile_id.
+
+    Required-fields check intentionally duplicates (not imports) the
+    ("dob", "tob", "pob", "lat", "lng") list the five report generators'
+    _load_birth_details() methods already use -- this route must never
+    import from or modify generator code, per the P0 constraint that
+    those files stay untouched.
+
+    Response is deliberately boolean/reason-code only -- it never
+    serializes dob/tob/pob/lat/lng values, so this endpoint cannot be
+    used to read another user's (or even the caller's own) birth data.
+    """
+    from modules.subscription.dual_write_adapter import (
+        resolve_profile_id_from_account_user_id,
+    )
+    from modules.models_user import AppUser
+
+    user_id = get_jwt_identity()
+    profile_id = resolve_profile_id_from_account_user_id(user_id)
+
+    if profile_id is None:
+        return jsonify({
+            "profile_complete": False,
+            "reason": "no_profile",
+        }), 200
+
+    app_user = AppUser.query.get(profile_id)
+    if app_user is None:
+        return jsonify({
+            "profile_complete": False,
+            "reason": "no_profile",
+        }), 200
+
+    missing = [
+        field for field in ("dob", "tob", "pob", "lat", "lng")
+        if getattr(app_user, field, None) in (None, "")
+    ]
+
+    if missing:
+        return jsonify({
+            "profile_complete": False,
+            "reason": "missing_fields",
+        }), 200
+
+    return jsonify({
+        "profile_complete": True,
+        "reason": None,
+    }), 200
+
+
 @profile_bp.route('/personalized-horoscope', methods=["POST"])
 @jwt_required()
 @subscription_required
