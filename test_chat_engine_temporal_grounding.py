@@ -265,6 +265,53 @@ def main():
           result_c.get("answer") == "stubbed answer -- no real OpenAI call made")
 
     # ==========================================================
+    print("\n=== C2: Authoritative Answering rules (Ask Now hesitancy fix) ===")
+    # ==========================================================
+    check("C2-A: supplied chart/dasha/transit data is stated as authoritative",
+          "authoritative data for this answer" in prompt_c)
+    check("C2-B: must not ask for birth/chart info already supplied",
+          "Do not ask the user to provide birth date, birth time, birth place, Kundali, "
+          "planetary placements, Dasha, or transit information" in prompt_c
+          and "already supplied above" in prompt_c)
+    check("C2-B: must not stop at 'more data required' when data is sufficient",
+          '"an exact prediction cannot be made" or "more data is required"' in prompt_c)
+    check("C2-C: narrowest defensible timing window hierarchy (exact date -> narrow window -> broader window)",
+          "narrow date/month window" in prompt_c and "broader month/year or Dasha/transit window" in prompt_c)
+    check("C2-D: exact dates must not be fabricated merely to sound authoritative",
+          "Never fabricate an exact date merely to sound authoritative" in prompt_c)
+    check("C2-E: strongest conclusion must come before supporting reasoning",
+          "state the strongest defensible conclusion first, then give the supporting reasoning" in prompt_c)
+    check("C2-F: missing-data handling gives best available answer first, refusal is not the default",
+          "do not invent or fabricate it -- use the remaining evidence to give the best supported answer first"
+          in prompt_c)
+    check("C2-G: explicit 'what additional data do you need' follow-ups are allowed",
+          "what additional data do you need?" in prompt_c
+          and "it is valid to explain which additional astrological information could improve precision"
+          in prompt_c)
+    check("C2-G: follow-up exception still distinguishes supplied vs genuinely-missing info",
+          "distinguish clearly between information already supplied above and information "
+          "that is genuinely missing" in prompt_c)
+    check("C2: authority does not license fabrication -- explicitly bounded, disclaimer still applies",
+          "it never means inventing facts, dates, or chart details" in prompt_c
+          and "the disclaimer below still applies" in prompt_c)
+    check("C2-H: all prior temporal-grounding rules remain present alongside the new ones",
+          "CURRENT_DATE" in prompt_c and "PAST" in prompt_c and "FUTURE" in prompt_c
+          and "Never invent" in prompt_c and "1-3 strongest" in prompt_c)
+    check("C2-I: model remains gpt-5.6-luna", kwargs_c.get("model") == "gpt-5.6-luna")
+    check("C2-J: custom temperature remains absent", "temperature" not in kwargs_c)
+
+    # ==========================================================
+    print("\n=== C3: 'what additional data do you need?' follow-up question ===")
+    # ==========================================================
+    result_c3, prompt_c3, kwargs_c3 = _run_chat_engine_captured(
+        "What additional data do you need to give a more accurate prediction?"
+    )
+    check("C3: follow-up-exception rule text is present for this question too",
+          "it is valid to explain which additional astrological information could improve precision"
+          in prompt_c3)
+    check("C3: model remains gpt-5.6-luna for this question too", kwargs_c3.get("model") == "gpt-5.6-luna")
+
+    # ==========================================================
     print("\n=== D: chat_engine() -- normal non-timing question stays usable ===")
     # ==========================================================
     result_d, prompt_d, kwargs_d = _run_chat_engine_captured(
