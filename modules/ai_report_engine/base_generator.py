@@ -92,7 +92,15 @@ class BaseAIGenerator(ReportGenerator):
 
         text, raw_openai_response = self._executor.run(prompt)
 
-        validated_text = self._validator.validate(text)
+        # P0 fix -- report_type/language are passed through so
+        # OutputValidator can apply its structural (Section B) and
+        # Hindi-sanity (Section C) checks; the generic checks (empty,
+        # word ceiling, placeholders) and the meta/drafting-leak check
+        # (Section A) run unconditionally regardless. See
+        # output_validator.py's module docstring for the full design.
+        validated_text = self._validator.validate(
+            text, report_type=report_type, language=language,
+        )
 
         expires_at = self.compute_expires_at(context=context, report_type=report_type)
 
