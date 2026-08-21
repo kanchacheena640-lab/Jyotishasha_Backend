@@ -19,6 +19,7 @@ from datetime import date
 from openai import OpenAI
 import os
 from services.full_kundali_service import generate_full_kundali_payload
+from services.personalization_engine import calculate_house
 from transit_engine import get_current_positions
 
 
@@ -208,6 +209,75 @@ def _format_yogas_doshas(kundali: dict) -> str:
     return "\n".join(active_lines)
 
 
+def _format_current_transits(transit: dict, lagna_sign) -> str:
+    """
+    Formats the ALREADY-COMPUTED current transit snapshot
+    (`transit_engine.get_current_positions()`, unchanged, still Ask Now's
+    only source of live sky positions) into a clear per-planet line, and
+    for each planet adds the Lagna-relative transit house via
+    `services/personalization_engine.py::calculate_house()` -- the exact
+    function already live in production for the Alerts personalization
+    pipeline (`get_users_for_transit()`). No new astrology calculation:
+    `calculate_house()` is pure sign-index arithmetic
+    ((rashi_index - lagna_index) % 12 + 1). Verified compatible (audited
+    from source, not assumed): both `lagna_sign` and transit `rashi` are
+    drawn from the same 12-name English sign set
+    (full_kundali_api.py::SIGNS / transit_engine.py::RASHIS), and
+    `calculate_house()` itself lowercases/strips both inputs before
+    lookup. `routes_profile_bootstrap.py` confirms `user.lagna` (this
+    function's existing real caller) is populated from this exact same
+    `lagna_sign` value chat_engine.py already has.
+
+    Deliberately labeled "Transit House from Natal Lagna" (never "Natal
+    House") so the model cannot confuse a planet's CURRENT transiting
+    position with its separate, fixed NATAL house shown in the NATAL
+    CHART section above.
+
+    Never crashes: if `lagna_sign` is missing/invalid, a planet's transit
+    `rashi` is missing, or `calculate_house()` cannot resolve a house
+    (returns falsy), the house portion is simply omitted for that planet
+    only -- existing planet/rashi/degree/motion info is always preserved,
+    and no house is ever fabricated.
+    """
+    positions = (transit or {}).get("positions")
+    if not isinstance(positions, dict) or not positions:
+        # Upstream get_current_positions() itself failed (see chat_engine()'s
+        # own try/except) -- nothing structured to format; preserve whatever
+        # was returned (e.g. the {"error": ...} fallback) rather than crash.
+        return str(transit)
+
+    lines = []
+    timestamp = transit.get("timestamp_ist")
+    if timestamp:
+        lines.append(f"As of: {timestamp}")
+
+    for planet, pos in positions.items():
+        if not isinstance(pos, dict):
+            continue
+        rashi = pos.get("rashi")
+        degree = pos.get("degree")
+        motion = pos.get("motion")
+
+        detail = f"{planet}: {rashi}"
+        if degree is not None:
+            detail += f", {degree}°"
+        if motion:
+            detail += f", {motion}"
+
+        house = None
+        if lagna_sign and rashi:
+            try:
+                house = calculate_house(lagna_sign, rashi)
+            except Exception:
+                house = None
+        if house:
+            detail += f", Transit House from Natal Lagna: {house}"
+
+        lines.append(detail)
+
+    return "\n".join(lines) if lines else str(transit)
+
+
 def chat_engine(birth_data: dict, question: str) -> dict:
     """
     Core chat engine used by BOTH:
@@ -276,6 +346,13 @@ def chat_engine(birth_data: dict, question: str) -> dict:
     natal_chart_context = _format_natal_chart(kundali)
     yogas_doshas_context = _format_yogas_doshas(kundali)
 
+    # Current transits, enriched with each planet's Lagna-relative transit
+    # house -- see _format_current_transits() docstring. Reuses the
+    # already-working transit snapshot (`transit`, unchanged above) and
+    # the already-production-used calculate_house(); no new astrology
+    # calculation, no change to full_kundali_service.py's transit_analysis.
+    current_transits_context = _format_current_transits(transit, kundali.get("lagna_sign"))
+
     # -----------------------------
     # 4) GPT Prompt
     # -----------------------------
@@ -289,8 +366,8 @@ NATAL CHART
 YOGAS / DOSHAS
 {yogas_doshas_context}
 
-CURRENT TRANSITS (live planetary positions, NOT natal placements)
-{transit}
+CURRENT TRANSITS (live planetary positions today, NOT natal placements. "Transit House from Natal Lagna" is where each transiting planet currently falls relative to this person's birth Lagna -- it is NOT that planet's natal house, which is shown separately in NATAL CHART above)
+{current_transits_context}
 
 DASHA REFERENCE (full life table, for reference)
 {dasha}
@@ -311,6 +388,7 @@ Follow these rules:
 - Avoid generic filler that does not answer the user's actual question.
 - Express astrology as guidance/probability/tendency where appropriate, not guaranteed certainty.
 - NATAL CHART is this person's fixed birth-chart placements (never changes). CURRENT TRANSITS are today's live planetary positions in the sky (changes daily). CURRENT/DASHA REFERENCE is the timing layer (Mahadasha/Antardasha). Never mix these three up or describe a transiting planet's position as if it were a natal placement, or vice versa.
+- A planet's "House" under NATAL CHART is its fixed birth-chart house. A planet's "Transit House from Natal Lagna" under CURRENT TRANSITS is a completely different, separate fact -- where that planet is transiting TODAY relative to this person's birth Lagna. Never treat these as the same number or the same kind of fact.
 
 Authoritative answering rules -- act like an experienced astrologer using the
 evidence already given above, not a data-collection assistant:

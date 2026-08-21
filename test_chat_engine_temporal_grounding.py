@@ -50,6 +50,7 @@ from modules.services.chat_engine import (  # noqa: E402
     _find_next_antardasha,
     _format_natal_chart,
     _format_yogas_doshas,
+    _format_current_transits,
 )
 
 passed = 0
@@ -198,7 +199,12 @@ def _run_chat_engine_captured(question):
     }
     chat_engine_module.get_current_positions = lambda: {
         "timestamp_ist": "2026-08-21 10:00:00 IST",
-        "positions": {"Jupiter": {"rashi": "Cancer", "degree": 17.09, "motion": "Direct"}},
+        "positions": {
+            # Leo Lagna (fixture, above): Cancer -> House 12, Pisces -> House 8.
+            # Two planets, independently calculated -- proves scenario #3.
+            "Jupiter": {"rashi": "Cancer", "degree": 17.09, "motion": "Direct"},
+            "Saturn": {"rashi": "Pisces", "degree": 5.0, "motion": "Retrograde"},
+        },
     }
 
     try:
@@ -329,7 +335,7 @@ def main():
           "Key House Summary" not in prompt_c and "house_summary" not in prompt_c)
     check("G-10: natal data and transit data are clearly labeled and separated",
           "NATAL CHART" in prompt_c
-          and "CURRENT TRANSITS (live planetary positions, NOT natal placements)" in prompt_c
+          and "CURRENT TRANSITS (live planetary positions today, NOT natal placements" in prompt_c
           and prompt_c.index("NATAL CHART") < prompt_c.index("CURRENT TRANSITS"))
     check("G-11: Dasha temporal context remains intact alongside the new sections",
           "CURRENT_DATE:" in prompt_c and "CURRENT_ANTARDASHA: Rahu" in prompt_c)
@@ -380,6 +386,61 @@ def main():
     check("G-16: chat_engine() never crashes when chart_data/rashi/yogas are entirely absent",
           result_missing is not None and "Ascendant (Lagna): Leo" in prompt_missing
           and "No significant yogas or doshas" in prompt_missing)
+
+    # ==========================================================
+    print("\n=== H: CURRENT TRANSITS enriched with Transit House from Natal Lagna ===")
+    # ==========================================================
+    # Fixture: Leo Lagna. Jupiter transiting Cancer -> House 12.
+    # Saturn transiting Pisces -> House 8. (rashi_index - lagna_index) % 12 + 1,
+    # matching services/personalization_engine.py::calculate_house() exactly.
+    check("H-1: existing transit planet/sign/degree/motion remain present",
+          "Jupiter: Cancer" in prompt_c and "17.09°" in prompt_c and "Direct" in prompt_c
+          and "Saturn: Pisces" in prompt_c and "Retrograde" in prompt_c)
+    check("H-2: correct Lagna-relative transit house is added (Jupiter in Cancer, Leo Lagna -> 12)",
+          "Jupiter: Cancer, 17.09°, Direct, Transit House from Natal Lagna: 12" in prompt_c)
+    check("H-3: a second, independently-calculated planet is also correct (Saturn in Pisces, Leo Lagna -> 8)",
+          "Saturn: Pisces, 5.0°, Retrograde, Transit House from Natal Lagna: 8" in prompt_c)
+    check("H-4: natal planet House and Transit House from Natal Lagna are clearly distinguishable",
+          "House 4" in prompt_c  # Moon's NATAL house, from the natal fixture
+          and "Transit House from Natal Lagna: 12" in prompt_c  # Jupiter's TRANSIT house
+          and "Transit House from Natal Lagna" not in prompt_c.split("NATAL CHART")[1].split("YOGAS")[0])
+    check("H-4: rule text explicitly distinguishes natal House from Transit House from Natal Lagna",
+          "A planet's \"House\" under NATAL CHART is its fixed birth-chart house" in prompt_c
+          and "\"Transit House from Natal Lagna\" under CURRENT TRANSITS is a completely different" in prompt_c)
+
+    # H-5/6/7/8/9: graceful fallback, proven directly against the helper
+    # (pure unit tests, no OpenAI needed) -- mirrors the G-16 pattern.
+    transit_fixture = {
+        "timestamp_ist": "2026-08-21 10:00:00 IST",
+        "positions": {"Jupiter": {"rashi": "Cancer", "degree": 17.09, "motion": "Direct"}},
+    }
+    check("H-5: missing Lagna does not crash, transit info preserved, no house fabricated",
+          "Jupiter: Cancer, 17.09°, Direct" in _format_current_transits(transit_fixture, None)
+          and "Transit House from Natal Lagna" not in _format_current_transits(transit_fixture, None))
+    check("H-6: invalid/unresolvable Lagna does not crash, no house fabricated",
+          "Jupiter: Cancer, 17.09°, Direct" in _format_current_transits(transit_fixture, "NotARealSign")
+          and "Transit House from Natal Lagna" not in _format_current_transits(transit_fixture, "NotARealSign"))
+    missing_rashi_fixture = {"positions": {"Mars": {"degree": 1.0, "motion": "Direct"}}}
+    check("H-7: missing transit rashi does not crash",
+          _format_current_transits(missing_rashi_fixture, "Leo") is not None)
+    check("H-8: existing transit info (degree/motion) remains when house calculation is unavailable",
+          "1.0°" in _format_current_transits(missing_rashi_fixture, "Leo")
+          and "Direct" in _format_current_transits(missing_rashi_fixture, "Leo"))
+    check("H-9: no fabricated house appears on any fallback path",
+          "Transit House from Natal Lagna" not in _format_current_transits(missing_rashi_fixture, "Leo")
+          and "Transit House from Natal Lagna" not in _format_current_transits({"error": "boom"}, "Leo"))
+    check("H-9b: upstream transit failure ({'error': ...}) still never crashes",
+          _format_current_transits({"error": "boom"}, "Leo") == "{'error': 'boom'}")
+
+    check("H-10: natal context remains intact", "NATAL CHART" in prompt_c and "Moon: Scorpio" in prompt_c)
+    check("H-11: Yog/Dosh context remains intact", "Dhan Yog is present" in prompt_c)
+    check("H-12: temporal grounding remains intact",
+          "CURRENT_DATE:" in prompt_c and "CURRENT_ANTARDASHA: Rahu" in prompt_c)
+    check("H-13: authoritative-answering rules remain intact", "authoritative data for this answer" in prompt_c)
+    check("H-14: model remains gpt-5.6-luna", kwargs_c.get("model") == "gpt-5.6-luna")
+    check("H-15: custom temperature remains absent", "temperature" not in kwargs_c)
+    check("H-16: response contract remains unchanged",
+          set(result_c.keys()) == {"answer", "kundali_preview", "dasha_preview", "transit_preview", "disclaimer"})
 
     # ==========================================================
     print("\n=== C2: Authoritative Answering rules (Ask Now hesitancy fix) ===")
