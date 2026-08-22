@@ -18,7 +18,6 @@ from modules.payments.apple_provider import AppleProvider
 from modules.payments.google_play_provider import GooglePlayProvider
 from modules.payments.payment_models import PaymentProviderType
 from modules.payments.payment_provider import PaymentProvider
-from modules.payments.razorpay_provider import RazorpayProvider
 
 
 class UnknownPaymentProviderError(Exception):
@@ -49,6 +48,28 @@ _default_registry: Optional[PaymentProviderRegistry] = None
 
 
 def _register_default_providers(registry: PaymentProviderRegistry) -> None:
+    # Lazy import -- discovered necessary while testing the Subscription
+    # State Sync Google Play revocation reconciliation fix. Mirrors the
+    # exact, already-proven fix already applied to
+    # modules/subscription/__init__.py this same session: this module
+    # sat at package level with `from modules.payments.razorpay_provider
+    # import RazorpayProvider`, so merely importing ANY submodule of
+    # modules.payments (e.g. google_play_provider, which
+    # subscription_state_sync_service.py's new reconciliation now needs
+    # and which never uses Razorpay at all) forced Python to run
+    # modules/payments/__init__.py first, which imports this module,
+    # which then unconditionally imported RazorpayProvider ->
+    # config/razorpay_config.py, crashing at import time without
+    # RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET -- exactly the same failure
+    # class the Subscription State Sync GitHub Actions job was already
+    # fixed for once. Moving the import here, immediately before its
+    # only use, means importing modules.payments.google_play_provider
+    # (or google_play_models) alone no longer has any Razorpay
+    # dependency. No change to razorpay_provider.py, config/
+    # razorpay_config.py, or any provider's own behavior -- this
+    # function's behavior when actually called is unchanged.
+    from modules.payments.razorpay_provider import RazorpayProvider
+
     registry.register(PaymentProviderType.RAZORPAY, RazorpayProvider())
     registry.register(PaymentProviderType.GOOGLE_PLAY, GooglePlayProvider())
     registry.register(PaymentProviderType.APPLE, AppleProvider())
