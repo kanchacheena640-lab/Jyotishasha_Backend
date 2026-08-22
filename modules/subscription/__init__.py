@@ -1,7 +1,23 @@
-from .routes import subscription_bp
-
-
 def register_subscription(app):
+    # Lazy import -- fixes the Subscription State Sync GitHub Actions job
+    # crashing at import time. Before this fix, `from .routes import
+    # subscription_bp` sat at module level here, so merely importing ANY
+    # submodule of `modules.subscription` (e.g.
+    # subscription_state_sync_service, which never uses Razorpay at all)
+    # forced Python to run this package's __init__.py first, which pulled
+    # in routes.py, which pulled in config/razorpay_config.py, which
+    # raises at import time without RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET.
+    # Moving the import here, immediately before its only use, means
+    # `modules.subscription`'s package import no longer has any
+    # dependency on Razorpay -- routes.py (and its Razorpay import) is
+    # only ever loaded when register_subscription(app) is actually
+    # called, exactly as it already is today from app.py's own boot
+    # sequence (which already has the Razorpay keys configured). No
+    # change to routes.py, razorpay_config.py, or any business logic --
+    # this file's external API (register_subscription(app)) and behavior
+    # are unchanged.
+    from .routes import subscription_bp
+
     # S4.0 -- audited but intentionally left unchanged. subscription_bp's
     # routes (modules/subscription/routes.py) already declare their full
     # paths in the decorator itself (e.g. @subscription_bp.get("/api/
