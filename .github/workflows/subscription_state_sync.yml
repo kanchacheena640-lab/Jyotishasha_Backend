@@ -35,6 +35,17 @@ jobs:
         run: |
           python - <<EOF
           from factory import create_app
+          # Model-registration import only (narrow fix -- confirmed by prior
+          # read-only audit): AIReport/CurrentEntitlement's string-based
+          # `db.relationship("AppUser", ...)` targets are only resolvable
+          # once modules.models_user has actually been imported somewhere
+          # in this process. The normal Flask app gets this for free via
+          # its ~40 blueprint imports; this standalone script's narrower
+          # import chain does not, so SQLAlchemy's configure_mappers()
+          # (triggered by the first ORM query below) fails to locate
+          # "AppUser" without this explicit import. Not used directly --
+          # imported purely for its side effect of registering the class.
+          from modules.models_user import AppUser  # noqa: F401
           from modules.subscription.subscription_state_sync_service import SubscriptionStateSyncService
 
           app = create_app()
