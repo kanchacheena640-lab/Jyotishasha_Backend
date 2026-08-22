@@ -32,6 +32,16 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          # Required by the Google Play revocation reconciliation added in
+          # d51d63a (SubscriptionStateSyncService._check_google_revocation()
+          # -> GooglePlayProvider.verify_subscription_purchase() ->
+          # config/google_play_config.py::get_android_publisher_session()).
+          # Without these, that live check fails closed with a structured
+          # AUTH_ERROR (never a crash -- see that module's own docstring)
+          # and the reconciliation silently no-ops, exactly as diagnosed
+          # for profile_id=1093's checked=21 changed=0 errors=0 run.
+          GOOGLE_PLAY_PACKAGE_NAME: ${{ secrets.GOOGLE_PLAY_PACKAGE_NAME }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
         run: |
           python - <<EOF
           from factory import create_app
