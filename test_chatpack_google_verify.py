@@ -36,7 +36,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from app import app  # noqa: E402
 from extensions import db  # noqa: E402
 from sqlalchemy import text  # noqa: E402
+from flask_jwt_extended import create_access_token  # noqa: E402
 
+from modules.auth.models import User  # noqa: E402
 from modules.models_chat_pack import ChatPack  # noqa: E402
 from modules.payments.google_play_models import (  # noqa: E402
     GooglePlayProductVerification,
@@ -65,7 +67,24 @@ USER_IDS = list(range(984001, 984020))
 
 def cleanup():
     ChatPack.query.filter(ChatPack.user_id.in_(USER_IDS)).delete(synchronize_session=False)
+    User.query.filter(User.id.in_(USER_IDS)).delete(synchronize_session=False)
     db.session.commit()
+
+
+def _auth_headers(user_id: int) -> dict:
+    """
+    Trust Foundation Phase 0: /api/chatpack/verify and
+    /api/chat/pack/google/verify now require a verified JWT -- user_id
+    is resolved from get_jwt_identity(), never trusted from the request
+    body. Mints a real backend session for the given account, same
+    pattern test_google_subscription_confirm_contract.py already
+    established.
+    """
+    if User.query.get(user_id) is None:
+        db.session.add(User(id=user_id, email=f"chatpack-verify-{user_id}@example.com", provider="password"))
+        db.session.commit()
+    token = create_access_token(identity=str(user_id))
+    return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
 # =============================================================================
@@ -231,11 +250,13 @@ def main():
 
             resp_alias = client.post(
                 "/api/chatpack/verify",
-                json={"user_id": 984010, "product_id": "asknow10q", "purchase_token": "tok-i-alias"},
+                json={"product_id": "asknow10q", "purchase_token": "tok-i-alias"},
+                headers=_auth_headers(984010),
             )
             resp_direct = client.post(
                 "/api/chat/pack/google/verify",
-                json={"user_id": 984011, "product_id": "asknow10q", "purchase_token": "tok-i-direct"},
+                json={"product_id": "asknow10q", "purchase_token": "tok-i-direct"},
+                headers=_auth_headers(984011),
             )
 
             body_alias = resp_alias.get_json()
@@ -249,11 +270,13 @@ def main():
             # Unknown-product rejection must also be equivalent on both routes.
             resp_alias_bad = client.post(
                 "/api/chatpack/verify",
-                json={"user_id": 984012, "product_id": "not_a_real_product", "purchase_token": "tok-i-bad-alias"},
+                json={"product_id": "not_a_real_product", "purchase_token": "tok-i-bad-alias"},
+                headers=_auth_headers(984012),
             )
             resp_direct_bad = client.post(
                 "/api/chat/pack/google/verify",
-                json={"user_id": 984013, "product_id": "not_a_real_product", "purchase_token": "tok-i-bad-direct"},
+                json={"product_id": "not_a_real_product", "purchase_token": "tok-i-bad-direct"},
+                headers=_auth_headers(984013),
             )
             check("I: unknown product rejected equivalently on alias route", resp_alias_bad.get_json().get("error") == "unknown_product")
             check("I: unknown product rejected equivalently on direct route", resp_direct_bad.get_json().get("error") == "unknown_product")

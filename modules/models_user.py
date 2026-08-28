@@ -47,7 +47,16 @@ class AppUser(db.Model):
     asknow_tokens = db.Column(db.Integer, nullable=False, default=0)
     fcm_token = db.Column(db.String(255), nullable=True)
 
-    firebase_uid = db.Column(db.String(255), nullable=True)
+    # Trust Foundation Phase 0: unique=True reconciles this model with a
+    # constraint that already existed live in production
+    # (unique_firebase_uid) but was never declared here -- and, as of
+    # migrations/versions/b3f8e6a2c9d4_..., is now guaranteed present in
+    # every environment (that migration creates it wherever missing,
+    # under its own name, without duplicating an existing one). NULL
+    # remains allowed (many profiles are never linked to a Firebase
+    # login) and multiple NULLs are fine -- Postgres unique constraints
+    # never compare NULL to NULL as equal.
+    firebase_uid = db.Column(db.String(255), unique=True, nullable=True)
 
 
     created_at = db.Column(

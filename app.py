@@ -54,6 +54,7 @@ from routes.routes_rtdn import routes_rtdn
 from routes.routes_google_purchase_confirm import routes_google_purchase_confirm
 from routes.routes_google_report_confirm import routes_google_report_confirm
 from routes.routes_alerts_dashboard import routes_alerts_dashboard
+from routes.routes_app_version import routes_app_version
 
 
 
@@ -115,6 +116,7 @@ app.register_blueprint(routes_rtdn)
 app.register_blueprint(routes_google_purchase_confirm)
 app.register_blueprint(routes_google_report_confirm)
 app.register_blueprint(routes_alerts_dashboard)
+app.register_blueprint(routes_app_version)
 
 # ------------------- ROOT ------------------- #
 @app.route("/")
