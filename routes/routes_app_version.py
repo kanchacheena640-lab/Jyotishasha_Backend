@@ -109,6 +109,23 @@ def update_version_policy():
                 "message": "latest_build must be an integer.",
             }), 400
 
+    # Reusable App Update System (Task H) -- cross-field invariant.
+    # Checked AFTER both individual fields are applied (in-memory, not
+    # yet committed) so this catches every path to an inconsistent
+    # state: raising minimum past the current latest, lowering latest
+    # below the current minimum, or setting both in the same request.
+    # A rejected request leaves the previously-committed row completely
+    # untouched -- db.session.commit() below is never reached.
+    if policy.minimum_supported_build > policy.latest_build:
+        db.session.rollback()
+        return jsonify({
+            "error": "invalid_policy",
+            "message": (
+                f"minimum_supported_build ({policy.minimum_supported_build}) "
+                f"cannot exceed latest_build ({policy.latest_build})."
+            ),
+        }), 400
+
     if "force_update" in data:
         if not isinstance(data["force_update"], bool):
             return jsonify({

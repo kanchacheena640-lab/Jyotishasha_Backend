@@ -184,14 +184,22 @@ def main():
 
             os.environ["ADMIN_USER_IDS"] = str(ADMIN_UID)
             token_admin = create_access_token(identity=str(ADMIN_UID))
+            # Seed state has minimum_supported_build == latest_build, so a
+            # partial-field PATCH here raises BOTH together -- raising
+            # minimum alone against an untouched, equal latest_build would
+            # now correctly trip the Task H invariant check below; this
+            # PATCH stays a deliberately valid, realistic admin action.
             resp = client.patch(
                 "/admin/api/app-version-policy",
-                json={"minimum_supported_build": original_snapshot["minimum_supported_build"] + 5},
+                json={
+                    "minimum_supported_build": original_snapshot["minimum_supported_build"] + 5,
+                    "latest_build": original_snapshot["latest_build"] + 5,
+                },
                 headers={"Authorization": f"Bearer {token_admin}"},
             )
             check("F: genuine admin PATCH succeeds (200)", resp.status_code == 200)
             check(
-                "F: partial update -- only minimum_supported_build changed, force_update untouched",
+                "F: partial update -- minimum_supported_build/latest_build changed, force_update untouched",
                 resp.get_json()["minimum_supported_build"] == original_snapshot["minimum_supported_build"] + 5
                 and resp.get_json()["force_update"] is False,
             )
@@ -217,6 +225,56 @@ def main():
                 row.minimum_supported_build == original.minimum_supported_build
                 and row.force_update is False
             ))
+
+            # ==========================================================
+            print("\n=== H: minimum_supported_build > latest_build is rejected (Reusable App Update System) ===")
+            # ==========================================================
+            # Attempt to raise minimum ABOVE the current (unchanged) latest_build.
+            resp = client.patch(
+                "/admin/api/app-version-policy",
+                json={"minimum_supported_build": original_snapshot["latest_build"] + 1},
+                headers={"Authorization": f"Bearer {token_admin}"},
+            )
+            check("H: raising minimum past the current latest -> 400", resp.status_code == 400)
+            check("H: error is invalid_policy, not a generic 400", resp.get_json().get("error") == "invalid_policy")
+            row = AppVersionPolicy.query.filter_by(platform="android").first()
+            check("H: rejected PATCH changed NOTHING (minimum still original)", row.minimum_supported_build == original_snapshot["minimum_supported_build"])
+
+            # Attempt to lower latest_build BELOW the current (unchanged) minimum.
+            resp = client.patch(
+                "/admin/api/app-version-policy",
+                json={"latest_build": original_snapshot["minimum_supported_build"] - 1},
+                headers={"Authorization": f"Bearer {token_admin}"},
+            )
+            check("H: lowering latest below the current minimum -> 400", resp.status_code == 400)
+            row = AppVersionPolicy.query.filter_by(platform="android").first()
+            check("H: rejected PATCH changed NOTHING (latest still original)", row.latest_build == original_snapshot["latest_build"])
+
+            # The exact boundary IS valid: minimum == latest is allowed
+            # (this is the seed state itself).
+            resp = client.patch(
+                "/admin/api/app-version-policy",
+                json={
+                    "minimum_supported_build": original_snapshot["minimum_supported_build"] + 2,
+                    "latest_build": original_snapshot["latest_build"] + 2,
+                },
+                headers={"Authorization": f"Bearer {token_admin}"},
+            )
+            check("H: minimum == latest (both raised together) is a VALID boundary, not rejected", resp.status_code == 200)
+            restore_policy()
+
+            # ==========================================================
+            print("\n=== I: unauthorized policy mutation rejected (re-confirmed alongside H) ===")
+            # ==========================================================
+            resp = client.patch("/admin/api/app-version-policy", json={"minimum_supported_build": 999})
+            check("I: no auth at all -> 401", resp.status_code == 401)
+            resp = client.patch(
+                "/admin/api/app-version-policy", json={"minimum_supported_build": 999},
+                headers={"Authorization": f"Bearer {token_non_admin}"},
+            )
+            check("I: authenticated non-admin -> 403", resp.status_code == 403)
+            row = AppVersionPolicy.query.filter_by(platform="android").first()
+            check("I: neither unauthorized attempt changed anything", row.minimum_supported_build == original_snapshot["minimum_supported_build"])
 
         finally:
             restore_policy()
