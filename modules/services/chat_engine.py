@@ -16,7 +16,7 @@ Used by:
 """
 
 from datetime import date
-from openai import OpenAI
+from openai import OpenAI, APITimeoutError
 import os
 from services.full_kundali_service import generate_full_kundali_payload
 from services.personalization_engine import calculate_house
@@ -36,6 +36,26 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # proven handling -- it previously passed temperature=0.65 under
 # gpt-4o-mini, which supported it.
 _MODEL = "gpt-5.6-luna"
+
+# Ask Now Timeout Delivery Fix -- bounded well under this deployment's
+# proven infrastructure ceiling: render.yaml's startCommand is
+# `gunicorn app:app` with no --timeout override anywhere in this repo,
+# so gunicorn's documented default sync-worker timeout (30s) is what
+# actually kills a slow request in production -- not the OpenAI SDK's
+# own 600s default. Failing on OUR terms at 20s (well inside that 30s
+# budget, leaving headroom for kundali calculation + JSON/network
+# overhead in the same request) means the except block below still
+# gets to run and this reaches chat_free()/chat_pack()'s existing
+# Credit Safety compensation -- a gunicorn worker kill would bypass
+# Python exception handling entirely and lose the credit with no
+# controlled response at all.
+#
+# max_retries=0 is deliberate, not an oversight: the default OpenAI
+# client retries transient failures internally (up to 2x), which could
+# otherwise multiply this wall-clock budget in an SDK-version-specific
+# way this fix does not want to depend on or guess about. A single
+# 20s attempt, no retry, is an exact, provable ceiling.
+_GENERATION_TIMEOUT_SECONDS = 20
 
 
 def _find_next_antardasha(dasha: dict, current_maha: dict, current_antar: dict):
@@ -411,7 +431,20 @@ USER QUESTION
     # 5) GPT Call
     # -----------------------------
     try:
-        response = client.chat.completions.create(
+        # Derived at CALL TIME from the current module-level `client` --
+        # deliberately NOT pre-bound at import time. A test that
+        # monkeypatches chat_engine_module.client (the existing,
+        # documented seam every OpenAI-call test in this codebase
+        # already relies on) must have that fake picked up here, same
+        # as it always did. See this module's test-double contract in
+        # test_chat_engine_temporal_grounding.py / test_safe_deployment_
+        # split.py / test_trust_foundation_phase0.py's _FakeOpenAIClient
+        # .with_options() -- each returns self, so the fake stays fully
+        # in control of chat.completions.create() below.
+        generation_client = client.with_options(
+            timeout=_GENERATION_TIMEOUT_SECONDS, max_retries=0
+        )
+        response = generation_client.chat.completions.create(
             model=_MODEL,
             messages=[
                 {"role": "system", "content": "You are a senior Vedic astrologer."},
@@ -419,6 +452,16 @@ USER QUESTION
             ],
         )
         answer = response.choices[0].message.content.strip()
+    except APITimeoutError:
+        # Ask Now Timeout Delivery Fix: unlike every OTHER OpenAI-side
+        # failure below (rate limit, content policy, a transient API
+        # error) -- which intentionally continue to degrade to fallback
+        # text, unchanged design decision from the Credit Safety Fix --
+        # a timeout means no answer was obtained at all in bounded
+        # time. Re-raising lets this escape chat_engine() and reach
+        # chat_free()/chat_pack()'s existing Credit Safety compensation
+        # exactly like any other generation failure.
+        raise
     except Exception as e:
         answer = f"AI temporarily unavailable. Error: {e}"
 

@@ -98,24 +98,28 @@ already built. Nothing else in this file needs to change.
 import os
 
 from modules.services.chatpack_google_verify import verify_google_chatpack
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 # Reused, not reimplemented -- the same admin allowlist gate already
 # proven by notifications/notification_routes.py and routes/admin_orders.py.
 from notifications.notification_routes import admin_required
 
+from extensions import db
+
 # Services
 from modules.services.chat_engine import chat_engine
 from modules.services.free_quota_service import (
     has_free_quota,
     use_free_quota,
+    restore_free_quota,
     get_free_quota_status,
 )
 from modules.services.chat_pack_service import (
     create_chatpack_order,
     verify_chatpack_payment,
     deduct_question,
+    restore_question,
     get_pack_status,
 )
 
@@ -191,11 +195,50 @@ def chat_free():
             "message": "Free question already used today"
         }), 403
 
-    # Use the free quota
-    use_free_quota(user_id)
+    # Ask Now Credit Safety: consume-first is kept (matches every other
+    # route in this file, and avoids reserving-then-generating races
+    # this codebase has no infrastructure for) -- what changes is that a
+    # generation failure AFTER this point is no longer silently
+    # unhandled. previous_last_used_date is exactly what
+    # restore_free_quota() needs to undo THIS call, and nothing else.
+    try:
+        _, previous_last_used_date = use_free_quota(user_id)
+    except Exception:
+        current_app.logger.exception(
+            "chat_free: failed to consume free quota (user_id=%s)", user_id
+        )
+        return jsonify({
+            "success": False,
+            "error": "quota_error",
+            "message": "Something went wrong. Please try again.",
+        }), 502
 
-    # Get chat answer
-    answer = chat_engine(birth, question)
+    # Get chat answer. chat_engine() already converts an OpenAI-side
+    # failure into a textual fallback answer (never raises for that) --
+    # an exception escaping from here means kundali/transit generation
+    # itself failed, i.e. no valid answer can be returned under the
+    # existing contract. That, and only that, is compensated.
+    try:
+        answer = chat_engine(birth, question)
+    except Exception:
+        db.session.rollback()
+        try:
+            restore_free_quota(user_id, previous_last_used_date)
+        except Exception:
+            current_app.logger.exception(
+                "chat_free: CRITICAL -- failed to restore free quota after "
+                "generation failure (user_id=%s)", user_id
+            )
+        else:
+            current_app.logger.warning(
+                "chat_free: generation failed after consuming free quota; "
+                "quota restored (user_id=%s)", user_id
+            )
+        return jsonify({
+            "success": False,
+            "error": "generation_failed",
+            "message": "We couldn't generate an answer right now. Please try again.",
+        }), 502
 
     return jsonify({
         "success": True,
@@ -222,13 +265,49 @@ def chat_pack():
         return jsonify({"error": "Missing required fields"}), 400
 
     # Try to deduct one question
-    result = deduct_question(user_id)
+    try:
+        result = deduct_question(user_id)
+    except Exception:
+        current_app.logger.exception(
+            "chat_pack: failed to deduct question (user_id=%s)", user_id
+        )
+        return jsonify({
+            "success": False,
+            "error": "quota_error",
+            "message": "Something went wrong. Please try again.",
+        }), 502
 
     if not result.get("success"):
         return jsonify(result), 403
 
-    # Get chat answer
-    answer = chat_engine(birth, question)
+    # Ask Now Credit Safety: same posture as chat_free() above -- a
+    # generation failure past this point restores exactly the one
+    # question this request just debited, from the exact pack row
+    # deduct_question() debited (result["pack_id"]), never a full
+    # pack reset and never any other pack row.
+    try:
+        answer = chat_engine(birth, question)
+    except Exception:
+        db.session.rollback()
+        try:
+            restore_question(user_id, result["pack_id"])
+        except Exception:
+            current_app.logger.exception(
+                "chat_pack: CRITICAL -- failed to restore pack question after "
+                "generation failure (user_id=%s, pack_id=%s)",
+                user_id, result["pack_id"],
+            )
+        else:
+            current_app.logger.warning(
+                "chat_pack: generation failed after consuming a pack question; "
+                "question restored (user_id=%s, pack_id=%s)",
+                user_id, result["pack_id"],
+            )
+        return jsonify({
+            "success": False,
+            "error": "generation_failed",
+            "message": "We couldn't generate an answer right now. Please try again.",
+        }), 502
 
     return jsonify({
         "success": True,

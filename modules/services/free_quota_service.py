@@ -53,10 +53,33 @@ def has_free_quota(user_id):
 def use_free_quota(user_id):
     """
     Marks today's free question as used.
-    Returns updated record.
+
+    Returns (record, previous_last_used_date) -- the caller (chat_free())
+    must hold onto previous_last_used_date and pass it to
+    restore_free_quota() if the request that consumed this quota
+    subsequently fails to deliver an answer. Capturing the exact prior
+    value (rather than assuming "unset"/None) is what makes that
+    restoration exact rather than a guess.
     """
     record = get_free_record(user_id)
+    previous_last_used_date = record.last_used_date
     record.last_used_date = _today_str()
+    db.session.commit()
+    return record, previous_last_used_date
+
+
+def restore_free_quota(user_id, previous_last_used_date):
+    """
+    Ask Now Credit Safety -- exact compensation for use_free_quota().
+
+    Reverts last_used_date to whatever it was immediately before THIS
+    request's own use_free_quota() call. Callers must only invoke this
+    after confirming their own use_free_quota() call actually ran (never
+    speculatively) -- it is not a generic "reset today's usage" and must
+    not be called on any path that didn't itself consume the quota.
+    """
+    record = get_free_record(user_id)
+    record.last_used_date = previous_last_used_date
     db.session.commit()
     return record
 

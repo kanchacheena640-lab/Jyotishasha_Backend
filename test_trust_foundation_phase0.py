@@ -141,6 +141,15 @@ def main():
         class _FakeOpenAIClient:
             chat = _FakeChat()
 
+            def with_options(self, **kwargs):
+                # Ask Now Timeout Delivery Fix: chat_engine.py derives its
+                # scoped (timeout=20, max_retries=0) client via
+                # client.with_options(...) at CALL TIME from whatever
+                # chat_engine_module.client currently is -- this fake must
+                # answer to the same call the real client supports.
+                # Returns self: no real call is ever made either way.
+                return self
+
         original_client = chat_engine_module.client
         chat_engine_module.client = _FakeOpenAIClient()
 

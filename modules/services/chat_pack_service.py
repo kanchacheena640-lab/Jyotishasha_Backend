@@ -191,6 +191,30 @@ def deduct_question(user_id):
     }
 
 
+def restore_question(user_id, pack_id):
+    """
+    Ask Now Credit Safety -- exact compensation for deduct_question().
+
+    Reverts exactly ONE question on the specific pack row a prior
+    deduct_question() call actually debited (identified by pack_id,
+    the same id that call returned) -- never questions_total, never
+    any other pack row, never a full reset. Callers must only invoke
+    this after confirming their own deduct_question() call actually
+    succeeded for THIS pack_id -- not speculatively, and never as a
+    substitute for /api/chat/debug/pack's admin reset tool.
+
+    Floors at 0 defensively; this should never actually trigger given
+    the calling contract (this pack's questions_used was just
+    incremented by the deduct_question() call being compensated).
+    """
+    pack = ChatPack.query.filter_by(id=pack_id, user_id=user_id).first()
+    if pack is None:
+        return None
+    pack.questions_used = max(0, pack.questions_used - 1)
+    db.session.commit()
+    return pack
+
+
 # ----------------------------------------------------------
 # 5) STATUS FOR POSTMAN TEST
 # ----------------------------------------------------------

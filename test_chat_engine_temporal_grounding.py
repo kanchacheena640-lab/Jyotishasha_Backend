@@ -176,6 +176,18 @@ class _FakeOpenAIClient:
     def __init__(self, captured):
         self.chat = _FakeChat(captured)
 
+    def with_options(self, **kwargs):
+        # Ask Now Timeout Delivery Fix: chat_engine.py now derives its
+        # scoped (timeout=20, max_retries=0) client via
+        # client.with_options(...) at CALL TIME from whatever
+        # chat_engine_module.client currently is -- so this fake must
+        # answer to the same call the real openai.OpenAI client
+        # supports. Returns self (not a copy): a fake has no separate
+        # config to scope, so the only thing that matters is that
+        # .chat.completions.create() below still resolves to the same
+        # captured-prompt fake, never to a real client.
+        return self
+
 
 def _run_chat_engine_captured(question):
     """
