@@ -27,6 +27,10 @@ posture for the matching client-side half of this contract).
 
 from __future__ import annotations
 
+import hmac
+import os
+from functools import wraps
+
 from flask import Blueprint, jsonify, request
 
 from extensions import db
@@ -36,6 +40,43 @@ from notifications.notification_routes import admin_required
 routes_app_version = Blueprint("routes_app_version", __name__)
 
 _SUPPORTED_PLATFORMS = ("android",)
+
+
+def _bridge_key_valid(provided: str | None) -> bool:
+    """
+    Narrow, additive credential for exactly one caller: the Next.js
+    Admin BFF route (server-side only -- never reaches a browser). Not
+    a replacement for admin_required, not usable on any other route.
+
+    Deny-by-default: an unset/empty ADMIN_BRIDGE_SECRET means this path
+    can never succeed, so a fresh/local environment behaves exactly as
+    it did before this existed. Constant-time compare -- same reasoning
+    as the Next.js admin session signature check this mirrors.
+    """
+    expected = os.getenv("ADMIN_BRIDGE_SECRET", "")
+    if not expected or not provided:
+        return False
+    return hmac.compare_digest(provided, expected)
+
+
+def admin_or_bridge_required(fn):
+    """
+    Accepts EITHER credential, tried in this order:
+      1. X-Admin-Bridge-Key -- the Next.js Admin BFF's server-side
+         secret (see _bridge_key_valid above).
+      2. The existing admin_required JWT + ADMIN_USER_IDS check,
+         completely unmodified -- this is the fallback for every
+         existing caller and every existing test, so a request with no
+         (or a wrong) bridge key behaves byte-for-byte as it always
+         has: 401 with no Authorization header, 403 for a non-admin
+         identity.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if _bridge_key_valid(request.headers.get("X-Admin-Bridge-Key")):
+            return fn(*args, **kwargs)
+        return admin_required(fn)(*args, **kwargs)
+    return wrapper
 
 
 @routes_app_version.route("/api/app/version-policy", methods=["GET"])
@@ -64,7 +105,7 @@ def get_version_policy():
 
 
 @routes_app_version.route("/admin/api/app-version-policy", methods=["PATCH"])
-@admin_required
+@admin_or_bridge_required
 def update_version_policy():
     """
     Operator-only update -- the ONLY way minimum_supported_build/
@@ -117,12 +158,19 @@ def update_version_policy():
     # A rejected request leaves the previously-committed row completely
     # untouched -- db.session.commit() below is never reached.
     if policy.minimum_supported_build > policy.latest_build:
+        # Cosmetic-message fix: capture the rejected candidate values
+        # BEFORE rollback(). Session.rollback() expires every tracked
+        # instance, so reading policy.* after it re-SELECTs from the DB
+        # and would silently report the previous committed values
+        # instead of the values that were actually rejected.
+        candidate_minimum = policy.minimum_supported_build
+        candidate_latest = policy.latest_build
         db.session.rollback()
         return jsonify({
             "error": "invalid_policy",
             "message": (
-                f"minimum_supported_build ({policy.minimum_supported_build}) "
-                f"cannot exceed latest_build ({policy.latest_build})."
+                f"minimum_supported_build ({candidate_minimum}) "
+                f"cannot exceed latest_build ({candidate_latest})."
             ),
         }), 400
 

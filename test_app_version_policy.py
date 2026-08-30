@@ -237,6 +237,12 @@ def main():
             )
             check("H: raising minimum past the current latest -> 400", resp.status_code == 400)
             check("H: error is invalid_policy, not a generic 400", resp.get_json().get("error") == "invalid_policy")
+            attempted_minimum = original_snapshot["latest_build"] + 1
+            check(
+                "H: rejection message reports the ATTEMPTED candidate value, not a stale post-rollback value",
+                str(attempted_minimum) in resp.get_json().get("message", "")
+                and str(original_snapshot["latest_build"]) in resp.get_json().get("message", ""),
+            )
             row = AppVersionPolicy.query.filter_by(platform="android").first()
             check("H: rejected PATCH changed NOTHING (minimum still original)", row.minimum_supported_build == original_snapshot["minimum_supported_build"])
 
@@ -275,6 +281,76 @@ def main():
             check("I: authenticated non-admin -> 403", resp.status_code == 403)
             row = AppVersionPolicy.query.filter_by(platform="android").first()
             check("I: neither unauthorized attempt changed anything", row.minimum_supported_build == original_snapshot["minimum_supported_build"])
+
+            # ==========================================================
+            print("\n=== J: Next.js Admin BFF bridge credential (admin_or_bridge_required) ===")
+            # ==========================================================
+            # Deny-by-default: no ADMIN_BRIDGE_SECRET configured -> the
+            # bridge header path can never succeed, request falls
+            # through to the unmodified admin_required check, so a
+            # request with only a (meaningless, since unset) bridge
+            # header and no Authorization behaves exactly like I's
+            # "no auth at all" case.
+            os.environ.pop("ADMIN_BRIDGE_SECRET", None)
+            resp = client.patch(
+                "/admin/api/app-version-policy",
+                json={"minimum_supported_build": original_snapshot["minimum_supported_build"]},
+                headers={"X-Admin-Bridge-Key": "whatever-someone-sends"},
+            )
+            check("J: bridge header ignored when ADMIN_BRIDGE_SECRET unset -> falls through to 401", resp.status_code == 401)
+
+            # Configure the secret, then prove: wrong key still falls
+            # through to admin_required (not a special bridge-only 403).
+            os.environ["ADMIN_BRIDGE_SECRET"] = "test-bridge-secret-987"
+            resp = client.patch(
+                "/admin/api/app-version-policy",
+                json={"minimum_supported_build": original_snapshot["minimum_supported_build"]},
+                headers={"X-Admin-Bridge-Key": "wrong-key"},
+            )
+            check("J: wrong bridge key -> falls through to 401 (no Authorization present)", resp.status_code == 401)
+
+            # Correct key succeeds with NO Authorization header at all --
+            # this is the whole point of the bridge (the Next.js server
+            # never holds a Flask JWT).
+            resp = client.patch(
+                "/admin/api/app-version-policy",
+                json={
+                    "minimum_supported_build": original_snapshot["minimum_supported_build"] + 1,
+                    "latest_build": original_snapshot["latest_build"] + 1,
+                },
+                headers={"X-Admin-Bridge-Key": "test-bridge-secret-987"},
+            )
+            check("J: correct bridge key succeeds with no JWT -> 200", resp.status_code == 200)
+            row = AppVersionPolicy.query.filter_by(platform="android").first()
+            check(
+                "J: correct bridge key actually persisted the change",
+                row.minimum_supported_build == original_snapshot["minimum_supported_build"] + 1
+                and row.latest_build == original_snapshot["latest_build"] + 1,
+            )
+            restore_policy()
+
+            # The bridge invariant is still enforced by the SAME shared
+            # validation -- this is not a second, weaker code path.
+            resp = client.patch(
+                "/admin/api/app-version-policy",
+                json={"minimum_supported_build": original_snapshot["latest_build"] + 1},
+                headers={"X-Admin-Bridge-Key": "test-bridge-secret-987"},
+            )
+            check("J: invariant still enforced through the bridge path -> 400", resp.status_code == 400)
+            check("J: bridge-path invariant error is invalid_policy", resp.get_json().get("error") == "invalid_policy")
+            row = AppVersionPolicy.query.filter_by(platform="android").first()
+            check("J: rejected bridge-path PATCH changed NOTHING", row.minimum_supported_build == original_snapshot["minimum_supported_build"])
+
+            # A valid bridge key does not open the door to any other
+            # admin route -- admin_or_bridge_required was added only to
+            # this one route, admin_required elsewhere is untouched.
+            resp = client.get(
+                "/admin/api/orders",
+                headers={"X-Admin-Bridge-Key": "test-bridge-secret-987"},
+            )
+            check("J: bridge key has no effect on an unrelated admin_required route -> 401", resp.status_code == 401)
+
+            os.environ.pop("ADMIN_BRIDGE_SECRET", None)
 
         finally:
             restore_policy()
