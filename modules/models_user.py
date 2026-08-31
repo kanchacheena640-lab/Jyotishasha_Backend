@@ -47,21 +47,38 @@ class AppUser(db.Model):
     asknow_tokens = db.Column(db.Integer, nullable=False, default=0)
     fcm_token = db.Column(db.String(255), nullable=True)
 
-    # Trust Foundation Phase 0: unique=True reconciles this model with a
-    # constraint that already existed live in production
-    # (unique_firebase_uid) but was never declared here -- and, as of
-    # migrations/versions/b3f8e6a2c9d4_..., is now guaranteed present in
-    # every environment (that migration creates it wherever missing,
-    # under its own name, without duplicating an existing one). NULL
-    # remains allowed (many profiles are never linked to a Firebase
-    # login) and multiple NULLs are fine -- Postgres unique constraints
-    # never compare NULL to NULL as equal.
-    firebase_uid = db.Column(db.String(255), unique=True, nullable=True)
+    # Trust Foundation Phase 0: this column is guaranteed unique (where
+    # non-null) in every environment by migrations/versions/
+    # b3f8e6a2c9d4_..., which reconciles whatever unique-firebase_uid
+    # index a given environment already had (production's own
+    # pre-existing `unique_firebase_uid`, or -- as in local dev --
+    # newly created there under the name below) rather than assuming
+    # either "already exists" or "missing". The actual, live shape in
+    # every environment is a PARTIAL unique index (WHERE firebase_uid
+    # IS NOT NULL), not a plain column-level `unique=True` -- see
+    # Phase 2 Database Drift Blocker Verification (Event Tracking
+    # project). Declared explicitly below via __table_args__ instead of
+    # `unique=True` so this model actually describes that reality;
+    # NULL remains allowed (many profiles are never linked to a
+    # Firebase login) and multiple NULLs are fine either way -- Postgres
+    # never compares NULL to NULL as equal, under a partial index or a
+    # plain unique constraint alike. Metadata-only correction: no DB
+    # change, no identity/auth behavior change.
+    firebase_uid = db.Column(db.String(255), nullable=True)
 
 
     created_at = db.Column(
         db.DateTime,
         default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (
+        db.Index(
+            "unique_app_users_firebase_uid",
+            "firebase_uid",
+            unique=True,
+            postgresql_where=db.text("firebase_uid IS NOT NULL"),
+        ),
     )
 
     def to_dict(self) -> dict:

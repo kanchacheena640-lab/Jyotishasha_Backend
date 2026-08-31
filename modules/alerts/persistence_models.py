@@ -167,6 +167,20 @@ class AlertMicroEvent(db.Model):
             "profile_id", "event_id",
             name="uq_alert_micro_events_profile_event",
         ),
+        # Metadata-only correction (Phase 2 Database Drift Blocker
+        # Verification, Event Tracking project): this index has existed
+        # live since this table's own creation (migrations/versions/
+        # 5e64a21e77aa_...) and is actively used today --
+        # persistence_repository.py orders by last_evaluated_at, and
+        # `state` is filtered throughout this module -- but was never
+        # declared here. No later migration ever dropped it (60982e2e358a
+        # explicitly says it "does NOT touch... any index"). Declaring
+        # it now makes this model describe the schema that already
+        # exists; no DB change, no alert behavior change.
+        db.Index(
+            "ix_alert_micro_events_state_last_evaluated_at",
+            "state", "last_evaluated_at",
+        ),
     )
 
     def to_dict(self) -> dict:

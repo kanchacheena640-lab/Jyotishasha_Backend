@@ -41,6 +41,7 @@ target_db = current_app.extensions['migrate'].db
 
 from models import *
 from notifications.notification_models import *
+from modules.models_activity_events import ActivityEvent
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
