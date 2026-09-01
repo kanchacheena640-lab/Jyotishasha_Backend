@@ -74,12 +74,106 @@ constraint on razorpay_payment_id -- not created here; see the
 verification report for why.
 """
 
-from datetime import datetime
+import hashlib
+import logging
+from datetime import datetime, timezone
 
 from extensions import db
 from modules.models_chat_pack import ChatPack
 from modules.payments.google_play_models import GooglePlayVerificationStatus
 from modules.payments.google_play_provider import GooglePlayProvider
+
+# Phase 4B -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from modules.services.
+from modules.activity_events.service import record_event
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+# Phase 4B -- same analytics-only purpose literal chat_pack_service.py
+# uses for the Razorpay Ask Now path -- both are the same product
+# (ChatPack), just a different provider. Not added to PaymentPurpose
+# (see chat_pack_service.py's own comment on why).
+_PAYMENT_PURPOSE_CHATPACK = "ASK_NOW_CHAT_PACK"
+
+# Phase 4B -- maps GooglePlayVerificationStatus to the frozen FAILURE_
+# REASONS vocabulary (modules/activity_events/event_schemas.py). Same
+# mapping payment_service.py uses for the shared PaymentService flows
+# -- kept as a second, tiny, explicit local copy rather than importing
+# from modules.payments.payment_service, per the Phase 4B design
+# freeze's instruction to prefer a few explicit local lines over
+# expanding file scope for a fourth production file.
+_GOOGLE_FAILURE_REASON_BY_VERIFICATION_STATUS = {
+    GooglePlayVerificationStatus.INVALID_TOKEN: "invalid_input",
+    GooglePlayVerificationStatus.NOT_FOUND: "not_found",
+    GooglePlayVerificationStatus.AUTH_ERROR: "upstream_error",
+    GooglePlayVerificationStatus.NETWORK_ERROR: "upstream_error",
+    GooglePlayVerificationStatus.UNKNOWN_ERROR: "unknown",
+}
+
+
+def _hash_google_purchase_token(purchase_token: str) -> str:
+    """Deterministic, one-way identifier for Google Play's
+    purchase_token -- see payment_service.py's own docstring for why
+    this must never reach activity_events in raw form. Stdlib hashlib
+    only; no new dependency, no new crypto abstraction."""
+    return hashlib.sha256(purchase_token.encode("utf-8")).hexdigest()
+
+
+def _emit_chatpack_event(
+    *,
+    event_name,
+    entity_id=None,
+    order_reference=None,
+    failure_reason=None,
+    amount=None,
+    currency=None,
+    dedupe_key=None,
+):
+    """Phase 4B -- observational only, called ONLY after this module's
+    own authoritative ChatPack commit for the request has already
+    completed (see each call site). record_event() (Phase 2,
+    unmodified) already guarantees it never raises and never touches
+    db.session; this helper is additionally wrapped in its own
+    try/except so an unexpected error in the small amount of dict-
+    building above can never propagate back into a caller whose
+    ChatPack result has already been decided. profile_id/firebase_uid
+    are always None here -- ChatPack.user_id is users.id, not
+    app_users.id, and activity_events has no users.id column; no
+    identity bridge is introduced (LOCKED DECISION, Phase 4B design
+    freeze). correlation_id is always None -- this module has no
+    correlation_id concept, and none is invented here."""
+    properties = {"purpose": _PAYMENT_PURPOSE_CHATPACK, "provider": "GOOGLE_PLAY"}
+    if order_reference is not None:
+        properties["order_reference"] = order_reference
+    if failure_reason is not None:
+        properties["failure_reason"] = failure_reason
+    if amount is not None:
+        properties["amount"] = amount
+    if currency is not None:
+        properties["currency"] = currency
+
+    try:
+        record_event(
+            event_name=event_name,
+            occurred_at=datetime.now(timezone.utc),
+            platform="backend_internal",
+            source="chatpack_google_verify",
+            firebase_uid=None,
+            profile_id=None,
+            correlation_id=None,
+            entity_type="chat_pack" if entity_id is not None else None,
+            entity_id=str(entity_id) if entity_id is not None else None,
+            properties=properties,
+            dedupe_key=dedupe_key,
+        )
+    except Exception:
+        _activity_events_logger.warning(
+            "chatpack_google_verify: unexpected error emitting %s "
+            "(swallowed -- the ChatPack result already decided is "
+            "unaffected)",
+            event_name, exc_info=True,
+        )
 
 # Google Play purchaseState values for a one-time product (raw ints --
 # see google_play_models.py's own docstring): 0=Purchased, 1=Canceled,
@@ -133,6 +227,18 @@ def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
         razorpay_payment_id=purchase_token, status="success",
     ).first()
     if existing is not None:
+        # Phase 4B -- payment_duplicate_ignored: this backend already,
+        # truthfully, applied no new business effect for this token --
+        # dedupe_key intentionally NULL (each occurrence is its own ops
+        # signal, never counted as a revenue conversion). Confirmed
+        # separately (Phase 4B design freeze, Step 1): this only
+        # protects the analytics ledger from a second row -- it does
+        # NOT repair the underlying check-then-insert business race
+        # this module's own docstring already discloses.
+        _emit_chatpack_event(
+            event_name="payment_duplicate_ignored",
+            entity_id=existing.id,
+        )
         return {
             "success": True,
             "remaining_tokens": existing.remaining_questions(),
@@ -146,6 +252,17 @@ def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
     )
 
     if verification.verification_status != GooglePlayVerificationStatus.VERIFIED:
+        # Phase 4B -- payment_failed. Classified from verification.
+        # verification_status (a structured enum value), never
+        # verification.error_message (provider-ish free text).
+        # dedupe_key intentionally NULL. No ChatPack row exists yet at
+        # this point, so no entity is attached.
+        _emit_chatpack_event(
+            event_name="payment_failed",
+            failure_reason=_GOOGLE_FAILURE_REASON_BY_VERIFICATION_STATUS.get(
+                verification.verification_status, "unknown",
+            ),
+        )
         return {
             "success": False,
             "error": "verification_failed",
@@ -156,6 +273,15 @@ def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
         }
 
     if verification.purchase_state != _PRODUCT_PURCHASED_STATE:
+        # Phase 4B -- payment_failed. Google has a real record of this
+        # token (verification_status == VERIFIED) but declined to
+        # complete it (Canceled/Pending) -- "provider_declined", per
+        # the Phase 4B design freeze's exact mapping. No raw
+        # purchase_state int or message text stored.
+        _emit_chatpack_event(
+            event_name="payment_failed",
+            failure_reason="provider_declined",
+        )
         return {
             "success": False,
             "error": "purchase_not_completed",
@@ -179,6 +305,20 @@ def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
 
     db.session.add(pack)
     db.session.commit()
+
+    # Phase 4B -- payment_verified: fired strictly after the success
+    # commit above. purchase_token is NEVER placed into dedupe_key
+    # directly -- only its sha256 hash (deterministic, one-way).
+    # order_reference uses Google's own order_id (never the token) and
+    # is simply omitted when Google didn't return one.
+    _emit_chatpack_event(
+        event_name="payment_verified",
+        entity_id=pack.id,
+        order_reference=verification.order_id,
+        amount=product["amount"],
+        currency="INR",
+        dedupe_key=f"payment_verified:GOOGLE_PLAY:CHATPACK:{_hash_google_purchase_token(purchase_token)}",
+    )
 
     remaining = pack.questions_total - pack.questions_used
 

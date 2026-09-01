@@ -28,10 +28,84 @@ only answers "is this payment claim real," same contract it already has
 for every other caller.
 """
 
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
 from extensions import db
 from config.razorpay_config import razorpay_client
 from modules.models_chat_pack import ChatPack
+
+# Phase 4B -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from modules.services.
+from modules.activity_events.service import record_event
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+# Phase 4B -- analytics-only purpose value. Ask Now's ChatPack flows
+# bypass PaymentService/PaymentPurpose entirely (see this module's own
+# docstring on why RazorpayProvider is called directly), so there is no
+# existing business literal to reuse. NOT added to PaymentPurpose
+# itself -- that enum drives PaymentService._apply_business_effect()'s
+# dispatch, which ChatPack never goes through. properties.purpose has
+# no closed enum in event_schemas.py (only failure_reason does), so
+# this literal needs no schema change.
+_PAYMENT_PURPOSE_CHATPACK = "ASK_NOW_CHAT_PACK"
+
+
+def _emit_chatpack_event(
+    *,
+    event_name,
+    entity_id,
+    order_reference=None,
+    failure_reason=None,
+    amount=None,
+    currency=None,
+    dedupe_key=None,
+):
+    """Phase 4B -- observational only, called ONLY after this module's
+    own authoritative ChatPack commit for the request has already
+    completed (see each call site). record_event() (Phase 2,
+    unmodified) already guarantees it never raises and never touches
+    db.session; this helper is additionally wrapped in its own
+    try/except so an unexpected error in the small amount of dict-
+    building above can never propagate back into a caller whose
+    ChatPack result has already been decided. profile_id/firebase_uid
+    are always None here -- ChatPack.user_id is users.id, not
+    app_users.id, and activity_events has no users.id column; no
+    identity bridge is introduced (LOCKED DECISION, Phase 4B design
+    freeze). correlation_id is always None -- this module has no
+    correlation_id concept, and none is invented here."""
+    properties = {"purpose": _PAYMENT_PURPOSE_CHATPACK, "provider": "RAZORPAY"}
+    if order_reference is not None:
+        properties["order_reference"] = order_reference
+    if failure_reason is not None:
+        properties["failure_reason"] = failure_reason
+    if amount is not None:
+        properties["amount"] = amount
+    if currency is not None:
+        properties["currency"] = currency
+
+    try:
+        record_event(
+            event_name=event_name,
+            occurred_at=datetime.now(timezone.utc),
+            platform="backend_internal",
+            source="chat_pack_service",
+            firebase_uid=None,
+            profile_id=None,
+            correlation_id=None,
+            entity_type="chat_pack",
+            entity_id=str(entity_id),
+            properties=properties,
+            dedupe_key=dedupe_key,
+        )
+    except Exception:
+        _activity_events_logger.warning(
+            "chat_pack_service: unexpected error emitting %s for "
+            "ChatPack.id=%s (swallowed -- the ChatPack result already "
+            "decided is unaffected)",
+            event_name, entity_id, exc_info=True,
+        )
 
 
 CHATPACK_AMOUNT = 51
@@ -67,6 +141,17 @@ def create_chatpack_order(user_id):
     db.session.add(pack)
     db.session.commit()
 
+    # Phase 4B -- payment_initiated: the one genuine durable-initiation
+    # state in this codebase's Ask Now payment surface. Fired strictly
+    # AFTER the pending ChatPack row above is committed (pack.id is a
+    # real PK only past this point).
+    _emit_chatpack_event(
+        event_name="payment_initiated",
+        entity_id=pack.id,
+        order_reference=razorpay_order["id"],
+        dedupe_key=f"payment_initiated:RAZORPAY:CHATPACK:{pack.id}",
+    )
+
     return pack.to_dict()
 
 
@@ -94,6 +179,14 @@ def verify_chatpack_payment(order_id, payment_id, signature, user_id):
         raise ValueError("ChatPack order not found")
 
     if pack.status == "success":
+        # Phase 4B -- payment_duplicate_ignored: this backend already,
+        # truthfully, applied no new business effect for this order --
+        # dedupe_key intentionally NULL (each occurrence is its own ops
+        # signal, never counted as a revenue conversion).
+        _emit_chatpack_event(
+            event_name="payment_duplicate_ignored",
+            entity_id=pack.id,
+        )
         return {
             "success": True,
             "message": "ChatPack 51 already verified and active",
@@ -124,6 +217,22 @@ def verify_chatpack_payment(order_id, payment_id, signature, user_id):
     ))
 
     if verification.status != PaymentStatus.VERIFIED:
+        # Phase 4B -- payment_failed. Classified from the SAME request-
+        # shape facts RazorpayProvider.verify() itself checked -- never
+        # verification.message (provider-ish free text) -- so only a
+        # frozen FAILURE_REASONS value ever reaches properties.
+        # dedupe_key intentionally NULL.
+        if not order_id or not payment_id:
+            failure_reason = "invalid_input"
+        elif not signature:
+            failure_reason = "invalid_input"
+        else:
+            failure_reason = "signature_mismatch"
+        _emit_chatpack_event(
+            event_name="payment_failed",
+            entity_id=pack.id,
+            failure_reason=failure_reason,
+        )
         # Never grant entitlement for a payment that didn't verify --
         # the pack stays "pending"; nothing is credited.
         raise ValueError(
@@ -136,6 +245,19 @@ def verify_chatpack_payment(order_id, payment_id, signature, user_id):
     pack.verified_at = datetime.utcnow()
 
     db.session.commit()
+
+    # Phase 4B -- payment_verified: fired strictly after the success
+    # commit above. Dedupe keys off the real, non-sensitive Razorpay
+    # payment_id (safe to store as-is -- confirmed during Phase 4B
+    # Step 1 verification, unlike a Google Play purchase_token).
+    _emit_chatpack_event(
+        event_name="payment_verified",
+        entity_id=pack.id,
+        order_reference=order_id,
+        amount=pack.amount,
+        currency="INR",
+        dedupe_key=f"payment_verified:RAZORPAY:CHATPACK:{payment_id}",
+    )
 
     return {
         "success": True,

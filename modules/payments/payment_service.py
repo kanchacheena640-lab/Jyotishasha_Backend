@@ -132,7 +132,9 @@ this phase and are not implemented anywhere in this file.
 
 from __future__ import annotations
 
-from datetime import datetime
+import hashlib
+import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy.exc import IntegrityError
@@ -140,6 +142,7 @@ from sqlalchemy.exc import IntegrityError
 from extensions import db
 from models import Order
 from modules.models_processed_payments import ProcessedPayment
+from modules.payments.google_play_models import GooglePlayVerificationStatus
 from modules.payments.google_play_provider import GooglePlayProvider
 from modules.payments.order_service import OrderService, ReportDispatchError
 from modules.payments.payment_logger import log_payment_event, new_correlation_id
@@ -164,6 +167,13 @@ from modules.payments.subscription_purchase_models import (
 )
 from modules.subscription.subscription_service import SubscriptionService
 
+# Phase 4B -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from modules.payments/modules.subscription/modules.
+# entitlement (confirmed the same way Phase 4A's subscription
+# instrumentation confirmed it for modules.entitlement).
+from modules.activity_events.service import record_event
+
 # Subscription Purchase System -- S4, populated in S11. Google Play's
 # own product_id (configured in the Play Console) has no inherent
 # relationship to this codebase's own plan names -- there is no way to
@@ -187,6 +197,32 @@ from config.google_play_products import GOOGLE_PLAY_PRODUCT_TO_PLAN
 # renews/downgrades/revokes (all explicitly out of scope).
 _GOOGLE_PLAY_ACTIVATING_STATES = ("SUBSCRIPTION_STATE_ACTIVE",)
 _GOOGLE_PLAY_PENDING_STATES = ("SUBSCRIPTION_STATE_PENDING",)
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+# Phase 4B -- analytics-only purpose value for a payment that never goes
+# through PaymentPurpose at all (Ask Now's ChatPack flows bypass
+# PaymentService entirely -- see chat_pack_service.py/chatpack_google_
+# verify.py). NOT added to PaymentPurpose itself: that enum drives
+# _apply_business_effect()'s dispatch decision, and ChatPack has no
+# business dispatch here to affect. properties.purpose has no closed
+# enum in event_schemas.py (only failure_reason does), so this literal
+# needs no schema change.
+PAYMENT_PURPOSE_ASK_NOW_CHAT_PACK = "ASK_NOW_CHAT_PACK"
+
+# Phase 4B -- maps GooglePlayVerificationStatus (the provider's own
+# structured outcome, never raw error text) to the frozen FAILURE_
+# REASONS vocabulary (modules/activity_events/event_schemas.py). Every
+# value on the right already exists in that frozen set -- confirmed
+# before writing this mapping, per the design freeze's explicit
+# instruction not to widen event_schemas.py.
+_GOOGLE_FAILURE_REASON_BY_VERIFICATION_STATUS = {
+    GooglePlayVerificationStatus.INVALID_TOKEN: "invalid_input",
+    GooglePlayVerificationStatus.NOT_FOUND: "not_found",
+    GooglePlayVerificationStatus.AUTH_ERROR: "upstream_error",
+    GooglePlayVerificationStatus.NETWORK_ERROR: "upstream_error",
+    GooglePlayVerificationStatus.UNKNOWN_ERROR: "unknown",
+}
 
 
 class PaymentService:
@@ -233,6 +269,27 @@ class PaymentService:
             **log_ctx,
         )
         if result.status != PaymentStatus.VERIFIED:
+            # Phase 4B -- the ONLY structured PaymentStatus.FAILED return
+            # in this method. Never instruments the exception-raising
+            # branches below (verification_exception, idempotency_claim_
+            # exception, order_creation_failed, ReportDispatchError) --
+            # those are infrastructure/bug-shaped failures already fully
+            # captured by log_payment_event()'s own exc_info logging, not
+            # genuine payment-verification rejections.
+            if request.provider == PaymentProviderType.RAZORPAY:
+                failure_reason = self._classify_razorpay_failure(request)
+            elif request.provider == PaymentProviderType.GOOGLE_PLAY:
+                failure_reason = self._classify_google_failure(result)
+            else:
+                failure_reason = "unknown"
+            self._emit_payment_event(
+                event_name="payment_failed",
+                correlation_id=correlation_id,
+                provider=request.provider,
+                purpose=request.purpose,
+                profile_id=request.profile_id,
+                failure_reason=failure_reason,
+            )
             return result
 
         existing = self._find_processed_payment_logged(request, log_ctx)
@@ -317,6 +374,19 @@ class PaymentService:
             )
             raise
 
+        # Phase 4B -- captured from the ORIGINAL provider.verify() result
+        # (still `result` here), BEFORE the next line overwrites
+        # result.raw_payload with business_details. For Google Play this
+        # is the only safe extraction point left -- see
+        # _safe_google_order_reference()'s own docstring for why
+        # request.reference/result.reference must never be used instead.
+        if request.provider == PaymentProviderType.RAZORPAY:
+            order_reference = request.reference
+        elif request.provider == PaymentProviderType.GOOGLE_PLAY:
+            order_reference = self._safe_google_order_reference(result.raw_payload)
+        else:
+            order_reference = None
+
         # Callers (e.g. app.py's /webhook) need order_id/task_id to
         # reconstruct their existing response contract -- carried here
         # rather than adding a new field to PaymentVerificationResult,
@@ -327,6 +397,29 @@ class PaymentService:
         log_payment_event(
             "payment_processed", status="SUCCESS",
             order_id=business_details.get("order_id"), **log_ctx,
+        )
+
+        # Phase 4B -- the main payment_verified producer point: reached
+        # only after _apply_business_effect() (the SUBSCRIPTION/REPORT_
+        # PURCHASE business commit) AND _finalize_claim() have both
+        # already completed. Fires regardless of the SubscriptionPurchase
+        # Outcome (ACTIVATED/PENDING/NOT_ACTIVATED/UNMAPPED_PRODUCT/
+        # ACTIVATION_FAILED) -- payment_verified means the PAYMENT itself
+        # verified, never a stand-in for subscription_started (Phase 4A
+        # already reports that separately, from inside
+        # EntitlementWriteService, only when an entitlement write
+        # actually happens).
+        entity_type, entity_id = self._payment_entity(request, business_details)
+        self._emit_payment_event(
+            event_name="payment_verified",
+            correlation_id=correlation_id,
+            provider=request.provider,
+            purpose=request.purpose,
+            profile_id=request.profile_id,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            order_reference=order_reference,
+            dedupe_key=self._payment_verified_dedupe_key(request),
         )
         return result
 
@@ -347,6 +440,19 @@ class PaymentService:
             log_payment_event(
                 "retry_ignored_already_ready", status=PaymentStatus.DUPLICATE,
                 order_id=existing.order_id, **log_ctx,
+            )
+            # Phase 4B -- the ONE true "already processed, no new
+            # business effect will be applied" branch (report_stage is
+            # already "Ready"). REJECT and the lost-claim-race
+            # "duplicate_payment_in_progress" branch below are
+            # deliberately NOT instrumented here -- both are genuinely
+            # in-flight/ambiguous, not a confirmed duplicate.
+            self._emit_payment_event(
+                event_name="payment_duplicate_ignored",
+                correlation_id=log_ctx.get("correlation_id"),
+                provider=request.provider,
+                purpose=request.purpose,
+                profile_id=request.profile_id,
             )
             return self._duplicate_result(request, existing)
 
@@ -396,6 +502,66 @@ class PaymentService:
             db.session.commit()
             log_payment_event(
                 "retry_resumed", status="SUCCESS", order_id=resumed.order_id, **log_ctx,
+            )
+            # Phase 4B -- the SECOND payment_verified producer point,
+            # reached only when a retry was classified RESUME and this
+            # call actually won ownership and successfully redispatched.
+            #
+            # Semantic correction (pre-commit review): RESUME is
+            # recovery/resumption of DOWNSTREAM business processing
+            # (report generation) for a payment that was already
+            # provider-verified -- it is never a new payment
+            # verification. Proof, traced from this file's own code:
+            # _handle_retry() (and therefore RESUME) is only ever
+            # reached when _find_processed_payment_logged() already
+            # found an existing ProcessedPayment row for this exact
+            # (provider, payment_id); that row is only ever created by
+            # _try_claim(), which only ever runs after provider.verify()
+            # already returned VERIFIED for this same payment_id (see
+            # process_payment()'s own "if result.status != VERIFIED:
+            # return result" gate, well before _try_claim() is reached).
+            # RESUME's own action, redispatch_report_generation(), only
+            # re-triggers the report pipeline for the EXISTING order_id
+            # -- it never calls provider.verify() again and never
+            # creates a new ProcessedPayment claim. So RESUME and the
+            # main success path always represent the SAME one real
+            # provider payment, never two.
+            #
+            # dedupe_key is therefore the SAME canonical
+            # payment_verified:<provider>:<payment_id> identity the main
+            # path uses -- never a distinct RESUME-namespaced key. This
+            # is deliberate, not a re-introduced bug: one real payment
+            # must produce at most one canonical payment_verified row.
+            # If the main path's own attempt already persisted one
+            # (the common case -- dispatch itself returned without
+            # raising, so the main path reached its own emission before
+            # report_stage could ever later become "Failed"),
+            # record_event()'s own dedupe mechanism correctly makes
+            # this second attempt a no-op. If the main path's attempt
+            # never persisted one (e.g. a synchronous ReportDispatchError
+            # meant process_payment() re-raised before ever reaching its
+            # own emission line, or analytics itself failed at that
+            # moment), this RESUME emission correctly backfills the same
+            # canonical row -- still exactly one. RESUME only ever
+            # applies to an Order-backed (REPORT_PURCHASE) retry -- no
+            # fresh provider.verify() ran here, so there is no Google
+            # raw_payload available to source order_reference from;
+            # Razorpay's own request.reference remains safe and
+            # available regardless.
+            self._emit_payment_event(
+                event_name="payment_verified",
+                correlation_id=log_ctx.get("correlation_id"),
+                provider=request.provider,
+                purpose=request.purpose,
+                profile_id=request.profile_id,
+                entity_type="order",
+                entity_id=str(resumed.order_id),
+                order_reference=(
+                    request.reference
+                    if request.provider == PaymentProviderType.RAZORPAY
+                    else None
+                ),
+                dedupe_key=self._payment_verified_dedupe_key(request),
             )
             return PaymentVerificationResult(
                 status=PaymentStatus.VERIFIED,
@@ -854,3 +1020,149 @@ class PaymentService:
             message="Payment already processed; returning the existing result.",
             raw_payload=existing.response_payload,
         )
+
+    # ------------------------------------------------------------
+    # Phase 4B -- observational only. See _emit_payment_event()'s own
+    # docstring for the non-regression guarantee. Nothing below this
+    # point ever changes what process_payment()/_handle_retry() decide
+    # or return.
+    # ------------------------------------------------------------
+    @staticmethod
+    def _hash_google_purchase_token(purchase_token: str) -> str:
+        """Deterministic, one-way identifier for Google Play's
+        purchase_token -- a long-lived, replayable, credential-like
+        value (see payment_logger.py's own docstring) that must never
+        reach activity_events in raw form. The ONLY place this hash is
+        used is dedupe_key -- never properties, never entity_id, never
+        correlation_id. Stdlib hashlib only; no new dependency, no new
+        crypto abstraction."""
+        return hashlib.sha256(purchase_token.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _safe_google_order_reference(raw_payload: Optional[Dict[str, Any]]) -> Optional[str]:
+        """Google Play's own order_id (e.g. "GPA.xxxx-xxxx-xxxx-xxxxx"),
+        extracted from a GooglePlayProvider verification's raw_payload
+        dict. NEVER request.reference/result.reference -- for every
+        Google Play PaymentRequest built anywhere in this codebase
+        today (routes_google_purchase_confirm.py, routes_google_report_
+        confirm.py), that field is actually the purchase_token itself,
+        not an order id. Returns None -- never falls back to the token
+        -- when Google's response never carried an order_id."""
+        return (raw_payload or {}).get("order_id")
+
+    @staticmethod
+    def _classify_razorpay_failure(request: PaymentRequest) -> str:
+        """Mirrors RazorpayProvider.verify()'s own three FAILED
+        branches using the same request-shape facts that method itself
+        checks -- never parses result.message (provider-ish free
+        text). Returns a value already present in the frozen
+        FAILURE_REASONS vocabulary."""
+        if not request.reference or not request.payment_id:
+            return "invalid_input"
+        if request.metadata.get("source") == "webhook":
+            # The server-webhook path never carries/needs a checkout
+            # signature (see RazorpayProvider.verify()) -- a FAILED
+            # result reaching this point for that path is not a
+            # signature mismatch.
+            return "invalid_input"
+        if not request.signature:
+            return "invalid_input"
+        return "signature_mismatch"
+
+    @staticmethod
+    def _classify_google_failure(result: PaymentVerificationResult) -> str:
+        """Maps GooglePlayProvider's own structured verification_status
+        (never raw error text) to the frozen FAILURE_REASONS
+        vocabulary. Also covers the REPORT_PURCHASE-only case where
+        verification_status is VERIFIED but purchase_state is not the
+        purchased state (Canceled/Pending) -- Google itself declined to
+        complete this purchase, from this backend's perspective."""
+        raw = result.raw_payload or {}
+        verification_status = raw.get("verification_status")
+        if verification_status == GooglePlayVerificationStatus.VERIFIED:
+            return "provider_declined"
+        return _GOOGLE_FAILURE_REASON_BY_VERIFICATION_STATUS.get(verification_status, "unknown")
+
+    @staticmethod
+    def _payment_verified_dedupe_key(request: PaymentRequest) -> Optional[str]:
+        """Derived from the SAME stable provider payment identity
+        ProcessedPayment's own UNIQUE(provider, payment_id) already
+        uses for business-layer dedupe (Phase 4B design freeze -- see
+        payment_service.py's own module docstring). Razorpay's
+        payment_id is safe to use as-is; Google Play's payment_id is
+        the purchase_token and is ALWAYS hashed first -- never placed
+        into dedupe_key raw."""
+        if not request.payment_id:
+            return None
+        if request.provider == PaymentProviderType.RAZORPAY:
+            return f"payment_verified:RAZORPAY:{request.payment_id}"
+        if request.provider == PaymentProviderType.GOOGLE_PLAY:
+            return f"payment_verified:GOOGLE_PLAY:{PaymentService._hash_google_purchase_token(request.payment_id)}"
+        return None
+
+    @staticmethod
+    def _payment_entity(request: PaymentRequest, business_details: Dict[str, Any]):
+        """Only ever the entity this payment's own business_details
+        dict already, truthfully carries -- never fabricated, never an
+        extra lookup. REPORT_PURCHASE's business_details always has a
+        real Order.id. SUBSCRIPTION's SubscriptionPurchaseResult.to_dict()
+        carries no comparable stable row id at this layer -- the actual
+        SubscriptionEvent.id lives inside EntitlementWriteService,
+        already reported separately by Phase 4A's own subscription_*
+        events -- so entity stays (None, None) rather than guessing."""
+        if request.purpose == PaymentPurpose.REPORT_PURCHASE:
+            order_id = business_details.get("order_id")
+            if order_id is not None:
+                return "order", str(order_id)
+        return None, None
+
+    def _emit_payment_event(
+        self,
+        *,
+        event_name: str,
+        correlation_id: Optional[str],
+        provider: str,
+        purpose: str,
+        profile_id: Optional[int] = None,
+        entity_type: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        order_reference: Optional[str] = None,
+        failure_reason: Optional[str] = None,
+        dedupe_key: Optional[str] = None,
+    ) -> None:
+        """Called ONLY after this service's own authoritative business
+        commit for the request has already completed (see each call
+        site's own comment for exactly which commit). record_event()
+        (Phase 2, unmodified) already guarantees it never raises and
+        never touches db.session; this method is additionally wrapped
+        in its own try/except so an unexpected error in the small
+        amount of mapping logic above -- not in record_event() itself
+        -- can never propagate back into a caller whose
+        PaymentVerificationResult has already been decided. Purely
+        observational: nothing here can influence what is returned."""
+        properties: Dict[str, Any] = {"purpose": purpose, "provider": provider}
+        if order_reference is not None:
+            properties["order_reference"] = order_reference
+        if failure_reason is not None:
+            properties["failure_reason"] = failure_reason
+
+        try:
+            record_event(
+                event_name=event_name,
+                occurred_at=datetime.now(timezone.utc),
+                platform="backend_internal",
+                source="payment_service",
+                firebase_uid=None,
+                profile_id=profile_id,
+                correlation_id=correlation_id,
+                entity_type=entity_type,
+                entity_id=entity_id,
+                properties=properties,
+                dedupe_key=dedupe_key,
+            )
+        except Exception:
+            _activity_events_logger.warning(
+                "payment_service: unexpected error emitting %s (swallowed -- "
+                "the payment result already decided is unaffected)",
+                event_name, exc_info=True,
+            )
