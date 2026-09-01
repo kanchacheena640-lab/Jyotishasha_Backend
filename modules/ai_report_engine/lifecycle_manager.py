@@ -39,12 +39,21 @@ three universal `report_type` values:
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-from typing import Dict, Optional
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
 
 from modules.ai_report_engine.cache_repository import ReportCacheRepository
+from modules.ai_report_engine.exceptions import OpenAICallError
 from modules.ai_report_engine.generator_interface import GeneratedReport, ReportGenerator
 from modules.models_ai_reports import AIReport
+
+# Phase 4C -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from modules.ai_report_engine.
+from modules.activity_events.service import record_event
+
+_activity_events_logger = logging.getLogger("activity_events")
 
 
 class UnknownSegmentError(Exception):
@@ -112,6 +121,21 @@ class ReportLifecycleManager:
         except Exception as exc:
             if cache_row is not None:
                 self._repository.mark_failed(cache_row)
+                # Phase 4C -- report_generation_failed. Emitted ONLY here:
+                # cache_row already existed (a real, previously-persisted
+                # AIReport row) AND mark_failed() just durably committed
+                # its authoritative FAILED state above. A first-ever
+                # generation failure (cache_row is None) never reaches
+                # this branch at all -- no row exists to identify, so no
+                # event is emitted for it (see this method's own "if
+                # cache_row is not None" guard, unchanged).
+                self._emit_ai_report_event(
+                    event_name="report_generation_failed",
+                    row=cache_row,
+                    failure_reason=(
+                        "upstream_error" if isinstance(exc, OpenAICallError) else "unknown"
+                    ),
+                )
             raise ReportGenerationError(
                 f"Generation failed for profile_id={profile_id} segment={segment} "
                 f"report_type={report_type} language={language}"
@@ -144,6 +168,14 @@ class ReportLifecycleManager:
                 prompt_version=result.prompt_version,
                 generator_version=result.generator_version,
             )
+
+        # Phase 4C -- report_generation_completed. Emitted only after
+        # save_cache()/update_cache() has already returned, i.e. strictly
+        # after that repository call's own commit succeeded. A cached
+        # read that never reached this method's generation branch at all
+        # (the early `return cache_row.to_dict()` above) never emits
+        # anything -- there is nothing new to report.
+        self._emit_ai_report_event(event_name="report_generation_completed", row=row)
 
         return row.to_dict()
 
@@ -217,3 +249,86 @@ class ReportLifecycleManager:
                 f"Registered segments: {sorted(self._generators)}"
             )
         return generator
+
+    # ------------------------------------------------------------
+    # Phase 4C -- observational only. Called ONLY after the repository's
+    # own commit for this row (save_cache/update_cache/mark_failed) has
+    # already succeeded (see each call site). Never influences what
+    # get_report() returns or raises.
+    # ------------------------------------------------------------
+    def _emit_ai_report_event(
+        self,
+        *,
+        event_name: str,
+        row: AIReport,
+        failure_reason: Optional[str] = None,
+    ) -> None:
+        # This entire body -- not just the record_event() call -- is
+        # wrapped in one try/except, so nothing here (dict-building,
+        # dedupe formatting, timestamp conversion) can ever propagate
+        # into get_report()'s own caller merely because of an analytics
+        # bug.
+        try:
+            properties: Dict[str, Any] = {"report_type": row.report_type}
+            if failure_reason is not None:
+                properties["failure_reason"] = failure_reason
+
+            dedupe_key: Optional[str] = None
+            if event_name == "report_generation_completed" and row.generated_at is not None:
+                # AIReport.generated_at is overwritten fresh on every
+                # successful save_cache()/update_cache() -- a real,
+                # changing-per-attempt identity, persisted before this
+                # point (see this method's own call site). report_
+                # generation_failed deliberately gets NO dedupe_key:
+                # mark_failed() never touches generated_at, so repeated
+                # genuine failures on the same row are indistinguishable
+                # by any persisted timestamp -- see this file's own
+                # module-level design notes.
+                dedupe_key = (
+                    f"report_generation_completed:AI_REPORT:{row.id}:"
+                    f"{row.generated_at.isoformat()}"
+                )
+
+            # occurred_at: for report_generation_completed, AIReport.
+            # generated_at is a naive-UTC DateTime (this model's own
+            # datetime.utcnow() convention) that was JUST set by
+            # save_cache()/update_cache() to describe exactly this
+            # completion -- made explicitly timezone-aware here ONLY for
+            # this analytics call, never mutating the persisted business
+            # column itself. For report_generation_failed there is no
+            # equivalent persisted failure timestamp (mark_failed()
+            # never touches generated_at, which -- on a regeneration
+            # failure -- still holds the PRIOR successful generation's
+            # time, not this failure's) -- so the only honest value is
+            # the actual moment of this emission.
+            if event_name == "report_generation_completed" and row.generated_at is not None:
+                occurred_at = row.generated_at.replace(tzinfo=timezone.utc)
+            else:
+                occurred_at = datetime.now(timezone.utc)
+
+            record_event(
+                event_name=event_name,
+                occurred_at=occurred_at,
+                platform="backend_internal",
+                source="ai_report_lifecycle_manager",
+                firebase_uid=None,
+                profile_id=row.profile_id,
+                entity_type="ai_report",
+                entity_id=str(row.id),
+                properties=properties,
+                dedupe_key=dedupe_key,
+            )
+        except Exception:
+            # getattr(..., None) here, not row.id directly: this class
+            # accepts a `repository` via dependency injection (see
+            # __init__), and at least one existing test exercises
+            # get_report() with a duck-typed fake row that does not
+            # carry every AIReport attribute. This log line must never
+            # itself be the thing that lets an analytics failure escape
+            # this method.
+            _activity_events_logger.warning(
+                "ai_report_lifecycle_manager: unexpected error emitting %s "
+                "for AIReport.id=%s (swallowed -- the report result "
+                "already decided is unaffected)",
+                event_name, getattr(row, "id", None), exc_info=True,
+            )

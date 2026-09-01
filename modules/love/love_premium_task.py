@@ -4,9 +4,10 @@
 # This plugs Love Premium into the EXISTING report pipeline.
 # No change to old reports.
 
+import logging
 import os
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from openai import OpenAI
@@ -24,9 +25,74 @@ from app import app
 from modules.love.love_data_collector import collect_love_report_data
 from modules.love.love_prompt_builder import build_love_premium_prompt
 
+# Phase 4C -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from modules.love.
+from modules.activity_events.service import record_event
+
 load_dotenv()
 
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+
+def _emit_report_event(
+    *,
+    event_name,
+    order_id,
+    attempt_started_at,
+    report_type=None,
+    failure_reason=None,
+):
+    """Phase 4C -- observational only, called ONLY after this pipeline's
+    own authoritative report_stage commit for this attempt has already
+    completed (see each call site in generate_love_premium_report()).
+    Same contract as tasks.py's own _emit_report_event() (a separate,
+    intentionally-duplicated copy per the Phase 4C design freeze --
+    these two pipelines are not refactored together in this phase);
+    see that function's own docstring for the full non-regression
+    reasoning. This entire body -- not just the record_event() call --
+    is wrapped in one try/except so nothing here can ever propagate
+    into this Celery-task/thread's own outer except-Exception, which
+    would otherwise misclassify a genuinely successful report as
+    Failed. profile_id/firebase_uid are always None -- Order has no
+    profile/account identity column of any kind."""
+    try:
+        properties = {}
+        if report_type is not None:
+            properties["report_type"] = report_type
+        if failure_reason is not None:
+            properties["failure_reason"] = failure_reason
+
+        dedupe_key = None
+        if attempt_started_at is not None:
+            dedupe_key = f"{event_name}:ORDER:{order_id}:{attempt_started_at.isoformat()}"
+
+        if event_name == "report_generation_started" and attempt_started_at is not None:
+            occurred_at = attempt_started_at.replace(tzinfo=timezone.utc)
+        else:
+            occurred_at = datetime.now(timezone.utc)
+
+        record_event(
+            event_name=event_name,
+            occurred_at=occurred_at,
+            platform="backend_internal",
+            source="love_premium_report_task",
+            firebase_uid=None,
+            profile_id=None,
+            entity_type="order",
+            entity_id=str(order_id),
+            properties=properties,
+            dedupe_key=dedupe_key,
+        )
+    except Exception:
+        _activity_events_logger.warning(
+            "love_premium_task.py: unexpected error emitting %s for "
+            "Order.id=%s (swallowed -- the report pipeline's own "
+            "outcome is unaffected)",
+            event_name, order_id, exc_info=True,
+        )
 
 
 def generate_love_premium_report(order_id: int):
@@ -34,6 +100,11 @@ def generate_love_premium_report(order_id: int):
     END-TO-END Love Premium Report Generator
     (₹299 / ₹399 product)
     """
+    # Phase 4C -- captured once, the moment this invocation's own first
+    # report_stage="Processing" commit succeeds (below). See tasks.py's
+    # own _generate_and_send_report_core() for the full reasoning.
+    attempt_started_at = None
+
     try:
         with app.app_context():
 
@@ -51,6 +122,20 @@ def generate_love_premium_report(order_id: int):
             # reconciliation_service.py for how it's used.
             order.processing_started_at = datetime.utcnow()
             db.session.commit()
+            # Phase 4C -- report_generation_started. The ONE true
+            # "attempt started" moment for this invocation -- captured
+            # now, reused (never re-read from the column) for every
+            # later activity event this invocation emits. processing_
+            # started_at is rewritten again below as a progress
+            # heartbeat -- that later rewrite must NEVER be treated as
+            # a second "started".
+            attempt_started_at = order.processing_started_at
+            _emit_report_event(
+                event_name="report_generation_started",
+                order_id=order_id,
+                report_type=order.product,
+                attempt_started_at=attempt_started_at,
+            )
 
             language = getattr(order, "language", "en")
 
@@ -160,6 +245,18 @@ def generate_love_premium_report(order_id: int):
             order.pdf_url = output_path
             order.report_stage = "Ready"
             db.session.commit()
+            # Phase 4C -- report_generation_completed. Emitted only
+            # after the Ready commit above, strictly BEFORE the email
+            # send below -- same semantic boundary as tasks.py (a
+            # post-Ready email failure is caught by this function's own
+            # outer except, which already refuses to overwrite
+            # report_stage back to "Failed" once it is "Ready").
+            _emit_report_event(
+                event_name="report_generation_completed",
+                order_id=order_id,
+                report_type=order.product,
+                attempt_started_at=attempt_started_at,
+            )
 
             send_email(
                 order.email,
@@ -183,5 +280,19 @@ def generate_love_premium_report(order_id: int):
                 if order_model and order_model.report_stage != "Ready":
                     order_model.report_stage = "Failed"
                     db.session.commit()
+                    # Phase 4C -- report_generation_failed. failure_reason
+                    # is always "unknown" -- this pipeline has no typed
+                    # exception hierarchy to classify more precisely; raw
+                    # exception text/traceback is never persisted here.
+                    # attempt_started_at may legitimately be None (e.g.
+                    # "Order not found" raised before the Processing
+                    # commit was ever reached) -- dedupe_key is then None
+                    # rather than fabricated.
+                    _emit_report_event(
+                        event_name="report_generation_failed",
+                        order_id=order_id,
+                        attempt_started_at=attempt_started_at,
+                        failure_reason="unknown",
+                    )
         except Exception as state_write_error:
             print("[LOVE PREMIUM TASK ERROR] Could not record Failed report_stage:", state_write_error)

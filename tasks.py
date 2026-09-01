@@ -1,8 +1,9 @@
+import logging
 import os
 import re
 import sys
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from extensions import db
 from models import Order
@@ -13,6 +14,88 @@ from transit_engine import get_current_positions
 from openai import OpenAI
 from kundali_chart_generator import generate_kundali_drawing
 from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
+
+# Phase 4C -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from tasks.py.
+from modules.activity_events.service import record_event
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+
+def _emit_report_event(
+    *,
+    event_name,
+    order_id,
+    attempt_started_at,
+    report_type=None,
+    failure_reason=None,
+):
+    """Phase 4C -- observational only, called ONLY after this pipeline's
+    own authoritative report_stage commit for this attempt has already
+    completed (see each call site in _generate_and_send_report_core()).
+    record_event() (Phase 2, unmodified) already guarantees it never
+    raises and never touches db.session; this helper is additionally
+    wrapped in its own try/except so an unexpected error in the small
+    amount of dict-building above can never propagate into the
+    Celery-task/thread caller -- it must never mark a successful report
+    Failed, prevent Ready, trigger a retry, or otherwise alter the
+    report pipeline. profile_id/firebase_uid are always None -- Order
+    has no profile/account identity column of any kind (confirmed,
+    Phase 4C Step 1 audit); no identity bridge is introduced.
+    attempt_started_at is the LOCAL value captured once, at the moment
+    this invocation's own first report_stage="Processing" commit
+    succeeded -- never re-read from order.processing_started_at later,
+    since that column is rewritten mid-attempt as a progress heartbeat
+    (see the "Processing" commit's own comment below)."""
+    # This entire body -- not just the record_event() call -- is wrapped
+    # in one try/except. This function runs inside a Celery task/daemon
+    # thread whose OWN outer except-Exception (see
+    # _generate_and_send_report_core()) would otherwise misclassify a
+    # genuinely successful report as report_stage="Failed" if anything
+    # here raised -- an analytics-only bug must never be able to do
+    # that, so nothing below this line is allowed to escape.
+    try:
+        properties = {}
+        if report_type is not None:
+            properties["report_type"] = report_type
+        if failure_reason is not None:
+            properties["failure_reason"] = failure_reason
+
+        dedupe_key = None
+        if attempt_started_at is not None:
+            dedupe_key = f"{event_name}:ORDER:{order_id}:{attempt_started_at.isoformat()}"
+
+        # report_generation_started's occurred_at is the real, persisted
+        # attempt-start moment (made explicitly timezone-aware ONLY for
+        # this analytics call, never mutating the persisted naive-UTC
+        # business column). completed/failed have no equivalent
+        # persisted timestamp at this seam (Order has no "completed_at"/
+        # "failed_at" column, and none is invented here) -- their
+        # occurred_at is the actual moment of this emission.
+        if event_name == "report_generation_started" and attempt_started_at is not None:
+            occurred_at = attempt_started_at.replace(tzinfo=timezone.utc)
+        else:
+            occurred_at = datetime.now(timezone.utc)
+
+        record_event(
+            event_name=event_name,
+            occurred_at=occurred_at,
+            platform="backend_internal",
+            source="report_generation_task",
+            firebase_uid=None,
+            profile_id=None,
+            entity_type="order",
+            entity_id=str(order_id),
+            properties=properties,
+            dedupe_key=dedupe_key,
+        )
+    except Exception:
+        _activity_events_logger.warning(
+            "tasks.py: unexpected error emitting %s for Order.id=%s "
+            "(swallowed -- the report pipeline's own outcome is unaffected)",
+            event_name, order_id, exc_info=True,
+        )
 
 
 # ------------------------------------------------------------
@@ -41,6 +124,15 @@ def _generate_and_send_report_core(order_id):
     """Shared report generation logic for both Celery and direct modes."""
     from modules.love.love_report_router import route_report_generation
     print(f"[Task] Starting report generation for Order ID: {order_id}")
+
+    # Phase 4C -- captured once, the moment this invocation's own first
+    # report_stage="Processing" commit succeeds (below). Stays None if
+    # that commit is never reached/never happens (e.g. the Order.query.
+    # get(order_id) race the existing `if order_model:` guard already
+    # defends against) -- in that case no activity event is emitted
+    # anywhere in this invocation rather than fabricating an attempt
+    # identity that was never truthfully established.
+    attempt_started_at = None
 
     try:
         with app.app_context():
@@ -72,6 +164,21 @@ def _generate_and_send_report_core(order_id):
                 # has no other liveness signal). See reconciliation_service.py.
                 order_model.processing_started_at = datetime.utcnow()
                 db.session.commit()
+                # Phase 4C -- report_generation_started. This is the ONE
+                # true "attempt started" moment for this invocation --
+                # captured into a local variable now, immediately after
+                # the commit, and reused (never re-read from the column)
+                # for every later activity event this invocation emits.
+                # This column is rewritten again below as a progress
+                # heartbeat after the GPT call returns -- that later
+                # rewrite must NEVER be treated as a second "started".
+                attempt_started_at = order_model.processing_started_at
+                _emit_report_event(
+                    event_name="report_generation_started",
+                    order_id=order_id,
+                    report_type=product,
+                    attempt_started_at=attempt_started_at,
+                )
 
             language = order.get("language", "en")
             print(f"[DEBUG] Language for this order: {language}")
@@ -177,6 +284,21 @@ def _generate_and_send_report_core(order_id):
                 order_model.pdf_url = output_path
                 order_model.report_stage = "Ready"
                 db.session.commit()
+                # Phase 4C -- report_generation_completed. Emitted only
+                # after the Ready commit above, and strictly BEFORE the
+                # email send below -- report_generation_completed means
+                # the report itself was generated, independent of
+                # whether delivery afterward succeeds (a post-Ready email
+                # failure is caught by this function's own outer except
+                # below, which already refuses to overwrite report_stage
+                # back to "Failed" once it is "Ready" -- see that
+                # handler's own guard).
+                _emit_report_event(
+                    event_name="report_generation_completed",
+                    order_id=order_id,
+                    report_type=product,
+                    attempt_started_at=attempt_started_at,
+                )
 
             subject = f"Your {product_slug.replace('-', ' ').title()} Report"
             body = (
@@ -201,6 +323,25 @@ def _generate_and_send_report_core(order_id):
                 if order_model and order_model.report_stage != "Ready":
                     order_model.report_stage = "Failed"
                     db.session.commit()
+                    # Phase 4C -- report_generation_failed. Emitted only
+                    # after the Failed commit actually happened above --
+                    # if the existing guard above skipped it (report_
+                    # stage was already "Ready", or order_model is None),
+                    # this event is correctly never emitted either.
+                    # failure_reason is always "unknown" -- this pipeline
+                    # has no typed exception hierarchy to classify more
+                    # precisely (Phase 4C Step 1 audit finding), and raw
+                    # exception text/traceback is never persisted here.
+                    # attempt_started_at may legitimately be None (the
+                    # exception happened before this invocation's own
+                    # "Processing" commit was ever reached) -- in that
+                    # case dedupe_key is None rather than fabricated.
+                    _emit_report_event(
+                        event_name="report_generation_failed",
+                        order_id=order_id,
+                        attempt_started_at=attempt_started_at,
+                        failure_reason="unknown",
+                    )
         except Exception as state_write_error:
             print(f"[Task] ⚠️ Could not record Failed report_stage: {state_write_error}")
 
