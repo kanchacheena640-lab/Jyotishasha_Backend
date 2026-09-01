@@ -92,7 +92,7 @@ from modules.models_premium_subscription import CurrentEntitlement
 from modules.entitlement.entitlement_service import EntitlementService
 
 from modules.alerts.alert_ai_content_service import ensure_ai_content_for_selected_rows
-from modules.alerts.alert_delivery_service import deliver_alert
+from modules.alerts.alert_delivery_service import deliver_alert, _emit_alert_notification_events
 from modules.alerts.entitlement_gate import has_alerts_access
 from modules.alerts.notification_content_adapter import AlertContentError, build_alert_notification_content
 from modules.alerts.persistence_repository import AlertPersistenceRepository
@@ -431,6 +431,18 @@ def _process_one_profile(
             )
             if bell_row is not None:
                 summary.alerts_bell_only += 1
+                # Phase 4D.1 -- emitted only after record_bell_only()'s
+                # own commit has already succeeded AND actually returned
+                # a newly-created row (None means its own idempotency
+                # check found an existing active row and inserted
+                # nothing -- correctly no event then). No FCM interaction
+                # happens on this path at all, so emit_sent=False --
+                # never a notification_sent for a bell-only row. Reuses
+                # alert_delivery_service.py's own private emitter (this
+                # module already imports that file for deliver_alert(),
+                # so this adds no new dependency edge) rather than
+                # duplicating the analytics logic here.
+                _emit_alert_notification_events(user_notification=bell_row, emit_sent=False)
 
         # ---- 6/7. Deliver each SELECTED-AND-GLOBALLY-BUDGETED alert --
         # deliver_alert() (Phase 4/5, unmodified) remains the SOLE

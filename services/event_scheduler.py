@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timezone, timedelta, time
 from factory import create_app
@@ -27,7 +28,84 @@ from services.attention_policy import (
     tier_for_event_scheduler_type,
 )
 
+# Phase 4D -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from services.
+from modules.activity_events.service import record_event
+
+_activity_events_logger = logging.getLogger("activity_events")
+
 IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def _emit_scheduler_notification_events(*, rows_this_commit, slot):
+    """Phase 4D -- observational only, called ONLY after this user's own
+    db.session.commit() (inside run_daily_event_job()) has already
+    succeeded. `rows_this_commit` is a list of (UserNotification, ntype,
+    was_pushed) tuples -- one entry per row actually included in that
+    commit, for approved (was_pushed=True -- both events) and bell_only
+    (was_pushed=False -- notification_created only) candidates. Never
+    called for a failed send or a dropped candidate -- neither ever
+    creates a row. Each row's own emission is independently wrapped so
+    one failure can never prevent the rest of the batch -- or the outer
+    scheduler/user-pagination loop -- from continuing."""
+    for user_notification, ntype, was_pushed in rows_this_commit:
+        entity_id = str(user_notification.id)
+        occurred_at = (
+            user_notification.created_at.replace(tzinfo=timezone.utc)
+            if user_notification.created_at is not None
+            else datetime.now(timezone.utc)
+        )
+        notification_context = {"notification_id": entity_id, "slot": slot}
+
+        try:
+            record_event(
+                event_name="notification_created",
+                occurred_at=occurred_at,
+                platform="backend_internal",
+                source="event_scheduler",
+                firebase_uid=None,
+                profile_id=user_notification.user_id,
+                entity_type="notification",
+                entity_id=entity_id,
+                properties={"notification_type": ntype, "target_scope": "personal"},
+                notification_context=notification_context,
+                dedupe_key=f"notification_created:{entity_id}",
+            )
+        except Exception:
+            _activity_events_logger.warning(
+                "event_scheduler: unexpected error emitting notification_created "
+                "for UserNotification.id=%s (swallowed -- the notification result "
+                "already decided is unaffected)",
+                entity_id, exc_info=True,
+            )
+
+        if not was_pushed:
+            # Bell-only: no FCM interaction happened at all -- never a
+            # notification_sent.
+            continue
+
+        try:
+            record_event(
+                event_name="notification_sent",
+                occurred_at=datetime.now(timezone.utc),
+                platform="backend_internal",
+                source="event_scheduler",
+                firebase_uid=None,
+                profile_id=user_notification.user_id,
+                entity_type="notification",
+                entity_id=entity_id,
+                properties={},
+                notification_context=notification_context,
+                dedupe_key=f"notification_sent:{entity_id}",
+            )
+        except Exception:
+            _activity_events_logger.warning(
+                "event_scheduler: unexpected error emitting notification_sent "
+                "for UserNotification.id=%s (swallowed -- the notification result "
+                "already decided is unaffected)",
+                entity_id, exc_info=True,
+            )
 
 # The morning Panchang notification auto-dismisses (Bell + tray) at this
 # IST hour on the same day it was sent, even if the user never taps it.
@@ -239,6 +317,9 @@ def run_daily_event_job():
                     seen_events = set()
                     user_sent = 0
                     user_wrote_anything = False
+                    # Phase 4D -- rows actually staged for THIS user's
+                    # commit this run: (UserNotification, ntype, was_pushed).
+                    notification_rows_this_commit = []
 
                     # 🔥 N4 -- PASS 1: compute expiry/identity for every
                     # candidate exactly as before N4, and run the SAME
@@ -466,14 +547,16 @@ def run_daily_event_job():
                             ))
 
                             # 🔹 SAVE USER NOTIFICATION (Bell UI)
-                            db.session.add(UserNotification(
+                            notif = UserNotification(
                                 user_id=user.id,
                                 title=c["n"].get("title"),
                                 body=c["n"].get("body"),
                                 data=c["data"],
                                 is_read=False,
                                 expires_at=c["expires_at"]
-                            ))
+                            )
+                            db.session.add(notif)
+                            notification_rows_this_commit.append((notif, c["ntype"], True))
                         # A push that was attempted (token existed) but
                         # failed (`success is False`) is intentionally
                         # NOT logged/persisted here -- exactly the
@@ -501,14 +584,16 @@ def run_daily_event_job():
                             event_id=c["event_id"],
                             slot=slot
                         ))
-                        db.session.add(UserNotification(
+                        bell_notif = UserNotification(
                             user_id=user.id,
                             title=c["n"].get("title"),
                             body=c["n"].get("body"),
                             data=bell_only_data,
                             is_read=False,
                             expires_at=c["expires_at"]
-                        ))
+                        )
+                        db.session.add(bell_notif)
+                        notification_rows_this_commit.append((bell_notif, c["ntype"], False))
                         user_wrote_anything = True
 
                     # selection.dropped: Tier 3 / routine candidates
@@ -530,6 +615,16 @@ def run_daily_event_job():
                     # in the retention trim below.
                     if user_wrote_anything:
                         db.session.commit()
+
+                        # Phase 4D -- emitted only after the commit above
+                        # has already succeeded, so every row here is
+                        # real and durable. Never allowed to alter user/
+                        # scheduler state -- see
+                        # _emit_scheduler_notification_events()'s own
+                        # per-row isolation.
+                        _emit_scheduler_notification_events(
+                            rows_this_commit=notification_rows_this_commit, slot=slot,
+                        )
 
                         # 🔥 KEEP ONLY LAST 10 NOTIFICATIONS PER USER
                         # Runs ONCE per user, after their inserts are

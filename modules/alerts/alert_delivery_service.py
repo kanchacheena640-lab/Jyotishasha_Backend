@@ -35,8 +35,9 @@ across profiles, with its own batching/concurrency handling.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from services.notification_engine import send_push_notification
@@ -48,6 +49,85 @@ from modules.alerts.entitlement_gate import has_alerts_access
 from modules.alerts.exceptions import AlertsEngineError
 from modules.alerts.notification_content_adapter import AlertContentError, build_alert_notification_content
 from modules.alerts.persistence_repository import AlertPersistenceError, AlertPersistenceRepository
+
+# Phase 4D -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from modules.alerts.
+from modules.activity_events.service import record_event
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+
+def _emit_alert_notification_events(*, user_notification, emit_sent=True):
+    """Phase 4D -- observational only, called ONLY after the caller's
+    own authoritative commit has already succeeded: deliver_alert()
+    below (via repository.finalize_delivery(), reached only after a
+    CONFIRMED successful FCM send -- emit_sent defaults to True, its
+    original behavior, unchanged for that call site) and, as of Phase
+    4D.1, modules/alerts/alerts_scheduler.py (via
+    repository.record_bell_only() -- no FCM interaction happens for
+    that path at all, so it calls this with emit_sent=False; reused
+    here rather than duplicated, since alerts_scheduler.py already
+    imports this module for deliver_alert() -- no new dependency edge).
+    Each event's own emission is independently wrapped so one failure
+    never prevents the other, and neither can ever propagate back into
+    the caller's own business result."""
+    entity_id = str(user_notification.id)
+    occurred_at = (
+        user_notification.created_at.replace(tzinfo=timezone.utc)
+        if user_notification.created_at is not None
+        else datetime.now(timezone.utc)
+    )
+    notification_context = {"notification_id": entity_id}
+
+    try:
+        record_event(
+            event_name="notification_created",
+            occurred_at=occurred_at,
+            platform="backend_internal",
+            source="alert_delivery_service",
+            firebase_uid=None,
+            profile_id=user_notification.user_id,
+            entity_type="notification",
+            entity_id=entity_id,
+            properties={"notification_type": "alert", "target_scope": "personal"},
+            notification_context=notification_context,
+            dedupe_key=f"notification_created:{entity_id}",
+        )
+    except Exception:
+        _activity_events_logger.warning(
+            "alert_delivery_service: unexpected error emitting notification_created "
+            "for UserNotification.id=%s (swallowed -- the delivery result already "
+            "decided is unaffected)",
+            entity_id, exc_info=True,
+        )
+
+    if not emit_sent:
+        # Bell-only: no FCM interaction happened at all -- never a
+        # notification_sent.
+        return
+
+    try:
+        record_event(
+            event_name="notification_sent",
+            occurred_at=datetime.now(timezone.utc),
+            platform="backend_internal",
+            source="alert_delivery_service",
+            firebase_uid=None,
+            profile_id=user_notification.user_id,
+            entity_type="notification",
+            entity_id=entity_id,
+            properties={},
+            notification_context=notification_context,
+            dedupe_key=f"notification_sent:{entity_id}",
+        )
+    except Exception:
+        _activity_events_logger.warning(
+            "alert_delivery_service: unexpected error emitting notification_sent "
+            "for UserNotification.id=%s (swallowed -- the delivery result already "
+            "decided is unaffected)",
+            entity_id, exc_info=True,
+        )
 
 
 @dataclass(frozen=True)
@@ -183,7 +263,7 @@ def deliver_alert(
     # again is safe/idempotent -- it re-reads the row and re-writes the
     # same last_delivered_at/content).
     try:
-        repository.finalize_delivery(
+        user_notification = repository.finalize_delivery(
             profile_id=profile_id, event_id=event_id,
             notification_title=content["title"], notification_body=content["body"],
             notification_data=content["data"], delivered_at=now,
@@ -195,6 +275,12 @@ def deliver_alert(
                    f"and Bell insert both rolled back, not partially applied): {exc}",
             profile_id=profile_id, event_id=event_id, severity=eligibility.severity,
         )
+
+    # Phase 4D -- emitted only after finalize_delivery()'s own commit
+    # above has already succeeded, so user_notification.id is real and
+    # durable. Never allowed to alter this function's own return value
+    # -- see _emit_alert_notification_events()'s own per-event isolation.
+    _emit_alert_notification_events(user_notification=user_notification)
 
     return AlertDeliveryResult(
         sent=True, stage="delivered", reason="sent",

@@ -558,7 +558,7 @@ class AlertPersistenceRepository:
         notification_body: str,
         notification_data: dict,
         delivered_at: Optional[datetime] = None,
-    ) -> AlertMicroEvent:
+    ) -> UserNotification:
         """
         Called EXCLUSIVELY by
         modules/alerts/alert_delivery_service.py::deliver_alert(), and
@@ -570,6 +570,17 @@ class AlertPersistenceRepository:
         with `profile_id`, matching that existing code's own
         convention of using AppUser.id despite the column's generic
         name). Either both writes land, or neither does.
+
+        Phase 4D -- returns the committed UserNotification row (not the
+        AlertMicroEvent, as before), so the caller can emit
+        notification_created/notification_sent against the real durable
+        recipient entity. Purely a return-value change: every existing
+        caller (deliver_alert(), and every direct test call) already
+        ignores this method's return value entirely (verified before
+        making this change) -- the AlertMicroEvent row is still fully
+        read, mutated, and committed exactly as before; no query, no
+        transaction boundary, no additional write, and no other
+        business semantic here is touched.
 
         N2 (lifecycle/expiry): the inserted UserNotification row's
         `expires_at` is derived from THIS row's own `active_until`
@@ -607,14 +618,15 @@ class AlertPersistenceRepository:
             )
 
         row.last_delivered_at = delivered_at
-        db.session.add(UserNotification(
+        user_notification = UserNotification(
             user_id=profile_id,
             title=notification_title,
             body=notification_body,
             data=notification_data,
             is_read=False,
             expires_at=expiry_for_alert_notification(active_until=row.active_until),
-        ))
+        )
+        db.session.add(user_notification)
         try:
             db.session.commit()
         except Exception as exc:
@@ -624,7 +636,7 @@ class AlertPersistenceRepository:
                 f"event_id={event_id!r} (last_delivered_at update and Bell "
                 f"insert both rolled back): {exc}"
             ) from exc
-        return row
+        return user_notification
 
     def record_bell_only(
         self,
