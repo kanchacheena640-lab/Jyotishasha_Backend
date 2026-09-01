@@ -57,6 +57,7 @@ State transitions implemented here:
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -72,11 +73,37 @@ from modules.entitlement.subscription_sections import SUBSCRIPTION_SECTIONS
 from modules.entitlement.entitlement_write_models import EntitlementWriteResult
 from modules.entitlement.plan_access_policy import ACCESS_SELECTED, PLAN_SEGMENT_ACCESS
 
+# Phase 4A -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from modules.entitlement/modules.models_premium_
+# subscription.
+from modules.activity_events.service import record_event
+
 DEFAULT_TRIAL_DURATION_DAYS = 7
 
 # Statuses that mean "this profile is currently paying" -- start_trial
 # must never overwrite either of these.
 _ACTIVE_SUBSCRIPTION_STATUSES = ("ACTIVE", "GRACE")
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+# Phase 4A -- fixed, explicit mapping from the existing SubscriptionEvent.
+# event_type to the frozen canonical activity event name. Deliberately
+# does NOT include SUBSCRIPTION_PENDING_CREATED: BUSINESS_FLOW_NOT_
+# IMPLEMENTED per the Phase 4 Step 1 audit -- no code path in this file
+# ever constructs a SubscriptionEvent with that event_type, and this
+# mapping must not manufacture an activity event for it. An event_type
+# with no entry here is silently not emitted (see _emit_activity_event).
+_CANONICAL_ACTIVITY_EVENT_BY_TYPE = {
+    "TRIAL_STARTED": "subscription_trial_started",
+    "TRIAL_EXPIRED": "subscription_trial_expired",
+    "SUBSCRIPTION_STARTED": "subscription_started",
+    "SUBSCRIPTION_RENEWED": "subscription_renewed",
+    "SUBSCRIPTION_GRACE_ENTERED": "subscription_grace_entered",
+    "SUBSCRIPTION_EXPIRED": "subscription_expired",
+    "SUBSCRIPTION_CANCELLED": "subscription_cancelled",
+    "SUBSCRIPTION_REFUNDED": "subscription_refunded",
+}
 
 
 class EntitlementWriteService:
@@ -133,6 +160,7 @@ class EntitlementWriteService:
             row.last_event_id = event.id
 
             db.session.commit()
+            self._emit_activity_event(event)
             return EntitlementWriteResult(
                 success=True,
                 action="TRIAL_STARTED",
@@ -188,6 +216,7 @@ class EntitlementWriteService:
             row.last_event_id = event.id
 
             db.session.commit()
+            self._emit_activity_event(event)
             return EntitlementWriteResult(
                 success=True,
                 action="TRIAL_EXPIRED",
@@ -377,6 +406,7 @@ class EntitlementWriteService:
         row.last_event_id = event.id
 
         db.session.commit()
+        self._emit_activity_event(event)
         return EntitlementWriteResult(
             success=True,
             action="SUBSCRIPTION_ACTIVATED",
@@ -443,6 +473,7 @@ class EntitlementWriteService:
             row.last_event_id = event.id
 
             db.session.commit()
+            self._emit_activity_event(event)
             return EntitlementWriteResult(
                 success=True,
                 action="SUBSCRIPTION_RENEWED",
@@ -486,6 +517,7 @@ class EntitlementWriteService:
             row.last_event_id = event.id
 
             db.session.commit()
+            self._emit_activity_event(event)
             return EntitlementWriteResult(
                 success=True,
                 action="GRACE_ENTERED",
@@ -527,6 +559,7 @@ class EntitlementWriteService:
             row.last_event_id = event.id
 
             db.session.commit()
+            self._emit_activity_event(event)
             return EntitlementWriteResult(
                 success=True,
                 action="GRACE_EXITED_EXPIRED",
@@ -582,6 +615,7 @@ class EntitlementWriteService:
             row.last_event_id = event.id
 
             db.session.commit()
+            self._emit_activity_event(event)
             return EntitlementWriteResult(
                 success=True,
                 action="SUBSCRIPTION_CANCELLED",
@@ -626,6 +660,7 @@ class EntitlementWriteService:
             row.last_event_id = event.id
 
             db.session.commit()
+            self._emit_activity_event(event)
             return EntitlementWriteResult(
                 success=True,
                 action="SUBSCRIPTION_EXPIRED",
@@ -678,6 +713,7 @@ class EntitlementWriteService:
             row.last_event_id = event.id
 
             db.session.commit()
+            self._emit_activity_event(event)
             return EntitlementWriteResult(
                 success=True,
                 action="SUBSCRIPTION_REFUNDED",
@@ -692,6 +728,64 @@ class EntitlementWriteService:
         except Exception:
             db.session.rollback()
             raise
+
+    # ------------------------------------------------------------
+    # Phase 4A -- observational only. Called ONLY after this service's
+    # own db.session.commit() has already succeeded (see each public
+    # method above) -- never before, never inside that transaction.
+    # ------------------------------------------------------------
+    def _emit_activity_event(self, event: SubscriptionEvent) -> None:
+        """Records an ALREADY-COMMITTED SubscriptionEvent row to the
+        activity_events ledger. record_event() (Phase 2, unmodified)
+        already guarantees it never raises and never touches
+        db.session; this method is additionally wrapped in its own
+        try/except so that even an unexpected error in the
+        mapping/dedupe logic below -- not in record_event() itself --
+        can never propagate back into a business method whose
+        entitlement/SubscriptionEvent write has already durably
+        committed. Purely observational: the return value is discarded
+        and nothing here can influence the EntitlementWriteResult
+        already being returned to the caller."""
+        canonical_name = _CANONICAL_ACTIVITY_EVENT_BY_TYPE.get(event.event_type)
+        if canonical_name is None:
+            # e.g. SUBSCRIPTION_PENDING_CREATED (not currently
+            # constructed anywhere) or any future event_type this
+            # mapping hasn't been extended for -- not emitted, never
+            # invented.
+            return
+
+        properties = {}
+        if event.plan is not None:
+            properties["plan"] = event.plan
+        if event.store is not None:
+            properties["store"] = event.store
+
+        try:
+            record_event(
+                event_name=canonical_name,
+                # SubscriptionEvent.created_at is naive-UTC (this
+                # model's own datetime.utcnow() convention) -- made
+                # explicitly timezone-aware here rather than relying on
+                # implicit DB-session-timezone behavior for
+                # ActivityEvent.occurred_at's DateTime(timezone=True)
+                # column.
+                occurred_at=event.created_at.replace(tzinfo=timezone.utc),
+                platform="backend_internal",
+                source="entitlement_write_service",
+                firebase_uid=None,
+                profile_id=event.profile_id,
+                entity_type="subscription_event",
+                entity_id=str(event.id),
+                properties=properties,
+                dedupe_key=f"subscription:{canonical_name}:{event.id}",
+            )
+        except Exception:
+            _activity_events_logger.warning(
+                "entitlement_write_service: unexpected error emitting %s for "
+                "SubscriptionEvent.id=%s (swallowed -- the entitlement write "
+                "already committed successfully and is unaffected)",
+                canonical_name, event.id, exc_info=True,
+            )
 
     # ------------------------------------------------------------
     # Internal: the only place a SubscriptionEvent is constructed.
