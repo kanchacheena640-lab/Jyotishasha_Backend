@@ -76,7 +76,7 @@ import re
 # ---------------------------------------------------------------------
 _FORBIDDEN_KEY_SUBSTRINGS = (
     "email", "phone", "mobile", "dob", "tob", "pob",
-    "lat", "lng", "latitude", "longitude", "birth",
+    "latitude", "longitude", "birth",
     "token", "password", "secret", "auth", "jwt", "credential",
     "card", "cvv", "upi", "account_number",
     "question", "answer", "prompt", "response_text", "report_content",
@@ -91,6 +91,26 @@ _FORBIDDEN_NAME_KEY_SUBSTRINGS = (
     "full_name", "first_name", "last_name", "person_name",
     "customer_name", "contact_name", "display_name", "user_name",
 )
+
+# Phase 4E.1 -- same false-positive class as _FORBIDDEN_NAME_KEY_SUBSTRINGS
+# above, same fix shape. "lat"/"lng" (the short latitude/longitude
+# abbreviations -- e.g. birth_lat, user_lat, geo_lat, lng) used to live
+# in the generic substring list, but as BARE substrings they also
+# matched any key merely containing those three/three letters anywhere,
+# including asknow_answer_delivered's own frozen, safe, numeric
+# "latency_ms" property (confirmed: it is the only property in this
+# entire EVENT_SCHEMAS registry containing "lat"/"lng" as a substring --
+# checked before making this change, not assumed). "latitude"/
+# "longitude" themselves stay in the generic list above unchanged --
+# full words, no known collision. Narrowed here to a whole-TOKEN match
+# (splitting each key on non-alphanumeric characters, e.g. "_") so
+# "lat"/"lng" only fire when they are their own standalone token --
+# every required real-world geo key shape (lat, latitude, user_lat,
+# birth_lat, birth_latitude, location_lat, geo_lat, lng, longitude, ...)
+# still contains a "lat"/"lng" token (or matches "latitude"/"longitude"
+# above) and stays blocked; "latency_ms" tokenizes to ("latency", "ms"),
+# neither of which equals "lat" or "lng".
+_FORBIDDEN_SHORT_GEO_TOKENS = ("lat", "lng")
 
 _EMAIL_RE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 # Phase 3 Step 6 correction: lower bound raised from 8 to 10 digits.
@@ -113,7 +133,13 @@ def _key_is_forbidden(key: str) -> bool:
     lowered = key.lower()
     if any(term in lowered for term in _FORBIDDEN_KEY_SUBSTRINGS):
         return True
-    return any(term in lowered for term in _FORBIDDEN_NAME_KEY_SUBSTRINGS)
+    if any(term in lowered for term in _FORBIDDEN_NAME_KEY_SUBSTRINGS):
+        return True
+    # See _FORBIDDEN_SHORT_GEO_TOKENS's own comment: "lat"/"lng" are
+    # only forbidden as a standalone token, never as an incidental
+    # substring (e.g. "latency_ms").
+    tokens = re.split(r"[^a-z0-9]+", lowered)
+    return any(token in _FORBIDDEN_SHORT_GEO_TOKENS for token in tokens)
 
 
 def _value_looks_like_pii(value) -> bool:

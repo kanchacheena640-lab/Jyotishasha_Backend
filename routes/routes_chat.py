@@ -95,7 +95,12 @@ change their body back to `user_id = _authenticated_user_id()` --
 i.e. revert this section verbatim to what Trust Foundation Phase 0
 already built. Nothing else in this file needs to change.
 """
+import logging
 import os
+import time
+from datetime import datetime, timezone
+
+from openai import APITimeoutError
 
 from modules.services.chatpack_google_verify import verify_google_chatpack
 from flask import Blueprint, request, jsonify, current_app
@@ -106,6 +111,11 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from notifications.notification_routes import admin_required
 
 from extensions import db
+
+# Phase 4E -- the existing, unmodified Phase-2 ledger write path. This
+# import introduces no circular dependency: modules.activity_events.*
+# imports nothing from routes.
+from modules.activity_events.service import record_event
 
 # Services
 from modules.services.chat_engine import chat_engine
@@ -124,6 +134,53 @@ from modules.services.chat_pack_service import (
 )
 
 routes_chat = Blueprint("routes_chat", __name__)
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+
+def _emit_asknow_event(*, event_name, source, latency_ms=None, failure_reason=None):
+    """Phase 4E -- observational only. Called ONLY after the relevant
+    business state for this event has already been durably reached:
+    asknow_question_submitted after use_free_quota()/deduct_question()
+    already committed; asknow_answer_delivered after chat_engine()
+    already returned successfully; asknow_answer_failed after the
+    existing credit-compensation attempt has already run. Never passed
+    the raw question, birth data, generated answer, or any exception
+    object -- only pre-classified, already-safe scalars (source is
+    "free"/"pack"; failure_reason, if given, is already reduced to
+    "timeout"/"unknown" by the caller). No truthful durable per-question
+    entity/identity/session/correlation exists for Ask Now (Phase 4E
+    audit) -- all left None/omitted rather than fabricated. This
+    function's entire body is wrapped in try/except so an analytics
+    failure can never propagate into chat_free()/chat_pack(), never
+    alter credit state, and never affect the HTTP response."""
+    try:
+        properties = {"source": source}
+        if latency_ms is not None:
+            properties["latency_ms"] = latency_ms
+        if failure_reason is not None:
+            properties["failure_reason"] = failure_reason
+
+        record_event(
+            event_name=event_name,
+            occurred_at=datetime.now(timezone.utc),
+            platform="backend_internal",
+            source="asknow_chat",
+            firebase_uid=None,
+            profile_id=None,
+            entity_type=None,
+            entity_id=None,
+            correlation_id=None,
+            session_id=None,
+            properties=properties,
+            dedupe_key=None,
+        )
+    except Exception:
+        _activity_events_logger.warning(
+            "routes_chat: unexpected error emitting %s (swallowed -- "
+            "the Ask Now business result already decided is unaffected)",
+            event_name, exc_info=True,
+        )
 
 
 def _authenticated_user_id() -> int:
@@ -207,20 +264,28 @@ def chat_free():
         current_app.logger.exception(
             "chat_free: failed to consume free quota (user_id=%s)", user_id
         )
+        # Phase 4E LOCKED DECISION: consumption itself never durably
+        # committed, so "submission" never truthfully happened here --
+        # no Ask Now activity event of any kind.
         return jsonify({
             "success": False,
             "error": "quota_error",
             "message": "Something went wrong. Please try again.",
         }), 502
 
+    # Phase 4E -- asknow_question_submitted. Emitted only now, strictly
+    # after use_free_quota()'s own commit above has already succeeded.
+    _emit_asknow_event(event_name="asknow_question_submitted", source="free")
+
     # Get chat answer. chat_engine() already converts an OpenAI-side
     # failure into a textual fallback answer (never raises for that) --
     # an exception escaping from here means kundali/transit generation
     # itself failed, i.e. no valid answer can be returned under the
     # existing contract. That, and only that, is compensated.
+    generation_started_at = time.monotonic()
     try:
         answer = chat_engine(birth, question)
-    except Exception:
+    except Exception as exc:
         db.session.rollback()
         try:
             restore_free_quota(user_id, previous_last_used_date)
@@ -234,11 +299,24 @@ def chat_free():
                 "chat_free: generation failed after consuming free quota; "
                 "quota restored (user_id=%s)", user_id
             )
+        # Phase 4E -- asknow_answer_failed. Emitted only after the
+        # compensation attempt above (successful or not -- the failure
+        # itself already happened either way). Only the exception's own
+        # TYPE is inspected -- never str(exc)/repr(exc)/a traceback.
+        failure_reason = "timeout" if isinstance(exc, APITimeoutError) else "unknown"
+        _emit_asknow_event(event_name="asknow_answer_failed", source="free", failure_reason=failure_reason)
         return jsonify({
             "success": False,
             "error": "generation_failed",
             "message": "We couldn't generate an answer right now. Please try again.",
         }), 502
+
+    # Phase 4E -- asknow_answer_delivered. Emitted only after chat_engine()
+    # has already returned successfully, before the HTTP response below.
+    # latency_ms measures ONLY the chat_engine() call itself -- never
+    # validation, credit deduction, or this emission/jsonify.
+    latency_ms = int((time.monotonic() - generation_started_at) * 1000)
+    _emit_asknow_event(event_name="asknow_answer_delivered", source="free", latency_ms=latency_ms)
 
     return jsonify({
         "success": True,
@@ -278,16 +356,25 @@ def chat_pack():
         }), 502
 
     if not result.get("success"):
+        # No active/remaining pack -- deduct_question() never committed
+        # anything for this attempt, so submission never truthfully
+        # happened -- no Ask Now activity event.
         return jsonify(result), 403
+
+    # Phase 4E -- asknow_question_submitted. Emitted only now, strictly
+    # after deduct_question() returned success=True (its own commit
+    # above has already succeeded).
+    _emit_asknow_event(event_name="asknow_question_submitted", source="pack")
 
     # Ask Now Credit Safety: same posture as chat_free() above -- a
     # generation failure past this point restores exactly the one
     # question this request just debited, from the exact pack row
     # deduct_question() debited (result["pack_id"]), never a full
     # pack reset and never any other pack row.
+    generation_started_at = time.monotonic()
     try:
         answer = chat_engine(birth, question)
-    except Exception:
+    except Exception as exc:
         db.session.rollback()
         try:
             restore_question(user_id, result["pack_id"])
@@ -303,11 +390,21 @@ def chat_pack():
                 "question restored (user_id=%s, pack_id=%s)",
                 user_id, result["pack_id"],
             )
+        # Phase 4E -- asknow_answer_failed. Emitted only after the
+        # compensation attempt above. Only the exception's own TYPE is
+        # inspected -- never str(exc)/repr(exc)/a traceback.
+        failure_reason = "timeout" if isinstance(exc, APITimeoutError) else "unknown"
+        _emit_asknow_event(event_name="asknow_answer_failed", source="pack", failure_reason=failure_reason)
         return jsonify({
             "success": False,
             "error": "generation_failed",
             "message": "We couldn't generate an answer right now. Please try again.",
         }), 502
+
+    # Phase 4E -- asknow_answer_delivered. Emitted only after chat_engine()
+    # has already returned successfully, before the HTTP response below.
+    latency_ms = int((time.monotonic() - generation_started_at) * 1000)
+    _emit_asknow_event(event_name="asknow_answer_delivered", source="pack", latency_ms=latency_ms)
 
     return jsonify({
         "success": True,
