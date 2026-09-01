@@ -93,7 +93,20 @@ _FORBIDDEN_NAME_KEY_SUBSTRINGS = (
 )
 
 _EMAIL_RE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
-_PHONE_RE = re.compile(r"(?:\+?\d[\s-]?){8,15}")
+# Phase 3 Step 6 correction: lower bound raised from 8 to 10 digits.
+# The 8-digit floor made this fullmatch() a bare 8-digit numeric value
+# (e.g. a date-like identifier such as "20260901") as phone-shaped --
+# demonstrated as a real false positive by Phase 3's client-ingestion
+# boundary tests. Confirmed empirically before changing: 10 is the
+# smallest floor that still fullmatch()es every required phone example
+# (a bare 10-digit number, a +91-prefixed 12-digit number with or
+# without a separating space, and both spaced/hyphenated 10-digit
+# forms) while excluding the 8-digit case. No UUID-specific handling
+# was added -- unnecessary, since fullmatch() over an entire UUID
+# string already fails today regardless of this bound (a UUID's fixed
+# hyphen positions and typical hex letters don't fit this pattern's
+# shape at all), confirmed empirically, not assumed.
+_PHONE_RE = re.compile(r"(?:\+?\d[\s-]?){10,15}")
 
 
 def _key_is_forbidden(key: str) -> bool:

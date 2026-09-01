@@ -245,6 +245,65 @@ def test_campaign_and_notification_context_allowlists():
 
 
 # =====================================================================
+# Phase 3 Step 6 -- sanitize_*'s phone value-shape check must drop
+# genuine phone-shaped values but NOT a bare short numeric identifier
+# (the demonstrated "20260901" false positive) or an ordinary UUID.
+# Tests the actual sanitizer OUTPUT (sanitize_properties/campaign/
+# notification), not the regex directly -- proving the fix as end
+# users of this module actually observe it.
+# =====================================================================
+def test_phone_value_shape_detection_after_step6_fix():
+    from modules.activity_events.event_schemas import sanitize_properties, sanitize_campaign_context, sanitize_notification_context
+
+    genuine_phones = [
+        "9876543210",
+        "+919876543210",
+        "+91 9876543210",
+        "98765 43210",
+        "98765-43210",
+    ]
+    for phone in genuine_phones:
+        clean, dropped = sanitize_properties("cta_click", 1, {"cta_id": phone, "screen_name": "home"})
+        check(f"genuine phone {phone!r} dropped by sanitize_properties", "cta_id" not in clean and "cta_id" in dropped)
+        check(f"unrelated key unaffected while dropping {phone!r}", clean.get("screen_name") == "home")
+
+    # The demonstrated false positive -- must now survive.
+    clean, dropped = sanitize_properties("cta_click", 1, {"cta_id": "20260901", "screen_name": "home"})
+    check("bare 8-digit date-like value ('20260901') is NOT dropped as phone-like", clean.get("cta_id") == "20260901")
+    check("'20260901' not reported as dropped", "cta_id" not in dropped)
+
+    # Ordinary UUID preserved (was already safe before this fix -- confirms no regression).
+    uuid_value = "550e8400-e29b-41d4-a716-446655440000"
+    clean, _ = sanitize_properties("cta_click", 1, {"cta_id": uuid_value, "screen_name": "home"})
+    check("ordinary UUID value preserved", clean.get("cta_id") == uuid_value)
+
+    # Ordinary analytics strings preserved.
+    clean, _ = sanitize_properties("feature_used", 1, {"feature_name": "panchang"})
+    check("ordinary analytics string ('panchang') preserved", clean.get("feature_name") == "panchang")
+
+    # Embedded email still filtered -- unrelated to this fix, must be unchanged.
+    clean, dropped = sanitize_properties("login_completed", 1, {"method": "user@example.com"})
+    check("embedded email value still dropped (unaffected by the phone-only fix)", "method" not in clean)
+
+    # Forbidden sensitive KEYS still filtered -- unrelated to this fix, must be unchanged.
+    clean, dropped = sanitize_properties("login_completed", 1, {"method": "google", "auth_token": "abc.def.ghi"})
+    check("forbidden key name (auth_token) still dropped (unaffected by the phone-only fix)", "auth_token" not in clean and "auth_token" in dropped)
+    check("legitimate key (method) unaffected", clean.get("method") == "google")
+
+    # Same fix applies uniformly to campaign_context and notification_context
+    # (all three share the one _value_looks_like_pii() helper).
+    clean_cc, dropped_cc = sanitize_campaign_context({"utm_source": "9876543210"})
+    check("genuine phone dropped from campaign_context too", "utm_source" not in clean_cc)
+    clean_cc2, _ = sanitize_campaign_context({"utm_campaign": "20260901"})
+    check("'20260901' preserved in campaign_context too", clean_cc2.get("utm_campaign") == "20260901")
+
+    clean_nc, dropped_nc = sanitize_notification_context({"notification_id": "9876543210"})
+    check("genuine phone dropped from notification_context too", "notification_id" not in clean_nc)
+    clean_nc2, _ = sanitize_notification_context({"notification_id": uuid_value})
+    check("UUID notification_id preserved in notification_context", clean_nc2.get("notification_id") == uuid_value)
+
+
+# =====================================================================
 # 13 -- a ledger DB failure never propagates as a business exception.
 # Runs against a DELIBERATELY UNREACHABLE database -- never touches
 # jyotishasha_local or any real data. Isolated subprocess: builds its
@@ -491,6 +550,7 @@ def main():
     test_asknow_question_answer_text_forbidden()
     test_forbidden_pii_and_tokens_dropped()
     test_campaign_and_notification_context_allowlists()
+    test_phone_value_shape_detection_after_step6_fix()
     test_record_event_swallows_db_failure()
     test_no_user_or_appuser_import_coupling()
 
