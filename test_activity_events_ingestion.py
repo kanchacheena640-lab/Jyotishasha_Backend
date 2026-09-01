@@ -29,6 +29,7 @@ LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432
 
 os.environ["DATABASE_URL"] = LOCAL_DB_URL
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-dummy-not-used")
+os.environ.setdefault("ACTIVITY_EVENTS_ENVIRONMENT", "local")
 
 passed = 0
 failed = 0
@@ -511,6 +512,31 @@ def main():
                 mock_record.return_value = LedgerWriteResult(status="write_failed")
                 r = post(base_body())
             check("ledger write failure -> 503", r.status_code == 503 and r.get_json().get("error") == "temporarily_unavailable")
+
+            # Phase 4 prerequisite fix, requirement E: a missing/invalid
+            # ACTIVITY_EVENTS_ENVIRONMENT must surface through this
+            # endpoint exactly like any other ledger-write failure --
+            # controlled 503, no exception/config detail in the body --
+            # not a 500 or an uncaught exception. Saved/restored exactly.
+            _original_env_for_e = os.environ.get("ACTIVITY_EVENTS_ENVIRONMENT")
+            try:
+                os.environ.pop("ACTIVITY_EVENTS_ENVIRONMENT", None)
+                r = post(base_body())
+                check("E: missing ACTIVITY_EVENTS_ENVIRONMENT -> 503, not 500/exception", r.status_code == 503)
+                check("E: missing env -> controlled body, no config/exception detail leaked",
+                      r.get_json() == {"error": "temporarily_unavailable"})
+
+                os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = "staging"  # not in ALLOWED_ENVIRONMENTS
+                r = post(base_body())
+                check("E: invalid ACTIVITY_EVENTS_ENVIRONMENT -> 503, not 500/exception", r.status_code == 503)
+                check("E: invalid env -> controlled body, no config/exception detail leaked",
+                      r.get_json() == {"error": "temporarily_unavailable"})
+            finally:
+                if _original_env_for_e is None:
+                    os.environ.pop("ACTIVITY_EVENTS_ENVIRONMENT", None)
+                else:
+                    os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = _original_env_for_e
+                check("E: ACTIVITY_EVENTS_ENVIRONMENT restored after test", os.environ.get("ACTIVITY_EVENTS_ENVIRONMENT") == _original_env_for_e)
 
         finally:
             final_cleanup_errors = run_cleanup_steps()

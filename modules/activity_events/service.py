@@ -48,14 +48,21 @@ pass firebase_uid / profile_id / anonymous_id / session_id /
 correlation_id / entity_type / entity_id / dedupe_key, it is stored as
 NULL -- never guessed, never defaulted to something plausible-looking.
 
-environment resolution: this codebase has no existing environment-
-detection convention (no FLASK_ENV/APP_ENV/etc. anywhere in the
-codebase -- confirmed by search). ACTIVITY_EVENTS_ENVIRONMENT is a new,
-narrowly-scoped env var introduced by this file specifically, defaulting
-to "production" only when unset. Flagged here, and in the Step 2
-report, as a gap to revisit once this helper is actually wired into
-app.py in a later phase -- not something to silently invent a
-project-wide convention for now.
+environment resolution (Phase 4 prerequisite fix): this codebase has no
+existing environment-detection convention of its own (no FLASK_ENV/
+APP_ENV/etc. anywhere -- confirmed by search; render.yaml declares no
+environment-indicating variable either), so ACTIVITY_EVENTS_ENVIRONMENT
+remains a new, narrowly-scoped env var introduced by this file
+specifically. It previously defaulted to "production" when unset --
+flagged in the Phase 2 and Phase 4 Step 1 reports as a frozen-contract
+violation ("no silent production default") and corrected here: missing
+or not-one-of-the-allowed-canonical-values now raises
+EnvironmentConfigurationError internally, which record_event() catches
+and turns into a controlled write_failed outcome -- never a silent
+"production" label, and never an exception reaching the business
+caller. Deployment is responsible for setting this var explicitly
+(e.g. on the Render service) -- that is an operational action outside
+this file's/this task's scope, not something to work around here.
 """
 
 import logging
@@ -76,9 +83,33 @@ from modules.activity_events.event_schemas import (
 
 logger = logging.getLogger("activity_events")
 
+# Smallest set actually needed by this project today: this repo's own
+# render.yaml declares a single web service, no staging service block,
+# and no code anywhere references a staging/dev deployment concept --
+# "staging"/"dev" are deliberately NOT included here as speculative
+# environments. If a real staging deployment is added later, this is a
+# plain string column (no native DB enum, matching this codebase's own
+# convention elsewhere), so extending this set needs no migration.
+ALLOWED_ENVIRONMENTS = frozenset({"production", "local"})
+
+
+class EnvironmentConfigurationError(Exception):
+    """Raised only by _resolve_environment(), and only ever caught
+    inside record_event() itself -- never propagates into a business
+    caller. Signals "ACTIVITY_EVENTS_ENVIRONMENT is missing or not one
+    of ALLOWED_ENVIRONMENTS," which must fail the analytics write, not
+    silently resolve to "production"."""
+
 
 def _resolve_environment() -> str:
-    return os.environ.get("ACTIVITY_EVENTS_ENVIRONMENT", "production")
+    raw = os.environ.get("ACTIVITY_EVENTS_ENVIRONMENT")
+    if raw not in ALLOWED_ENVIRONMENTS:
+        raise EnvironmentConfigurationError(
+            f"ACTIVITY_EVENTS_ENVIRONMENT is missing or invalid (got {raw!r}); "
+            f"must be explicitly set to one of {sorted(ALLOWED_ENVIRONMENTS)}. "
+            "Refusing to silently default to 'production'."
+        )
+    return raw
 
 
 class LedgerWriteResult:
@@ -139,6 +170,25 @@ def record_event(
         logger.info("activity_events: %s is not ledger-eligible, skipped", event_name)
         return LedgerWriteResult(status="skipped_not_ledger_eligible")
 
+    # Phase 4 prerequisite fix: resolved BEFORE building the ActivityEvent
+    # or opening any DB session. A missing/invalid ACTIVITY_EVENTS_
+    # ENVIRONMENT is a configuration failure, not a caller bug -- it is
+    # logged and reported as a normal analytics write_failed outcome,
+    # exactly like a DB error would be, and never raises out of this
+    # function. Resolving it this early also means no ActivityEvent
+    # object, session, or transaction is ever created for a write that
+    # can't legally be labeled -- nothing to roll back.
+    try:
+        environment = _resolve_environment()
+    except EnvironmentConfigurationError:
+        logger.warning(
+            "activity_events: ACTIVITY_EVENTS_ENVIRONMENT misconfigured -- "
+            "ledger write for event_name=%s refused (swallowed, business "
+            "transaction unaffected)",
+            event_name, exc_info=True,
+        )
+        return LedgerWriteResult(status="write_failed")
+
     clean_properties, dropped_props = sanitize_properties(event_name, event_version, properties)
     clean_campaign, dropped_campaign = sanitize_campaign_context(campaign_context)
     clean_notification, dropped_notification = sanitize_notification_context(notification_context)
@@ -164,7 +214,7 @@ def record_event(
         session_id=session_id,
         platform=platform,
         source=source,
-        environment=_resolve_environment(),
+        environment=environment,
         correlation_id=correlation_id,
         entity_type=entity_type,
         entity_id=entity_id,

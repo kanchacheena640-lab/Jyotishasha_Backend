@@ -316,6 +316,9 @@ from flask import Flask
 from extensions import db
 from modules.activity_events.service import record_event
 
+import os as _os
+_os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = "local"  # so this test exercises the DB-failure path specifically, not environment misconfiguration
+
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://baduser:badpass@localhost:59999/does_not_exist"
 db.init_app(app)
@@ -375,6 +378,7 @@ def run_db_backed_persistence_tests():
 
     os.environ["DATABASE_URL"] = LOCAL_DB_URL
     os.environ.setdefault("OPENAI_API_KEY", "sk-test-dummy-not-used")
+    os.environ.setdefault("ACTIVITY_EVENTS_ENVIRONMENT", "local")
 
     from app import app
     from extensions import db
@@ -488,6 +492,124 @@ def run_db_backed_persistence_tests():
                 check(f"all {len(created_ids)} test rows cleaned up (0 remain)", remaining == 0)
 
 
+def run_environment_contract_tests():
+    """Phase 4 prerequisite fix: proves ACTIVITY_EVENTS_ENVIRONMENT is
+    never silently resolved to "production" -- missing or invalid
+    values fail the analytics write safely (write_failed, no exception,
+    no row persisted), explicit valid values persist exactly as given,
+    and none of this disturbs existing dedupe or ordinary-write
+    behavior. Saves and restores the env var exactly as found."""
+    import datetime
+
+    os.environ["DATABASE_URL"] = LOCAL_DB_URL
+    os.environ.setdefault("OPENAI_API_KEY", "sk-test-dummy-not-used")
+
+    from app import app
+    from extensions import db
+    from sqlalchemy import text
+    from modules.activity_events.service import (
+        record_event,
+        _resolve_environment,
+        EnvironmentConfigurationError,
+    )
+
+    with app.app_context():
+        current_db = db.session.execute(text("SELECT current_database()")).scalar()
+        assert current_db == "jyotishasha_local", (
+            f"Refusing to run -- expected jyotishasha_local, got {current_db!r}"
+        )
+
+        original_env = os.environ.get("ACTIVITY_EVENTS_ENVIRONMENT")
+        created_ids = []
+
+        def now():
+            return datetime.datetime.now(datetime.timezone.utc)
+
+        try:
+            # A. Explicit local -> persisted exactly as given.
+            os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = "local"
+            check("_resolve_environment() returns 'local' when explicitly set", _resolve_environment() == "local")
+            r1 = record_event(event_name="login_completed", occurred_at=now(), platform="app_android", properties={"method": "google"})
+            check("A: explicit local -> written", r1.status == "written")
+            created_ids.append(r1.event.event_id)
+            row1 = db.session.execute(text("SELECT environment FROM activity_events WHERE event_id = :id"), {"id": str(r1.event.event_id)}).fetchone()
+            check("A: persisted environment == 'local'", row1.environment == "local")
+
+            # B. Explicit production -> persisted exactly as given.
+            os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = "production"
+            check("_resolve_environment() returns 'production' when explicitly set", _resolve_environment() == "production")
+            r2 = record_event(event_name="login_completed", occurred_at=now(), platform="app_android", properties={"method": "google"})
+            check("B: explicit production -> written", r2.status == "written")
+            created_ids.append(r2.event.event_id)
+            row2 = db.session.execute(text("SELECT environment FROM activity_events WHERE event_id = :id"), {"id": str(r2.event.event_id)}).fetchone()
+            check("B: persisted environment == 'production'", row2.environment == "production")
+
+            # C. Missing variable -> never production, controlled failure, no exception.
+            os.environ.pop("ACTIVITY_EVENTS_ENVIRONMENT", None)
+            raised = False
+            try:
+                _resolve_environment()
+            except EnvironmentConfigurationError:
+                raised = True
+            check("C: _resolve_environment() raises EnvironmentConfigurationError when unset", raised)
+
+            count_before_c = db.session.execute(text("SELECT COUNT(*) FROM activity_events")).scalar()
+            no_exception = True
+            r3 = None
+            try:
+                r3 = record_event(event_name="login_completed", occurred_at=now(), platform="app_android", properties={"method": "google"})
+            except Exception:
+                no_exception = False
+            check("C: record_event() does not raise when the env var is missing", no_exception)
+            check("C: record_event() reports write_failed when the env var is missing", r3 is not None and r3.status == "write_failed")
+            count_after_c = db.session.execute(text("SELECT COUNT(*) FROM activity_events")).scalar()
+            check("C: no row persisted when the env var is missing (never silently 'production')", count_after_c == count_before_c)
+
+            # D. Invalid value -> controlled failure, no row persisted.
+            os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = "staging"  # deliberately not in ALLOWED_ENVIRONMENTS
+            raised_d = False
+            try:
+                _resolve_environment()
+            except EnvironmentConfigurationError:
+                raised_d = True
+            check("D: _resolve_environment() raises for an invalid value ('staging')", raised_d)
+
+            count_before_d = db.session.execute(text("SELECT COUNT(*) FROM activity_events")).scalar()
+            r4 = record_event(event_name="login_completed", occurred_at=now(), platform="app_android", properties={"method": "google"})
+            check("D: record_event() reports write_failed for an invalid value", r4.status == "write_failed")
+            count_after_d = db.session.execute(text("SELECT COUNT(*) FROM activity_events")).scalar()
+            check("D: no row persisted for an invalid value", count_after_d == count_before_d)
+
+            # F. Existing dedupe behavior unaffected by this fix.
+            os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = "local"
+            dk = f"env-contract-dedupe-{now().timestamp()}"
+            r5 = record_event(event_name="cta_click", occurred_at=now(), platform="app_android", properties={"cta_id": "x", "screen_name": "home"}, dedupe_key=dk)
+            check("F: first write with a dedupe_key still succeeds", r5.status == "written")
+            created_ids.append(r5.event.event_id)
+            r6 = record_event(event_name="cta_click", occurred_at=now(), platform="app_android", properties={"cta_id": "x", "screen_name": "home"}, dedupe_key=dk)
+            check("F: duplicate dedupe_key still reported as skipped_duplicate_dedupe_key", r6.status == "skipped_duplicate_dedupe_key")
+
+            # G. Existing valid event recording unaffected by this fix.
+            r7 = record_event(event_name="session_start", occurred_at=now(), platform="app_android", properties={"entry_point": "home"})
+            check("G: ordinary valid event recording still succeeds", r7.status == "written")
+            created_ids.append(r7.event.event_id)
+
+        finally:
+            for eid in created_ids:
+                db.session.execute(text("DELETE FROM activity_events WHERE event_id = :id"), {"id": str(eid)})
+            db.session.commit()
+            remaining = 0
+            for eid in created_ids:
+                remaining += db.session.execute(text("SELECT COUNT(*) FROM activity_events WHERE event_id = :id"), {"id": str(eid)}).scalar()
+            check(f"all {len(created_ids)} environment-contract test rows cleaned up (0 remain)", remaining == 0)
+
+            # Restore exactly as found, per instruction.
+            if original_env is None:
+                os.environ.pop("ACTIVITY_EVENTS_ENVIRONMENT", None)
+            else:
+                os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = original_env
+
+
 def run_smoke_test():
     """Step 2B item 6 -- one controlled, isolated smoke test through
     record_event() using session_start: Core/behavioral, client-owned,
@@ -500,6 +622,7 @@ def run_smoke_test():
 
     os.environ["DATABASE_URL"] = LOCAL_DB_URL
     os.environ.setdefault("OPENAI_API_KEY", "sk-test-dummy-not-used")
+    os.environ.setdefault("ACTIVITY_EVENTS_ENVIRONMENT", "local")
 
     from app import app
     from extensions import db
@@ -556,6 +679,9 @@ def main():
 
     print("\nSection B -- real jyotishasha_local, activity_events table required")
     run_db_backed_persistence_tests()
+
+    print("\nEnvironment contract (Phase 4 prerequisite fix)")
+    run_environment_contract_tests()
 
     print("\nSmoke test -- one isolated record_event() call")
     run_smoke_test()
