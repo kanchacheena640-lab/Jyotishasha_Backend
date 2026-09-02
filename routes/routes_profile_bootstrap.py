@@ -17,7 +17,8 @@ person who already has one.
 """
 
 from flask import Blueprint, request, jsonify
-from datetime import datetime
+from datetime import datetime, timezone
+import logging
 import traceback
 import uuid
 
@@ -28,8 +29,67 @@ from firebase_admin import auth as firebase_auth
 # 🟢 Correct kundali calculator (confirmed by you)
 from full_kundali_api import calculate_full_kundali
 
+from modules.activity_events.service import record_event
+
 
 routes_profile_bootstrap = Blueprint("routes_profile_bootstrap", __name__)
+
+_activity_events_logger = logging.getLogger("activity_events")
+
+
+def _emit_signup_completed(*, firebase_uid: str, app_user_id: int) -> None:
+    """Phase 5D.1 -- observational only. Called ONLY after the caller's
+    own AppUser creation has already durably committed (db.session.commit()
+    already succeeded) AND only for the call that actually created that
+    row (created == True) -- never for a routine bootstrap of an
+    already-existing profile. This is the first durable creation of the
+    Jyotishasha AppUser/profile, not merely a successful Firebase
+    sign-in.
+
+    No properties are sent: static inspection of this route found no
+    already-existing, reliable, server-side authentication-provider
+    value at this seam (the verified Firebase ID token's own claims do
+    carry a provider, but nothing here currently reads it, and adding a
+    new read solely to populate this event would be inventing a value
+    the audit didn't find already in hand) -- signup_completed's frozen
+    schema only makes `provider` optional, so an empty properties dict
+    is valid and correct here, not a workaround.
+
+    dedupe_key uses the just-created AppUser's own durable id -- not a
+    fabricated identifier -- so a genuine duplicate emission attempt
+    (never expected under the created-gate above, but defensive anyway)
+    would be caught by the ledger's own partial unique index rather than
+    ever producing a second row.
+
+    Wrapped in its own try/except, mirroring routes_chat.py's
+    _emit_asknow_event and entitlement_write_service.py's
+    _emit_activity_event -- record_event() itself already never raises,
+    but this defends against any error in the small amount of mapping
+    logic below too, so an analytics failure can never propagate back
+    into bootstrap_user_profile()'s already-successful response."""
+    try:
+        record_event(
+            event_name="signup_completed",
+            occurred_at=datetime.now(timezone.utc),
+            platform="backend_internal",
+            source="user_bootstrap",
+            firebase_uid=firebase_uid,
+            profile_id=app_user_id,
+            entity_type=None,
+            entity_id=None,
+            correlation_id=None,
+            session_id=None,
+            properties={},
+            dedupe_key=f"signup_completed:APP_USER:{app_user_id}",
+        )
+    except Exception:
+        _activity_events_logger.warning(
+            "routes_profile_bootstrap: unexpected error emitting "
+            "signup_completed for AppUser.id=%s (swallowed -- the "
+            "profile creation already committed successfully and is "
+            "unaffected)",
+            app_user_id, exc_info=True,
+        )
 
 
 @routes_profile_bootstrap.post("/api/user/bootstrap")
@@ -149,6 +209,18 @@ def bootstrap_user_profile():
         print(f"[BEFORE COMMIT] trace_id={trace_id}")
         db.session.commit()
         print(f"[AFTER COMMIT] trace_id={trace_id} profile_id={user.id!r}")
+
+        # Phase 5D.1 -- signup_completed: the first durable creation of
+        # this AppUser/profile, emitted ONLY now that the commit above
+        # has actually succeeded, and ONLY for the request that created
+        # the row (created == True) -- never for a routine bootstrap of
+        # an already-existing profile. Fire-and-forget, purely
+        # observational: _emit_signup_completed() never raises, so it
+        # cannot turn this already-successful response into an error,
+        # and it runs strictly after -- never before or in place of --
+        # the business commit it is reporting on.
+        if created:
+            _emit_signup_completed(firebase_uid=firebase_uid, app_user_id=user.id)
 
         # ----------------------------------------------------------
         # 2b) Manual Trial Activation: this used to auto-provision the
