@@ -220,19 +220,35 @@ def main():
             # =================================================================
             print("EVENT OWNERSHIP")
             from modules.activity_events.ingestion_policy import CLIENT_INGESTIBLE_EVENTS, is_client_ingestible
-            check("exactly 10 client-ingestible events frozen", len(CLIENT_INGESTIBLE_EVENTS) == 10)
-            for name in ("session_start", "app_download_intent", "cta_click", "feature_used",
+            # Phase 5D.2 -- login_completed added to the original Phase 3
+            # Step 2 set of 10, making 11. Count re-derived from the real
+            # module below, not asserted blind.
+            check("exactly 11 client-ingestible events frozen", len(CLIENT_INGESTIBLE_EVENTS) == 11)
+            for name in ("session_start", "login_completed", "app_download_intent", "cta_click", "feature_used",
                          "asknow_entry_viewed", "report_discovery_viewed", "report_viewed",
                          "report_downloaded", "subscription_discovery_viewed", "notification_opened"):
                 check(f"{name} recognized as client-ingestible", is_client_ingestible(name))
             check("page_view NOT client-ingestible", not is_client_ingestible("page_view"))
             check("payment_verified NOT client-ingestible", not is_client_ingestible("payment_verified"))
+            # Phase 5D.2 -- signup_completed (login_completed's own "I.
+            # Core" sibling) was explicitly audited as BACKEND-owned
+            # (Phase 5D.1) and must remain excluded from this endpoint.
+            check("signup_completed NOT client-ingestible (backend-owned, Phase 5D.1)", not is_client_ingestible("signup_completed"))
 
             r = post(base_body(event_name="page_view"))
             check("page_view via HTTP -> 400 event_not_client_ingestible", r.status_code == 400 and r.get_json().get("error") == "event_not_client_ingestible")
 
             r = post(base_body(event_name="payment_verified"))
             check("payment_verified via HTTP -> 400 event_not_client_ingestible", r.status_code == 400 and r.get_json().get("error") == "event_not_client_ingestible")
+
+            # Phase 5D.2 -- signup_completed via this same authenticated
+            # client endpoint must still be rejected -- making
+            # login_completed client-ingestible does not make the client
+            # authoritative for signup_completed (backend-owned, Phase
+            # 5D.1) or any other backend-only business event.
+            r = post(base_body(event_name="signup_completed", properties={"provider": "google"}))
+            check("signup_completed via HTTP -> 400 event_not_client_ingestible (still backend-only)",
+                  r.status_code == 400 and r.get_json().get("error") == "event_not_client_ingestible")
 
             r = post(base_body(event_name="totally_not_a_real_event"))
             check("unknown event name -> 400 unknown_event", r.status_code == 400 and r.get_json().get("error") == "unknown_event")

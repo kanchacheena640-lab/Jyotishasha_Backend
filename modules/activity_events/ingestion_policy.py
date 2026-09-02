@@ -14,15 +14,32 @@ KNOWN events that must never be reachable through this endpoint, because
 nothing a client posts here can ever become backend-authoritative
 business truth (Phase 3 Step 1 audit, event ownership table).
 
-Exactly the 10 client-ingestible events frozen in Phase 3 Step 2:
+The original 10 client-ingestible events frozen in Phase 3 Step 2:
 session_start, app_download_intent, cta_click, feature_used,
 asknow_entry_viewed, report_discovery_viewed, report_viewed,
 report_downloaded, subscription_discovery_viewed, notification_opened.
-page_view stays GA4/Firebase-only (not even ledger-eligible, per
-event_schemas.is_ledger_eligible). Every other canonical event --
-including every one of these 10's own event_version variants beyond 1,
-should Phase 2 ever add one -- is rejected here, not silently allowed
-because event_schemas.is_known_event() happens to say yes.
+
+Phase 5D.2 -- one narrowly-scoped addition, its own explicit design-
+freeze pass (Phase 5D's ownership audit determined login_completed is
+Flutter-owned: "a real interactive authentication successfully
+completed by the user," a fact only the client can observe -- see that
+phase's own report for the full reasoning): login_completed. Its
+sibling signup_completed (same "I. Core" section of EVENT_SCHEMAS,
+same {property} shape) was explicitly audited and determined to be
+BACKEND-owned instead (Phase 5D.1) -- the first durable AppUser/profile
+creation is a fact only the backend's own bootstrap commit can prove,
+never a client claim -- and deliberately remains OUT of this set.
+
+Exactly these 11 client-ingestible events as of Phase 5D.2:
+session_start, login_completed, app_download_intent, cta_click,
+feature_used, asknow_entry_viewed, report_discovery_viewed,
+report_viewed, report_downloaded, subscription_discovery_viewed,
+notification_opened. page_view stays GA4/Firebase-only (not even
+ledger-eligible, per event_schemas.is_ledger_eligible). Every other
+canonical event -- including every one of these 11's own event_version
+variants beyond 1, should Phase 2 ever add one -- is rejected here, not
+silently allowed because event_schemas.is_known_event() happens to say
+yes.
 
 entity_type/entity_id policy (Phase 3 Step 2, S7): only report_viewed
 and report_downloaded may carry entity_type="ai_report" (Order-based
@@ -36,8 +53,15 @@ entity_type/entity_id at all.
 # a plain frozenset of names, not reusing/extending event_schemas.
 # EVENT_SCHEMAS's shape, so this file can be read on its own without
 # implying it modifies that committed registry.
+#
+# Phase 5D.2: "login_completed" added -- the one authorized addition
+# past the original Phase 3 Step 2 set (see this module's own docstring
+# for the ownership reasoning). Placed immediately after "session_start"
+# to keep both of EVENT_SCHEMAS's "I. Core" client-ingestible members
+# grouped together, matching this set's existing section-grouped order.
 CLIENT_INGESTIBLE_EVENTS = frozenset({
     "session_start",
+    "login_completed",
     "app_download_intent",
     "cta_click",
     "feature_used",
