@@ -304,6 +304,60 @@ def test_phone_value_shape_detection_after_step6_fix():
 
 
 # =====================================================================
+# Phase 5C.1 -- subscription_discovery_viewed v1 schema extension:
+# "placement" added alongside "plan" (both optional). Proves the
+# extension is additive (plan still accepted, both together accepted),
+# that an unrelated unknown key is still dropped exactly as before, and
+# that sensitive properties remain filtered on this event -- version
+# stays 1 (a new key on the same (event_name, event_version) tuple, not
+# a new schema entry).
+# =====================================================================
+def test_subscription_discovery_viewed_placement_extension():
+    from modules.activity_events.event_schemas import EVENT_SCHEMAS, sanitize_properties
+
+    check(
+        "subscription_discovery_viewed still registered under version 1 only",
+        ("subscription_discovery_viewed", 1) in EVENT_SCHEMAS
+        and ("subscription_discovery_viewed", 2) not in EVENT_SCHEMAS,
+    )
+
+    # A. placement alone is accepted.
+    clean, dropped = sanitize_properties("subscription_discovery_viewed", 1, {"placement": "account"})
+    check("placement alone kept", clean.get("placement") == "account")
+    check("placement alone not reported as dropped", "placement" not in dropped)
+
+    # B. plan alone still accepted (backward compatible).
+    clean, dropped = sanitize_properties("subscription_discovery_viewed", 1, {"plan": "example_safe_plan"})
+    check("plan alone still kept", clean.get("plan") == "example_safe_plan")
+    check("plan alone not reported as dropped", "plan" not in dropped)
+
+    # C. plan and placement together.
+    clean, dropped = sanitize_properties(
+        "subscription_discovery_viewed", 1, {"plan": "example_safe_plan", "placement": "account"}
+    )
+    check("plan kept alongside placement", clean.get("plan") == "example_safe_plan")
+    check("placement kept alongside plan", clean.get("placement") == "account")
+    check("neither key dropped when sent together", not dropped)
+
+    # D. an unrelated unknown property is still removed, unaffected by this change.
+    clean, dropped = sanitize_properties(
+        "subscription_discovery_viewed", 1, {"plan": "example_safe_plan", "totally_made_up_key": "x"}
+    )
+    check("unknown key still dropped on this event", "totally_made_up_key" not in clean and "totally_made_up_key" in dropped)
+    check("plan still kept alongside the dropped unknown key", clean.get("plan") == "example_safe_plan")
+
+    # E. sensitive properties remain filtered on this event -- by key name...
+    clean, dropped = sanitize_properties(
+        "subscription_discovery_viewed", 1, {"placement": "account", "email": "user@example.com"}
+    )
+    check("email key still dropped by name on this event", "email" not in clean and "email" in dropped)
+    check("placement unaffected by the dropped sensitive key", clean.get("placement") == "account")
+    # ...and by value shape (a PII-looking value in the now-allowed placement key).
+    clean, dropped = sanitize_properties("subscription_discovery_viewed", 1, {"placement": "user@example.com"})
+    check("placement dropped when its VALUE looks like an email", "placement" not in clean and "placement" in dropped)
+
+
+# =====================================================================
 # 13 -- a ledger DB failure never propagates as a business exception.
 # Runs against a DELIBERATELY UNREACHABLE database -- never touches
 # jyotishasha_local or any real data. Isolated subprocess: builds its
@@ -674,6 +728,7 @@ def main():
     test_forbidden_pii_and_tokens_dropped()
     test_campaign_and_notification_context_allowlists()
     test_phone_value_shape_detection_after_step6_fix()
+    test_subscription_discovery_viewed_placement_extension()
     test_record_event_swallows_db_failure()
     test_no_user_or_appuser_import_coupling()
 

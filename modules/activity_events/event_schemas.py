@@ -224,7 +224,13 @@ EVENT_SCHEMAS = {
     ("report_downloaded", 1): _schema(set()),
 
     # -- VII. Subscriptions (mirrors SubscriptionEvent.event_type) ---------
-    ("subscription_discovery_viewed", 1): _schema({"plan"}),
+    # Phase 5C.1 -- "placement" added (optional, alongside "plan") to
+    # unblock Flutter discovery-surface instrumentation: which screen/
+    # entry point showed the paywall/discovery surface. Same shape as
+    # every other optional property here -- no new value vocabulary,
+    # no enum; the existing scalar sanitizer/length rules are
+    # authoritative for its value, same as "plan".
+    ("subscription_discovery_viewed", 1): _schema({"plan", "placement"}),
     ("subscription_trial_started", 1): _schema({"plan", "store"}),
     ("subscription_trial_expired", 1): _schema({"plan", "store"}),
     ("subscription_pending_created", 1): _schema({"plan", "store"}),
