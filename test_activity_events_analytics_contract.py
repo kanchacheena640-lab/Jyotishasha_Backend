@@ -19,7 +19,6 @@ validate-before-NotImplementedError ordering, subscription_pending_
 created's deliberate absence).
 """
 
-import inspect
 import sys
 from datetime import datetime, timedelta, timezone
 
@@ -137,26 +136,22 @@ def main():
           and "30-minute" in (models.OverviewMetrics.__doc__ or "").lower())
 
     # =====================================================================
-    # 9 -- environment is structurally fixed, never a request parameter
+    # 9 -- environment is structurally fixed, never a request parameter.
+    #
+    # Phase 6B.3 note: AnalyticsService itself (the class these checks
+    # used to inspect via contract.AnalyticsService, when it lived here
+    # as a Phase 6B.1 stub) has moved to modules/activity_events/
+    # analytics_service.py as a real implementation -- see that file's
+    # own module docstring and analytics_contract.py's removal note.
+    # These exact invariants (no `environment` parameter on any public
+    # method, every method's exact (self, window, platform=None)
+    # signature, ENVIRONMENT fixed to "production") are re-tested
+    # against the REAL class in test_activity_events_analytics_
+    # service.py's own "environment contract" section, not duplicated
+    # here against a class this file no longer imports.
     # =====================================================================
-    print("\n=== Environment contract ===")
-    service_methods = [
-        contract.AnalyticsService.get_overview,
-        contract.AnalyticsService.get_engagement,
-        contract.AnalyticsService.get_asknow_metrics,
-        contract.AnalyticsService.get_report_metrics,
-        contract.AnalyticsService.get_subscription_metrics,
-        contract.AnalyticsService.get_notification_metrics,
-    ]
-    for method in service_methods:
-        sig = inspect.signature(method)
-        check(f"9: {method.__name__}() has no 'environment' parameter",
-              "environment" not in sig.parameters)
-        check(f"9b: {method.__name__}() accepts exactly (self, window, platform=None)",
-              list(sig.parameters) == ["self", "window", "platform"]
-              and sig.parameters["platform"].default is None)
-    check("9c: AnalyticsService.ENVIRONMENT is fixed to 'production'",
-          contract.AnalyticsService.ENVIRONMENT == "production" == contract.PRODUCTION_ENVIRONMENT)
+    check("9: PRODUCTION_ENVIRONMENT constant every real service call hard-codes against is 'production'",
+          contract.PRODUCTION_ENVIRONMENT == "production")
 
     # =====================================================================
     # 10/26 -- rate calculation: zero (or negative) denominator -> None
@@ -283,31 +278,15 @@ def main():
     check("MAU window spans exactly 30 days, same anchor", mau_window.end == overview_window.end
           and mau_window.end - mau_window.start == timedelta(days=30))
 
-    # =====================================================================
-    # Stub service: validates before ever reaching NotImplementedError,
-    # and NEVER silently returns fake data.
-    # =====================================================================
-    print("\n=== AnalyticsService stub behavior ===")
-    service = contract.AnalyticsService()
-
-    raised_type = None
-    try:
-        service.get_overview(overview_window, platform="not_a_real_platform")
-    except Exception as exc:  # noqa: BLE001 -- deliberately broad, classified below
-        raised_type = type(exc)
-    check("invalid platform raises InvalidPlatformFilter BEFORE NotImplementedError",
-          raised_type is contract.InvalidPlatformFilter)
-
-    for method_name in ("get_overview", "get_engagement", "get_asknow_metrics",
-                         "get_report_metrics", "get_subscription_metrics",
-                         "get_notification_metrics"):
-        raised = False
-        try:
-            getattr(service, method_name)(overview_window)
-        except NotImplementedError:
-            raised = True
-        check(f"{method_name}() raises NotImplementedError -- never returns silent fake data",
-              raised)
+    # Phase 6B.3 note: the "AnalyticsService stub behavior" section that
+    # used to live here (proving the Phase 6B.1 stub validated platform
+    # before raising NotImplementedError, and that every method raised
+    # rather than silently returning fake data) has been superseded --
+    # AnalyticsService is now a real implementation in analytics_
+    # service.py and no longer raises NotImplementedError at all. Its
+    # own equivalent, stronger guarantee (real metrics computed via the
+    # repository, never fake/silent data) is proven in
+    # test_activity_events_analytics_service.py instead.
 
     print(f"\n{'='*50}\nRESULT: {passed} passed, {failed} failed\n{'='*50}")
     if failed:

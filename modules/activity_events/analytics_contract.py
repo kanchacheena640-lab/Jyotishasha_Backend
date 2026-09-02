@@ -1,16 +1,20 @@
 # modules/activity_events/analytics_contract.py
 
 """
-Phase 6B.1 -- the frozen analytics query/service CONTRACT: constants,
-pure validation/rate-calculation helpers, and the (deliberately
-not-yet-implemented) service surface a future modules/activity_events/
-analytics_service.py (Phase 6B.2/6B.3) must satisfy.
+Phase 6B.1 (constants/validation/rate rules) + Phase 6B.3 note (service
+moved out, see below) -- the frozen analytics query CONTRACT: constants
+and pure validation/rate-calculation helpers that modules/
+activity_events/analytics_service.py's real AnalyticsService composes
+against.
 
 Nothing in this file touches ActivityEvent, db.session, or SQL of any
-kind -- that is explicitly out of scope for Phase 6B.1 (see this
-phase's own task brief, "Implementation boundary"). This file exists so
-6B.2's real implementation has an already-agreed contract to satisfy
-rather than inventing metric semantics while also writing SQL.
+kind. Originally (Phase 6B.1) this file also held AnalyticsService
+itself as a deliberately-unimplemented stub (every method body `raise
+NotImplementedError`) so the metric contract could be frozen and tested
+before any repository/service code existed. Phase 6B.3 replaced that
+stub with a real implementation, moved to its own file -- see the note
+near the bottom of this file for exactly why it moved rather than being
+edited in place.
 
 Frozen Phase 6A architectural principles this file encodes:
   - PostgreSQL activity_events is the durable first-party ledger;
@@ -25,13 +29,11 @@ Frozen Phase 6A architectural principles this file encodes:
     30-minute web-analytics session.
   - Every production analytics query MUST be structurally fixed to
     environment="production" -- never a caller-supplied value. This is
-    enforced here by simply never accepting an `environment` parameter
-    anywhere on AnalyticsService -- there is no argument to forget to
-    pass or to accidentally override with. PRODUCTION_ENVIRONMENT is
-    also exposed as AnalyticsService.ENVIRONMENT precisely so 6B.2's
-    real subclass has one, unambiguous constant to hard-code its own
-    WHERE clause against, rather than re-deriving or importing a
-    string literal from elsewhere.
+    enforced by AnalyticsService (analytics_service.py) never accepting
+    an `environment` parameter anywhere on any public method -- there
+    is no argument to forget to pass or to accidentally override with.
+    PRODUCTION_ENVIRONMENT (this file) is the one unambiguous constant
+    that service hard-codes its repository calls' `environment=` against.
   - Revenue/accounting truth is never derived from activity_events --
     see modules/payments/metrics_service.py's own existing boundary
     for the authoritative business-table equivalent; this module
@@ -43,16 +45,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Optional
 
-from modules.activity_events.analytics_models import (
-    AnalyticsLimitation,
-    AnalyticsWindow,
-    AskNowMetrics,
-    EngagementMetrics,
-    NotificationMetrics,
-    OverviewMetrics,
-    ReportMetrics,
-    SubscriptionMetrics,
-)
+from modules.activity_events.analytics_models import AnalyticsLimitation, AnalyticsWindow
 
 # ---------------------------------------------------------------------
 # Environment -- structurally fixed, never a request parameter.
@@ -161,60 +154,37 @@ SUBSCRIPTION_PLACEMENT_ATTRIBUTION_LIMITATION = AnalyticsLimitation(
 # own docstring.
 PURCHASED_REPORT_ENTRY_CTA_ID = "report_catalog_buy_now"
 
+# The one property value that identifies a payment_* row as belonging
+# to the purchased-report journey (modules/payments/payment_models.py::
+# PaymentPurpose.REPORT_PURCHASE, confirmed distinct from .SUBSCRIPTION
+# and the Ask Now chat-pack purpose) -- verified against the real
+# producer during Phase 6B.2, not guessed.
+REPORT_PURCHASE_PAYMENT_PURPOSE = "REPORT_PURCHASE"
+
+# entity_type values (Phase 6B.2, verified against the real producers)
+# that separate the two report products' report_generation_* rows --
+# modules/ai_report_engine/lifecycle_manager.py sets AI_REPORT_ENTITY_
+# TYPE; tasks.py AND modules/love/love_premium_task.py (an Order-based
+# pipeline despite its "love" name -- confirmed by its own docstring
+# and its `from models import Order` import, NOT part of the AI Report
+# Engine) both set PURCHASED_REPORT_ENTITY_TYPE.
+AI_REPORT_ENTITY_TYPE = "ai_report"
+PURCHASED_REPORT_ENTITY_TYPE = "order"
 
 # ---------------------------------------------------------------------
-# The service surface itself -- signatures/types frozen now; every
-# method body is intentionally unimplemented (NotImplementedError) so
-# that NOTHING can accidentally call a real query that doesn't exist
-# yet and get back silent zeros/fake data. Phase 6B.2/6B.3 replaces
-# this class's method BODIES only -- the signatures below (including
-# the deliberate absence of an `environment` parameter anywhere) are
-# the frozen part of this contract.
-#
-# Every method takes exactly (window: AnalyticsWindow, platform:
-# Optional[str] = None) -- no `environment` parameter exists on this
-# class at all, on any method, so a caller has no argument through
-# which to override the production-only filter. The real 6B.2
-# implementation MUST hard-code environment=AnalyticsService.
-# ENVIRONMENT (== PRODUCTION_ENVIRONMENT) in every query it builds.
+# Phase 6B.3 note: the AnalyticsService surface that used to be
+# stubbed HERE (six methods, every body `raise NotImplementedError`)
+# has been replaced by a real, DB-backed implementation in
+# modules/activity_events/analytics_service.py -- moved rather than
+# edited in place, matching this codebase's own established
+# modules/payments/metrics_models.py (shape/constants) vs.
+# metrics_service.py (business logic + repository composition) split.
+# This file no longer defines AnalyticsService at all -- there is
+# exactly one implementation of it, not a stub left beside a real one.
+# Every constant/helper above (PRODUCTION_ENVIRONMENT, ALLOWED_
+# PLATFORMS, validate_platform, compute_rate, DAU_WINDOW/WAU_WINDOW/
+# MAU_WINDOW, active_user_window, the three named AnalyticsLimitation
+# instances, PURCHASED_REPORT_ENTRY_CTA_ID) is exactly what
+# analytics_service.py imports and composes against -- nothing here
+# was redesigned, only the now-real service moved out.
 # ---------------------------------------------------------------------
-class AnalyticsService:
-    """Not yet DB-backed (Phase 6B.1). See module docstring."""
-
-    ENVIRONMENT = PRODUCTION_ENVIRONMENT
-
-    def get_overview(
-        self, window: AnalyticsWindow, platform: Optional[str] = None,
-    ) -> OverviewMetrics:
-        validate_platform(platform)
-        raise NotImplementedError("modules.activity_events.analytics_service (Phase 6B.2)")
-
-    def get_engagement(
-        self, window: AnalyticsWindow, platform: Optional[str] = None,
-    ) -> EngagementMetrics:
-        validate_platform(platform)
-        raise NotImplementedError("modules.activity_events.analytics_service (Phase 6B.2)")
-
-    def get_asknow_metrics(
-        self, window: AnalyticsWindow, platform: Optional[str] = None,
-    ) -> AskNowMetrics:
-        validate_platform(platform)
-        raise NotImplementedError("modules.activity_events.analytics_service (Phase 6B.2)")
-
-    def get_report_metrics(
-        self, window: AnalyticsWindow, platform: Optional[str] = None,
-    ) -> ReportMetrics:
-        validate_platform(platform)
-        raise NotImplementedError("modules.activity_events.analytics_service (Phase 6B.2)")
-
-    def get_subscription_metrics(
-        self, window: AnalyticsWindow, platform: Optional[str] = None,
-    ) -> SubscriptionMetrics:
-        validate_platform(platform)
-        raise NotImplementedError("modules.activity_events.analytics_service (Phase 6B.2)")
-
-    def get_notification_metrics(
-        self, window: AnalyticsWindow, platform: Optional[str] = None,
-    ) -> NotificationMetrics:
-        validate_platform(platform)
-        raise NotImplementedError("modules.activity_events.analytics_service (Phase 6B.2)")
