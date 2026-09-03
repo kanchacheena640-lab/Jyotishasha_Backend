@@ -41,11 +41,24 @@ def verify_payment():
         user_id = data.get("user_id")
         order_id = data.get("order_id")
         payment_id = data.get("payment_id")
+        # Task 17C -- the Razorpay Checkout.js-provided signature is now
+        # REQUIRED, matching every other Razorpay verification entry
+        # point in this codebase (report purchase, Ask Now ChatPack).
+        # Without it, verify_subscription_payment() cannot cryptographically
+        # confirm the claimed payment is real and will fail closed.
+        signature = data.get("razorpay_signature")
 
-        if not all([user_id, order_id, payment_id]):
+        if not all([user_id, order_id, payment_id, signature]):
             return jsonify({"error": "Missing required fields"}), 400
 
-        result = verify_subscription_payment(order_id, payment_id, user_id)
+        result = verify_subscription_payment(order_id, payment_id, user_id, signature)
         return jsonify({"success": True, "result": result}), 200
     except Exception as e:
+        # Task 17C -- unchanged shape/behavior from before this fix: the
+        # existing controlled-failure response (400, {"error": str(e)}).
+        # ValueError messages raised by verify_subscription_payment()
+        # (Order not found / User not found / Payment verification
+        # failed: <RazorpayProvider's own safe message>) never contain
+        # credentials or raw provider internals -- RazorpayProvider.verify()
+        # itself only ever returns its own short, safe message strings.
         return jsonify({"error": str(e)}), 400

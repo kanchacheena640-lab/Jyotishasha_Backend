@@ -61,12 +61,78 @@ def create_subscription_order(user_id, plan_type):
     return order.to_dict()
 
 
-def verify_subscription_payment(order_id, payment_id, user_id):
-    """Mark subscription as successful and update user's plan"""
+def verify_subscription_payment(order_id, payment_id, user_id, signature):
+    """
+    Mark subscription as successful and update user's plan.
+
+    Task 17C -- SECURITY FIX: this function previously activated a
+    subscription purely on a caller-supplied order_id/payment_id
+    matching a persisted, pending SubscriptionOrder for this user --
+    with NO cryptographic proof the payment claim was real.
+    razorpay_provider.py's own module docstring already named this
+    exact file as one of several pre-existing unverified call sites
+    ("every one of them ... trusted a client-supplied order_id/
+    payment_id with no cryptographic check"), alongside the Ask Now
+    ChatPack path -- which was fixed; this one was not, until now.
+    `signature` is REQUIRED (no default) so this function can never be
+    called without one -- reused, not reimplemented: the SAME
+    RazorpayProvider.verify() boundary chat_pack_service.py's own
+    verify_chatpack_payment() already uses, which itself fails closed
+    on a missing/invalid signature.
+
+    The existing `razorpay_order_id=order_id, user_id=user_id` lookup
+    below is UNCHANGED and does double duty: it is both the pre-existing
+    ownership check (a caller can only ever verify an order that
+    already belongs to the user_id it claims) AND, once real
+    verification is added, the binding that makes a payment/signature
+    replayed against a DIFFERENT SubscriptionOrder's own order_id
+    structurally impossible -- the signature is an HMAC over this
+    exact order_id + payment_id, so a signature valid for one order_id
+    can never verify against another.
+
+    Idempotent: an order already at status="success" (a replayed/
+    retried verify call) returns the same success response without
+    re-verifying or re-activating -- mirrors verify_chatpack_payment()'s
+    own established idempotency posture exactly, so Ask Now and
+    subscription payments behave the same way under retry.
+    """
     order = SubscriptionOrder.query.filter_by(razorpay_order_id=order_id, user_id=user_id).first()
     if not order:
         raise ValueError("Order not found")
 
+    if order.status == "success":
+        # Already verified and activated by an earlier call -- no new
+        # business effect. Reuses the durable facts already on the row
+        # rather than recomputing/re-deriving anything.
+        return {
+            "success": True,
+            "plan": order.plan_type,
+            "already_processed": True,
+        }
+
+    # Real cryptographic verification -- reused, not reimplemented. See
+    # this function's own docstring for why RazorpayProvider (not a new
+    # framework) is the right call here.
+    from modules.payments.payment_models import (
+        PaymentProviderType, PaymentPurpose, PaymentRequest, PaymentStatus,
+    )
+    from modules.payments.razorpay_provider import RazorpayProvider
+
+    verification = RazorpayProvider().verify(PaymentRequest(
+        provider=PaymentProviderType.RAZORPAY,
+        purpose=PaymentPurpose.SUBSCRIPTION,
+        reference=order_id,
+        payment_id=payment_id,
+        signature=signature,
+    ))
+
+    if verification.status != PaymentStatus.VERIFIED:
+        # Never grant entitlement for a payment that didn't verify --
+        # the order stays "pending" (same convention verify_chatpack_
+        # payment() already established); nothing is credited/activated.
+        raise ValueError(f"Payment verification failed: {verification.message}")
+
+    # Reached ONLY once the signature is proven real.
     order.payment_id = payment_id
     order.status = "success"
     order.verified_at = datetime.utcnow()
