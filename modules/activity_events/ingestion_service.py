@@ -37,6 +37,7 @@ from modules.activity_events.ingestion_validation import (
     validate_identifier,
     validate_occurred_at,
     validate_context_dict,
+    validate_page_path,
     MAX_PROPERTIES_KEYS,
     MAX_CAMPAIGN_CONTEXT_KEYS,
     MAX_NOTIFICATION_CONTEXT_KEYS,
@@ -185,6 +186,11 @@ def ingest_client_event(body) -> IngestionOutcome:
         struct_properties, _ = validate_context_dict("properties", body.get("properties"), MAX_PROPERTIES_KEYS)
         struct_campaign, _ = validate_context_dict("campaign_context", body.get("campaign_context"), MAX_CAMPAIGN_CONTEXT_KEYS)
         struct_notification, _ = validate_context_dict("notification_context", body.get("notification_context"), MAX_NOTIFICATION_CONTEXT_KEYS)
+        # Task 9A -- same page_path format contract as the anonymous
+        # endpoint (defense-in-depth symmetry); a no-op for every
+        # existing app/website authenticated producer, none of which
+        # send page_path today.
+        validate_page_path(struct_properties.get("page_path"))
     except ValidationError as exc:
         return IngestionOutcome(status="invalid_field", field=exc.field)
 

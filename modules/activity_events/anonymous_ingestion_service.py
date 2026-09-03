@@ -57,6 +57,7 @@ from modules.activity_events.ingestion_validation import (
     validate_identifier,
     validate_occurred_at,
     validate_context_dict,
+    validate_page_path,
     MAX_PROPERTIES_KEYS,
     MAX_CAMPAIGN_CONTEXT_KEYS,
     MAX_STRING_VALUE_LENGTH,
@@ -183,6 +184,14 @@ def ingest_anonymous_website_event(body) -> AnonymousIngestionOutcome:
     try:
         struct_properties, _ = validate_context_dict("properties", body.get("properties"), MAX_PROPERTIES_KEYS)
         struct_campaign, _ = validate_context_dict("campaign_context", body.get("campaign_context"), MAX_CAMPAIGN_CONTEXT_KEYS)
+        # Task 9A -- page_path gets its own dedicated format contract on
+        # top of validate_context_dict's generic string/length check
+        # above: malformed (not a bare pathname) is a REJECT -- the
+        # whole event fails to write -- never a silent drop, per Task
+        # 9A's explicit "do not store arbitrary URLs" instruction. A
+        # request that never includes page_path at all is completely
+        # unaffected (validate_page_path(None) is a no-op).
+        validate_page_path(struct_properties.get("page_path"))
     except ValidationError as exc:
         return AnonymousIngestionOutcome(status="invalid_field", field=exc.field)
 

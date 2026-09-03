@@ -207,18 +207,33 @@ def main():
     print("\n=== Page-action attribution gap reflected in metric statuses ===")
     check("17: PAGE_ACTION_ATTRIBUTION_GAP is documented and non-empty",
           isinstance(c.PAGE_ACTION_ATTRIBUTION_GAP, str) and len(c.PAGE_ACTION_ATTRIBUTION_GAP) > 0)
-    check("17b: tool_completions_by_page is BLOCKED and cites the gap",
-          by_id["tool_completions_by_page"].quality_status == c.QUALITY_BLOCKED
+    # Task 9A note: the gap was CLOSED for existing producers after this
+    # test was first written (see PAGE_ACTION_ATTRIBUTION_GAP_STATUS) --
+    # these checks now assert the POST-9A reality, not the original
+    # BLOCKED/PARTIAL statuses Task 9 itself found. The historical
+    # finding remains preserved in PAGE_ACTION_ATTRIBUTION_GAP's own text
+    # (17e below) and in PAGE_ACTION_ATTRIBUTION_GAP_REMAINING_LIMITATIONS,
+    # never silently deleted.
+    check("17b: tool_completions_by_page is PARTIAL (page attribution closed; tool-coverage gap unchanged) and cites the gap",
+          by_id["tool_completions_by_page"].quality_status == c.QUALITY_PARTIAL
           and any("PAGE_ACTION_ATTRIBUTION_GAP" in lim for lim in by_id["tool_completions_by_page"].limitations))
-    check("17c: cta_clicks_by_page is BLOCKED and cites the gap",
-          by_id["cta_clicks_by_page"].quality_status == c.QUALITY_BLOCKED
+    check("17c: cta_clicks_by_page is READY (page attribution closed, coverage already complete) and cites the gap",
+          by_id["cta_clicks_by_page"].quality_status == c.QUALITY_READY
           and any("PAGE_ACTION_ATTRIBUTION_GAP" in lim for lim in by_id["cta_clicks_by_page"].limitations))
-    check("17d: app_download_intents_by_page is PARTIAL (naming-convention-only coverage) and cites the gap",
-          by_id["app_download_intents_by_page"].quality_status == c.QUALITY_PARTIAL
+    check("17d: app_download_intents_by_page is READY (all current producers now carry page_path) and cites the gap",
+          by_id["app_download_intents_by_page"].quality_status == c.QUALITY_READY
           and any("PAGE_ACTION_ATTRIBUTION_GAP" in lim for lim in by_id["app_download_intents_by_page"].limitations))
-    check("17e: gap text documents a minimal future extension without claiming it is implemented",
+    check("17e: gap text still documents the original minimal-extension proposal (historical record preserved)",
           "MINIMAL FUTURE CONTRACT EXTENSION" in c.PAGE_ACTION_ATTRIBUTION_GAP
           and "NOT implemented in Task 9" in c.PAGE_ACTION_ATTRIBUTION_GAP)
+    check("17f: gap text also documents the Task 9A resolution that actually implemented it",
+          "TASK 9A RESOLUTION" in c.PAGE_ACTION_ATTRIBUTION_GAP
+          and "implemented, not merely proposed" in c.PAGE_ACTION_ATTRIBUTION_GAP)
+    check("17g: PAGE_ACTION_ATTRIBUTION_GAP_STATUS is the precise, non-blanket closure status",
+          c.PAGE_ACTION_ATTRIBUTION_GAP_STATUS == "CLOSED_FOR_EXISTING_PRODUCERS")
+    check("17h: remaining limitations are documented, not silently dropped",
+          len(c.PAGE_ACTION_ATTRIBUTION_GAP_REMAINING_LIMITATIONS) > 0
+          and any("subscription_discovery_viewed" in lim for lim in c.PAGE_ACTION_ATTRIBUTION_GAP_REMAINING_LIMITATIONS))
 
     # =====================================================================
     # 18 -- unique visitors by page never conflated with sessions/firebase_uid
@@ -272,9 +287,9 @@ def main():
     check("get_metric() raises KeyError for an unknown id", raised)
     check("DIMENSION_STATUSES covers every DimensionAvailability.status used",
           all(d.status in c.DIMENSION_STATUSES for d in c.WEBSITE_DIMENSION_CATALOG))
-    check("pathname_or_page dimension is UNAVAILABLE (matches the page-action attribution gap finding)",
+    check("pathname_or_page dimension is now AVAILABLE (Task 9A closed the gap for existing producers)",
           next(d for d in c.WEBSITE_DIMENSION_CATALOG if d.dimension_id == "pathname_or_page").status
-          == c.DIMENSION_UNAVAILABLE)
+          == c.DIMENSION_AVAILABLE)
     check("STANDARD_DASHBOARD_PERIODS is exactly ('7d', '30d', '90d', 'custom')",
           c.STANDARD_DASHBOARD_PERIODS == ("7d", "30d", "90d", "custom"))
     check("re-exported constants match analytics_contract.py's own values (no drift)",

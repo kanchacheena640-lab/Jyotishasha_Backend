@@ -187,10 +187,16 @@ class DimensionAvailability:
 
 WEBSITE_DIMENSION_CATALOG: Tuple[DimensionAvailability, ...] = (
     DimensionAvailability(
-        "pathname_or_page", DIMENSION_UNAVAILABLE, "(none)",
-        "No activity_events website producer currently persists the page/pathname "
-        "the action occurred on -- see PAGE_ACTION_ATTRIBUTION_GAP below. "
-        "GA4 has its own page dimension (GA4_EXTERNAL) for GA4-owned metrics only.",
+        "pathname_or_page", DIMENSION_AVAILABLE, "activity_events.properties.page_path",
+        "Task 9A -- closes the PAGE_ACTION_ATTRIBUTION_GAP for the 4 events that "
+        "carry it (cta_click, feature_used, app_download_intent, report_discovery_"
+        "viewed): each now attaches page_path (normalized route/pathname), derived "
+        "at CALL TIME by lib/pagePath.ts's getCurrentPagePath(), for every existing "
+        "website call site. Available for every event PRODUCED after this change; "
+        "absent on any row written before it (page_path is optional at the schema "
+        "level, so older rows simply lack the key -- never backfilled). "
+        "GA4 separately has its own page dimension (GA4_EXTERNAL) for GA4-owned "
+        "metrics -- unrelated to and unaffected by this first-party addition.",
     ),
     DimensionAvailability(
         "locale_language", DIMENSION_UNAVAILABLE, "(none)",
@@ -268,6 +274,7 @@ ALLOWED_WEBSITE_FILTERS: Tuple[str, ...] = (
     "event_name",   # canonical event name, closed vocabulary only
     "feature",      # properties.feature_name, PARTIAL dimension/coverage
     "cta_id",       # properties.cta_id
+    "page_path",    # properties.page_path -- Task 9A, AVAILABLE dimension
 )
 
 
@@ -321,7 +328,47 @@ PAGE_ACTION_ATTRIBUTION_GAP = (
     "the moment each website producer call fires -- NOT the session's landingPage. "
     "Preferred over overloading the existing screen_name/cta_location fields, which "
     "already carry a different, established meaning (a controlled UI label, not a "
-    "route) and are inconsistently populated across call sites today."
+    "route) and are inconsistently populated across call sites today.\n\n"
+    "TASK 9A RESOLUTION (implemented, not merely proposed, as of this task): exactly "
+    "the minimal extension above was built. `page_path` is now an optional, "
+    "allowlisted property on cta_click, feature_used, app_download_intent, and "
+    "report_discovery_viewed (modules/activity_events/event_schemas.py), validated "
+    "by ingestion_validation.validate_page_path() (reject-not-drop on a malformed "
+    "value), and attached automatically at CALL TIME by every one of their existing "
+    "website producers via lib/websiteEvents.ts's centralized withPagePath() helper "
+    "(itself backed by lib/pagePath.ts's getCurrentPagePath(), never landingPage, "
+    "never a static/startup-time capture). This closes the gap for the 4 events that "
+    "received it -- see PAGE_ACTION_ATTRIBUTION_GAP_STATUS below for exactly what "
+    "remains open. subscription_discovery_viewed was deliberately NOT extended: it "
+    "has no live website producer to extend (Task 2D finding, unchanged) -- adding "
+    "page_path to an event nothing calls would be dead schema, not a real fix."
+)
+
+# Task 9A -- the gap's own closure status, kept alongside the historical finding
+# above rather than deleting it (the finding remains true of the events it was
+# never extended to, and is valuable audit history for the 4 that were fixed).
+# NOT a blanket "CLOSED" -- deliberately named to say exactly what closed and what
+# did not, so a future reader cannot mistake this for "every page-action question
+# is now answerable."
+PAGE_ACTION_ATTRIBUTION_GAP_STATUS = "CLOSED_FOR_EXISTING_PRODUCERS"
+
+# What CLOSED_FOR_EXISTING_PRODUCERS means, and its own explicit remaining limits --
+# read together with the metric catalog's own per-metric quality_status/limitations
+# below, never in place of them.
+PAGE_ACTION_ATTRIBUTION_GAP_REMAINING_LIMITATIONS = (
+    "subscription_discovery_viewed still carries no page_path -- no live website "
+    "producer exists to extend (unchanged Task 2D finding); extending an unused "
+    "event's schema would not itself close anything.",
+    "Any activity_events row WRITTEN BEFORE this task shipped has no page_path "
+    "(the property is optional and was not backfilled) -- page-level breakdowns "
+    "are only complete from this task's deploy time forward.",
+    "page_path answers 'which page', never 'which tool/CTA is fully instrumented' -- "
+    "tool_completions_by_page remains PARTIAL because feature_used itself is only "
+    "produced for Free Kundali (Panchang/Muhurat/Horoscope/other calculators remain "
+    "uninstrumented, Task 2D), independent of and unaffected by this task.",
+    "cta_click's screen_name field remains a coarse, manually-curated UI label, "
+    "unaffected by this task -- page_path is a separate, additional dimension, not a "
+    "reinterpretation or replacement of screen_name (Task 9A S14's explicit rule).",
 )
 
 
@@ -477,26 +524,36 @@ WEBSITE_METRIC_CATALOG: Tuple[WebsiteMetricDefinition, ...] = (
     WebsiteMetricDefinition(
         "tool_completions_by_page", "Tool Completions by Page", SOURCE_ACTIVITY_EVENTS,
         "feature_used rows grouped by the page the completion happened on.",
-        "Would count feature_used rows per pathname/page, IF that field existed.",
-        _LEDGER_TIME, ("date_range", "pathname_or_page", "feature"), QUALITY_BLOCKED,
-        ("PAGE_ACTION_ATTRIBUTION_GAP -- feature_used carries no page/pathname field at all.",),
+        "Count of feature_used rows grouped by properties.page_path.",
+        _LEDGER_TIME, ("date_range", "pathname_or_page", "feature"), QUALITY_PARTIAL,
+        ("Task 9A closed the PAGE_ACTION_ATTRIBUTION_GAP for this event -- page_path is now "
+         "attached at call time. Still PARTIAL, not READY: the underlying tool-COVERAGE gap is "
+         "unrelated and unchanged -- only Free Kundali (kundali_generate) produces feature_used "
+         "at all (see tool_completions_all); a page breakdown of an incomplete event set is "
+         "still an incomplete breakdown.",),
     ),
     WebsiteMetricDefinition(
         "cta_clicks_by_page", "CTA Clicks by Page", SOURCE_ACTIVITY_EVENTS,
         "cta_click rows grouped by the page the click happened on.",
-        "Would count cta_click rows per pathname/page, IF that field existed.",
-        _LEDGER_TIME, ("date_range", "pathname_or_page", "cta_id"), QUALITY_BLOCKED,
-        ("PAGE_ACTION_ATTRIBUTION_GAP -- screen_name is a manually-chosen, per-call-site label, "
-         "not a structured pathname, and only 2 of the live call sites populate it meaningfully today.",),
+        "Count of cta_click rows grouped by properties.page_path.",
+        _LEDGER_TIME, ("date_range", "pathname_or_page", "cta_id"), QUALITY_READY,
+        ("Task 9A closed the PAGE_ACTION_ATTRIBUTION_GAP for this event -- page_path is now "
+         "attached at call time for both live cta_click call sites (kundali_form_generate, "
+         "report_catalog_buy_now). READY because, unlike tool_completions_by_page, cta_clicks_"
+         "total/by_cta_id were already READY (every existing CTA is tracked, by design) -- this "
+         "is a new dimension on already-complete coverage, not a breakdown of a partial set.",),
     ),
     WebsiteMetricDefinition(
         "app_download_intents_by_page", "App Download Intents by Page", SOURCE_ACTIVITY_EVENTS,
         "app_download_intent rows grouped by the page the click happened on.",
-        "Would count app_download_intent rows per pathname/page, IF that field existed.",
-        _LEDGER_TIME, ("date_range", "pathname_or_page", "cta_location"), QUALITY_PARTIAL,
-        ("PAGE_ACTION_ATTRIBUTION_GAP -- cta_location encodes page context by NAMING CONVENTION "
-         "for AppDownloadCTA's own per-page call sites, but is IDENTICAL across every page for "
-         "the globally-mounted StickyAppDownloadCTA, so it cannot distinguish pages there at all.",),
+        "Count of app_download_intent rows grouped by properties.page_path.",
+        _LEDGER_TIME, ("date_range", "pathname_or_page", "cta_location"), QUALITY_READY,
+        ("Task 9A closed the PAGE_ACTION_ATTRIBUTION_GAP for this event -- page_path is now "
+         "attached at call time for both AppDownloadCTA (per-page) and StickyAppDownloadCTA "
+         "(global) producers. This specifically resolves the sticky-CTA case named in Task 9A's "
+         "own objective: a click on the identical 'site_global_sticky_cta' placement is now "
+         "distinguishable by the page it was clicked from, via page_path -- cta_location "
+         "(placement) and page_path (page) remain two distinct, both-populated dimensions.",),
     ),
 
     # ---- Tool usage (Task 9 S10) ----
@@ -601,7 +658,10 @@ WEBSITE_METRIC_CATALOG: Tuple[WebsiteMetricDefinition, ...] = (
         "cta_click rows where cta_id = PURCHASED_REPORT_ENTRY_CTA_ID "
         "('report_catalog_buy_now') -- the catalog-entry moment into the purchase funnel, NOT a payment.",
         "Count of cta_click rows where properties.cta_id = 'report_catalog_buy_now'.",
-        _LEDGER_TIME, ("date_range",), QUALITY_READY,
+        _LEDGER_TIME, ("date_range", "pathname_or_page"), QUALITY_READY,
+        ("Task 9A -- page_path is now attached at call time (ReportsPageClient.tsx's single "
+         "'report_catalog_buy_now' call site), so this metric can now also be broken down by "
+         "the page the purchase-intent click occurred on, not just its total count.",),
     ),
     WebsiteMetricDefinition(
         "report_payment_verified", "Report Payment Verified", SOURCE_BACKEND_BUSINESS_TABLE,

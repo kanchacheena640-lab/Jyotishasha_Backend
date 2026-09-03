@@ -41,6 +41,13 @@ MAX_NOTIFICATION_CONTEXT_KEYS = 6
 MAX_STRING_VALUE_LENGTH = 256
 MAX_IDENTIFIER_LENGTH = 64
 
+# Task 9A -- same repository-wide bounded-string-value convention as
+# MAX_STRING_VALUE_LENGTH above (which the generic validate_context_dict
+# gate already enforces on every properties value, page_path included,
+# before this ever runs) -- kept as its own named constant purely for
+# readability at the call site below, not a different bound.
+MAX_PAGE_PATH_LENGTH = MAX_STRING_VALUE_LENGTH
+
 MAX_FUTURE_SKEW = timedelta(minutes=5)
 MAX_HISTORICAL_AGE = timedelta(days=7)
 
@@ -92,6 +99,13 @@ _MAX_PHONE_DIGITS = 15
 # shape check for "looks like a JWT", not a real JWT parser.
 _JWT_SHAPE_RE = re.compile(r"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$")
 
+# Task 9A -- pathname characters only: letters, digits, hyphen,
+# underscore, dot, slash. Deliberately the same safe charset
+# lib/pagePath.ts's own SAFE_PAGE_PATH_RE enforces on the frontend (kept
+# in sync by design -- both sides of this contract were written
+# together in this task, not by shared import across repos).
+_PAGE_PATH_RE = re.compile(r"^/[A-Za-z0-9\-_./]*$")
+
 
 def _looks_like_phone(value: str) -> bool:
     if _UUID_SHAPE_RE.match(value.strip()):
@@ -126,6 +140,45 @@ def validate_identifier(name: str, value) -> None:
         raise ValidationError(name, f"must be 1-{MAX_IDENTIFIER_LENGTH} characters")
     if not _IDENTIFIER_RE.match(value):
         raise ValidationError(name, "must match [A-Za-z0-9_-]+")
+
+
+def validate_page_path(value) -> None:
+    """Task 9A -- properties.page_path. Optional (no-op if value is
+    None: page_path is never required on any event). Raises
+    ValidationError for any malformed value -- this is a deliberate
+    REJECT, not Phase 2's usual drop-and-continue-silently philosophy
+    for a properties key, per Task 9A's own explicit "reject malformed
+    page_path rather than silently accepting a full URL... do not
+    store arbitrary URLs" instruction. Called by both ingestion_service
+    and anonymous_ingestion_service, on struct_properties.get("page_path"),
+    AFTER validate_context_dict's own generic structural gate (which
+    already enforces "is a string" and the MAX_STRING_VALUE_LENGTH
+    bound) and BEFORE event_schemas.sanitize_properties.
+
+    page_path means EXACTLY the normalized website route/pathname an
+    action occurred on -- never a landing page, referrer, full URL,
+    query string, fragment, CTA location, or screen_name."""
+    if value is None:
+        return
+    if not isinstance(value, str):
+        raise ValidationError("properties.page_path", "must be a string")
+    if len(value) > MAX_PAGE_PATH_LENGTH:
+        raise ValidationError("properties.page_path", f"must be at most {MAX_PAGE_PATH_LENGTH} characters")
+    if not value.startswith("/"):
+        raise ValidationError("properties.page_path", "must start with '/'")
+    # Protocol-relative URL ("//evil.com/x") -- resolved by a browser as
+    # an external host, not a same-site absolute path. Checked before
+    # the generic charset check below so this gets its own clear reason.
+    if value.startswith("//"):
+        raise ValidationError("properties.page_path", "must not contain a host")
+    if "?" in value:
+        raise ValidationError("properties.page_path", "must not contain a query string")
+    if "#" in value:
+        raise ValidationError("properties.page_path", "must not contain a fragment")
+    if "://" in value:
+        raise ValidationError("properties.page_path", "must not contain a scheme")
+    if not _PAGE_PATH_RE.match(value):
+        raise ValidationError("properties.page_path", "must contain pathname characters only")
 
 
 def validate_occurred_at(raw) -> datetime:

@@ -203,7 +203,20 @@ EVENT_SCHEMAS = {
     ("login_completed", 1): _schema({"method"}),
 
     # -- II. Acquisition -------------------------------------------------
-    ("app_download_intent", 1): _schema({"cta_location"}),
+    # Task 9A -- "page_path" added (optional) to the 4 website-producible
+    # events below: the normalized website route/pathname the action
+    # actually occurred on, resolving Task 9's own documented
+    # PAGE-ACTION ATTRIBUTION GAP. See ingestion_validation.validate_page_path()
+    # for the strict format contract (must start with "/", no scheme/
+    # host/query/fragment, bounded length) -- unlike every other
+    # property key here, an invalid page_path is REJECTED (the whole
+    # event fails to write), not silently dropped, per that task's own
+    # explicit "do not store arbitrary URLs" instruction. Optional at
+    # this canonical-schema level (not required) precisely because
+    # cta_click and feature_used are cross-platform events -- an
+    # Android/iOS producer of either never sends page_path and is
+    # completely unaffected by this addition.
+    ("app_download_intent", 1): _schema({"cta_location", "page_path"}),
     # Task 5A -- "Google Play install attribution was captured by the
     # Android app and later associated with an authenticated app
     # lifecycle." Frozen meaning, do not reinterpret: this is NOT GA4
@@ -222,8 +235,10 @@ EVENT_SCHEMAS = {
     ("app_install_attributed", 1): _schema(set()),
 
     # -- III. Engagement -------------------------------------------------
-    ("cta_click", 1): _schema({"cta_id", "screen_name"}),
-    ("feature_used", 1): _schema({"feature_name"}),
+    # Task 9A -- "page_path" added (optional); see the app_download_intent
+    # entry above for the full rationale/contract.
+    ("cta_click", 1): _schema({"cta_id", "screen_name", "page_path"}),
+    ("feature_used", 1): _schema({"feature_name", "page_path"}),
 
     # -- V. Ask Now --------------------------------------------------------
     ("asknow_entry_viewed", 1): _schema(set()),
@@ -232,7 +247,10 @@ EVENT_SCHEMAS = {
     ("asknow_answer_failed", 1): _schema({"source", "failure_reason"}),
 
     # -- VI. Reports -------------------------------------------------------
-    ("report_discovery_viewed", 1): _schema({"report_type"}),
+    # Task 9A -- "page_path" added (optional); see the app_download_intent
+    # entry above for the full rationale/contract. report_type itself is
+    # untouched -- Task 9A does not invent one for the catalog page.
+    ("report_discovery_viewed", 1): _schema({"report_type", "page_path"}),
     ("report_generation_started", 1): _schema({"report_type"}),
     ("report_generation_completed", 1): _schema({"report_type"}),
     ("report_generation_failed", 1): _schema({"failure_reason"}),
