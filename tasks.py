@@ -288,11 +288,11 @@ def _generate_and_send_report_core(order_id):
                 # after the Ready commit above, and strictly BEFORE the
                 # email send below -- report_generation_completed means
                 # the report itself was generated, independent of
-                # whether delivery afterward succeeds (a post-Ready email
-                # failure is caught by this function's own outer except
-                # below, which already refuses to overwrite report_stage
-                # back to "Failed" once it is "Ready" -- see that
-                # handler's own guard).
+                # whether delivery afterward succeeds. Task 17B: a
+                # post-Ready email failure is now caught by its own
+                # dedicated try/except immediately below (not this
+                # function's outer one), which records truthful email
+                # state and never touches report_stage.
                 _emit_report_event(
                     event_name="report_generation_completed",
                     order_id=order_id,
@@ -306,8 +306,51 @@ def _generate_and_send_report_core(order_id):
                 f"Please find attached your personalized astrology report.\n\n"
                 f"Regards,\nTeam Jyotishasha"
             )
-            send_email(order["email"], subject, body, output_path)
-            print(f"[Task] ✅ Email sent to {order['email']}")
+
+            # Task 17B -- deliberately its OWN try/except, separate from
+            # this function's outer one below. report_stage is already
+            # "Ready" at this point (the report itself is genuinely done);
+            # an email failure must never be allowed to fall through to
+            # the outer handler and either flip report_stage back toward
+            # "Failed" or emit a misleading report_generation_failed event
+            # for what is actually only a delivery failure. email_utils.
+            # send_email() now RAISES on failure instead of swallowing it
+            # (Task 17A's own root-cause finding) -- caught here, exactly
+            # once, and turned into durable, truthful Order state instead.
+            # Commits only ONCE, after the SMTP attempt has already
+            # concluded either way -- never before -- so a DB failure here
+            # can never falsely claim an email was sent (or attempted)
+            # before the real SMTP outcome is already known.
+            try:
+                send_email(order["email"], subject, body, output_path)
+                print(f"[Task] ✅ Email sent to {order['email']}")
+                email_order = Order.query.get(order_id)
+                if email_order:
+                    now = datetime.utcnow()
+                    email_order.email_last_attempt_at = now
+                    email_order.email_status = "SENT"
+                    email_order.email_sent_at = now
+                    email_order.email_error = None
+                    db.session.commit()
+            except Exception as email_exc:
+                print(f"[Task] ❌ Error sending report email: {email_exc}")
+                try:
+                    email_order = Order.query.get(order_id)
+                    if email_order:
+                        email_order.email_last_attempt_at = datetime.utcnow()
+                        email_order.email_status = "FAILED"
+                        # Bounded/sanitized: smtplib's own exception text never
+                        # contains SENDER_PASSWORD/credentials, but this is
+                        # truncated defensively regardless -- this column's
+                        # only job is "give an operator a clue," never a full
+                        # traceback or provider internals.
+                        email_order.email_error = str(email_exc)[:500]
+                        db.session.commit()
+                except Exception as state_write_error:
+                    print(f"[Task] ⚠️ Could not record email FAILED state: {state_write_error}")
+                # Deliberately NOT re-raised -- report generation already
+                # succeeded (report_stage == "Ready") and must stay that
+                # way; see this block's own docstring-comment above.
 
     except Exception as e:
         print(f"[Task] ❌ Error generating report: {e}")
