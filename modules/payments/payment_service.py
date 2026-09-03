@@ -289,6 +289,7 @@ class PaymentService:
                 purpose=request.purpose,
                 profile_id=request.profile_id,
                 failure_reason=failure_reason,
+                campaign_context=request.campaign_context,
             )
             return result
 
@@ -420,6 +421,7 @@ class PaymentService:
             entity_id=entity_id,
             order_reference=order_reference,
             dedupe_key=self._payment_verified_dedupe_key(request),
+            campaign_context=request.campaign_context,
         )
         return result
 
@@ -453,6 +455,10 @@ class PaymentService:
                 provider=request.provider,
                 purpose=request.purpose,
                 profile_id=request.profile_id,
+                # Task 10A S14 -- diagnostic value only (never re-derives
+                # a conversion from this event); the SAME transaction's
+                # attribution snapshot, not a fresh claim.
+                campaign_context=request.campaign_context,
             )
             return self._duplicate_result(request, existing)
 
@@ -562,6 +568,7 @@ class PaymentService:
                     else None
                 ),
                 dedupe_key=self._payment_verified_dedupe_key(request),
+                campaign_context=request.campaign_context,
             )
             return PaymentVerificationResult(
                 status=PaymentStatus.VERIFIED,
@@ -1129,6 +1136,7 @@ class PaymentService:
         order_reference: Optional[str] = None,
         failure_reason: Optional[str] = None,
         dedupe_key: Optional[str] = None,
+        campaign_context: Optional[Dict[str, str]] = None,
     ) -> None:
         """Called ONLY after this service's own authoritative business
         commit for the request has already completed (see each call
@@ -1139,7 +1147,16 @@ class PaymentService:
         amount of mapping logic above -- not in record_event() itself
         -- can never propagate back into a caller whose
         PaymentVerificationResult has already been decided. Purely
-        observational: nothing here can influence what is returned."""
+        observational: nothing here can influence what is returned.
+
+        campaign_context (Task 10A) is always the durable transaction
+        snapshot each call site already resolved onto its own
+        PaymentRequest (modules/payments/campaign_attribution.py) --
+        this method never re-derives, re-validates, or trusts a fresh
+        value itself; record_event() applies its own, unmodified
+        sanitize_campaign_context() as the final defense-in-depth pass,
+        exactly like every other campaign_context producer already
+        relies on."""
         properties: Dict[str, Any] = {"purpose": purpose, "provider": provider}
         if order_reference is not None:
             properties["order_reference"] = order_reference
@@ -1158,6 +1175,7 @@ class PaymentService:
                 entity_type=entity_type,
                 entity_id=entity_id,
                 properties=properties,
+                campaign_context=campaign_context,
                 dedupe_key=dedupe_key,
             )
         except Exception:

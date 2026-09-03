@@ -96,6 +96,14 @@ class PaymentRequest:
     order_payload: Optional[Dict[str, Any]] = None  # required for PaymentPurpose.REPORT_PURCHASE
     raw_payload: Optional[Dict[str, Any]] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    # Task 10A -- the durable transaction attribution snapshot (utm_source/
+    # utm_medium/utm_campaign/referrer only), resolved BEFORE this request
+    # is built from Razorpay's own order.notes (modules/payments/
+    # campaign_attribution.py) -- never a fresh, unverified browser claim
+    # read directly at verification time. None means "no attribution was
+    # ever recorded for this transaction" -- never fabricated, never
+    # defaulted to a "direct" label.
+    campaign_context: Optional[Dict[str, str]] = None
 
 
 @dataclass

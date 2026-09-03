@@ -179,6 +179,7 @@ def webhook():
         PaymentStatus,
     )
     from modules.payments.razorpay_provider import RazorpayProvider
+    from modules.payments.campaign_attribution import extract_campaign_context_from_notes
 
     # Raw text captured BEFORE parsing -- Razorpay's server webhook
     # signature (verified below, Case A) is an HMAC over the exact raw
@@ -307,6 +308,12 @@ def webhook():
             except (TypeError, ValueError):
                 pass
 
+        # Task 10A -- notes already carries the durable attribution
+        # snapshot (set at /api/razorpay-order creation time) for free in
+        # this server-to-server event's own payload -- no extra API call
+        # needed for this path.
+        campaign_context = extract_campaign_context_from_notes(notes)
+
         payment_request = PaymentRequest(
             provider=PaymentProviderType.RAZORPAY,
             purpose=PaymentPurpose.REPORT_PURCHASE,
@@ -315,6 +322,7 @@ def webhook():
             signature=None,
             order_payload=order_payload,
             metadata={"source": "webhook"},
+            campaign_context=campaign_context,
         )
         return _run_payment_service(payment_request)
 
@@ -345,6 +353,15 @@ def webhook():
         print("[Webhook] Missing Razorpay verification fields -- rejecting.")
         return jsonify({"error": "Missing Razorpay verification fields"}), 400
 
+    # Task 10A -- deliberately NOT read from `data` (the browser's own
+    # resent payload) -- payment_verified's own campaign_context must
+    # come from the durable transaction snapshot, never a fresh claim
+    # made directly at verification time (Task 10A S13). One Razorpay
+    # API read, wrapped so any failure there can never block the
+    # payment itself -- returns None (not a fabricated "direct") on any
+    # error, exactly like a transaction that recorded no attribution.
+    campaign_context = RazorpayProvider.fetch_order_campaign_context(razorpay_order_id)
+
     payment_request = PaymentRequest(
         provider=PaymentProviderType.RAZORPAY,
         purpose=PaymentPurpose.REPORT_PURCHASE,
@@ -352,6 +369,7 @@ def webhook():
         payment_id=razorpay_payment_id,
         signature=razorpay_signature,
         order_payload=data,
+        campaign_context=campaign_context,
     )
     return _run_payment_service(payment_request)
 
@@ -431,6 +449,10 @@ def full_kundali():
 def create_razorpay_order():
     import json
     import time
+    from modules.payments.campaign_attribution import (
+        sanitize_campaign_attribution_snapshot,
+        build_razorpay_notes_fields,
+    )
     try:
         data = request.get_json() or {}
         product_id_raw = data.get("product", "")
@@ -470,6 +492,20 @@ def create_razorpay_order():
                 notes["partner_json"] = json.dumps(partner_payload)[:512]
             except (TypeError, ValueError):
                 pass
+
+        # Task 10A -- optional first-party campaign attribution snapshot
+        # (Task 2C's own immutable, first-touch capture, already computed
+        # client-side -- never re-parsed here). Forwarded into Razorpay's
+        # own `notes` exactly like name/email/dob above, so it survives
+        # to /webhook via the SAME existing recovery mechanism, for BOTH
+        # the browser-callback path (fetched back via RazorpayProvider.
+        # fetch_order_campaign_context()) and the server-to-server
+        # payment.captured recovery path (arrives for free in that
+        # event's own payload). A missing/malformed/absent value here
+        # never blocks order creation -- sanitize_campaign_attribution_
+        # snapshot() always returns a plain dict, {} at worst.
+        campaign_context = sanitize_campaign_attribution_snapshot(data.get("campaign_context"))
+        notes.update(build_razorpay_notes_fields(campaign_context))
 
         payload = {
             "amount": amount_paise,

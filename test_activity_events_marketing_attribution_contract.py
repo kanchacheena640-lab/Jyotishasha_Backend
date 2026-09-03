@@ -153,16 +153,30 @@ def main():
     # =====================================================================
     print("\n=== financial conversion attribution status ===")
     check("15: FINANCIAL_CONVERSION_ATTRIBUTION_GAP_CONFIRMED is True", mac.FINANCIAL_CONVERSION_ATTRIBUTION_GAP_CONFIRMED is True)
-    check("15b: all 3 per-vertical gap flags are True",
-          mac.REPORT_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP is True
-          and mac.ASKNOW_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP is True
+    # Task 10A note: REPORT_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP was CLOSED
+    # (payment_verified COUNT-by-campaign attribution) by that later task --
+    # Ask Now and Subscription remain fully gapped, re-verified, unchanged.
+    # See Task 10A's own regression suite (test_payment_campaign_attribution.py)
+    # for the implementation-level proof; this file only re-checks the
+    # frozen catalog-level facts still hold together consistently.
+    check("15b: REPORT_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP is False (Task 10A closed it for payment_verified COUNT)",
+          mac.REPORT_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP is False)
+    check("15b2: ASKNOW/SUBSCRIPTION per-vertical gap flags remain True (no website seam, unchanged)",
+          mac.ASKNOW_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP is True
           and mac.SUBSCRIPTION_START_CAMPAIGN_ATTRIBUTION_GAP is True)
-    check("15c: report_revenue_by_campaign is BLOCKED", by_id["report_revenue_by_campaign"].quality_status == wmc.QUALITY_BLOCKED)
+    check("15c: report_payment_verified_by_campaign (COUNT) is PARTIAL, not BLOCKED (Task 10A)",
+          by_id["report_payment_verified_by_campaign"].quality_status == wmc.QUALITY_PARTIAL)
+    check("15c2: report_revenue_by_campaign (SUM/amount) remains BLOCKED -- revenue was never Task 10A's goal",
+          by_id["report_revenue_by_campaign"].quality_status == wmc.QUALITY_BLOCKED)
     check("15d: subscription_starts_by_campaign is BLOCKED", by_id["subscription_starts_by_campaign"].quality_status == wmc.QUALITY_BLOCKED)
     check("15e: asknow_revenue_by_campaign is BLOCKED", by_id["asknow_revenue_by_campaign"].quality_status == wmc.QUALITY_BLOCKED)
-    check("15f: all 3 revenue-by-campaign metrics cite the financial gap",
+    check("15f: the two STILL-blocked revenue metrics (subscription/asknow) cite the financial gap",
           all("FINANCIAL_CONVERSION_ATTRIBUTION_GAP" in " ".join(by_id[mid].limitations)
-              for mid in ("report_revenue_by_campaign", "subscription_starts_by_campaign", "asknow_revenue_by_campaign")))
+              for mid in ("subscription_starts_by_campaign", "asknow_revenue_by_campaign")))
+    check("15g: REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS is PARTIAL (Task 10A, was BLOCKED)",
+          mac.REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS == wmc.QUALITY_PARTIAL)
+    check("15h: REPORT_GENERATION_CAMPAIGN_ATTRIBUTION_STATUS remains BLOCKED (Task 10A deliberately did not extend there)",
+          mac.REPORT_GENERATION_CAMPAIGN_ATTRIBUTION_STATUS == wmc.QUALITY_BLOCKED)
 
     # =====================================================================
     # 16/17 -- no ROAS/CPA metric marked READY
@@ -218,8 +232,17 @@ def main():
     check("21: report_purchase_intent vs report_payment_verified pair is documented", pair.conversion_fact == "report_payment_verified")
     check("21b: REPORT_ATTRIBUTION_LIMITATION explicitly forbids calling intent 'report sales'",
           "report sales" in mac.REPORT_ATTRIBUTION_LIMITATION.reason.lower())
-    check("21c: REPORT_PURCHASE_INTENT_CAMPAIGN_ATTRIBUTION_STATUS != REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS",
-          mac.REPORT_PURCHASE_INTENT_CAMPAIGN_ATTRIBUTION_STATUS != mac.REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS)
+    # Task 10A note: both are legitimately QUALITY_PARTIAL today (Task 10A
+    # closed payment_verified's own gap) -- no longer required to differ in
+    # enum VALUE, but they remain two separately-defined, separately-
+    # documented constants for two conceptually distinct facts (intent vs
+    # verified conversion), which is what actually matters here.
+    check("21c: REPORT_PURCHASE_INTENT_CAMPAIGN_ATTRIBUTION_STATUS and REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS are separately-defined constants (intent vs conversion kept conceptually distinct even where their current quality_status coincides)",
+          "REPORT_PURCHASE_INTENT_CAMPAIGN_ATTRIBUTION_STATUS" != "REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS"
+          and hasattr(mac, "REPORT_PURCHASE_INTENT_CAMPAIGN_ATTRIBUTION_STATUS")
+          and hasattr(mac, "REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS"))
+    check("21d: report_generation_completed's own status (BLOCKED) DOES still differ from payment_verified's (PARTIAL) -- Task 10A's real remaining boundary",
+          mac.REPORT_GENERATION_CAMPAIGN_ATTRIBUTION_STATUS != mac.REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS)
 
     # =====================================================================
     # 22 -- direct classification requires explicit stored direct state

@@ -401,34 +401,60 @@ WEBSITE_TO_APP_JOIN_POLICY = (
 
 # =======================================================================
 # FINANCIAL CONVERSION ATTRIBUTION GAP (Task 10 S15 -- critical)
+#
+# Task 10A UPDATE: PARTIALLY CLOSED for REPORT_PURCHASE's payment_verified
+# specifically -- see modules/payments/campaign_attribution.py and
+# payment_service.py's own _emit_payment_event(). Historical Task 10
+# finding preserved below (still accurate for report_generation_*, and
+# fully accurate for Ask Now/Subscription, which remain untouched) --
+# nothing here is silently deleted, only narrowed to what remains true.
 # =======================================================================
 FINANCIAL_CONVERSION_ATTRIBUTION_GAP_CONFIRMED = True
 
 FINANCIAL_CONVERSION_ATTRIBUTION_GAP = (
-    "CONFIRMED via direct source audit, not assumed: grepped every backend-"
-    "authoritative conversion producer for 'campaign_context' -- zero matches in "
-    "modules/payments/payment_service.py (payment_initiated/payment_verified/"
-    "payment_failed), modules/entitlement/entitlement_write_service.py "
-    "(subscription_started and the rest of the subscription lifecycle), modules/"
-    "ai_report_engine/lifecycle_manager.py (report_generation_started/completed/"
-    "failed), and modules/services/chat_pack_service.py (Ask Now purchase). None of "
-    "these ever pass campaign_context to record_event() -- confirmed by reading "
-    "modules/activity_events/service.py's own record_event() signature (campaign_"
-    "context defaults to None, stored NULL unless a caller explicitly supplies it) "
-    "and finding no such caller among any backend-internal conversion producer. This "
-    "is ARCHITECTURAL, not incidental: these events fire from payment webhooks and "
-    "backend business logic, which has no browser session/UTM context available to "
-    "it at write time -- campaign_context only ever flows from a browser-originated "
-    "ingestion request (anonymous or authenticated), never from a backend-internal "
-    "call site. CONSEQUENCE: revenue cannot currently be attributed to a marketing "
-    "campaign for report purchases, subscription starts, or Ask Now purchases. No "
-    "campaign ROAS, CPA, or 'revenue by campaign' metric is possible for ANY vertical "
-    "today."
+    "Task 10's original finding, CONFIRMED via direct source audit at the time: "
+    "grepped every backend-authoritative conversion producer for 'campaign_context' "
+    "-- zero matches in modules/payments/payment_service.py (payment_initiated/"
+    "payment_verified/payment_failed), modules/entitlement/entitlement_write_"
+    "service.py (subscription_started and the rest of the subscription lifecycle), "
+    "modules/ai_report_engine/lifecycle_manager.py (report_generation_started/"
+    "completed/failed), and modules/services/chat_pack_service.py (Ask Now "
+    "purchase). None of these passed campaign_context to record_event() at that "
+    "time -- campaign_context only ever flowed from a browser-originated ingestion "
+    "request (anonymous or authenticated), never from a backend-internal call site, "
+    "because backend business logic (payment webhooks, Celery tasks) has no browser "
+    "session/UTM context available to it at write time.\n\n"
+    "TASK 10A RESOLUTION (implemented, not merely proposed, as of this task): "
+    "PaymentService's payment_verified/payment_failed/payment_duplicate_ignored "
+    "emissions for PaymentPurpose.REPORT_PURCHASE now carry a durable campaign "
+    "attribution SNAPSHOT (utm_source/utm_medium/utm_campaign/referrer only -- "
+    "never amount/currency/PII), captured once at /api/razorpay-order creation "
+    "time from the browser's own Task 2C first-touch context, persisted in "
+    "Razorpay's own order.notes (the SAME existing, already-durable mechanism "
+    "already used for name/email/dob recovery), and retrieved at verification "
+    "time -- NEVER trusted directly from the verification request itself. See "
+    "REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS below.\n\n"
+    "WHAT REMAINS GAPPED, precisely: (1) report_generation_started/completed/"
+    "failed still carry NO campaign attribution -- propagating there would require "
+    "a NEW durable, order-scoped persistence field (Order has no existing suitable "
+    "one; Order.partner_payload is a different, unrelated concept), which Task 10A "
+    "deliberately did not create without explicit authorization (see this task's "
+    "own migration gate) -- a documented, future corrective subtask, not "
+    "implemented here. (2) No AMOUNT/currency is propagated anywhere -- true "
+    "'revenue by campaign' (a SUM, not a COUNT) remains unbuilt regardless (Task "
+    "10A's own explicit non-goal). (3) Ask Now and Subscription purchases remain "
+    "entirely unattributed -- see ASKNOW_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP and "
+    "SUBSCRIPTION_START_CAMPAIGN_ATTRIBUTION_GAP, both still True (re-verified, no "
+    "website purchase-creation seam exists for either). No campaign ROAS, CPA, or "
+    "'revenue by campaign' metric is possible for ANY vertical today, including "
+    "reports."
 )
 
-# Per-vertical breakdown, explicitly requested (Task 10 S15) -- all three
-# TRUE (gap confirmed) as of this audit.
-REPORT_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP = True
+# Per-vertical breakdown, explicitly requested (Task 10 S15). Task 10A
+# UPDATE: REPORT_PURCHASE's own gap (payment_verified specifically,
+# COUNT/grouping, never revenue) is now False -- Ask Now and Subscription
+# remain True, re-verified, unchanged.
+REPORT_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP = False
 ASKNOW_PURCHASE_CAMPAIGN_ATTRIBUTION_GAP = True
 SUBSCRIPTION_START_CAMPAIGN_ATTRIBUTION_GAP = True
 
@@ -461,8 +487,17 @@ INTENT_VS_CONVERSION_PAIRS: Tuple[IntentVsConversionPair, ...] = (
 # =======================================================================
 REPORT_DISCOVERY_CAMPAIGN_ATTRIBUTION_STATUS = QUALITY_PARTIAL     # website event, has campaign_context, first-touch coverage only
 REPORT_PURCHASE_INTENT_CAMPAIGN_ATTRIBUTION_STATUS = QUALITY_PARTIAL  # same -- cta_click, website event
-REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS = QUALITY_BLOCKED   # financial gap
-REPORT_GENERATION_CAMPAIGN_ATTRIBUTION_STATUS = QUALITY_BLOCKED          # financial gap
+# Task 10A -- BLOCKED -> PARTIAL: payment_verified for REPORT_PURCHASE now
+# carries the durable campaign_context snapshot (see modules/payments/
+# campaign_attribution.py). PARTIAL, not READY: coverage still depends on
+# the browser having a Task 2C snapshot to begin with (first-touch, same
+# limit every other first-party attribution metric has) AND, for the
+# browser-callback path specifically, on RazorpayProvider.fetch_order_
+# campaign_context()'s own Razorpay API call succeeding (never blocks the
+# payment on failure, but does mean a transient Razorpay-API hiccup can
+# silently leave that one payment_verified row unattributed).
+REPORT_PAYMENT_VERIFIED_CAMPAIGN_ATTRIBUTION_STATUS = QUALITY_PARTIAL
+REPORT_GENERATION_CAMPAIGN_ATTRIBUTION_STATUS = QUALITY_BLOCKED          # unchanged -- see FINANCIAL_CONVERSION_ATTRIBUTION_GAP's "what remains gapped"
 
 REPORT_ATTRIBUTION_LIMITATION = AnalyticsLimitation(
     metric="marketing_attribution.report_purchase_intent",
@@ -470,11 +505,16 @@ REPORT_ATTRIBUTION_LIMITATION = AnalyticsLimitation(
         "report_discovery_viewed and the report_catalog_buy_now cta_click are both "
         "browser-originated website events and DO carry campaign_context when Task 2C "
         "captured one -- PARTIAL, not READY, purely due to normal first-touch coverage "
-        "limits (a direct/no-campaign visit has none). payment_verified and "
-        "report_generation_completed are backend-authoritative and carry NO campaign "
-        "attribution at all (FINANCIAL_CONVERSION_ATTRIBUTION_GAP). Report purchase "
-        "INTENT must never be called 'report sales' -- sales/revenue requires the "
-        "verified-payment side, which has no campaign attribution today."
+        "limits (a direct/no-campaign visit has none). payment_verified (Task 10A) now "
+        "ALSO carries campaign_context for REPORT_PURCHASE, sourced from the durable "
+        "Razorpay-notes snapshot, never the verification request itself -- also "
+        "PARTIAL, same first-touch coverage limit plus the browser-callback path's own "
+        "Razorpay-API-fetch dependency. report_generation_completed still carries NO "
+        "campaign attribution (unchanged, BLOCKED -- see FINANCIAL_CONVERSION_"
+        "ATTRIBUTION_GAP). Report purchase INTENT must never be called 'report sales' "
+        "-- true sales/revenue-by-campaign requires an amount, which is never sourced "
+        "from campaign attribution and is not implemented by Task 10A at all "
+        "(Task 10A's own explicit non-goal)."
     ),
 )
 
@@ -904,14 +944,37 @@ MARKETING_ATTRIBUTION_METRIC_CATALOG: Tuple[MarketingAttributionMetricDefinition
         ("NOT a deterministic user-level join -- WEBSITE_TO_APP_DETERMINISTIC_JOIN_POSSIBLE is False. An aggregate funnel INDICATOR only.",),
     ),
 
-    # ---- Financial conversion attribution status (Task 10 S15) ----
+    # ---- Financial conversion attribution status (Task 10 S15, updated Task 10A) ----
+    MarketingAttributionMetricDefinition(
+        "report_payment_verified_by_campaign", "Verified Report Payments by Campaign", SOURCE_BACKEND_BUSINESS_TABLE,
+        "Task 10A -- count of AUTHORITATIVE, verified report-purchase payments grouped by "
+        "campaign_context.utm_campaign. A COUNT, never a SUM/revenue figure -- answers "
+        "'how many verified commercial conversions originated from campaign X', not "
+        "'how much revenue did campaign X generate'.",
+        "payment_verified rows where properties.purpose='REPORT_PURCHASE'.",
+        "COUNT(*) GROUP BY campaign_context.utm_campaign, restricted to rows where "
+        "campaign_context is non-null (see is_usable_campaign_attribution()).",
+        _LEDGER_TIME, ("date_range", "campaign"), QUALITY_PARTIAL,
+        ("Task 10A closed this specific gap: payment_verified for REPORT_PURCHASE now carries "
+         "a durable campaign_context snapshot (modules/payments/campaign_attribution.py) -- "
+         "never trusted from the verification request itself. PARTIAL, not READY: bounded by "
+         "the same first-touch coverage limit every first-party attribution metric has (a "
+         "direct/no-campaign visit has none), plus the browser-callback path's own dependency "
+         "on a successful Razorpay API notes-fetch (never blocks the payment on failure, but "
+         "can leave that one row unattributed).",),
+    ),
     MarketingAttributionMetricDefinition(
         "report_revenue_by_campaign", "Report Revenue by Campaign", SOURCE_BACKEND_BUSINESS_TABLE,
-        "Would attribute verified report-purchase revenue to a marketing campaign, IF payment_verified carried campaign_context.",
+        "Would attribute verified report-purchase REVENUE (an amount, summed) to a marketing "
+        "campaign. Explicitly distinct from report_payment_verified_by_campaign (a count) above.",
         "payment_verified rows where properties.purpose='REPORT_PURCHASE'.",
         "Would be SUM(amount) GROUP BY campaign_context.utm_campaign -- not computable today.",
         _LEDGER_TIME, ("date_range", "campaign"), QUALITY_BLOCKED,
-        ("FINANCIAL_CONVERSION_ATTRIBUTION_GAP -- payment_verified never carries campaign_context. No ROAS/CPA/revenue-by-campaign metric exists as READY anywhere in this catalog.",),
+        ("Task 10A deliberately does NOT implement this -- amount/currency is never accepted "
+         "from or derived via campaign attribution (Task 10A's own explicit non-goal; amount "
+         "remains exclusively backend/provider-sourced). payment_verified's own properties "
+         "schema allows 'amount'/'currency' keys but no current producer populates them. No "
+         "ROAS/CPA/revenue-by-campaign metric exists as READY anywhere in this catalog.",),
     ),
     MarketingAttributionMetricDefinition(
         "subscription_starts_by_campaign", "Subscription Starts by Campaign", SOURCE_BACKEND_BUSINESS_TABLE,

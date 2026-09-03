@@ -124,6 +124,31 @@ class RazorpayProvider(PaymentProvider):
         )
 
     @staticmethod
+    def fetch_order_campaign_context(razorpay_order_id: str):
+        """
+        Task 10A -- retrieves the durable attribution snapshot stored in
+        Razorpay's own order.notes at /api/razorpay-order creation time
+        (see modules/payments/campaign_attribution.py). Used ONLY by the
+        browser-callback verification path (app.py's /webhook Case B) --
+        the server-to-server payment.captured webhook (Case A) already
+        receives notes for free in its own event payload and never needs
+        this extra call.
+
+        Never raises: a Razorpay API failure here must never block a
+        payment (Task 10A S8) -- returns None on ANY error, exactly like
+        a transaction that simply has no recorded attribution.
+        """
+        from modules.payments.campaign_attribution import extract_campaign_context_from_notes
+
+        if not razorpay_order_id:
+            return None
+        try:
+            order = razorpay_client.order.fetch(razorpay_order_id)
+        except Exception:
+            return None
+        return extract_campaign_context_from_notes((order or {}).get("notes"))
+
+    @staticmethod
     def verify_webhook_signature(raw_body: str, signature: str) -> bool:
         """
         Authenticates a server-to-server webhook delivery: HMAC-SHA256
