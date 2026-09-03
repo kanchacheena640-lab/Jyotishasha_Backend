@@ -41,12 +41,44 @@ variants beyond 1, should Phase 2 ever add one -- is rejected here, not
 silently allowed because event_schemas.is_known_event() happens to say
 yes.
 
+Task 5A -- one further narrowly-scoped addition, its own explicit
+design-freeze pass: "app_install_attributed". Represents "Google Play
+install attribution was captured by the Android app and later
+associated with an authenticated app lifecycle" -- a fact only the
+Android app (which alone possesses the Play Install Referrer evidence)
+can observe, exactly the same ownership reasoning already established
+for login_completed above. It is NOT GA4 first_open, NOT a raw install
+counter, NOT the website's own app_download_intent, and NOT proof of a
+user-level website-to-install conversion -- see
+modules/activity_events/event_schemas.py's own registration comment
+for the full frozen meaning. Placed in EVENT_PLATFORM_RESTRICTIONS
+below because -- uniquely among this set -- it must never be
+producible from any platform other than app_android (Task 5A's own
+explicit platform-safety requirement: this fact currently only has
+meaning for a Google Play install).
+
+Exactly these 12 client-ingestible events as of Task 5A.
+
 entity_type/entity_id policy (Phase 3 Step 2, S7): only report_viewed
 and report_downloaded may carry entity_type="ai_report" (Order-based
 purchased-PDF reports are explicitly NOT supported in this v1 --
 Order has no account/profile linkage column to verify ownership
 against). Every other client-ingestible event must not carry
 entity_type/entity_id at all.
+
+Platform-restriction policy (Task 5A): the authenticated endpoint's own
+ALLOWED_CLIENT_PLATFORMS (ingestion_service.py) is a single, GLOBAL
+allowlist ({app_android, app_ios, website}) shared by every client-
+ingestible event -- there is no per-event platform concept there. Some
+events are legitimately producible from any of those platforms (e.g.
+cta_click, feature_used); app_install_attributed is not one of them.
+EVENT_PLATFORM_RESTRICTIONS below is a second, narrower, OPT-IN gate --
+most events have no entry and are unrestricted (any globally-allowed
+platform), exactly mirroring how REPORT_ENTITY_EVENTS above is an
+opt-in restriction most events never trigger. This is deliberately the
+smallest addition that closes the gap, not a new architecture: one
+more frozenset-keyed lookup, checked by ingestion_service.py right
+after its own existing global platform check.
 """
 
 # Frozen set -- do not add without a new design-freeze pass. Deliberately
@@ -71,6 +103,7 @@ CLIENT_INGESTIBLE_EVENTS = frozenset({
     "report_downloaded",
     "subscription_discovery_viewed",
     "notification_opened",
+    "app_install_attributed",
 })
 
 # Only these two events may carry an entity_type/entity_id pair, and only
@@ -79,9 +112,27 @@ CLIENT_INGESTIBLE_EVENTS = frozenset({
 REPORT_ENTITY_EVENTS = frozenset({"report_viewed", "report_downloaded"})
 ALLOWED_ENTITY_TYPE = "ai_report"
 
+# Task 5A -- opt-in per-event platform restriction, checked IN ADDITION
+# TO (never instead of) ingestion_service.py's own existing global
+# ALLOWED_CLIENT_PLATFORMS check. An event with no entry here is
+# unrestricted (any globally-allowed platform may produce it) -- see
+# this module's own docstring for the full reasoning.
+EVENT_PLATFORM_RESTRICTIONS = {
+    "app_install_attributed": frozenset({"app_android"}),
+}
+
 
 def is_client_ingestible(event_name: str) -> bool:
     return event_name in CLIENT_INGESTIBLE_EVENTS
+
+
+def is_platform_allowed_for_event(event_name: str, platform: str) -> bool:
+    """True if this event has no platform restriction at all, or if
+    `platform` is one of its restricted set. Callers must have already
+    checked `platform` against the global ALLOWED_CLIENT_PLATFORMS --
+    this function only ever narrows further, never widens."""
+    restriction = EVENT_PLATFORM_RESTRICTIONS.get(event_name)
+    return restriction is None or platform in restriction
 
 
 def requires_entity_ownership(event_name: str) -> bool:

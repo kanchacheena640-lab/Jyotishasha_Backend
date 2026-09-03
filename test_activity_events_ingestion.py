@@ -221,12 +221,16 @@ def main():
             print("EVENT OWNERSHIP")
             from modules.activity_events.ingestion_policy import CLIENT_INGESTIBLE_EVENTS, is_client_ingestible
             # Phase 5D.2 -- login_completed added to the original Phase 3
-            # Step 2 set of 10, making 11. Count re-derived from the real
-            # module below, not asserted blind.
-            check("exactly 11 client-ingestible events frozen", len(CLIENT_INGESTIBLE_EVENTS) == 11)
+            # Step 2 set of 10, making 11. Task 5A -- app_install_attributed
+            # added, making 12 (see test_app_install_attributed_ingestion.py
+            # for that event's own full coverage, including its unique
+            # platform restriction -- not duplicated here). Count re-derived
+            # from the real module below, not asserted blind.
+            check("exactly 12 client-ingestible events frozen", len(CLIENT_INGESTIBLE_EVENTS) == 12)
             for name in ("session_start", "login_completed", "app_download_intent", "cta_click", "feature_used",
                          "asknow_entry_viewed", "report_discovery_viewed", "report_viewed",
-                         "report_downloaded", "subscription_discovery_viewed", "notification_opened"):
+                         "report_downloaded", "subscription_discovery_viewed", "notification_opened",
+                         "app_install_attributed"):
                 check(f"{name} recognized as client-ingestible", is_client_ingestible(name))
             check("page_view NOT client-ingestible", not is_client_ingestible("page_view"))
             check("payment_verified NOT client-ingestible", not is_client_ingestible("payment_verified"))

@@ -204,6 +204,22 @@ EVENT_SCHEMAS = {
 
     # -- II. Acquisition -------------------------------------------------
     ("app_download_intent", 1): _schema({"cta_location"}),
+    # Task 5A -- "Google Play install attribution was captured by the
+    # Android app and later associated with an authenticated app
+    # lifecycle." Frozen meaning, do not reinterpret: this is NOT GA4
+    # first_open, NOT a raw install counter, NOT app_download_intent
+    # (that is the website's own click-intent fact, a different event),
+    # and NOT proof of a user-level website-to-install conversion --
+    # Firebase/GA4 remains the authoritative source for actual install/
+    # first-open volume. No event-specific properties at all: every
+    # attribution field (utm_source/utm_medium/utm_campaign) already
+    # belongs in the existing campaign_context envelope, which already
+    # supports exactly those three keys -- nothing here duplicates them
+    # into `properties`. See modules/activity_events/ingestion_policy.py's
+    # EVENT_PLATFORM_RESTRICTIONS for why this event is additionally
+    # restricted to platform=app_android specifically (on top of the
+    # normal client-platform allowlist), unlike every other event above.
+    ("app_install_attributed", 1): _schema(set()),
 
     # -- III. Engagement -------------------------------------------------
     ("cta_click", 1): _schema({"cta_id", "screen_name"}),

@@ -25,6 +25,7 @@ the payload.
 
 from modules.activity_events.ingestion_policy import (
     is_client_ingestible,
+    is_platform_allowed_for_event,
     requires_entity_ownership,
     entity_fields_allowed,
     parse_entity_id,
@@ -135,6 +136,16 @@ def ingest_client_event(body) -> IngestionOutcome:
     # ---- boundary hardening -----------------------------------------------
     platform = body.get("platform")
     if platform not in ALLOWED_CLIENT_PLATFORMS:
+        return IngestionOutcome(status="invalid_field", field="platform")
+
+    # Task 5A -- a second, narrower, opt-in gate on top of the global
+    # allowlist just above: most events reach here unrestricted (no
+    # entry in EVENT_PLATFORM_RESTRICTIONS), but app_install_attributed
+    # is restricted to platform=app_android specifically -- see
+    # ingestion_policy.py's own docstring. Same 400 invalid_field shape
+    # as the global check above, so a caller cannot distinguish "unknown
+    # platform" from "wrong platform for this specific event."
+    if not is_platform_allowed_for_event(event_name, platform):
         return IngestionOutcome(status="invalid_field", field="platform")
 
     source = body.get("source")
