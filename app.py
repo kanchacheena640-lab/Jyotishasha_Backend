@@ -58,6 +58,7 @@ from routes.routes_app_version import routes_app_version
 from routes.routes_activity_events import routes_activity_events
 from routes.routes_activity_events_anonymous import routes_activity_events_anonymous
 from routes.routes_analytics import routes_analytics
+from routes.routes_website_analytics import routes_website_analytics
 
 
 
@@ -123,6 +124,7 @@ app.register_blueprint(routes_app_version)
 app.register_blueprint(routes_activity_events)
 app.register_blueprint(routes_activity_events_anonymous)
 app.register_blueprint(routes_analytics)
+app.register_blueprint(routes_website_analytics)
 
 # ------------------- ROOT ------------------- #
 @app.route("/")
