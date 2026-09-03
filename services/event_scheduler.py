@@ -1,5 +1,6 @@
 import logging
 import os
+import uuid
 from datetime import datetime, timezone, timedelta, time
 from factory import create_app
 from extensions import db
@@ -42,21 +43,40 @@ def _emit_scheduler_notification_events(*, rows_this_commit, slot):
     """Phase 4D -- observational only, called ONLY after this user's own
     db.session.commit() (inside run_daily_event_job()) has already
     succeeded. `rows_this_commit` is a list of (UserNotification, ntype,
-    was_pushed) tuples -- one entry per row actually included in that
-    commit, for approved (was_pushed=True -- both events) and bell_only
-    (was_pushed=False -- notification_created only) candidates. Never
-    called for a failed send or a dropped candidate -- neither ever
-    creates a row. Each row's own emission is independently wrapped so
-    one failure can never prevent the rest of the batch -- or the outer
-    scheduler/user-pagination loop -- from continuing."""
-    for user_notification, ntype, was_pushed in rows_this_commit:
+    was_pushed, push_notification_id) tuples -- one entry per row
+    actually included in that commit, for approved (was_pushed=True --
+    both events) and bell_only (was_pushed=False -- notification_created
+    only) candidates. Never called for a failed send or a dropped
+    candidate -- neither ever creates a row. Each row's own emission is
+    independently wrapped so one failure can never prevent the rest of
+    the batch -- or the outer scheduler/user-pagination loop -- from
+    continuing.
+
+    Task 15A -- `push_notification_id` (present only for approved/pushed
+    rows; None for bell_only) is the SAME opaque id that was generated
+    BEFORE the FCM send and placed into that push's own data payload
+    (see the `for c in selection.approved:` loop below). It is used
+    ONLY inside `notification_context["notification_id"]` below -- the
+    envelope's own `entity_id`/`dedupe_key` (the real backend business-
+    entity join key, and every other existing consumer of it) keep
+    using `user_notification.id` completely unchanged, exactly as
+    before. Substituting it into `notification_context` specifically is
+    what lets a later `notification_opened` (read back from that same
+    FCM data payload on the device) join to this exact
+    notification_created/notification_sent pair. Falls back to
+    `entity_id` (str(user_notification.id)) when no push id exists
+    (bell_only: no FCM interaction ever happened, so there is nothing
+    for a future notification_opened to join against anyway --
+    unchanged from pre-Task-15A behavior for that case)."""
+    for user_notification, ntype, was_pushed, push_notification_id in rows_this_commit:
         entity_id = str(user_notification.id)
+        context_notification_id = str(push_notification_id) if push_notification_id is not None else entity_id
         occurred_at = (
             user_notification.created_at.replace(tzinfo=timezone.utc)
             if user_notification.created_at is not None
             else datetime.now(timezone.utc)
         )
-        notification_context = {"notification_id": entity_id, "slot": slot}
+        notification_context = {"notification_id": context_notification_id, "slot": slot}
 
         try:
             record_event(
@@ -525,12 +545,25 @@ def run_daily_event_job():
                     for c in selection.approved:
                         success = False
 
+                        # Task 15A -- generated BEFORE the FCM send, purely
+                        # in-process (no DB row/flush required), so it is
+                        # available in time to travel INSIDE this exact
+                        # push's own data payload. Kept OUT of `c["data"]`
+                        # itself (a separate dict is built for the FCM call
+                        # only) so the persisted UserNotification.data below
+                        # -- and every existing reader of it (Bell UI,
+                        # deep-link handling) -- stays byte-for-byte
+                        # unchanged. Discarded/never used if the send below
+                        # doesn't succeed (no row is created in that case,
+                        # exactly as before).
+                        push_notification_id = uuid.uuid4()
+
                         if token:
                             success = send_push_notification(
                                 token=token,
                                 title=c["n"].get("title"),
                                 body=c["n"].get("body"),
-                                data=c["data"],
+                                data={**c["data"], "notification_id": str(push_notification_id)},
                                 android_tag=c["android_tag"]
                             )
 
@@ -556,7 +589,7 @@ def run_daily_event_job():
                                 expires_at=c["expires_at"]
                             )
                             db.session.add(notif)
-                            notification_rows_this_commit.append((notif, c["ntype"], True))
+                            notification_rows_this_commit.append((notif, c["ntype"], True, push_notification_id))
                         # A push that was attempted (token existed) but
                         # failed (`success is False`) is intentionally
                         # NOT logged/persisted here -- exactly the
@@ -593,7 +626,12 @@ def run_daily_event_job():
                             expires_at=c["expires_at"]
                         )
                         db.session.add(bell_notif)
-                        notification_rows_this_commit.append((bell_notif, c["ntype"], False))
+                        # Task 15A -- bell_only never sends an FCM push at
+                        # all, so there is no push-time id to generate or
+                        # thread through; the 4th tuple slot is None,
+                        # matching _emit_scheduler_notification_events'
+                        # own documented fallback to user_notification.id.
+                        notification_rows_this_commit.append((bell_notif, c["ntype"], False, None))
                         user_wrote_anything = True
 
                     # selection.dropped: Tier 3 / routine candidates

@@ -209,10 +209,30 @@ def main():
                     check("A1: firebase_uid None", created_row_a1.firebase_uid is None)
                     check("A1: entity_type/entity_id correct", created_row_a1.entity_type == "notification" and created_row_a1.entity_id == str(un_a1.id))
                     check("A1: properties == {notification_type: custom, target_scope: broadcast}", created_row_a1.properties == {"notification_type": "custom", "target_scope": "broadcast"})
-                    check("A1: notification_context correct", created_row_a1.notification_context == {"notification_id": str(un_a1.id), "campaign_id": str(job_a1.id), "slot": "general"})
+                    # Task 15A -- notification_context.notification_id is now
+                    # the SAME opaque id that was placed into the FCM data
+                    # payload BEFORE the send (captured on sender_a1.calls),
+                    # not str(un_a1.id) -- this is the corrective task's own
+                    # deliberate, intended change (entity_id above stays
+                    # str(un_a1.id) unchanged; only notification_context
+                    # changes). See A9 below for the full created/sent/FCM
+                    # identity-equality proof.
+                    check("A1: notification_context has notification_id + campaign_id + slot",
+                          set(created_row_a1.notification_context.keys()) == {"notification_id", "campaign_id", "slot"}
+                          and created_row_a1.notification_context["campaign_id"] == str(job_a1.id)
+                          and created_row_a1.notification_context["slot"] == "general")
+                    check("A1: notification_context.notification_id == the id sent to FCM (not the raw UserNotification.id)",
+                          len(sender_a1.calls) == 1
+                          and created_row_a1.notification_context["notification_id"] == sender_a1.calls[0]["data"]["notification_id"]
+                          and created_row_a1.notification_context["notification_id"] != str(un_a1.id))
+                    check("A1: FCM data payload preserves the job's existing payload key(s) alongside notification_id",
+                          sender_a1.calls[0]["data"].get("screen") == "test_a1")
+                    check("A1: persisted UserNotification.data is UNCHANGED (no notification_id injected into storage/dedupe shape)",
+                          un_a1.data == {"screen": "test_a1"})
                 if sent_row_a1 is not None:
                     check("A1: notification_sent properties == {}", sent_row_a1.properties == {})
-                    check("A1: notification_sent notification_context correct", sent_row_a1.notification_context == {"notification_id": str(un_a1.id), "campaign_id": str(job_a1.id), "slot": "general"})
+                    check("A1: notification_sent notification_context matches notification_created's (same identity)",
+                          sent_row_a1.notification_context == created_row_a1.notification_context)
 
             # ==========================================================
             print("\n=== A2: N successful recipients -> N created + N sent ===")
@@ -575,7 +595,7 @@ def main():
             db.session.commit()
             created_user_notification_ids.append(un_b1.id)
 
-            _emit_scheduler_notification_events(rows_this_commit=[(un_b1, "panchang", True)], slot="morning")
+            _emit_scheduler_notification_events(rows_this_commit=[(un_b1, "panchang", True, None)], slot="morning")
             created_b1 = track_event(get_ledger_row(f"notification_created:{un_b1.id}"))
             sent_b1 = track_event(get_ledger_row(f"notification_sent:{un_b1.id}"))
             check("B1: notification_created exists", created_b1 is not None)
@@ -605,7 +625,7 @@ def main():
             db.session.commit()
             created_user_notification_ids.append(un_b3.id)
 
-            _emit_scheduler_notification_events(rows_this_commit=[(un_b3, "event", False)], slot="evening")
+            _emit_scheduler_notification_events(rows_this_commit=[(un_b3, "event", False, None)], slot="evening")
             created_b3 = track_event(get_ledger_row(f"notification_created:{un_b3.id}"))
             sent_b3 = get_ledger_row(f"notification_sent:{un_b3.id}")
             check("B3: notification_created exists", created_b3 is not None)
@@ -628,7 +648,7 @@ def main():
             created_user_notification_ids.extend([un_b5a.id, un_b5b.id])
 
             _emit_scheduler_notification_events(
-                rows_this_commit=[(un_b5a, "panchang", True), (un_b5b, "dasha", False)], slot="morning",
+                rows_this_commit=[(un_b5a, "panchang", True, None), (un_b5b, "dasha", False, None)], slot="morning",
             )
             r5a = track_event(get_ledger_row(f"notification_created:{un_b5a.id}"))
             s5a = track_event(get_ledger_row(f"notification_sent:{un_b5a.id}"))
@@ -641,7 +661,7 @@ def main():
             # ==========================================================
             print("\n=== B6: repeated emission attempt against the same row does not duplicate ===")
             # ==========================================================
-            _emit_scheduler_notification_events(rows_this_commit=[(un_b1, "panchang", True)], slot="morning")
+            _emit_scheduler_notification_events(rows_this_commit=[(un_b1, "panchang", True, None)], slot="morning")
             count_b6 = db.session.execute(
                 text("SELECT COUNT(*) FROM activity_events WHERE dedupe_key = :dk"),
                 {"dk": f"notification_created:{un_b1.id}"},
@@ -658,7 +678,7 @@ def main():
             created_user_notification_ids.append(un_b7a.id)
             with patch("services.event_scheduler.record_event") as mock_re_b7a:
                 mock_re_b7a.return_value = LedgerWriteResult(status="write_failed")
-                _emit_scheduler_notification_events(rows_this_commit=[(un_b7a, "panchang", True)], slot="morning")
+                _emit_scheduler_notification_events(rows_this_commit=[(un_b7a, "panchang", True, None)], slot="morning")
             check("B7a write_failed: UserNotification unaffected (still exists)", UserNotification.query.get(un_b7a.id) is not None)
 
             profile_b7b = new_app_user()
@@ -669,7 +689,7 @@ def main():
             with patch("services.event_scheduler.record_event") as mock_re_b7b:
                 mock_re_b7b.side_effect = RuntimeError("simulated")
                 try:
-                    _emit_scheduler_notification_events(rows_this_commit=[(un_b7b, "panchang", True)], slot="morning")
+                    _emit_scheduler_notification_events(rows_this_commit=[(un_b7b, "panchang", True, None)], slot="morning")
                     raised_b7b = False
                 except Exception:
                     raised_b7b = True
@@ -682,7 +702,7 @@ def main():
             created_user_notification_ids.append(un_b7c.id)
             real_env_b7c = os.environ.pop("ACTIVITY_EVENTS_ENVIRONMENT", None)
             try:
-                _emit_scheduler_notification_events(rows_this_commit=[(un_b7c, "panchang", True)], slot="morning")
+                _emit_scheduler_notification_events(rows_this_commit=[(un_b7c, "panchang", True, None)], slot="morning")
             finally:
                 if real_env_b7c is not None:
                     os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = real_env_b7c
@@ -695,7 +715,7 @@ def main():
             created_user_notification_ids.append(un_b7d.id)
             os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = "not_a_real_environment"
             try:
-                _emit_scheduler_notification_events(rows_this_commit=[(un_b7d, "panchang", True)], slot="morning")
+                _emit_scheduler_notification_events(rows_this_commit=[(un_b7d, "panchang", True, None)], slot="morning")
             finally:
                 os.environ["ACTIVITY_EVENTS_ENVIRONMENT"] = "local"
             check("B7d invalid env: no exception raised", True)
@@ -722,11 +742,47 @@ def main():
 
             with patch("services.event_scheduler.record_event", side_effect=flaky_record_event_b8):
                 _emit_scheduler_notification_events(
-                    rows_this_commit=[(un_b8a, "panchang", True), (un_b8b, "dasha", True)], slot="morning",
+                    rows_this_commit=[(un_b8a, "panchang", True, None), (un_b8b, "dasha", True, None)], slot="morning",
                 )
             r_b8b = track_event(get_ledger_row(f"notification_created:{un_b8b.id}"))
             s_b8b = track_event(get_ledger_row(f"notification_sent:{un_b8b.id}"))
             check("B8: the SECOND row's events still landed despite the FIRST row's analytics failure", r_b8b is not None and s_b8b is not None)
+
+            # ==========================================================
+            print("\n=== B9 (Task 15A): a real push-time id (4th tuple element) becomes notification_context.notification_id, not UserNotification.id ===")
+            # ==========================================================
+            # Proves _emit_scheduler_notification_events()'s own contract for
+            # the case run_daily_event_job()'s real `for c in
+            # selection.approved:` loop now produces (a real uuid.uuid4()
+            # generated before the FCM send -- see that loop's own
+            # `push_notification_id = uuid.uuid4()` line). This file's own
+            # docstring already establishes that the surrounding scheduler
+            # loop itself is not re-exercised end-to-end here (B1-B8 above
+            # all call this same direct emission seam) -- this test follows
+            # that same established convention, simply passing a real id in
+            # the 4th tuple slot instead of None.
+            profile_b9 = new_app_user()
+            un_b9 = UserNotification(user_id=profile_b9, title="B9", body="b", data={"type": "panchang"})
+            db.session.add(un_b9)
+            db.session.commit()
+            created_user_notification_ids.append(un_b9.id)
+
+            fake_push_id_b9 = uuid.uuid4()
+            _emit_scheduler_notification_events(
+                rows_this_commit=[(un_b9, "panchang", True, fake_push_id_b9)], slot="morning",
+            )
+            created_b9 = track_event(get_ledger_row(f"notification_created:{un_b9.id}"))
+            sent_b9 = track_event(get_ledger_row(f"notification_sent:{un_b9.id}"))
+            check("B9: notification_created exists (dedupe_key still keyed by the real UserNotification.id, unchanged)", created_b9 is not None)
+            check("B9: notification_sent exists", sent_b9 is not None)
+            if created_b9 is not None:
+                check("B9: entity_id STILL the real UserNotification.id (business join key unchanged)", created_b9.entity_id == str(un_b9.id))
+                check("B9: notification_context.notification_id == the passed push id, NOT UserNotification.id",
+                      created_b9.notification_context["notification_id"] == str(fake_push_id_b9)
+                      and created_b9.notification_context["notification_id"] != str(un_b9.id))
+            if sent_b9 is not None:
+                check("B9: notification_sent notification_context matches notification_created's (same identity)",
+                      sent_b9.notification_context == created_b9.notification_context)
 
             # ==========================================================
             # PIPELINE C -- Alerts (deliver_alert / finalize_delivery)
@@ -788,7 +844,19 @@ def main():
                     check("C1: source == alert_delivery_service", created_c1.source == "alert_delivery_service")
                     check("C1: profile_id correct", created_c1.profile_id == profile_c1)
                     check("C1: properties == {notification_type: alert, target_scope: personal}", created_c1.properties == {"notification_type": "alert", "target_scope": "personal"})
-                    check("C1: notification_context has ONLY notification_id (no slot, no campaign_id)", created_c1.notification_context == {"notification_id": str(un_c1.id)})
+                    check("C1: notification_context has ONLY notification_id (no slot, no campaign_id)", set(created_c1.notification_context.keys()) == {"notification_id"})
+                    # Task 15A -- same substitution as Pipeline A: the id is
+                    # now what was actually sent to FCM (sender_c1.calls),
+                    # not the raw UserNotification.id.
+                    check("C1: notification_context.notification_id == the id sent to FCM (not the raw UserNotification.id)",
+                          len(sender_c1.calls) == 1
+                          and created_c1.notification_context["notification_id"] == sender_c1.calls[0]["data"]["notification_id"]
+                          and created_c1.notification_context["notification_id"] != str(un_c1.id))
+                    check("C1: notification_sent notification_context matches notification_created's (same identity)",
+                          sent_c1.notification_context == created_c1.notification_context)
+                    check("C1: FCM data payload preserves the alert's existing deep-link keys (type/event_id) alongside notification_id",
+                          sender_c1.calls[0]["data"].get("type") == "alert"
+                          and sender_c1.calls[0]["data"].get("event_id") == "mood_positive")
 
             # ==========================================================
             print("\n=== C2: provider failure before finalization -> no event ===")
@@ -1043,6 +1111,38 @@ def main():
                         leak_found = True
                         print(f"  LEAK: {term!r} found in row {eid}")
             check("E: no title/body/token/PII/test-marker text found in any row", leak_found is False)
+
+            # ==========================================================
+            print("\n=== F (Task 15A): scheduler loop ordering -- static source check ===")
+            # ==========================================================
+            # B1-B9 above all exercise _emit_scheduler_notification_events()
+            # directly (this file's own established convention -- the
+            # surrounding run_daily_event_job() loop itself is not
+            # re-exercised end-to-end, per this file's own docstring).
+            # That leaves ONE thing B1-B9 cannot prove behaviorally: that
+            # the REAL `for c in selection.approved:` loop actually
+            # generates push_notification_id BEFORE calling
+            # send_push_notification(), and actually places it into that
+            # call's own `data=` argument. Proven here via direct source
+            # inspection instead -- matching this repository's established
+            # "Strategy 2" convention (e.g. lib/toolsAnalytics.test.ts on
+            # the frontend) for exactly this situation: a real production
+            # code path that a full behavioral test cannot safely reach.
+            import inspect
+            import services.event_scheduler as _es_module
+            scheduler_src = inspect.getsource(_es_module)
+            approved_loop_start = scheduler_src.index("for c in selection.approved:")
+            approved_loop_src = scheduler_src[approved_loop_start:scheduler_src.index("for c in selection.bell_only:")]
+            check("F1: push_notification_id is generated inside the approved-push loop",
+                  "push_notification_id = uuid.uuid4()" in approved_loop_src)
+            check("F2: push_notification_id is generated BEFORE send_push_notification is called",
+                  approved_loop_src.index("push_notification_id = uuid.uuid4()") < approved_loop_src.index("send_push_notification("))
+            check("F3: the FCM data= argument includes notification_id built from push_notification_id",
+                  '"notification_id": str(push_notification_id)' in approved_loop_src)
+            check("F4: the persisted UserNotification(...) row still uses the ORIGINAL c[\"data\"] (not the augmented FCM-only dict)",
+                  "data=c[\"data\"]" in approved_loop_src)
+            check("F5: the bell_only loop never generates/sends a push_notification_id (no FCM interaction for that path)",
+                  "push_notification_id" not in scheduler_src[scheduler_src.index("for c in selection.bell_only:"):scheduler_src.index("# selection.dropped")])
 
         finally:
             # ----------------------------------------------------------

@@ -36,6 +36,7 @@ across profiles, with its own batching/concurrency handling.
 from __future__ import annotations
 
 import logging
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
@@ -58,7 +59,7 @@ from modules.activity_events.service import record_event
 _activity_events_logger = logging.getLogger("activity_events")
 
 
-def _emit_alert_notification_events(*, user_notification, emit_sent=True):
+def _emit_alert_notification_events(*, user_notification, emit_sent=True, push_notification_id=None):
     """Phase 4D -- observational only, called ONLY after the caller's
     own authoritative commit has already succeeded: deliver_alert()
     below (via repository.finalize_delivery(), reached only after a
@@ -71,14 +72,24 @@ def _emit_alert_notification_events(*, user_notification, emit_sent=True):
     imports this module for deliver_alert() -- no new dependency edge).
     Each event's own emission is independently wrapped so one failure
     never prevents the other, and neither can ever propagate back into
-    the caller's own business result."""
+    the caller's own business result.
+
+    Task 15A -- `push_notification_id` (deliver_alert()'s own call site
+    only; alerts_scheduler.py's bell-only call site never passes one,
+    since no FCM interaction ever happened for that row) is the same
+    opaque id generated BEFORE the FCM send and placed into that push's
+    own data payload -- used ONLY inside
+    notification_context["notification_id"] below. The envelope's own
+    `entity_id`/`dedupe_key` keep using `user_notification.id`
+    unchanged, exactly as before."""
     entity_id = str(user_notification.id)
     occurred_at = (
         user_notification.created_at.replace(tzinfo=timezone.utc)
         if user_notification.created_at is not None
         else datetime.now(timezone.utc)
     )
-    notification_context = {"notification_id": entity_id}
+    context_notification_id = str(push_notification_id) if push_notification_id is not None else entity_id
+    notification_context = {"notification_id": context_notification_id}
 
     try:
         record_event(
@@ -231,9 +242,19 @@ def deliver_alert(
             profile_id=profile_id, event_id=event_id, severity=eligibility.severity,
         )
 
+    # Task 15A -- generated BEFORE the FCM send, purely in-process (no DB
+    # row/flush required). Folded into the FCM data payload ONLY (a
+    # separate dict, built just for this call) -- content["data"] itself,
+    # later passed unchanged to finalize_delivery()'s own
+    # notification_data below, is completely unaffected. Discarded if the
+    # send below fails or never reaches finalization (every earlier
+    # return path above already leaves persistence untouched).
+    push_notification_id = uuid.uuid4()
+
     try:
         success = send_push_notification(
-            token=fcm_token, title=content["title"], body=content["body"], data=content["data"],
+            token=fcm_token, title=content["title"], body=content["body"],
+            data={**content["data"], "notification_id": str(push_notification_id)},
         )
     except Exception as exc:
         return AlertDeliveryResult(
@@ -280,7 +301,7 @@ def deliver_alert(
     # above has already succeeded, so user_notification.id is real and
     # durable. Never allowed to alter this function's own return value
     # -- see _emit_alert_notification_events()'s own per-event isolation.
-    _emit_alert_notification_events(user_notification=user_notification)
+    _emit_alert_notification_events(user_notification=user_notification, push_notification_id=push_notification_id)
 
     return AlertDeliveryResult(
         sent=True, stage="delivered", reason="sent",

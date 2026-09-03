@@ -8,6 +8,7 @@
 # in the v1.0 freeze for why that split matters.
 
 import logging
+import uuid
 from datetime import datetime, timezone
 from extensions import db
 from notifications.notification_models import NotificationJob, NotificationLog
@@ -25,16 +26,23 @@ _activity_events_logger = logging.getLogger("activity_events")
 def _emit_notification_events(*, created_rows, job):
     """Phase 4D -- observational only, called ONLY after send_job_now()'s
     own end-of-job db.session.commit() has already succeeded.
-    `created_rows` is the list of (UserNotification instance) actually
-    included in that commit -- every entry here, by this pipeline's own
-    construction (see send_job_now()), corresponds to a real, successful
-    FCM send, so both notification_created AND notification_sent are
-    emitted for each one. Never called for a recipient whose send failed
-    or was skipped by dedup -- no row exists for those, nothing to
-    attach an event to. Each row's own emission is independently wrapped
-    so one failure never prevents the rest of the batch from being
-    attempted."""
-    for user_notification in created_rows:
+    `created_rows` is the list of (UserNotification instance,
+    push_notification_id) tuples actually included in that commit --
+    every entry here, by this pipeline's own construction (see
+    send_job_now()), corresponds to a real, successful FCM send, so both
+    notification_created AND notification_sent are emitted for each one.
+    Never called for a recipient whose send failed or was skipped by
+    dedup -- no row exists for those, nothing to attach an event to.
+    Each row's own emission is independently wrapped so one failure
+    never prevents the rest of the batch from being attempted.
+
+    Task 15A -- `push_notification_id` is the same opaque id generated
+    BEFORE this row's own FCM send and placed into that push's own data
+    payload (see send_job_now() below); it is used ONLY inside
+    `notification_context["notification_id"]` -- the envelope's own
+    `entity_id`/`dedupe_key` keep using `user_notification.id`
+    unchanged, exactly as before."""
+    for user_notification, push_notification_id in created_rows:
         entity_id = str(user_notification.id)
         # created_at is a naive-UTC DateTime (db.func.current_timestamp()
         # default) -- made explicitly timezone-aware ONLY for this
@@ -44,7 +52,8 @@ def _emit_notification_events(*, created_rows, job):
             if user_notification.created_at is not None
             else datetime.now(timezone.utc)
         )
-        notification_context = {"notification_id": entity_id, "campaign_id": str(job.id), "slot": "general"}
+        context_notification_id = str(push_notification_id) if push_notification_id is not None else entity_id
+        notification_context = {"notification_id": context_notification_id, "campaign_id": str(job.id), "slot": "general"}
 
         try:
             record_event(
@@ -185,11 +194,21 @@ def send_job_now(job: NotificationJob, fcm_sender):
             title = job.title
             body = job.body
 
+        # Task 15A -- generated BEFORE the FCM send, purely in-process (no
+        # DB row/flush required). Folded into the FCM data payload ONLY
+        # (a separate dict, built just for this call) -- never into
+        # job.payload itself, which stays exactly as it always was so the
+        # JSONB dedupe-equality check just below (comparing
+        # UserNotification.data against job.payload) is completely
+        # unaffected. Discarded if no row ends up created below (existing
+        # duplicate found, or send failed).
+        push_notification_id = uuid.uuid4()
+
         ok = fcm_sender(
             token=u.fcm_token,
             title=title,
             body=body,
-            data=job.payload
+            data={**(job.payload or {}), "notification_id": str(push_notification_id)}
         )
 
         if ok:
@@ -235,7 +254,7 @@ def send_job_now(job: NotificationJob, fcm_sender):
                     data=job.payload or {}   # 🔥 ADD THIS LINE
                 )
                 db.session.add(notif)
-                created_user_notifications.append(notif)
+                created_user_notifications.append((notif, push_notification_id))
 
         else:
             failed += 1
