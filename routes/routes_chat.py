@@ -119,6 +119,7 @@ from modules.activity_events.service import record_event
 
 # Services
 from modules.services.chat_engine import chat_engine
+from modules.services.asknow_intent_service import record_intent_history
 from modules.services.free_quota_service import (
     has_free_quota,
     use_free_quota,
@@ -318,6 +319,17 @@ def chat_free():
     latency_ms = int((time.monotonic() - generation_started_at) * 1000)
     _emit_asknow_event(event_name="asknow_answer_delivered", source="free", latency_ms=latency_ms)
 
+    # Ask Now Improvement Batch (Objective 1/5): concern_category is
+    # INTERNAL ONLY -- popped off before the API response is built (see
+    # chat_engine()'s own docstring) and used solely to write one
+    # question-level history row. record_intent_history() is itself
+    # fully failure-isolated (its own separate DB session, catches and
+    # swallows everything) -- it can never affect this response or the
+    # already-finalized free-quota consumption above, and is a no-op if
+    # classification did not succeed for this question.
+    concern_category = answer.pop("concern_category", None)
+    record_intent_history(user_id=user_id, concern_category=concern_category, source="free")
+
     return jsonify({
         "success": True,
         "free_used": True,
@@ -405,6 +417,12 @@ def chat_pack():
     # has already returned successfully, before the HTTP response below.
     latency_ms = int((time.monotonic() - generation_started_at) * 1000)
     _emit_asknow_event(event_name="asknow_answer_delivered", source="pack", latency_ms=latency_ms)
+
+    # Ask Now Improvement Batch (Objective 1/5) -- see chat_free()'s
+    # identical comment above. Same failure-isolated persistence, "pack"
+    # source label.
+    concern_category = answer.pop("concern_category", None)
+    record_intent_history(user_id=user_id, concern_category=concern_category, source="pack")
 
     return jsonify({
         "success": True,

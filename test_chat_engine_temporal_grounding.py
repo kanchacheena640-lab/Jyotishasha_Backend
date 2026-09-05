@@ -355,8 +355,8 @@ def main():
           "authoritative data for this answer" in prompt_c)
     check("G-13: model remains gpt-5.6-luna", kwargs_c.get("model") == "gpt-5.6-luna")
     check("G-14: no custom temperature", "temperature" not in kwargs_c)
-    check("G-15: response contract unchanged",
-          set(result_c.keys()) == {"answer", "kundali_preview", "dasha_preview", "transit_preview", "disclaimer"})
+    check("G-15: response contract unchanged (plus Ask Now Improvement Batch's internal-only concern_category)",
+          set(result_c.keys()) == {"answer", "kundali_preview", "dasha_preview", "transit_preview", "disclaimer", "concern_category"})
 
     # ==========================================================
     print("\n=== G-16: missing optional natal fields do not crash Ask Now ===")
@@ -451,8 +451,8 @@ def main():
     check("H-13: authoritative-answering rules remain intact", "authoritative data for this answer" in prompt_c)
     check("H-14: model remains gpt-5.6-luna", kwargs_c.get("model") == "gpt-5.6-luna")
     check("H-15: custom temperature remains absent", "temperature" not in kwargs_c)
-    check("H-16: response contract remains unchanged",
-          set(result_c.keys()) == {"answer", "kundali_preview", "dasha_preview", "transit_preview", "disclaimer"})
+    check("H-16: response contract remains unchanged (plus internal-only concern_category)",
+          set(result_c.keys()) == {"answer", "kundali_preview", "dasha_preview", "transit_preview", "disclaimer", "concern_category"})
 
     # ==========================================================
     print("\n=== C2: Authoritative Answering rules (Ask Now hesitancy fix) ===")
@@ -539,9 +539,16 @@ def main():
     # ==========================================================
     print("\n=== F: response shape unchanged + free/paid routes reach the same fixed engine ===")
     # ==========================================================
-    expected_keys = {"answer", "kundali_preview", "dasha_preview", "transit_preview", "disclaimer"}
-    check("F: chat_engine() return dict keys unchanged", set(result_c.keys()) == expected_keys)
-    check("F: chat_engine() return dict keys unchanged (non-timing question too)",
+    # Ask Now Improvement Batch: chat_engine() now also returns an
+    # INTERNAL-ONLY "concern_category" key (see chat_engine()'s own
+    # docstring) -- routes/routes_chat.py pops it before building the
+    # Flutter-facing API response, so the EXTERNAL API contract this
+    # section is really about is unchanged; the internal dict contract
+    # gains exactly this one documented key.
+    expected_keys = {"answer", "kundali_preview", "dasha_preview", "transit_preview", "disclaimer", "concern_category"}
+    check("F: chat_engine() return dict keys unchanged (plus internal-only concern_category)",
+          set(result_c.keys()) == expected_keys)
+    check("F: chat_engine() return dict keys unchanged (non-timing question too, plus internal-only concern_category)",
           set(result_d.keys()) == expected_keys)
 
     routes_src = open(

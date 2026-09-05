@@ -17,14 +17,73 @@ Used by:
 
 from datetime import date
 from openai import OpenAI, APITimeoutError
+import json
+import logging
 import os
 from services.full_kundali_service import generate_full_kundali_payload
 from services.personalization_engine import calculate_house
 from transit_engine import get_current_positions
+from modules.services.asknow_category_service import get_active_category_names
+
+logger = logging.getLogger("chat_engine")
 
 
 # Initialize OpenAI client once
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Ask Now Category Architecture v1 (FINAL PRODUCT DECISION): concern
+# categories are NO LONGER a hardcoded Python list here. They live in a
+# small, controlled, DB-backed master (modules/models_ask_now_concern_
+# category.py::AskNowConcernCategory, read via modules/services/
+# asknow_category_service.py::get_active_category_names()) so a future
+# Admin Dashboard can add/enable/disable categories with no code
+# deployment -- see this module's own _get_active_concern_categories()
+# below, called fresh on every chat_engine() invocation.
+#
+# This is deliberately NOT the earlier 36-item granular hardcoded list
+# either, and NOT categories invented ad hoc by the model -- Luna is
+# only ever offered whatever the master currently marks active, and
+# _parse_answer_and_category() validates against that exact same
+# fetched set.
+#
+# _FALLBACK_CONCERN_CATEGORIES is a last-resort safety net ONLY, not a
+# taxonomy: if the master can't be read at all (DB down, table missing,
+# unexpected error) or returns zero active rows, classification degrades
+# to offering/accepting just "Other" rather than ever failing the
+# answer (Ask Now Category Architecture v1, Objective 3).
+_FALLBACK_CONCERN_CATEGORIES = ["Other"]
+
+
+def _get_active_concern_categories() -> list:
+    """
+    Fetches the currently active concern-category names from the DB-
+    backed master. NEVER raises and NEVER returns an empty list -- any
+    failure (DB error, missing table, zero active rows) degrades to
+    _FALLBACK_CONCERN_CATEGORIES so a category-master problem can never
+    block a valid Ask Now answer.
+
+    Called via the module-level `get_active_category_names` name
+    (imported above, resolved at CALL TIME from this module's own
+    globals) -- the same monkeypatch seam already established for
+    `client` / `generate_full_kundali_payload` / `get_current_positions`
+    in this file, so tests can substitute a fake without touching the
+    real DB.
+    """
+    try:
+        names = get_active_category_names()
+        if names:
+            return names
+        logger.warning(
+            "chat_engine: category master returned zero active categories -- "
+            "falling back to %r", _FALLBACK_CONCERN_CATEGORIES,
+        )
+    except Exception:
+        logger.warning(
+            "chat_engine: failed to read active concern categories from the "
+            "master -- falling back to %r (Ask Now answer unaffected)",
+            _FALLBACK_CONCERN_CATEGORIES, exc_info=True,
+        )
+    return list(_FALLBACK_CONCERN_CATEGORIES)
 
 # Model identifier verified from this same repo's existing, already-live
 # Premium AI Report integration (services/ai_prediction_lab/openai_client.py)
@@ -321,8 +380,20 @@ def chat_engine(birth_data: dict, question: str) -> dict:
         "answer": "...",
         "kundali_preview": ...,
         "dasha_preview": ...,
-        "transit_preview": ...
+        "transit_preview": ...,
+        "concern_category": "..." or None,
     }
+
+    concern_category (Ask Now Category Architecture v1) is an INTERNAL
+    field only -- one of the category names active in the DB-backed
+    master AT THE TIME OF THIS CALL (see _get_active_concern_categories()),
+    or None if classification could not be obtained/validated. It is
+    produced by the SAME single OpenAI call as the answer itself (no
+    second call). Callers
+    (routes/routes_chat.py) MUST strip this key before it reaches the
+    Flutter-facing API response -- it is for server-side intent-history
+    persistence only (modules/services/asknow_intent_service.py), never a
+    user-visible field.
     """
 
     # -----------------------------
@@ -373,6 +444,16 @@ def chat_engine(birth_data: dict, question: str) -> dict:
     # calculation, no change to full_kundali_service.py's transit_analysis.
     current_transits_context = _format_current_transits(transit, kundali.get("lagna_sign"))
 
+    # Ask Now Category Architecture v1: fetched fresh from the DB-backed
+    # master (or the ["Other"]-only safety net if that read fails --
+    # see _get_active_concern_categories()) on EVERY call, so the
+    # prompt's allowed-values list and _parse_answer_and_category()'s
+    # validator below always agree on the exact same set, and a category
+    # added/disabled via the master takes effect on the very next
+    # question with no change to this file.
+    active_concern_categories = _get_active_concern_categories()
+    concern_category_list = ", ".join(active_concern_categories)
+
     # -----------------------------
     # 4) GPT Prompt
     # -----------------------------
@@ -400,11 +481,17 @@ Follow these rules:
 - Avoid health, legal or medical advice.
 - CURRENT_DATE (given above) is the authority for interpreting all dates. Do not use any other basis for judging what is past, current, or future.
 - Never describe an event whose start date is before CURRENT_DATE as "upcoming", "starting soon", or future.
+- Any prediction or window you describe as current, upcoming, or future must NOT have already fully ended before CURRENT_DATE. If your first candidate window has already ended, select the next valid window whose end date has not yet passed.
+- A period that has already fully ended (both start and end before CURRENT_DATE) may only be referenced retrospectively/explanatorily -- never presented as an upcoming or current opportunity.
 - Clearly distinguish PAST, CURRENT, and FUTURE planetary/dasha periods whenever you reference them.
 - Never invent a transit, dasha, planetary position, yoga, date, or astrological fact that is not present in the supplied astrology data above.
 - For timing questions (e.g. "when will...", "when can...", "kab hoga", "kab milega", "kab banunga"), answer the timing question directly, near the beginning of the answer.
 - When astrology supports a period rather than an exact event date, give the strongest supported time window. Do not manufacture an exact date.
 - Use only the 1-3 strongest relevant astrological factors. Do not dump unrelated chart information.
+- Answer the user's actual question directly first -- in the first line or two -- before any supporting explanation.
+- Do not dump raw planetary/house jargon (long lists of planet-sign-house-degree data) directly at the user; translate the astrological reasoning into plain, useful language.
+- Do not deliberately withhold a useful detail you already have just to create a reason for the user to ask another question. Give the most useful answer you can in this response.
+- When it is genuinely useful, end the answer with exactly ONE follow-up direction, phrased as specific to THIS question and answer -- never a generic "want to know more?" or "ask me anything else". If no genuinely useful follow-up direction exists, omit it rather than inventing a generic one.
 - Avoid generic filler that does not answer the user's actual question.
 - Express astrology as guidance/probability/tendency where appropriate, not guaranteed certainty.
 - NATAL CHART is this person's fixed birth-chart placements (never changes). CURRENT TRANSITS are today's live planetary positions in the sky (changes daily). CURRENT/DASHA REFERENCE is the timing layer (Mahadasha/Antardasha). Never mix these three up or describe a transiting planet's position as if it were a natal placement, or vice versa.
@@ -422,6 +509,25 @@ evidence already given above, not a data-collection assistant:
 - This authority is about using the evidence already given confidently -- it never means inventing facts, dates, or chart details that are not present in the supplied astrology data above; the disclaimer below still applies.
 
 - End every answer with: "This answer is for astrological guidance only."
+
+THIRD-PARTY / OTHER PERSON'S DETAILS
+If the user's question mentions another person's birth details (date of birth, time of birth, or place of birth) -- whether those details are complete or incomplete:
+- Treat those details as conversational context only.
+- Do not calculate, infer, or claim to calculate that other person's Kundali, chart, or horoscope.
+- Do not ask the user to provide or complete that other person's birth details.
+- Do not say that other person's birth details are incomplete, insufficient, or required.
+- Do not refuse, hedge, or avoid answering because of that other person's birth details.
+- Do not perform compatibility, matching, or synastry analysis between two charts.
+- Base your entire astrological answer only on the logged-in user's own chart and context already given above (NATAL CHART, CURRENT TRANSITS, DASHA REFERENCE) -- never on a second person's chart.
+
+RESPONSE FORMAT (REQUIRED)
+Return your entire response as a single valid JSON object with EXACTLY these two keys, and nothing else outside the JSON object:
+{{"answer": "<the full answer text, following every rule above>", "concern_category": "<exactly one category from the list below>"}}
+
+concern_category must be EXACTLY one value copied verbatim from this fixed list (do not invent, translate, or reword a category):
+{concern_category_list}
+
+concern_category classification rule: classify the user's underlying/current concern or problem that prompted this question -- NEVER the outcome or resolution they are hoping for. Example: "Meri girlfriend ne breakup kar liya hai, kya patch-up hoga?" is about the underlying concern of a breakup, so classify it as "Breakup" -- never as "Patch-up/Reconciliation" (that is the hoped-for outcome, not the concern) and never as a generic catch-all bucket either. Each category above already names a specific underlying situation -- pick the one that most specifically matches what is actually wrong or pending in the user's life, not what they wish would happen next. Choose exactly ONE primary category. Use "Other" only if the question genuinely does not fit any other category.
 
 USER QUESTION
 {question}
@@ -450,8 +556,17 @@ USER QUESTION
                 {"role": "system", "content": "You are a senior Vedic astrologer."},
                 {"role": "user", "content": prompt}
             ],
+            # Ask Now Improvement Batch (Objective 4): verified compatible
+            # with gpt-5.6-luna via a standalone, one-call, real-API
+            # compatibility test before this was implemented (json_object
+            # mode accepted cleanly, returned valid parseable JSON on the
+            # first attempt -- no retry/coaxing needed). Keeps this at
+            # exactly ONE OpenAI call: the same call now returns both the
+            # answer and its concern_category together.
+            response_format={"type": "json_object"},
         )
-        answer = response.choices[0].message.content.strip()
+        raw_content = response.choices[0].message.content.strip()
+        answer, concern_category = _parse_answer_and_category(raw_content, active_concern_categories)
     except APITimeoutError:
         # Ask Now Timeout Delivery Fix: unlike every OTHER OpenAI-side
         # failure below (rate limit, content policy, a transient API
@@ -464,6 +579,14 @@ USER QUESTION
         raise
     except Exception as e:
         answer = f"AI temporarily unavailable. Error: {e}"
+        # Ask Now Improvement Batch (Objective 4 requirement): a
+        # classification/parsing problem must never turn an otherwise
+        # usable answer into a failed Ask Now transaction -- and here
+        # there isn't even a usable answer from the model, so there is
+        # certainly nothing truthful to classify. concern_category stays
+        # None; the existing fallback-text behavior is completely
+        # unchanged from before this batch.
+        concern_category = None
 
     # -----------------------------
     # 6) Return final JSON
@@ -474,4 +597,57 @@ USER QUESTION
         "dasha_preview": dasha,
         "transit_preview": transit,
         "disclaimer": "This answer is for astrological guidance only.",
+        # INTERNAL ONLY -- see this function's own docstring. Callers
+        # must strip this key before returning the API response to
+        # Flutter.
+        "concern_category": concern_category,
     }
+
+
+def _parse_answer_and_category(raw_content: str, valid_categories):
+    """
+    Parses the model's required single-call JSON object
+    ({"answer", "concern_category"}).
+
+    `valid_categories` is the EXACT list _get_active_concern_categories()
+    returned for THIS SAME call (or its ["Other"]-only fallback) -- never
+    a fixed module-level constant. This is what makes Ask Now Category
+    Architecture v1's "add/disable a category with no code change" claim
+    true: this function has no hardcoded taxonomy of its own to fall out
+    of sync with the master.
+
+    NEVER raises: a malformed/non-JSON response, a missing/empty
+    "answer" key, or an unrecognized concern_category must never turn an
+    otherwise usable generated answer into a failed Ask Now transaction.
+    Falls back to treating the raw model output as the answer text
+    (concern_category=None) whenever the JSON contract isn't honored --
+    this exactly matches this engine's pre-existing plain-text behavior,
+    so a model that (for whatever reason) returns plain text instead of
+    JSON still produces the same answer a user would have received
+    before this batch.
+
+    Returns (answer: str, concern_category: str or None).
+    """
+    try:
+        parsed = json.loads(raw_content)
+        if not isinstance(parsed, dict):
+            raise ValueError("response is not a JSON object")
+
+        answer = parsed.get("answer")
+        if not isinstance(answer, str) or not answer.strip():
+            raise ValueError("missing or empty 'answer' in JSON response")
+        answer = answer.strip()
+
+        category = parsed.get("concern_category")
+        if category not in valid_categories:
+            # Unknown/invalid/missing category, or a category the master
+            # no longer has active -- safe fallback. Never trust the raw
+            # string, never let it block the answer.
+            category = None
+
+        return answer, category
+    except Exception:
+        # Model did not honor the JSON contract (non-JSON output, wrong
+        # shape, etc.) -- degrade gracefully. The raw content becomes the
+        # answer as-is, with no category. Never raises.
+        return raw_content, None
