@@ -92,6 +92,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+from sqlalchemy import or_
+
 from extensions import db
 
 from modules.auth.models import User
@@ -111,6 +113,15 @@ from modules.models_free_daily import FreeDailyQuestion
 # modules/models_notification.py or the root-level models_notification_log.py
 # (both confirmed dead/unimported anywhere in this codebase).
 from notifications.notification_models import NotificationLog, UserNotification
+
+# P0 -- Campaign C (N3-N6, postdates this file's original D0.1 audit).
+# See _delete_campaign_c_recipient_history()'s own docstring for why
+# NotificationCampaignDelivery/Attempt need a dedicated function instead
+# of a _PERSONAL_CHILD_LOOKUPS entry, while NotificationCampaignBellItem
+# (directly keyed by app_users.id, exactly like UserNotification) fits
+# that existing list unchanged.
+from notifications.campaign_bell_models import NotificationCampaignBellItem
+from notifications.campaign_execution_models import NotificationCampaignDelivery, NotificationCampaignAttempt
 
 
 class AccountDeletionError(Exception):
@@ -206,6 +217,16 @@ _PERSONAL_CHILD_LOOKUPS = [
     (NotificationLog, "user_id"),         # no FK; app_users.id by convention
     (DailyPersonalizedCache, "profile_id"),  # carries BOTH user_id (users.id) and profile_id (app_users.id) as separate columns -- profile_id is the one that matches app_users.id
     (FreeDailyQuestion, "user_id"),       # no FK; app_users.id by convention
+    # P0 -- Campaign C's own Bell presentation table. `user_id` here is
+    # ALWAYS app_users.id (see campaign_bell_models.py/campaign_bell_
+    # service.py's own docstrings: "this Bell table's own user_id column
+    # is therefore intentionally the AppUser id, matching UserNotification's
+    # convention"), no FK, same by-convention pattern as UserNotification
+    # directly above -- fits this list unchanged. Presentation-only
+    # (campaign_bell_service.py's own contract), never read by
+    # campaign_history_service.py/campaign_metrics_service.py, so
+    # deleting it has zero effect on any campaign/execution aggregate.
+    (NotificationCampaignBellItem, "user_id"),
 ]
 
 
@@ -222,10 +243,97 @@ def _delete_personal_children(profile_id: int) -> None:
         model.query.filter_by(**{column: profile_id}).delete(synchronize_session=False)
 
 
+def _delete_campaign_c_recipient_history(profile_ids: List[int], users_id: Optional[int]) -> None:
+    """P0 -- Campaign C (N3-N6, postdates this file's original D0.1 audit).
+    Unlike everything in _PERSONAL_CHILD_LOOKUPS, NotificationCampaignDelivery
+    carries the recipient's identity across TWO separate, FK-less-by-
+    convention integer columns in two DIFFERENT identity spaces --
+    `user_id` (the AUTH `users.id`) and `app_user_id` (the profile
+    `app_users.id`; see notifications/campaign_bell_service.py's own
+    docstring for why both exist) -- so a single (model, column) list
+    entry can't express it; this identity is never collapsed into one,
+    matching this whole file's own established discipline.
+
+    HARD DELETE, not pseudonymized-in-place: this table's own
+    UNIQUE(execution_id, user_id) constraint means writing any single
+    fixed sentinel value into a deleted recipient's `user_id` would
+    collide the moment a SECOND recipient of the SAME execution is
+    later deleted too (a near-certainty at real campaign scale, not a
+    theoretical edge case) -- there is no collision-free value to write
+    without either NULL (requires relaxing user_id/app_user_id's
+    NOT NULL constraint via a migration) or a per-row-unique derived
+    value (which would remain trivially reversible to the original id,
+    failing the actual privacy requirement). Deletion requires neither,
+    costs no schema change, and matches UserNotification's own existing
+    hard-delete precedent above. The one accepted, documented side
+    effect: this execution's `target_count`/`delivery_counts` (COUNTs
+    over live delivery rows) drop by exactly the erased recipients going
+    forward, while its frozen `resolved_matched_user_count`/
+    `resolved_eligible_recipient_count` snapshot fields (written once,
+    at freeze/dispatch time, never re-derived from delivery rows) are
+    deliberately left untouched -- see the P0 privacy report's own
+    "Campaign history/metrics impact" section for why that divergence
+    is expected and safe, never a broken invariant.
+
+    NotificationCampaignAttempt carries NO user identity column of its
+    own at all (only delivery_id + provider/outcome/error diagnostics --
+    already non-identifying on their own) -- deleting the parent
+    delivery row this function targets is what removes its only
+    indirect link to this identity. Its own FK (delivery_id -> that
+    delivery, NOT NULL, no ON DELETE CASCADE) requires attempt rows to
+    be deleted first, or the delivery delete below would raise a
+    ForeignKeyViolation.
+
+    Never touches NotificationCampaign/NotificationCampaignExecution/
+    NotificationSendNowRequest -- none of those carry a per-recipient
+    identity column at all (verified directly against
+    notifications/campaign_models.py / campaign_execution_models.py);
+    they are campaign-level operational history, not personal data, and
+    stay exactly as they already were for every other account deletion
+    to date.
+    """
+    filters = []
+    if profile_ids:
+        filters.append(NotificationCampaignDelivery.app_user_id.in_(profile_ids))
+    if users_id is not None:
+        filters.append(NotificationCampaignDelivery.user_id == users_id)
+    if not filters:
+        return
+
+    delivery_ids = [
+        row.id for row in
+        NotificationCampaignDelivery.query.filter(or_(*filters))
+        .with_entities(NotificationCampaignDelivery.id).all()
+    ]
+    if not delivery_ids:
+        return
+
+    NotificationCampaignAttempt.query.filter(
+        NotificationCampaignAttempt.delivery_id.in_(delivery_ids)
+    ).delete(synchronize_session=False)
+    NotificationCampaignDelivery.query.filter(
+        NotificationCampaignDelivery.id.in_(delivery_ids)
+    ).delete(synchronize_session=False)
+
+
 def _anonymize_app_user(app_user: AppUser) -> None:
     """Nulls every personal field, using columns already nullable today
     (verified directly -- no migration required). `firebase_uid` is
-    deliberately NOT touched here -- see module docstring."""
+    deliberately NOT touched here -- see module docstring.
+
+    U3B.1 -- lagna/moon_sign/nakshatra plus the newer
+    nakshatra_pada/static_yog/static_dosh/static_astrology_calculated_at/
+    static_astrology_version are cleared together via the SAME shared
+    build_not_calculated_snapshot()/apply_snapshot_to_app_user() helpers
+    routes_profile_bootstrap.py and modules/user_service.py already use
+    -- never a fourth hand-rolled list of "which fields are static
+    astrology". No derived astrology may ever survive the source birth
+    data (dob/tob/pob/lat/lng, nulled below) being removed."""
+    from modules.services.static_astrology_extractor import (
+        build_not_calculated_snapshot,
+        apply_snapshot_to_app_user,
+    )
+
     app_user.name = None
     app_user.email = None
     app_user.phone = None
@@ -234,9 +342,7 @@ def _anonymize_app_user(app_user: AppUser) -> None:
     app_user.pob = None
     app_user.lat = None
     app_user.lng = None
-    app_user.lagna = None
-    app_user.moon_sign = None
-    app_user.nakshatra = None
+    apply_snapshot_to_app_user(app_user, build_not_calculated_snapshot())
     app_user.fcm_token = None
     app_user.subscription = "free"
     app_user.asknow_tokens = 0
@@ -263,6 +369,16 @@ def delete_account_data(resolved_identity: ResolvedIdentity) -> DeletionResult:
     retained_financial: List[int] = []
 
     try:
+        # P0 -- Campaign C delivery/attempt erasure, once per call (not
+        # per-profile_id): needs the FULL profile_ids list plus the AUTH
+        # users.id together, since NotificationCampaignDelivery keys a
+        # single row by either identity space (see that function's own
+        # docstring). Resolved here, before the per-profile loop below,
+        # matching this file's own "personal-data children are ALWAYS
+        # removed first" ordering principle.
+        users_id = resolved_identity.user.id if resolved_identity.user is not None else None
+        _delete_campaign_c_recipient_history(resolved_identity.profile_ids, users_id)
+
         for profile_id in resolved_identity.profile_ids:
             has_financial = _has_financial_history(profile_id)
 

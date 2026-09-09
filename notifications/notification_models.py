@@ -143,6 +143,15 @@ class UserNotification(db.Model):
     # NULL means "never auto-expires".
     expires_at = db.Column(db.DateTime, nullable=True)
 
+    # N6 -- presentation-only "Clear"/individual-dismiss marker. Never
+    # read by services/attention_policy.py or services/event_scheduler.py
+    # -- see notifications/campaign_bell_models.py's own docstring for
+    # the full reasoning (this column exists so the SAME presentation-only
+    # dismiss/clear semantics apply to A/B rows as to Campaign C's own
+    # isolated Bell table, without touching either pipeline's selection/
+    # cooldown/dedupe/budget/trim logic). NULL means "not dismissed".
+    dismissed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
     # ===============================
     # HELPER METHODS
     # ===============================

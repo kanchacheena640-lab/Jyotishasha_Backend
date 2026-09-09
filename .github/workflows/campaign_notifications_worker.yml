@@ -1,0 +1,90 @@
+name: Campaign C Notifications Worker
+
+# P3A -- manually-triggered ONLY. No schedule, no push, no pull_request.
+# Deliberately mirrors notifications.yml/alerts.yml's own proven shape
+# (checkout -> setup-python -> pip install -> run one Python entrypoint
+# inside create_app()'s app_context()) -- no new infrastructure category
+# (no Celery, no Redis, no dedicated Render worker service).
+#
+# This workflow only ever calls scripts/campaign_worker_runner.py, which
+# itself calls notifications.campaign_worker.process_execution() --
+# UNCHANGED worker business logic. It never calls
+# notifications.campaign_scheduler (that remains a separate, still-
+# inactive, future activation step -- not this one).
+#
+# Bounded, single-pass invocation: processes at most --max-executions
+# FROZEN/SENDING executions, at most --batch-limit deliveries each,
+# within --max-runtime-seconds -- then exits. A larger backlog is picked
+# up by the NEXT manual run, never drained in one unbounded pass.
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_executions:
+        description: "Maximum executions to claim this run"
+        required: false
+        default: "20"
+        type: string
+      batch_limit:
+        description: "Maximum deliveries per execution this run"
+        required: false
+        default: "100"
+        type: string
+      max_runtime_seconds:
+        description: "Wall-clock budget (seconds) before no new execution is claimed"
+        required: false
+        default: "240"
+        type: string
+
+# Prevents two invocations from ever running concurrently -- pure belt-
+# and-suspenders on top of the DB's own FOR UPDATE SKIP LOCKED claim
+# (which already makes a duplicate delivery structurally impossible),
+# so we never pay for two runs racing over the same discovered backlog.
+concurrency:
+  group: campaign-notifications-worker
+  cancel-in-progress: false
+
+jobs:
+  run-campaign-worker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Campaign C Worker (bounded, production gates required)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          # The one general-purpose environment marker db_safety.py
+          # already defines/reuses (see that module's own docstring) --
+          # set here so a real production DATABASE_URL is not mistaken
+          # for an unmarked local run. Orthogonal to DEPLOYMENT_ENVIRONMENT
+          # below, which gates the TRANSPORT decision, not the DB one.
+          ACTIVITY_EVENTS_ENVIRONMENT: production
+          # Campaign C production sending gates -- all four required
+          # together by notifications/campaign_transport.py::select_transport().
+          DEPLOYMENT_ENVIRONMENT: production
+          ADMIN_CAMPAIGN_SEND_ENABLED: "true"
+          ADMIN_CAMPAIGN_WORKER_AUTHORIZED: "true"
+          # Deliberately NEVER set here:
+          #   ADMIN_CAMPAIGN_TEST_TRANSPORT_ENABLED
+          #   ADMIN_CAMPAIGN_TEST_RECIPIENT_APP_USER_ID
+          # scripts/campaign_worker_runner.py's own preflight check fails
+          # the whole run closed if either is ever present.
+        run: |
+          python scripts/campaign_worker_runner.py \
+            --max-executions "${{ inputs.max_executions }}" \
+            --batch-limit "${{ inputs.batch_limit }}" \
+            --max-runtime-seconds "${{ inputs.max_runtime_seconds }}"
