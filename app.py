@@ -6,7 +6,7 @@ from routes.routes_user import routes_user
 from modules.auth.models import User
 from full_kundali_api import calculate_full_kundali
 from services.zodiac_service import get_zodiac_traits
-from transit_engine import get_current_positions, get_all_planets_next_12
+from transit_engine import get_current_positions, get_all_planets_next_12, get_current_sign_residency
 from life_tools_report import life_tools_bp
 from routes.generate_report import generate_report_bp
 from openai import OpenAI
@@ -55,6 +55,9 @@ from routes.routes_google_purchase_confirm import routes_google_purchase_confirm
 from routes.routes_google_report_confirm import routes_google_report_confirm
 from routes.routes_alerts_dashboard import routes_alerts_dashboard
 from routes.routes_app_version import routes_app_version
+from routes.routes_admin_users import routes_admin_users
+from routes.routes_admin_audiences import routes_admin_audiences
+from routes.routes_admin_notifications import routes_admin_notifications
 from routes.routes_activity_events import routes_activity_events
 from routes.routes_activity_events_anonymous import routes_activity_events_anonymous
 from routes.routes_analytics import routes_analytics
@@ -121,6 +124,9 @@ app.register_blueprint(routes_google_purchase_confirm)
 app.register_blueprint(routes_google_report_confirm)
 app.register_blueprint(routes_alerts_dashboard)
 app.register_blueprint(routes_app_version)
+app.register_blueprint(routes_admin_users)
+app.register_blueprint(routes_admin_audiences)
+app.register_blueprint(routes_admin_notifications)
 app.register_blueprint(routes_activity_events)
 app.register_blueprint(routes_activity_events_anonymous)
 app.register_blueprint(routes_analytics)
@@ -390,12 +396,38 @@ def transit_current_plus_12():
         "Moon":  [ ... x12 ],
         ...
         "Ketu":  [ ... x12 ]
+      },
+      "current_residency": {
+        "Sun":   {planet, from_rashi, to_rashi, entering_date, exit_date, motion},
+        "Moon":  { ... },
+        ...
+        "Ketu":  { ... }
       }
     }
+
+    U4C.2 -- `current_residency` is new; `positions`/`future_transits`
+    are UNCHANGED, byte-for-byte, for backward compatibility (Flutter
+    and every existing website consumer read only those two and must
+    keep working unmodified -- see U4C.2 report Sec.9). It is computed
+    via transit_engine.get_current_sign_residency() (U4C.1A) -- the
+    SAME canonical boundary primitive future_transits already uses,
+    never a new date-boundary algorithm -- and answers a DIFFERENT
+    question than future_transits[planet][0] does: "what residency
+    contains RIGHT NOW" (current_residency), vs. "what is the NEXT
+    transition from here" (future_transits[0]). U4C.0 found the
+    website was using future_transits[0] for a "Current Period" label,
+    which is wrong whenever a sign is later re-entered (e.g. a
+    retrograde re-entry) -- current_residency exists precisely so the
+    frontend never has to recreate that ingress-boundary logic itself
+    to answer "what's the current period" correctly.
     """
     current = get_current_positions()
     future = get_all_planets_next_12()
-    return jsonify({**current, "future_transits": future})
+    residency = {
+        p: get_current_sign_residency(p)
+        for p in ("Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu", "Ketu")
+    }
+    return jsonify({**current, "future_transits": future, "current_residency": residency})
 
 # ------------------- ADD MORE HEre ------------------- #
 
