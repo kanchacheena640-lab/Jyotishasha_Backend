@@ -185,7 +185,7 @@ def send_job_now(job: NotificationJob, fcm_sender):
             continue
 
         # 🔤 Language resolution
-        lang = getattr(u, "language", "en")
+        lang = (getattr(u, "lang", None) or "en").strip().lower()
 
         if lang == "hi":
             title = getattr(job, "title_hi", None) or job.title

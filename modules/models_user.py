@@ -5,6 +5,7 @@ Defines the AppUser model used for Jyotishasha App.
 """
 
 from datetime import datetime, timezone
+from sqlalchemy.dialects.postgresql import JSONB
 from extensions import db
 
 class AppUser(db.Model):
@@ -32,16 +33,31 @@ class AppUser(db.Model):
     moon_sign = db.Column(db.String(50))
     nakshatra = db.Column(db.String(50))
 
+    # -------------------------
+    # U3B.1 -- static (natal) astrology facts, ALL reused/derived from
+    # the SAME calculate_full_kundali() call that already populates
+    # lagna/moon_sign/nakshatra above -- never a second calculation.
+    # See modules/services/static_astrology_extractor.py for the single
+    # authoritative extraction logic and the NULL/{}/sparse state
+    # contract (frozen U3B architecture decision):
+    #   not calculated  -> all 5 of these columns NULL
+    #   calculated      -> static_astrology_calculated_at set;
+    #                      static_yog/static_dosh are {} (calculated,
+    #                      nothing active/present) or a sparse dict of
+    #                      only the active/present entries -- inactive
+    #                      traits are never stored explicitly.
+    # -------------------------
+    nakshatra_pada = db.Column(db.SmallInteger, nullable=True)
+    static_yog = db.Column(JSONB, nullable=True)
+    static_dosh = db.Column(JSONB, nullable=True)
+    static_astrology_calculated_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    static_astrology_version = db.Column(db.SmallInteger, nullable=True)
+
     # App prefs/state
     tz = db.Column(db.String(10), nullable=False, default="+05:30")
-    # N3 -- persisted content-language preference ("en" / "hi"), so
-    # personalized-content notifications (e.g. Transit) can deterministically
-    # pick EN vs HI copy/article server-side instead of guessing from the
-    # device. Nullable/no DB default: every existing row reads as NULL until
-    # that user's next bootstrap/profile save; callers must treat NULL as
-    # "unknown" and fall back to "en" themselves (see
-    # services/notification_builder.py) rather than this column silently
-    # defaulting everyone to a language they never chose.
+    # L2/L3: explicit authenticated app preference; content/bootstrap/profile
+    # language does not write this field. NULL is unknown, never implicit
+    # English audience membership. Rendering may independently fall back.
     lang = db.Column(db.String(5), nullable=True)
     subscription = db.Column(db.String(50), nullable=False, default="free")
     asknow_tokens = db.Column(db.Integer, nullable=False, default=0)
@@ -126,3 +142,25 @@ class UserDashaTimeline(db.Model):
     )
 
     user = db.relationship("AppUser", backref="dasha_timeline")
+
+    # U4A.1 -- describes the schema migrations/versions/
+    # 37fd90bfdfd5_add_dasha_timeline_constraints.py actually creates;
+    # no DB change here, this only makes the model match reality.
+    # UNIQUE(user_id, mahadasha, antardasha): within one profile's
+    # single generated Vimshottari cycle each (mahadasha, antardasha)
+    # pair occurs exactly once (proven in U4A.0) -- this is both the
+    # duplicate-prevention guarantee AND the per-profile lookup index
+    # (user_id is its leading column), so no separate user_id index is
+    # declared. The (start_date, end_date) index serves the two
+    # existing bulk (no user_id filter) readers in
+    # services/personalization_engine.py.
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id", "mahadasha", "antardasha",
+            name="uq_user_dasha_timeline_user_mahadasha_antardasha",
+        ),
+        db.Index(
+            "ix_user_dasha_timeline_start_end",
+            "start_date", "end_date",
+        ),
+    )

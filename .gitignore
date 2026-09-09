@@ -32,3 +32,17 @@ backup.dump
 /user notification.json
 /report.pdf
 /order_1_report.pdf
+
+# P3C -- scripts/l3_local_verify.py's own per-run output (result JSON +
+# per-test-file logs) and the N2-N5 phase visual-QA harnesses' generated
+# screenshot directories. Regenerated on every local run; never the
+# source of truth. Narrowly scoped to the exact generated names only --
+# never a broad */ pattern that could hide real source directories.
+/.l3-*.json
+/.l3-*.log
+/.l3-visual/
+/.n2-*.json
+/.n2-*.log
+/.n3-visual/
+/.n4-visual/
+/.n5-visual/

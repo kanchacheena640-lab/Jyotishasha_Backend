@@ -29,6 +29,24 @@ from firebase_admin import auth as firebase_auth
 # 🟢 Correct kundali calculator (confirmed by you)
 from full_kundali_api import calculate_full_kundali
 
+# U3B.1 -- the ONE authoritative extraction service. This route calls
+# calculate_full_kundali() exactly once (below, unchanged) and hands
+# the result to build_static_astrology_snapshot() -- it never
+# re-implements Moon/Lagna/Nakshatra/Pada/Yog/Dosh extraction inline.
+from modules.services.static_astrology_extractor import (
+    build_static_astrology_snapshot,
+    apply_snapshot_to_app_user,
+)
+
+# U4A.1 -- the same change-detection field list modules/user_service.py's
+# own register_or_update_user() already uses (reused, not duplicated),
+# and the ONE shared Dasha timeline service (modules/services/
+# dasha_timeline_service.py) -- see the U4A.1 architecture decision for
+# why this route needed its own before/after check added (it previously
+# had none at all, unlike register_or_update_user()).
+from modules.user_service import _ASTROLOGY_AFFECTING_FIELDS
+from modules.services.dasha_timeline_service import sync_dasha_timeline_for_user
+
 from modules.activity_events.service import record_event
 
 
@@ -142,7 +160,11 @@ def bootstrap_user_profile():
         pob = data.get("pob")
         lat = data.get("lat")
         lng = data.get("lng")
-        lang = data.get("lang", "en")
+        from modules.services.language_preference_service import content_language
+        try:
+            lang = content_language(data)
+        except ValueError as exc:
+            return jsonify(ok=False, error="invalid_language", message=str(exc)), 400
 
         print(f"[DOB CHECK] trace_id={trace_id} dob={dob!r} tob={tob!r} pob={pob!r} "
               f"lat={lat!r} lng={lng!r}")
@@ -162,14 +184,15 @@ def bootstrap_user_profile():
             language=lang,
         )
 
-        lagna = kundali.get("lagna_sign")
-        moon_sign = kundali.get("rashi")
-        nakshatra = None
-
-        for p in kundali.get("planets", []):
-            if p["name"] == "Moon":
-                nakshatra = p["nakshatra"]
-                break
+        # U3B.1 -- ONE extraction call from this SAME kundali result,
+        # producing lagna/moon_sign/nakshatra/pada/yog/dosh together as
+        # one internally-consistent snapshot (never a second
+        # calculate_full_kundali() call, never a hand-rolled duplicate
+        # of this extraction logic).
+        static_astrology_snapshot = build_static_astrology_snapshot(kundali)
+        lagna = static_astrology_snapshot["lagna"]
+        moon_sign = static_astrology_snapshot["moon_sign"]
+        nakshatra = static_astrology_snapshot["nakshatra"]
 
         print(f"[KUNDALI SUCCESS] trace_id={trace_id} lagna={lagna!r} "
               f"moon_sign={moon_sign!r} nakshatra={nakshatra!r}")
@@ -183,6 +206,17 @@ def bootstrap_user_profile():
         print(f"[APPUSER] trace_id={trace_id} existing_or_new={'new' if created else 'existing'} "
               f"profile_id={user.id!r}")
 
+        # U4A.1 -- before/after change detection for the Dasha timeline
+        # ONLY (mirrors modules/user_service.py::register_or_update_user()'s
+        # own _birth_details_changed check, reusing the same field list,
+        # not a second definition). This route's EXISTING static-astrology
+        # recalculation below is left exactly as it was -- unconditional,
+        # every call -- since that is pre-existing behavior this task
+        # does not change; only the NEW Dasha resync is gated, so a
+        # repeated bootstrap call with identical birth data does not
+        # delete-and-regenerate an unchanged 81-row timeline for nothing.
+        _old_birth_details = tuple(getattr(user, f) for f in _ASTROLOGY_AFFECTING_FIELDS)
+
         user.name = name
         user.email = email
         user.dob = dob
@@ -191,20 +225,28 @@ def bootstrap_user_profile():
         user.lat = lat
         user.lng = lng
 
-        # N3 -- persist the content-language preference this request
-        # already carries (`lang`, used above only to render the kundali)
-        # so downstream personalized-content notifications can read a real
-        # per-user language instead of guessing. Only "en"/"hi" are
-        # recognized; anything else is ignored rather than stored, leaving
-        # the existing value (or NULL) untouched.
-        if str(lang).strip().lower() in ("en", "hi"):
-            user.lang = str(lang).strip().lower()
+        _new_birth_details = tuple(getattr(user, f) for f in _ASTROLOGY_AFFECTING_FIELDS)
+        _birth_details_changed = _old_birth_details != _new_birth_details
 
-        # STORE personalized fields
-        # (Your AppUser table MUST add these 3 columns)
-        user.lagna = lagna
-        user.moon_sign = moon_sign
-        user.nakshatra = nakshatra
+        # Content language never changes authenticated app preference.
+
+        # STORE personalized fields -- U3B.1: lagna/moon_sign/nakshatra
+        # PLUS nakshatra_pada/static_yog/static_dosh/calculated_at/
+        # version, all assigned together from the ONE snapshot above so
+        # this profile can never end up with (e.g.) a new Moon Sign
+        # paired with a stale Yog/Dosh -- see apply_snapshot_to_app_user().
+        apply_snapshot_to_app_user(user, static_astrology_snapshot)
+
+        # U4A.1 -- Dasha timeline resync, gated on the change-detection
+        # above. sync_dasha_timeline_for_user() itself is unconditional
+        # once called (it always deletes+rebuilds-or-invalidates); the
+        # "don't touch it if nothing changed" decision belongs entirely
+        # to this call site, exactly like register_or_update_user()'s
+        # own gate. No commit happens inside the service -- staged into
+        # this same session, committed once below with everything else.
+        if _birth_details_changed:
+            sync_dasha_timeline_for_user(user)
+        print(f"[DASHA] trace_id={trace_id} birth_details_changed={_birth_details_changed}")
 
         print(f"[BEFORE COMMIT] trace_id={trace_id}")
         db.session.commit()

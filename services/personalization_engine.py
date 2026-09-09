@@ -95,9 +95,21 @@ def get_users_for_dasha_change(days_before=0):
 def get_current_dasha_users():
     today = datetime.now(IST).date()
 
+    # U4A.1 -- half-open interval fix. U4A.0's audit proved every
+    # generated timeline satisfies previous.end_date == next.start_date
+    # (periods TOUCH, they never overlap or gap) -- the mathematically
+    # intended semantics per period is [start_date, end_date), not
+    # [start_date, end_date]. The old end_date >= today (inclusive) made
+    # this query return BOTH the outgoing and incoming period on any
+    # exact transition date, for any affected user. end_date > today
+    # (exclusive) gives that boundary day to the incoming period only,
+    # exactly like UserDashaTimeline.start_date == target_date already
+    # treats a period's own start date as when it begins (see
+    # get_users_for_dasha_change() above, deliberately left unchanged --
+    # its semantics were already correct).
     rows = UserDashaTimeline.query.filter(
         UserDashaTimeline.start_date <= today,
-        UserDashaTimeline.end_date >= today
+        UserDashaTimeline.end_date > today
     ).all()
 
     result = []
