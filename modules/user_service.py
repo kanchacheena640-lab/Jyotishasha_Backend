@@ -18,10 +18,101 @@ Functions:
 - provision_trial_for_new_profile(profile_id)
 - register_or_update_user(data)
 - get_user_by_id(user_id)
+
+U3B.1 -- register_or_update_user() previously could change
+dob/tob/pob/lat/lng without ever recalculating/invalidating the
+already-stored lagna/moon_sign/nakshatra (the U3B architecture audit's
+own confirmed "staleness gap": this was the ONLY birth-detail write
+path that didn't do this, unlike routes/routes_profile_bootstrap.py).
+Fixed here by change-detecting the 5 astrology-affecting fields and,
+on an ACTUAL change, either recalculating once (if the resulting data
+is complete) or fully invalidating (if it isn't) -- see
+_ASTROLOGY_AFFECTING_FIELDS / _has_complete_birth_details /
+_recalculate_or_invalidate_static_astrology below.
 """
 
 from extensions import db
 from modules.models_user import AppUser
+
+# U3B.1 -- the exact fields whose value change can make previously
+# stored static astrology stale. Reused, not duplicated, across the
+# change-detection and completeness checks below.
+_ASTROLOGY_AFFECTING_FIELDS = ("dob", "tob", "pob", "lat", "lng")
+
+
+def _has_complete_birth_details(user: AppUser) -> bool:
+    """Same completeness contract modules/auth/routes_profile.py's own
+    /api/profile/completeness already uses (dob/tob/pob/lat/lng all
+    non-None/non-empty) -- not a new definition invented here."""
+    return all(
+        getattr(user, field, None) not in (None, "")
+        for field in _ASTROLOGY_AFFECTING_FIELDS
+    )
+
+
+def _recalculate_or_invalidate_static_astrology(user: AppUser) -> None:
+    """Called ONLY when an actual change to one of the 5 astrology-
+    affecting fields was just detected on `user` (already assigned,
+    not yet committed). Exactly ONE calculate_full_kundali() call when
+    the resulting birth data is complete; a full invalidation
+    (build_not_calculated_snapshot()) otherwise or if the calculation
+    itself fails -- never a partial/half-calculated snapshot, and
+    never old astrology left attached to the new birth details."""
+    from full_kundali_api import calculate_full_kundali
+    from modules.services.static_astrology_extractor import (
+        build_static_astrology_snapshot,
+        build_not_calculated_snapshot,
+        apply_snapshot_to_app_user,
+    )
+
+    if not _has_complete_birth_details(user):
+        apply_snapshot_to_app_user(user, build_not_calculated_snapshot())
+        return
+
+    try:
+        kundali = calculate_full_kundali(
+            name=user.name,
+            dob=user.dob,
+            tob=user.tob,
+            lat=user.lat,
+            lon=user.lng,
+            user_id=None,
+            language=(user.lang or "en"),
+        )
+        snapshot = build_static_astrology_snapshot(kundali)
+    except Exception as exc:
+        # Calculation failed against structurally-present-but-malformed
+        # birth data (e.g. an unparseable dob string) -- never commit a
+        # half-calculated snapshot, and never silently leave the OLD
+        # astrology attached to these NEW (broken) birth details. The
+        # rest of this profile update (name/email/phone/fcm sync) must
+        # still succeed -- this failure is scoped to astrology only.
+        print(f"⚠️ Static astrology recalculation failed for firebase_uid="
+              f"{user.firebase_uid!r}: {exc}")
+        apply_snapshot_to_app_user(user, build_not_calculated_snapshot())
+        return
+
+    apply_snapshot_to_app_user(user, snapshot)
+
+
+def _resync_dasha_timeline(user: AppUser) -> None:
+    """U4A.1 -- called at the SAME trigger point as
+    _recalculate_or_invalidate_static_astrology() above (an actual
+    change to one of the 5 astrology-affecting fields), immediately
+    after it. Delegates entirely to
+    modules/services/dasha_timeline_service.py::
+    sync_dasha_timeline_for_user() -- that service owns its own
+    completeness gate (reusing this same module's
+    _has_complete_birth_details, not a second definition) and its own
+    delete-then-regenerate-or-invalidate contract; this function is
+    just the wiring. No commit happens here -- the delete+insert this
+    triggers is staged into the SAME session this function's own caller
+    (register_or_update_user) commits once, at the end, alongside the
+    profile fields and the static-astrology snapshot -- one atomic
+    write, never two."""
+    from modules.services.dasha_timeline_service import sync_dasha_timeline_for_user
+
+    sync_dasha_timeline_for_user(user)
 
 
 # ---------- Identity resolution (Single Source of Truth) ----------
@@ -134,6 +225,15 @@ def register_or_update_user(data: dict) -> AppUser:
     if data.get("phone"):
         user.phone = data["phone"]
 
+    # U3B.1 -- capture the astrology-affecting fields BEFORE they are
+    # overwritten below, so an ACTUAL value change (not merely "this
+    # endpoint was called") can be detected. Harmless representation
+    # differences are not a concern here: this codebase has never
+    # normalized these fields on this write path (no type coercion
+    # existed before this change either), so a plain equality compare
+    # matches the repository's own existing canonical representation.
+    _old_birth_details = tuple(getattr(user, f) for f in _ASTROLOGY_AFFECTING_FIELDS)
+
     user.dob = data.get("dob", user.dob)
     user.tob = data.get("tob", user.tob)
     user.pob = data.get("pob", user.pob)
@@ -141,13 +241,10 @@ def register_or_update_user(data: dict) -> AppUser:
     user.lng = data.get("lng", user.lng)
     user.tz = data.get("tz", user.tz or "+05:30")
 
-    # N3 -- same content-language preference routes/routes_profile_bootstrap.py
-    # persists, accepted here too for symmetry (this is the other AppUser
-    # write path). Only "en"/"hi" recognized; anything else/missing leaves
-    # the existing value untouched rather than guessing.
-    incoming_lang = str(data.get("lang", "")).strip().lower()
-    if incoming_lang in ("en", "hi"):
-        user.lang = incoming_lang
+    _new_birth_details = tuple(getattr(user, f) for f in _ASTROLOGY_AFFECTING_FIELDS)
+    _birth_details_changed = _old_birth_details != _new_birth_details
+
+    # Account language is written only by the language preference API.
     # Security fix: subscription state must be server-controlled only --
     # never read from client-supplied request data (that previously let
     # any caller set their own subscription tier with no payment
@@ -158,6 +255,20 @@ def register_or_update_user(data: dict) -> AppUser:
     # 🔥 6. FCM token
     if data.get("fcm_token"):
         user.fcm_token = data["fcm_token"]
+
+    # U3B.1 -- ONLY on an ACTUAL change to dob/tob/pob/lat/lng: either
+    # recalculate once (data now complete) or fully invalidate (data
+    # now incomplete, or calculation failed). Never triggered merely
+    # because this endpoint was called -- name/email/phone/fcm_token/
+    # tz/lang-only updates, or birth details submitted unchanged, do
+    # not touch calculate_full_kundali() or any static astrology field
+    # at all.
+    # U4A.1 -- Dasha timeline resync reuses the EXACT SAME
+    # _birth_details_changed signal, right alongside static astrology --
+    # one trigger, two independent effects, neither blocking the other.
+    if _birth_details_changed:
+        _recalculate_or_invalidate_static_astrology(user)
+        _resync_dasha_timeline(user)
 
     db.session.commit()
 

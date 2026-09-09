@@ -20,6 +20,44 @@ from firebase_admin import auth as firebase_auth
 
 routes_user = Blueprint("routes_user", __name__)
 
+
+@routes_user.route("/api/user/preferences/language", methods=["GET", "PATCH"])
+def language_preference():
+    from modules.services.language_preference_service import (
+        normalize_language, language_profile, preference_state, write_language,
+    )
+    from extensions import db
+    header = request.headers.get("Authorization", "")
+    if not header.startswith("Bearer "):
+        return jsonify(error="unauthorized"), 401
+    try:
+        uid = firebase_auth.verify_id_token(header[7:].strip()).get("uid")
+        if not isinstance(uid, str) or not uid.strip():
+            raise ValueError("missing UID")
+    except Exception:
+        return jsonify(error="unauthorized"), 401
+    if request.method == "PATCH":
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or set(data) != {"lang"}:
+            return jsonify(error="invalid_language", message="Only lang is accepted"), 400
+        try:
+            lang = normalize_language(data["lang"])
+        except ValueError as exc:
+            return jsonify(error="invalid_language", message=str(exc)), 400
+    try:
+        profile = language_profile(uid)
+        if request.method == "GET":
+            return jsonify(preference_state(profile))
+        if profile is None:
+            return jsonify(error="profile_not_ready"), 409
+        return jsonify(write_language(profile, lang))
+    except RuntimeError:
+        db.session.rollback()
+        return jsonify(error="ambiguous_profile"), 500
+    except Exception:
+        db.session.rollback()
+        return jsonify(error="language_unavailable"), 503
+
 # ---------- Register or Update ----------
 @routes_user.post("/users/register-or-update")
 def register_or_update():

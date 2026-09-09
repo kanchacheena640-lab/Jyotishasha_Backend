@@ -4,7 +4,15 @@ import swisseph as swe
 from datetime import datetime, timedelta
 import pytz
 
+from lahiri_mode import ensure_lahiri_mode
+
 swe.set_sid_mode(swe.SIDM_LAHIRI)
+# U4C.2B -- this import-time call alone is NOT sufficient (U4C.2A
+# proved swe.set_sid_mode() is thread-local); get_planet_position_on()
+# below -- the only function in this file that actually calls
+# swe.calc_ut()/swe.get_ayanamsa_ut() -- now calls ensure_lahiri_mode()
+# itself, immediately before use, so it is correct on any thread
+# regardless of whether this import has ever run on that thread.
 
 RASHIS = [
     "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -20,6 +28,8 @@ PLANET_IDS = {
 def get_planet_position_on(date_str: str, planet_name: str) -> dict:
     if planet_name not in PLANET_IDS:
         raise ValueError("Invalid planet name")
+
+    ensure_lahiri_mode()  # U4C.2B -- must be safe on a completely fresh thread; never assumes transit_engine ran first
 
     # Convert date to IST datetime
     dt = datetime.strptime(date_str, "%Y-%m-%d") if len(date_str) == 10 else datetime.strptime(date_str, "%Y-%m-%d %H:%M")
@@ -51,57 +61,42 @@ def get_planet_position_on(date_str: str, planet_name: str) -> dict:
         "motion": "Retrograde" if speed < 0 else "Direct"
     }
 
+# U4C.1 -- CONSOLIDATION. This file previously duplicated its own
+# independent day-stepping ingress-detection algorithm here (same
+# structure, same +1-day-late bug as transit_engine.py's own copy --
+# see U4C.0's audit). Per U4C.1's explicit instruction not to leave two
+# independently-maintained copies of the SAME corrected boundary
+# algorithm, get_next_transits()/get_prev_transits() now delegate
+# entirely to transit_engine._get_rashi_transits() -- the ONE canonical
+# implementation (see transit_engine.py's own "U4C.1 -- CANONICAL
+# INGRESS-BOUNDARY DETECTION" section). Nothing else in this file
+# changes: get_planet_position_on() (current-position, date-only --
+# what services/current_saturn_resolver.py and services/sadhesati_
+# report_generator.py's OWN current-state read both call) and
+# get_planet_in_rashi() are untouched, byte-for-byte, since neither one
+# is part of the confirmed date-boundary-detection defect.
+from transit_engine import _get_rashi_transits as _canonical_rashi_transits
+from transit_engine import get_current_sign_residency as _canonical_current_residency
+
 def get_next_transits(planet_name: str, count: int = 12) -> list:
-    return _get_rashi_transits(planet_name, direction="forward", count=count)
-
-def get_prev_transits(planet_name: str, count: int = 12) -> list:
-    return _get_rashi_transits(planet_name, direction="backward", count=count)
-
-def _get_rashi_transits(planet_name: str, direction="forward", count=12) -> list:
     if planet_name not in PLANET_IDS:
         raise ValueError("Invalid planet")
+    return _canonical_rashi_transits(planet_name, direction="forward", count=count)
 
-    ist = pytz.timezone("Asia/Kolkata")
-    today = datetime.now(ist).replace(hour=0, minute=0, second=0, microsecond=0)
-    day = today + timedelta(days=1) if direction == "forward" else today - timedelta(days=1)
-    end_cap = today + timedelta(days=365*40) if direction == "forward" else today - timedelta(days=365*40)
+def get_prev_transits(planet_name: str, count: int = 12) -> list:
+    if planet_name not in PLANET_IDS:
+        raise ValueError("Invalid planet")
+    return _canonical_rashi_transits(planet_name, direction="backward", count=count)
 
-    def get_rashi_on(d: datetime):
-        pos = get_planet_position_on(d.strftime("%Y-%m-%d"), planet_name)
-        return pos["rashi"]
-
-    def get_motion_on(d: datetime):
-        pos = get_planet_position_on(d.strftime("%Y-%m-%d"), planet_name)
-        return pos["motion"]
-
-    prev_rashi = get_rashi_on(today)
-    events = []
-
-    while ((direction == "forward" and day <= end_cap) or (direction == "backward" and day >= end_cap)) and len(events) < count:
-        r = get_rashi_on(day)
-        if r != prev_rashi:
-            motion = get_motion_on(day)
-            events.append({
-                "planet": planet_name,
-                "from_rashi": prev_rashi,
-                "to_rashi": r,
-                "entering_date": day.strftime("%Y-%m-%d"),
-                "motion": motion
-            })
-            prev_rashi = r
-        day += timedelta(days=1) if direction == "forward" else timedelta(days=-1)
-
-    # Add exit dates
-    for i in range(len(events)):
-        probe_day = datetime.strptime(events[i]["entering_date"], "%Y-%m-%d") + timedelta(days=1)
-        while True:
-            r_now = get_rashi_on(probe_day)
-            if r_now != events[i]["to_rashi"]:
-                events[i]["exit_date"] = (probe_day - timedelta(days=1)).strftime("%Y-%m-%d")
-                break
-            probe_day += timedelta(days=1)
-
-    return events
+# U4C.1A -- same delegation pattern as get_next_transits/get_prev_transits
+# above: the CURRENT-residency primitive lives ONLY in transit_engine.py
+# (see its own "U4C.1A" docstring); this is a thin, signature-preserving
+# forwarder so services/sadhesati_report_generator.py can keep importing
+# everything it needs from this one module, exactly as before.
+def get_current_sign_residency(planet_name: str, as_of=None) -> dict:
+    if planet_name not in PLANET_IDS:
+        raise ValueError("Invalid planet")
+    return _canonical_current_residency(planet_name, as_of=as_of)
 
 def get_planet_in_rashi(rashi: str, planet: str = "Saturn", when="future") -> dict:
     transits = get_next_transits(planet) if when == "future" else get_prev_transits(planet)
