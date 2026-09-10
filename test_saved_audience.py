@@ -541,6 +541,71 @@ def main():
                   r_all_preview.get_json()["member_count"] == r_all_live.get_json()["pagination"]["total_count"])
 
             # ==========================================================
+            print("\n=== Search Parity (Saved Audience Search Parity Fix) ===")
+            # ==========================================================
+            # Production bug: a Users search (exact email/name/contact) that
+            # visually isolates one user was NOT persisted into the saved
+            # criteria (a frontend debounce race -- see UsersPageClient.tsx),
+            # so the audience silently became "All Users." These prove the
+            # BACKEND half of the contract holds: search is a first-class,
+            # fully-parity-checked filter criterion identical to every other
+            # one already proven above, and never silently drops to All Users.
+            exact_email = f"savedaud{U_BREAKUP_PAYING}@example.com"
+            ids_search_email = parity_check("Search A: exact email", {"search": exact_email})
+            check("Search A: isolates exactly the one matching fixture", ids_search_email == {U_BREAKUP_PAYING})
+
+            exact_name = f"Test User {U_ARIES_SATURN_DASHA}"
+            ids_search_name = parity_check("Search B: exact name", {"search": exact_name})
+            check("Search B: isolates exactly the one matching fixture", ids_search_name == {U_ARIES_SATURN_DASHA})
+
+            exact_phone = f"+91900003{str(U_SATURN_HOUSE10)[-4:]}"
+            ids_search_phone = parity_check("Search C: exact phone/contact", {"search": exact_phone})
+            check("Search C: isolates exactly the one matching fixture", ids_search_phone == {U_SATURN_HOUSE10})
+
+            # D: search combined with another filter -- both must narrow
+            # together (search alone would match U_ARIES_SATURN_DASHA;
+            # search + the WRONG mahadasha must exclude it).
+            ids_search_plus_match = parity_check(
+                "Search D: exact name + matching mahadasha",
+                {"search": exact_name, "mahadasha": ["Saturn"]},
+            )
+            check("Search D: search+filter still isolates the fixture", ids_search_plus_match == {U_ARIES_SATURN_DASHA})
+            ids_search_plus_mismatch = parity_check(
+                "Search D: exact name + non-matching mahadasha",
+                {"search": exact_name, "mahadasha": ["Mercury"]},
+            )
+            check("Search D: a non-matching second filter excludes the searched user",
+                  U_ARIES_SATURN_DASHA not in ids_search_plus_mismatch)
+
+            # F: SavedAudience round-trip preserves search (create -> stored
+            # criteria -> re-fetched criteria all carry the SAME search string;
+            # this is the exact persistence step the production bug skipped).
+            search_audience = create_audience(
+                name="Search Round-Trip Test", criteria={"version": 1, "filters": {"search": exact_email}},
+            )
+            _CREATED_AUDIENCE_IDS.append(search_audience.id)
+            check("F: stored criteria.filters.search matches exactly what was saved",
+                  search_audience.criteria["filters"].get("search") == exact_email)
+            refetched = get_audience(search_audience.id)
+            check("F: re-fetched criteria.filters.search still matches (no silent drop)",
+                  refetched.criteria["filters"].get("search") == exact_email)
+            search_preview = preview_audience(search_audience.id, page=1, page_size=200)
+            check("F: preview of the round-tripped audience resolves to exactly the one user",
+                  {u["id"] for u in search_preview["users"]} == {U_BREAKUP_PAYING})
+            check("F: round-tripped audience is NOT classified as All Users",
+                  bool(refetched.criteria["filters"]))
+
+            # H: a non-empty but INVALID search value must fail closed (400),
+            # never silently become {} / All Users.
+            r_bad_search = client.post("/admin/api/audiences", json={
+                "name": "Should Fail: bad search type",
+                "criteria": {"version": 1, "filters": {"search": 12345}},
+            }, headers=headers_admin)
+            check("H: non-string search value -> 400, not silently accepted", r_bad_search.status_code == 400)
+            check("H: rejected creation created NO audience row (name never persisted)",
+                  SavedAudience.query.filter_by(name="Should Fail: bad search type").first() is None)
+
+            # ==========================================================
             print("\n=== resolve_user_ids() standalone ===")
             # ==========================================================
             ids_direct = admin_service.resolve_user_ids(ask_now_concern=["Breakup"])
