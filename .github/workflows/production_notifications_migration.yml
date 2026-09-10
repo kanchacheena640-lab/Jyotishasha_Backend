@@ -1,0 +1,173 @@
+name: Production Notifications Migration (ONE-TIME)
+
+# Temporary, narrowly-scoped, workflow_dispatch-ONLY migration runner.
+# Its single purpose: bring the production database to c4d8f21a9e05
+# (Campaign C Bell items table + user_notifications.dismissed_at)
+# BEFORE backend commit 747a836 is deployed, since that commit's Bell
+# API code depends on both existing. Deliberately run from a temporary
+# branch, never from main, so this migration can happen strictly ahead
+# of any backend code deploy.
+#
+# This workflow NEVER sets FCM_SERVICE_ACCOUNT_JSON, DEPLOYMENT_ENVIRONMENT,
+# ADMIN_CAMPAIGN_SEND_ENABLED, or ADMIN_CAMPAIGN_WORKER_AUTHORIZED --
+# even if some import path accidentally reached
+# notifications/campaign_transport.py::select_transport(), every one of
+# its four required gates would still be false/missing, so it could
+# only ever return NoSendTransport. It never imports or calls
+# scripts/campaign_worker_runner.py or notifications.campaign_worker at
+# all. Only two Alembic-facing Flask CLI commands are ever invoked:
+# `flask db current` (read-only) and `flask db upgrade` (the repository's
+# own reviewed, committed migration files -- no db.create_all(), no
+# manual DDL, nothing else).
+#
+# factory.py::create_app() itself was audited before writing this file:
+# db.create_all() was removed there (U6A.1), init_firebase() degrades to
+# a harmless warning when FCM_SERVICE_ACCOUNT_JSON is absent (never
+# raises), and no scheduler/Celery/Redis import happens at app-import
+# time -- so importing `app` here (required for any `flask db ...`
+# command) has no side effect beyond registering SQLAlchemy, which does
+# not itself open a connection or touch a table.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: production-notifications-migration
+  cancel-in-progress: false
+
+# The one revision production must already be on before this workflow
+# may proceed to `db upgrade` -- origin/main's own current tip, i.e.
+# "whatever the currently-deployed backend's own last-applied migration
+# is". If production reports anything else, the workflow fails closed
+# here rather than guessing.
+env:
+  EXPECTED_STARTING_REVISION: 0e2036a0b4b7
+  EXPECTED_TARGET_REVISION: c4d8f21a9e05
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout this exact ref
+        uses: actions/checkout@v4
+
+      - name: Setup Python (matches production runtime.txt)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.9"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Preflight -- positively confirm this is the intended production DB (name only, never host/URL/password)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg2
+          url = os.environ["DATABASE_URL"]
+          conn = psycopg2.connect(url)
+          try:
+              with conn.cursor() as cur:
+                  cur.execute("SELECT current_database()")
+                  name = cur.fetchone()[0]
+          finally:
+              conn.close()
+          print(f"[preflight] current_database() = {name!r}")
+          if name != "jyotishasha":
+              raise SystemExit(
+                  f"[preflight] REFUSING: expected database name 'jyotishasha', got {name!r}. "
+                  "Never proceeding against an unexpected target."
+              )
+          print("[preflight] Confirmed: this is the intended production 'jyotishasha' database.")
+          PY
+
+      - name: Preflight -- confirm no pre-existing user_dasha_timeline duplicates (required by 37fd90bfdfd5's new UNIQUE constraint)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg2
+          conn = psycopg2.connect(os.environ["DATABASE_URL"])
+          try:
+              with conn.cursor() as cur:
+                  cur.execute("""
+                      SELECT count(*) FROM (
+                          SELECT user_id, mahadasha, antardasha
+                          FROM user_dasha_timeline
+                          GROUP BY user_id, mahadasha, antardasha
+                          HAVING count(*) > 1
+                      ) dupes
+                  """)
+                  dupe_groups = cur.fetchone()[0]
+          finally:
+              conn.close()
+          print(f"[preflight] user_dasha_timeline duplicate (user_id, mahadasha, antardasha) groups: {dupe_groups}")
+          if dupe_groups != 0:
+              raise SystemExit(
+                  "[preflight] REFUSING: existing duplicate rows would make the new UNIQUE "
+                  "constraint (migration 37fd90bfdfd5) fail to apply. Stopping before upgrade."
+              )
+          print("[preflight] Confirmed: no duplicates -- the new UNIQUE constraint is safe to add.")
+          PY
+
+      - name: Report current Alembic revision (read-only)
+        id: before
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACTIVITY_EVENTS_ENVIRONMENT: production
+        run: |
+          python -m flask --app app db current | tee current_before.txt
+          echo "revision=$(grep -oE '[0-9a-f]{12}' current_before.txt | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Report migration heads (read-only, from the committed migration files on this ref)
+        id: heads
+        run: |
+          python -m flask --app app db heads | tee heads.txt
+          echo "head_count=$(grep -cE '[0-9a-f]{12}' heads.txt)" >> "$GITHUB_OUTPUT"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACTIVITY_EVENTS_ENVIRONMENT: production
+
+      - name: Gate -- refuse to proceed unless starting revision and heads are exactly as expected
+        run: |
+          echo "Current production revision: ${{ steps.before.outputs.revision }}"
+          echo "Expected starting revision:   $EXPECTED_STARTING_REVISION"
+          if [ "${{ steps.before.outputs.revision }}" != "$EXPECTED_STARTING_REVISION" ]; then
+            echo "REFUSING: production is not on the expected starting revision. Stopping before upgrade."
+            exit 1
+          fi
+          if [ "${{ steps.heads.outputs.head_count }}" != "1" ]; then
+            echo "REFUSING: migration files on this ref do not resolve to exactly one head. Stopping before upgrade."
+            cat heads.txt
+            exit 1
+          fi
+          if ! grep -q "$EXPECTED_TARGET_REVISION" heads.txt; then
+            echo "REFUSING: the single head found is not $EXPECTED_TARGET_REVISION. Stopping before upgrade."
+            cat heads.txt
+            exit 1
+          fi
+          echo "Gate passed: safe to upgrade."
+
+      - name: Apply migrations (flask db upgrade -- committed Alembic files only)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACTIVITY_EVENTS_ENVIRONMENT: production
+        run: python -m flask --app app db upgrade
+
+      - name: Report final Alembic revision and verify it is exactly the expected target
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACTIVITY_EVENTS_ENVIRONMENT: production
+        run: |
+          python -m flask --app app db current | tee current_after.txt
+          FINAL=$(grep -oE '[0-9a-f]{12}' current_after.txt | head -1)
+          echo "Final revision: $FINAL"
+          if [ "$FINAL" != "$EXPECTED_TARGET_REVISION" ]; then
+            echo "MIGRATION VERIFICATION FAILED: expected $EXPECTED_TARGET_REVISION, got $FINAL"
+            exit 1
+          fi
+          echo "Verified: production is now at $EXPECTED_TARGET_REVISION."
