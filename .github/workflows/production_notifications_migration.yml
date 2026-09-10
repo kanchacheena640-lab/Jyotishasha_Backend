@@ -119,18 +119,36 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ACTIVITY_EVENTS_ENVIRONMENT: production
+          # None of these three are real -- `app.py` and several modules
+          # it imports (report_writer.py, modules/services/chat_engine.py,
+          # config/razorpay_config.py, etc.) construct an OpenAI/Razorpay
+          # client at MODULE IMPORT TIME, which raises if the key is
+          # empty. `flask --app app db ...` cannot import `app` at all
+          # without these being non-empty strings. This workflow never
+          # calls any code path that actually uses either service --
+          # same safe placeholder convention already used throughout
+          # this repo's own local migration-apply scripts (e.g.
+          # scripts/l3_local_verify.py).
+          OPENAI_API_KEY: "sk-migration-only-unused"
+          RAZORPAY_KEY_ID: "migration-only-unused"
+          RAZORPAY_KEY_SECRET: "migration-only-unused"
         run: |
+          set -o pipefail
           python -m flask --app app db current | tee current_before.txt
           echo "revision=$(grep -oE '[0-9a-f]{12}' current_before.txt | head -1)" >> "$GITHUB_OUTPUT"
 
       - name: Report migration heads (read-only, from the committed migration files on this ref)
         id: heads
         run: |
+          set -o pipefail
           python -m flask --app app db heads | tee heads.txt
           echo "head_count=$(grep -cE '[0-9a-f]{12}' heads.txt)" >> "$GITHUB_OUTPUT"
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ACTIVITY_EVENTS_ENVIRONMENT: production
+          OPENAI_API_KEY: "sk-migration-only-unused"
+          RAZORPAY_KEY_ID: "migration-only-unused"
+          RAZORPAY_KEY_SECRET: "migration-only-unused"
 
       - name: Gate -- refuse to proceed unless starting revision and heads are exactly as expected
         run: |
@@ -156,13 +174,20 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ACTIVITY_EVENTS_ENVIRONMENT: production
+          OPENAI_API_KEY: "sk-migration-only-unused"
+          RAZORPAY_KEY_ID: "migration-only-unused"
+          RAZORPAY_KEY_SECRET: "migration-only-unused"
         run: python -m flask --app app db upgrade
 
       - name: Report final Alembic revision and verify it is exactly the expected target
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ACTIVITY_EVENTS_ENVIRONMENT: production
+          OPENAI_API_KEY: "sk-migration-only-unused"
+          RAZORPAY_KEY_ID: "migration-only-unused"
+          RAZORPAY_KEY_SECRET: "migration-only-unused"
         run: |
+          set -o pipefail
           python -m flask --app app db current | tee current_after.txt
           FINAL=$(grep -oE '[0-9a-f]{12}' current_after.txt | head -1)
           echo "Final revision: $FINAL"
