@@ -4,17 +4,31 @@ from flask import Blueprint, jsonify
 from extensions import db
 from models import Order
 
-# Bucket A -- Critical Fix #7. Reuses the repository's existing admin
-# auth mechanism (JWT + ADMIN_USER_IDS allowlist), already proven in
-# notifications/notification_routes.py -- no new auth mechanism, no
-# RBAC, no change to the admin login flow.
-from notifications.notification_routes import admin_required
+# Bucket A -- Critical Fix #7. All three routes below are gated by
+# admin_or_bridge_required (routes/routes_app_version.py), which tries
+# the Next.js Admin BFF's X-Admin-Bridge-Key first and falls back,
+# completely unmodified, to the repository's existing admin_required
+# JWT + ADMIN_USER_IDS allowlist check for any other caller -- no new
+# auth mechanism, no RBAC, no change to the admin login flow.
+#
+# Admin Orders BFF Auth Fix / Admin Orders BFF Completion: GET
+# /admin/api/orders, PUT /admin/api/order/<id>, and POST
+# /admin/api/resend/<id> were all previously @admin_required only --
+# OrderList.tsx called each of them directly from the browser with no
+# Authorization header at all, so every real GET request was silently
+# rejected (401 {"msg": "Missing Authorization Header"}), which
+# OrderList.tsx then handed to orders.map() unchecked, crashing the
+# Admin Dashboard. All three now accept the same bridge credential the
+# Next.js server-only BFF routes send (app/api/admin/orders/route.ts,
+# app/api/admin/orders/[id]/route.ts, app/api/admin/orders/[id]/resend/
+# route.ts) -- no business-logic change.
+from routes.routes_app_version import admin_or_bridge_required
 
 
 admin_orders_bp = Blueprint('admin_orders', __name__)
 
 @admin_orders_bp.route('/admin/api/orders', methods=['GET'])
-@admin_required
+@admin_or_bridge_required
 def get_all_orders():
     orders = Order.query.order_by(Order.created_at.desc()).all()
 
@@ -37,7 +51,7 @@ def get_all_orders():
 
 # ------------------- RESEND ORDER ------------------- #
 @admin_orders_bp.route('/admin/api/resend/<int:order_id>', methods=['POST'])
-@admin_required
+@admin_or_bridge_required
 def resend_order(order_id):
     from tasks import generate_and_send_report   # ✅ NEW import
 
@@ -56,7 +70,7 @@ def resend_order(order_id):
 
 # ------------------- UPDATE ORDER ------------------- #
 @admin_orders_bp.route('/admin/api/order/<int:order_id>', methods=['PUT'])
-@admin_required
+@admin_or_bridge_required
 def update_order(order_id):
     from flask import request
 

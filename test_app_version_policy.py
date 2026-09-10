@@ -341,11 +341,15 @@ def main():
             row = AppVersionPolicy.query.filter_by(platform="android").first()
             check("J: rejected bridge-path PATCH changed NOTHING", row.minimum_supported_build == original_snapshot["minimum_supported_build"])
 
-            # A valid bridge key does not open the door to any other
-            # admin route -- admin_or_bridge_required was added only to
-            # this one route, admin_required elsewhere is untouched.
+            # A valid bridge key does not open the door to every admin
+            # route -- admin_or_bridge_required was added deliberately,
+            # route by route (App Version, Users, Orders -- see
+            # test_admin_orders_bff.py), not globally. /admin/api/orders
+            # itself moved onto this same decorator (Admin Orders BFF
+            # Completion) so it no longer proves this; a still-untouched
+            # admin_required-only route does instead.
             resp = client.get(
-                "/admin/api/orders",
+                "/admin/api/metrics/payments",
                 headers={"X-Admin-Bridge-Key": "test-bridge-secret-987"},
             )
             check("J: bridge key has no effect on an unrelated admin_required route -> 401", resp.status_code == 401)
