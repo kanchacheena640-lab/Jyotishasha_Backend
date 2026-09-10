@@ -1,24 +1,36 @@
 name: Production Notifications Migration (ONE-TIME)
 
 # Temporary, narrowly-scoped, workflow_dispatch-ONLY migration runner.
-# Its single purpose: bring the production database to c4d8f21a9e05
-# (Campaign C Bell items table + user_notifications.dismissed_at)
-# BEFORE backend commit 747a836 is deployed, since that commit's Bell
-# API code depends on both existing. Deliberately run from a temporary
-# branch, never from main, so this migration can happen strictly ahead
-# of any backend code deploy.
 #
-# This workflow NEVER sets FCM_SERVICE_ACCOUNT_JSON, DEPLOYMENT_ENVIRONMENT,
-# ADMIN_CAMPAIGN_SEND_ENABLED, or ADMIN_CAMPAIGN_WORKER_AUTHORIZED --
-# even if some import path accidentally reached
-# notifications/campaign_transport.py::select_transport(), every one of
-# its four required gates would still be false/missing, so it could
-# only ever return NoSendTransport. It never imports or calls
+# THIS RUN's purpose (Saved Audience V2): bring the production database
+# from c4d8f21a9e05 to b4e7f18a2c6d -- adds saved_audiences.audience_type
+# (additive, server_default='dynamic', every existing row backfills
+# unchanged), widens saved_audiences.criteria to nullable, adds two
+# CHECK constraints tying audience_type/criteria together, and creates
+# the new saved_audience_members table (FK'd both ways ON DELETE
+# CASCADE, UNIQUE(saved_audience_id, user_id)) -- BEFORE backend commit
+# 2cc1a25 is deployed, since that commit's Saved Audience V2 code
+# depends on this schema existing. Deliberately run from a temporary
+# branch (never from main), so this migration can happen strictly ahead
+# of any backend code deploy. This workflow file's PATH is already
+# registered as workflow_dispatch-able on the default branch from the
+# prior production migration (run 34454746590, c4d8f21a9e05) -- GitHub
+# executes whatever version of this file exists on the dispatched ref,
+# so this run's content lives only on this temporary branch, never on
+# main.
+#
+# This workflow NEVER sets DEPLOYMENT_ENVIRONMENT, ADMIN_CAMPAIGN_SEND_ENABLED,
+# or ADMIN_CAMPAIGN_WORKER_AUTHORIZED -- even if some import path
+# accidentally reached notifications/campaign_transport.py::select_transport(),
+# every one of its four required gates would still be false/missing, so
+# it could only ever return NoSendTransport. It never imports or calls
 # scripts/campaign_worker_runner.py or notifications.campaign_worker at
 # all. Only two Alembic-facing Flask CLI commands are ever invoked:
 # `flask db current` (read-only) and `flask db upgrade` (the repository's
 # own reviewed, committed migration files -- no db.create_all(), no
-# manual DDL, nothing else).
+# manual DDL, nothing else) -- plus one final READ-ONLY information_schema
+# query to structurally confirm the new column/table/constraints exist,
+# never a data-mutating query, never a test row inserted.
 #
 # factory.py::create_app() itself was audited before writing this file:
 # db.create_all() was removed there (U6A.1), init_firebase() degrades to
@@ -32,17 +44,18 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: production-notifications-migration
+  group: production-audience-v2-migration
   cancel-in-progress: false
 
 # The one revision production must already be on before this workflow
-# may proceed to `db upgrade` -- origin/main's own current tip, i.e.
-# "whatever the currently-deployed backend's own last-applied migration
-# is". If production reports anything else, the workflow fails closed
-# here rather than guessing.
+# may proceed to `db upgrade` -- confirmed via this session's own prior
+# migration run (34454746590) having brought production to exactly
+# c4d8f21a9e05, and no other migration/deploy having touched it since.
+# If production reports anything else, the workflow fails closed here
+# rather than guessing.
 env:
-  EXPECTED_STARTING_REVISION: 0e2036a0b4b7
-  EXPECTED_TARGET_REVISION: c4d8f21a9e05
+  EXPECTED_STARTING_REVISION: c4d8f21a9e05
+  EXPECTED_TARGET_REVISION: b4e7f18a2c6d
 
 jobs:
   migrate:
@@ -84,7 +97,7 @@ jobs:
           print("[preflight] Confirmed: this is the intended production 'jyotishasha' database.")
           PY
 
-      - name: Preflight -- confirm no pre-existing user_dasha_timeline duplicates (required by 37fd90bfdfd5's new UNIQUE constraint)
+      - name: Preflight -- confirm no pre-existing saved_audiences row already has a non-'dynamic'/NULL-incompatible shape
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
@@ -94,24 +107,25 @@ jobs:
           conn = psycopg2.connect(os.environ["DATABASE_URL"])
           try:
               with conn.cursor() as cur:
-                  cur.execute("""
-                      SELECT count(*) FROM (
-                          SELECT user_id, mahadasha, antardasha
-                          FROM user_dasha_timeline
-                          GROUP BY user_id, mahadasha, antardasha
-                          HAVING count(*) > 1
-                      ) dupes
-                  """)
-                  dupe_groups = cur.fetchone()[0]
+                  # Every existing row must have non-NULL criteria (the
+                  # table's OWN current NOT NULL constraint already
+                  # guarantees this -- this is a defense-in-depth re-check,
+                  # never trusted blindly) -- this is what lets the new
+                  # CHECK constraint (audience_type='dynamic' iff criteria
+                  # IS NOT NULL) apply cleanly to every row via the
+                  # server_default='dynamic' backfill, with zero rows
+                  # needing individual correction.
+                  cur.execute("SELECT count(*) FROM saved_audiences WHERE criteria IS NULL")
+                  null_criteria_rows = cur.fetchone()[0]
           finally:
               conn.close()
-          print(f"[preflight] user_dasha_timeline duplicate (user_id, mahadasha, antardasha) groups: {dupe_groups}")
-          if dupe_groups != 0:
+          print(f"[preflight] existing saved_audiences rows with NULL criteria: {null_criteria_rows}")
+          if null_criteria_rows != 0:
               raise SystemExit(
-                  "[preflight] REFUSING: existing duplicate rows would make the new UNIQUE "
-                  "constraint (migration 37fd90bfdfd5) fail to apply. Stopping before upgrade."
+                  "[preflight] REFUSING: existing NULL-criteria rows would not satisfy the new "
+                  "CHECK constraint once audience_type backfills to 'dynamic'. Stopping before upgrade."
               )
-          print("[preflight] Confirmed: no duplicates -- the new UNIQUE constraint is safe to add.")
+          print("[preflight] Confirmed: every existing row will remain a valid DYNAMIC audience after backfill.")
           PY
 
       - name: Report current Alembic revision (read-only)
@@ -252,3 +266,87 @@ jobs:
             exit 1
           fi
           echo "Verified: production is now at $EXPECTED_TARGET_REVISION."
+
+      - name: Post-migration schema verification (READ-ONLY -- structure only, never a data row)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg2
+          conn = psycopg2.connect(os.environ["DATABASE_URL"])
+          ok = True
+          try:
+              with conn.cursor() as cur:
+                  cur.execute("""
+                      SELECT column_name, is_nullable, column_default
+                      FROM information_schema.columns
+                      WHERE table_name = 'saved_audiences' AND column_name IN ('audience_type', 'criteria')
+                      ORDER BY column_name
+                  """)
+                  cols = {r[0]: r for r in cur.fetchall()}
+                  print(f"[verify] saved_audiences columns: {cols}")
+                  ok &= 'audience_type' in cols and cols['audience_type'][1] == 'NO'
+                  ok &= 'criteria' in cols and cols['criteria'][1] == 'YES'
+
+                  cur.execute("""
+                      SELECT count(*) FROM saved_audiences WHERE audience_type != 'dynamic'
+                  """)
+                  non_dynamic = cur.fetchone()[0]
+                  print(f"[verify] existing rows NOT backfilled to 'dynamic': {non_dynamic}")
+                  ok &= non_dynamic == 0
+
+                  cur.execute("""
+                      SELECT count(*) FROM saved_audiences WHERE audience_type = 'dynamic' AND criteria IS NULL
+                  """)
+                  dynamic_null_criteria = cur.fetchone()[0]
+                  print(f"[verify] 'dynamic' rows with NULL criteria (should be 0): {dynamic_null_criteria}")
+                  ok &= dynamic_null_criteria == 0
+
+                  cur.execute("""
+                      SELECT conname, contype FROM pg_constraint
+                      WHERE conrelid = 'saved_audiences'::regclass
+                        AND conname IN ('ck_saved_audiences_audience_type', 'ck_saved_audiences_criteria_matches_type')
+                  """)
+                  check_constraints = {r[0]: r[1] for r in cur.fetchall()}
+                  print(f"[verify] saved_audiences CHECK constraints: {check_constraints}")
+                  ok &= len(check_constraints) == 2
+
+                  cur.execute("""
+                      SELECT to_regclass('saved_audience_members') IS NOT NULL
+                  """)
+                  table_exists = cur.fetchone()[0]
+                  print(f"[verify] saved_audience_members table exists: {table_exists}")
+                  ok &= bool(table_exists)
+
+                  cur.execute("""
+                      SELECT count(*) FROM saved_audience_members
+                  """)
+                  member_row_count = cur.fetchone()[0]
+                  print(f"[verify] saved_audience_members row count (expected 0 -- brand new table): {member_row_count}")
+                  ok &= member_row_count == 0
+
+                  cur.execute("""
+                      SELECT conname, contype FROM pg_constraint
+                      WHERE conrelid = 'saved_audience_members'::regclass
+                  """)
+                  member_constraints = cur.fetchall()
+                  print(f"[verify] saved_audience_members constraints: {member_constraints}")
+                  contypes = {c[1] for c in member_constraints}
+                  ok &= 'f' in contypes  # at least one FOREIGN KEY
+                  ok &= 'u' in contypes  # the UNIQUE(saved_audience_id, user_id) constraint
+
+                  cur.execute("""
+                      SELECT indexname FROM pg_indexes WHERE tablename = 'saved_audience_members'
+                  """)
+                  indexes = [r[0] for r in cur.fetchall()]
+                  print(f"[verify] saved_audience_members indexes: {indexes}")
+                  ok &= any('saved_audience_id' in i for i in indexes)
+                  ok &= any('user_id' in i for i in indexes)
+          finally:
+              conn.close()
+
+          if not ok:
+              raise SystemExit("[verify] SCHEMA VERIFICATION FAILED -- see [verify] lines above for the specific check that did not hold.")
+          print("[verify] All Saved Audience V2 schema checks passed: audience_type column, nullable criteria, both CHECK constraints, saved_audience_members table with FK+UNIQUE constraints and indexes, zero member rows, every existing audience remains a valid dynamic row.")
+          PY
