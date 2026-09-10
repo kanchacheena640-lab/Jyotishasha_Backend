@@ -13,6 +13,7 @@ from sqlalchemy import func, text
 from extensions import db
 from modules.auth.models import User
 from modules.models_user import AppUser
+from modules.models_saved_audience import SavedAudienceMember, AUDIENCE_TYPE_FIXED, AUDIENCE_TYPE_DYNAMIC
 from modules.services import admin_users_service, saved_audience_service
 from modules.services.saved_audience_criteria import validate_criteria, CriteriaValidationError
 
@@ -126,19 +127,51 @@ def _resolve(saved_audience_id, approved_criteria=None):
     # current filter content, and is unaffected by which criteria this
     # call resolves against. Default (None) is byte-identical to the
     # pre-N5 behavior: resolve using this audience's own current criteria.
-    criteria_to_use = audience.criteria if approved_criteria is None else approved_criteria
-    # JSON booleans/floats must not pass Python's True == 1 == 1.0 equality
-    # at this delivery boundary. All filter validation stays in the authority.
-    if not isinstance(criteria_to_use, dict) or type(criteria_to_use.get("version")) is not int:
+    # Saved Audience V2 -- FIXED and DYNAMIC audiences resolve membership
+    # through completely different data (explicit saved_audience_members
+    # rows vs. live criteria filters), but everything BELOW this branch
+    # (batching, identity-bridge/FCM eligibility, exclusion accounting,
+    # ceiling check, RecipientResolution construction) is shared
+    # verbatim -- neither type gets its own copy of that logic.
+    if audience.audience_type == AUDIENCE_TYPE_FIXED:
+        if approved_criteria is None:
+            # Live membership -- the ONLY way this can differ from
+            # approval time is a member's account being deleted
+            # (ON DELETE CASCADE); membership itself has no edit endpoint.
+            ids = sorted(
+                m.user_id for m in
+                SavedAudienceMember.query.filter_by(saved_audience_id=audience.id).all()
+            )
+        else:
+            # N5 dispatch path -- resolve against the exact snapshot
+            # frozen at approval time (campaign_service.audience_definition()),
+            # never this audience's current (possibly since-shrunk) membership.
+            if (not isinstance(approved_criteria, dict) or approved_criteria.get("type") != "fixed"
+                    or not isinstance(approved_criteria.get("user_ids"), list)):
+                raise RecipientResolutionError("INVALID_AUDIENCE_CRITERIA")
+            ids = sorted(set(approved_criteria["user_ids"]))
+        # NEVER inferred from an empty/null criteria, NEVER a fallback --
+        # a fixed audience is All Users only if it is never possible to
+        # be, by construction (see module docstring).
+        is_all_users = False
+    elif audience.audience_type == AUDIENCE_TYPE_DYNAMIC:
+        criteria_to_use = audience.criteria if approved_criteria is None else approved_criteria
+        # JSON booleans/floats must not pass Python's True == 1 == 1.0 equality
+        # at this delivery boundary. All filter validation stays in the authority.
+        if not isinstance(criteria_to_use, dict) or type(criteria_to_use.get("version")) is not int:
+            raise RecipientResolutionError("INVALID_AUDIENCE_CRITERIA")
+        try:
+            filters = validate_criteria(criteria_to_use, authoring=False)
+        except CriteriaValidationError:
+            raise RecipientResolutionError("INVALID_AUDIENCE_CRITERIA") from None
+        # This is the frozen SavedAudience membership implementation. The existing
+        # service has no audience.resolve_user_ids method; its canonical function
+        # lives in admin_users_service and shares _apply_admin_users_filters.
+        ids = admin_users_service.resolve_user_ids(**filters)
+        is_all_users = not filters
+    else:
         raise RecipientResolutionError("INVALID_AUDIENCE_CRITERIA")
-    try:
-        filters = validate_criteria(criteria_to_use, authoring=False)
-    except CriteriaValidationError:
-        raise RecipientResolutionError("INVALID_AUDIENCE_CRITERIA") from None
-    # This is the frozen SavedAudience membership implementation. The existing
-    # service has no audience.resolve_user_ids method; its canonical function
-    # lives in admin_users_service and shares _apply_admin_users_filters.
-    ids = admin_users_service.resolve_user_ids(**filters)
+
     if any(type(value) is not int or value <= 0 for value in ids):
         raise RecipientResolutionError("INVALID_CANONICAL_IDENTITY")
     ids = sorted(set(ids))
@@ -183,7 +216,7 @@ def _resolve(saved_audience_id, approved_criteria=None):
                 eligible.append(target)
     # eligible <= matched by construction. Never truncate either count.
     result = RecipientResolution(saved_audience_id, matched, tuple(eligible),
-                                 tuple((key, excluded[key]) for key in EXCLUSION_REASONS), not filters)
+                                 tuple((key, excluded[key]) for key in EXCLUSION_REASONS), is_all_users)
     if matched != result.eligible_recipient_count + result.excluded_recipient_count:
         raise RecipientResolutionError("COUNT_INTEGRITY_ERROR")
     return result

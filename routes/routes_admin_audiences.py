@@ -109,17 +109,27 @@ def admin_list_audiences():
 @routes_admin_audiences.route("/admin/api/audiences", methods=["POST"])
 @admin_or_bridge_required
 def admin_create_audience():
+    """Saved Audience V2 -- audience_type defaults to "dynamic" (omitted
+    entirely by every pre-V2 caller, so their exact prior request shape
+    keeps working unchanged). "fixed" requires member_user_ids instead
+    of criteria -- see create_audience()'s own docstring for the full
+    validation/persistence contract."""
     data = request.get_json(silent=True) or {}
     name = data.get("name")
     description = data.get("description")
+    audience_type = data.get("audience_type", "dynamic")
     criteria = data.get("criteria")
+    member_user_ids = data.get("member_user_ids")
 
-    if criteria is None:
+    if audience_type == "dynamic" and criteria is None:
         return jsonify({"error": "invalid_criteria", "message": "criteria is required."}), 400
+    if audience_type == "fixed" and member_user_ids is None:
+        return jsonify({"error": "invalid_member_ids", "message": "member_user_ids is required."}), 400
 
     try:
         audience = create_audience(
             name=name, description=description, criteria=criteria,
+            audience_type=audience_type, member_user_ids=member_user_ids,
             created_by=_resolve_admin_identity(),
         )
     except CriteriaValidationError as exc:

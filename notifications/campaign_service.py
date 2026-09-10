@@ -6,7 +6,7 @@ from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 from uuid import UUID
 from sqlalchemy import update
 from extensions import db
-from modules.models_saved_audience import SavedAudience
+from modules.models_saved_audience import SavedAudience, SavedAudienceMember, AUDIENCE_TYPE_FIXED
 from modules.services.saved_audience_criteria import validate_criteria, CriteriaValidationError
 from notifications.campaign_models import NotificationCampaign
 from notifications.saved_audience_recipient_resolver import resolve_saved_audience_recipients, RecipientResolutionError
@@ -68,14 +68,36 @@ def validate_action(action):
 
 
 def audience_definition(audience_id, require_active=True):
+    """Returns (row, criteria, digest) -- the ONE snapshot-building
+    function every draft-save/approve/schedule/drift-check call site
+    shares. Saved Audience V2: for a FIXED audience `criteria` is a
+    freshly-queried snapshot of saved_audience_members (never
+    row.criteria, which is NULL for a fixed row) --
+    {"version": 2, "type": "fixed", "user_ids": [...]}. This is what
+    campaign approval/scheduling freezes into NotificationCampaignExecution.
+    approved_criteria (notifications/campaign_execution_service.py,
+    campaign_schedule_service.py) and what save_campaign()'s own
+    draft_criteria_hash drift-detection compares against -- so if a
+    fixed audience's membership DOES shrink (the only way it can: a
+    member's account being deleted, ON DELETE CASCADE) before a draft
+    is approved, that is correctly detected as a definition change,
+    same as any DYNAMIC criteria edit already is. A fixed audience's
+    digest is otherwise stable, since membership has no edit endpoint."""
     positive_int(audience_id,'saved_audience_id')
     row=db.session.get(SavedAudience,audience_id)
     if row is None: fail('audience_missing','SavedAudience no longer exists.',422)
     if require_active and not row.is_active: fail('audience_inactive','Select an active SavedAudience.',422)
-    try:
-        if not isinstance(row.criteria,dict) or type(row.criteria.get('version')) is not int: raise ValueError()
-        criteria={'version':row.criteria['version'],'filters':validate_criteria(row.criteria,authoring=False)}
-    except (CriteriaValidationError,ValueError): fail('invalid_criteria','SavedAudience criteria are invalid.',422)
+    if row.audience_type == AUDIENCE_TYPE_FIXED:
+        member_ids = sorted(
+            m.user_id for m in
+            SavedAudienceMember.query.filter_by(saved_audience_id=row.id).all()
+        )
+        criteria = {'version': 2, 'type': 'fixed', 'user_ids': member_ids}
+    else:
+        try:
+            if not isinstance(row.criteria,dict) or type(row.criteria.get('version')) is not int: raise ValueError()
+            criteria={'version':row.criteria['version'],'filters':validate_criteria(row.criteria,authoring=False)}
+        except (CriteriaValidationError,ValueError): fail('invalid_criteria','SavedAudience criteria are invalid.',422)
     digest=hashlib.sha256(json.dumps(criteria,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
     return row,criteria,digest
 

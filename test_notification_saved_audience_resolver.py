@@ -115,7 +115,10 @@ class N2Tests(unittest.TestCase):
             self.assertEqual(raised.exception.code,'RESOLUTION_UNAVAILABLE')
 
     def test_all_users_and_empty_membership(self):
-        with patch.object(resolver.saved_audience_service,'get_audience',return_value=SimpleNamespace(is_active=True,criteria={'version':1,'filters':{}})):
+        # Saved Audience V2: audience_type is now the authoritative
+        # branch discriminator (never inferred from criteria) -- this
+        # stub must declare it explicitly, same as a real DYNAMIC row.
+        with patch.object(resolver.saved_audience_service,'get_audience',return_value=SimpleNamespace(is_active=True,audience_type='dynamic',criteria={'version':1,'filters':{}})):
             with patch.object(resolver.admin_users_service,'resolve_user_ids',return_value=[] ) as shared:
                 result=self.resolve();shared.assert_called_once_with()
                 self.assertTrue(result.is_all_users);self.assertEqual(result.matched_user_count,0)

@@ -227,3 +227,26 @@ def validate_criteria(criteria, *, authoring: bool) -> dict:
     if "language" in filters:
         filters = {**filters, "language": sorted(set(filters["language"]))}
     return filters
+
+
+def validate_fixed_member_ids(value) -> list:
+    """Saved Audience V2 -- structural validation for a FIXED audience's
+    member_user_ids input, at authoring time (create_audience()). Pure
+    structure/type checks only, same division of labor as every other
+    validator in this module -- the actual users.id EXISTENCE check
+    (fail closed on any nonexistent id) is a live DB read, done by the
+    caller (modules/services/saved_audience_service.py::create_audience()),
+    matching where every other live/DB-backed check in this codebase's
+    Saved Audience validation already lives.
+
+    Returns a sorted, deduplicated list of positive ints -- the database
+    itself also enforces no-duplicate-members (saved_audience_members'
+    own UNIQUE constraint), but deduping here means a caller sending the
+    same id twice is never even attempted twice, and the returned order
+    is always deterministic."""
+    _require(isinstance(value, list) and len(value) > 0, "invalid_member_ids",
+              "member_user_ids must be a non-empty JSON array.")
+    for v in value:
+        _require(isinstance(v, int) and not isinstance(v, bool) and v > 0, "invalid_member_ids",
+                  "member_user_ids values must be positive integers.")
+    return sorted(set(value))

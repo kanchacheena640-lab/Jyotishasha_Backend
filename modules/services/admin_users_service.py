@@ -1020,6 +1020,7 @@ def _apply_admin_users_filters(
     query,
     f: dict,
     *,
+    id_in: list = None,
     search: str = None,
     age_min: int = None,
     age_max: int = None,
@@ -1066,7 +1067,21 @@ def _apply_admin_users_filters(
 
     Raises TransitUnavailableError if a transit-house filter is
     requested and resolve_current_transit_snapshot() fails -- same
-    contract as list_users() already had before this extraction."""
+    contract as list_users() already had before this extraction.
+
+    `id_in` (Saved Audience V2, keyword-only, internal use only -- NEVER
+    part of the DYNAMIC criteria JSON schema in modules/services/
+    saved_audience_criteria.py's _FILTER_VALIDATORS, never accepted from
+    untrusted input) restricts to an explicit set of users.id values.
+    Used exclusively by saved_audience_service.py to render a FIXED
+    audience's membership through this SAME rich row-shape/pagination
+    logic every DYNAMIC audience and the live Admin Users list already
+    use -- never a second, differently-shaped member listing. An empty
+    list correctly yields zero rows (SQLAlchemy's IN (), not "no
+    filter")."""
+    if id_in is not None:
+        query = query.filter(User.id.in_(id_in))
+
     if language is not None:
         if not isinstance(language, list) or not language or any(v not in ("en", "hi") for v in language):
             raise ValueError("invalid_language")
@@ -1175,6 +1190,7 @@ def _apply_admin_users_filters(
 
 def list_users(
     *,
+    id_in: list = None,
     search: str = None,
     age_min: int = None,
     age_max: int = None,
@@ -1315,6 +1331,7 @@ def list_users(
     # inline here before, never a behavior change.
     query = _apply_admin_users_filters(
         query, f,
+        id_in=id_in,
         search=search, age_min=age_min, age_max=age_max, status=status,
         signup_from=signup_from, signup_to=signup_to, customer_type=customer_type,
         ask_now_buyer=ask_now_buyer, active_subscription=active_subscription,

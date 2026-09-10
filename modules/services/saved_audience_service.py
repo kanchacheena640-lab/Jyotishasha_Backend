@@ -16,8 +16,14 @@ criteria.
 from datetime import datetime
 
 from extensions import db
-from modules.models_saved_audience import SavedAudience
-from modules.services.saved_audience_criteria import validate_criteria, CriteriaValidationError
+from modules.auth.models import User
+from modules.models_saved_audience import (
+    SavedAudience, SavedAudienceMember,
+    AUDIENCE_TYPE_DYNAMIC, AUDIENCE_TYPE_FIXED, AUDIENCE_TYPES,
+)
+from modules.services.saved_audience_criteria import (
+    validate_criteria, validate_fixed_member_ids, CriteriaValidationError,
+)
 from modules.services.admin_users_service import (
     list_users,
     SadeSatiUnavailableError,
@@ -42,33 +48,80 @@ class AudienceNotFoundError(LookupError):
     404, never a fabricated empty audience" convention."""
 
 
-def create_audience(*, name: str, description: str = None, criteria: dict, created_by: int = None) -> SavedAudience:
-    """Validates `criteria` with authoring=True (Section 10 -- requires
-    every ask_now_concern value to be a CURRENTLY ACTIVE category) and
-    persists a new row. Raises CriteriaValidationError (never a bare
-    exception) for any invalid name/criteria -- never partially writes
-    a row for invalid input."""
+def create_audience(
+    *, name: str, description: str = None, criteria: dict = None,
+    audience_type: str = AUDIENCE_TYPE_DYNAMIC, member_user_ids: list = None,
+    created_by: int = None,
+) -> SavedAudience:
+    """Creates either a DYNAMIC (criteria-based) or FIXED (explicit
+    users.id membership) SavedAudience -- see modules/models_saved_
+    audience.py's own module docstring for the full Saved Audience V2
+    contract. `audience_type` defaults to "dynamic" so every existing
+    caller (routes, tests) that never passes it keeps its exact prior
+    behavior/signature.
+
+    DYNAMIC: validates `criteria` with authoring=True (Section 10 --
+    requires every ask_now_concern value to be a CURRENTLY ACTIVE
+    category) and persists it. `member_user_ids` must be omitted.
+
+    FIXED: validates `member_user_ids` structurally (non-empty, positive
+    ints, deduped) then verifies EVERY id actually exists in `users` --
+    fails closed (CriteriaValidationError) on any nonexistent id, never
+    silently drops it. `criteria` must be omitted. Membership rows are
+    inserted in the SAME transaction as the audience row itself -- never
+    a partially-written audience with zero/some members.
+
+    Raises CriteriaValidationError (never a bare exception) for any
+    invalid input -- never partially writes a row."""
     name = (name or "").strip()
     if not name:
         raise CriteriaValidationError("invalid_name", "name must not be blank.")
+    if audience_type not in AUDIENCE_TYPES:
+        raise CriteriaValidationError(
+            "invalid_audience_type", f"audience_type must be one of {AUDIENCE_TYPES}; got {audience_type!r}.",
+        )
 
-    validated_filters = validate_criteria(criteria, authoring=True)
-    # Store criteria EXACTLY as validated (version + the validated
-    # filters dict) -- never the raw, unvalidated input verbatim, so a
-    # criteria object that happened to pass with extra ignored fields
-    # (there are none possible here, since validate_criteria() already
-    # rejects any key outside {"version","filters"}) can never diverge
-    # from what was actually checked.
-    stored_criteria = {"version": criteria["version"], "filters": validated_filters}
+    if audience_type == AUDIENCE_TYPE_DYNAMIC:
+        if member_user_ids is not None:
+            raise CriteriaValidationError("invalid_input", "member_user_ids is not allowed for a dynamic audience.")
+        if criteria is None:
+            raise CriteriaValidationError("invalid_criteria", "criteria is required for a dynamic audience.")
+        validated_filters = validate_criteria(criteria, authoring=True)
+        # Store criteria EXACTLY as validated (version + the validated
+        # filters dict) -- never the raw, unvalidated input verbatim, so
+        # a criteria object that happened to pass with extra ignored
+        # fields (there are none possible here, since validate_criteria()
+        # already rejects any key outside {"version","filters"}) can
+        # never diverge from what was actually checked.
+        stored_criteria = {"version": criteria["version"], "filters": validated_filters}
+
+        audience = SavedAudience(
+            name=name, description=(description or None), audience_type=AUDIENCE_TYPE_DYNAMIC,
+            criteria=stored_criteria, created_by=created_by, is_active=True,
+        )
+        db.session.add(audience)
+        db.session.commit()
+        return audience
+
+    # FIXED
+    if criteria is not None:
+        raise CriteriaValidationError("invalid_input", "criteria is not allowed for a fixed audience.")
+    member_ids = validate_fixed_member_ids(member_user_ids)
+    existing_ids = {uid for (uid,) in db.session.query(User.id).filter(User.id.in_(member_ids)).all()}
+    missing = [uid for uid in member_ids if uid not in existing_ids]
+    if missing:
+        raise CriteriaValidationError(
+            "invalid_member_ids", f"No such user id(s): {missing}.",
+        )
 
     audience = SavedAudience(
-        name=name,
-        description=(description or None),
-        criteria=stored_criteria,
-        created_by=created_by,
-        is_active=True,
+        name=name, description=(description or None), audience_type=AUDIENCE_TYPE_FIXED,
+        criteria=None, created_by=created_by, is_active=True,
     )
     db.session.add(audience)
+    db.session.flush()  # assigns audience.id, inside this same transaction
+    for uid in member_ids:
+        db.session.add(SavedAudienceMember(saved_audience_id=audience.id, user_id=uid))
     db.session.commit()
     return audience
 
@@ -97,6 +150,10 @@ def update_audience(
         audience.description = description or None
 
     if criteria is not None:
+        if audience.audience_type != AUDIENCE_TYPE_DYNAMIC:
+            raise CriteriaValidationError(
+                "invalid_input", "criteria can only be updated for a dynamic audience.",
+            )
         validated_filters = validate_criteria(criteria, authoring=True)
         audience.criteria = {"version": criteria["version"], "filters": validated_filters}
 
@@ -173,10 +230,21 @@ def preview_audience(audience_id: int, *, page: int = 1, page_size: int = 20) ->
     total_count on every call -- never read from a stored/cached field
     (none exists on this model by design, see modules/models_saved_
     audience.py's own docstring) -- so preview always reflects today's
-    Dasha/Sade Sati/Transit/subscription/activity state."""
+    Dasha/Sade Sati/Transit/subscription/activity state (for a DYNAMIC
+    audience) or the LIVE saved_audience_members rows (for a FIXED one
+    -- reflects any member whose account has since been deleted, which
+    removes their row via ON DELETE CASCADE; membership itself has no
+    edit endpoint, so this is the only way it can change)."""
     audience = get_audience(audience_id)
-    filters = validate_criteria(audience.criteria, authoring=False)
-    result = list_users(**filters, page=page, page_size=page_size)
+    if audience.audience_type == AUDIENCE_TYPE_FIXED:
+        member_ids = sorted(
+            row.user_id for row in
+            SavedAudienceMember.query.filter_by(saved_audience_id=audience_id).all()
+        )
+        result = list_users(id_in=member_ids, page=page, page_size=page_size)
+    else:
+        filters = validate_criteria(audience.criteria, authoring=False)
+        result = list_users(**filters, page=page, page_size=page_size)
     return {
         "audience": audience.to_dict(),
         "member_count": result["pagination"]["total_count"],
