@@ -107,20 +107,17 @@ def iso(dt):
 # ---------------- A. workflow file itself ----------------
 
 class WorkflowFileTests(unittest.TestCase):
-    def test_a_workflow_is_scheduled_at_an_offset_cadence_and_manually_dispatchable(self):
-        """P4.8 -- root-cause-informed re-activation, GitHub remains the
-        sole production automatic owner (Render Cron explicitly
-        rejected). The audit found this workflow was the only one in
-        the repo using both a high-frequency AND popular-boundary-
-        aligned cron, and the only one carrying an unused `concurrency:`
-        block -- both addressed here: the cron is now offset from every
-        popular minute-of-hour boundary (still exactly every 15
-        minutes), and the concurrency block is removed (the DB's own
-        FOR UPDATE SKIP LOCKED delivery claim is the actual, unchanged,
-        already-tested safety mechanism). workflow_dispatch (incl. the
-        P4.1 --execution-id scoped mode) remains available for manual/
-        debug/emergency runs. Still never push/pull_request -- this
-        remains a bounded, isolated job, not a CI trigger."""
+    def test_a_workflow_is_manual_emergency_tooling_only_notifications_yml_owns_automatic(self):
+        """P4.9 -- Option 2 fallback: after P4.8's own offset-cron fix
+        was ALSO insufficient (3 more due ticks missed on this exact
+        workflow id, on top of P4.7's earlier 8), automatic Campaign C
+        processing was moved to an isolated job inside notifications.yml
+        (proven reliable since 2026-04-02) -- see that file's own P4.9
+        tests. `on:` here is workflow_dispatch-ONLY again: this workflow
+        remains the sole manual/emergency dispatch entry point (incl.
+        the P4.1 --execution-id scoped mode), never the automatic
+        trigger. Still never push/pull_request -- this remains a
+        bounded, isolated job, not a CI trigger."""
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              '.github', 'workflows', 'campaign_notifications_worker.yml')
         with open(path, encoding='utf-8') as fh:
@@ -129,24 +126,10 @@ class WorkflowFileTests(unittest.TestCase):
         # semantics -- handle both spellings defensively.
         triggers = spec.get('on', spec.get(True))
         self.assertIsInstance(triggers, dict)
-        self.assertEqual(set(triggers.keys()), {'schedule', 'workflow_dispatch'})
+        self.assertEqual(set(triggers.keys()), {'workflow_dispatch'}, 'schedule must stay off here (P4.9)')
         self.assertNotIn('push', triggers)
         self.assertNotIn('pull_request', triggers)
-        self.assertTrue(triggers['schedule'])
-        cron_entries = [entry['cron'] for entry in triggers['schedule']]
-        self.assertTrue(all('cron' in entry for entry in triggers['schedule']))
-        # Every entry must be offset from the popular :00/:15/:30/:45
-        # boundaries -- the whole point of the P4.8 fix.
-        for cron in cron_entries:
-            minute_field = cron.split()[0]
-            boundary_minutes = {'0', '00', '15', '30', '45'}
-            listed_minutes = set()
-            for part in minute_field.split(','):
-                listed_minutes.add(part.split('/')[0] if '/' in part else part)
-            self.assertFalse(listed_minutes & boundary_minutes,
-                              f'cron {cron!r} still touches a popular boundary minute')
-        self.assertNotIn('concurrency', spec,
-                          'P4.8 removed the unused concurrency: block -- DB-level locking is the real guard')
+        self.assertNotIn('concurrency', spec)
         self.assertIn('execution_id', triggers['workflow_dispatch']['inputs'],
                        'scoped single-execution resume must remain available for manual/emergency use')
 

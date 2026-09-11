@@ -47,23 +47,34 @@ name: Campaign C Notifications Worker
 #   longer continuous dwell time than the ~1-1.25 hours each prior
 #   attempt allowed before GitHub begins honoring it.
 #
-#   FIX (the smallest change addressing both candidates, without
-#   touching worker/gate/transport logic or merging into another
-#   pipeline): the cron below is now offset from every popular boundary
+#   FIX TRIED (P4.8): cron offset from every popular boundary
 #   (":07/:22/:37/:52" instead of ":00/:15/:30/:45"), still exactly
-#   every 15 minutes -- the <=15-minute processing target is unchanged.
-#   The `concurrency:` block is removed -- it provided no safety value
-#   beyond what the DB's own FOR UPDATE SKIP LOCKED delivery claim
-#   already, independently guarantees (see process_execution() in
-#   notifications/campaign_worker.py -- unchanged, still the actual
-#   mechanism preventing a duplicate delivery even if two invocations,
-#   from any source, ever somehow overlapped), and it was the one
-#   other structural difference versus every reliable sibling, none of
-#   which use it. This workflow is left in place CONTINUOUSLY this
-#   time (not toggled off again after a short window) so a longer
-#   dwell-time effect, if real, has a genuine chance to be observed.
+#   every 15 minutes, plus the unused `concurrency:` block removed.
+#   RESULT: still zero event="schedule" runs across 3 more due ticks
+#   (~44 minutes) after this offset cron went live -- the cron-boundary
+#   hypothesis alone was NOT sufficient. Combined with P4.7's own two
+#   prior failed attempts, this workflow (id 354738496, created
+#   2026-09-10) has now missed 11 due ticks total across 3 separate
+#   activation attempts and 2 different cron expressions, while
+#   notifications.yml (registered since 2026-04-02) has never missed a
+#   tick in the same repo. This points at something specific to THIS
+#   workflow file/id, not the exact cron string chosen -- exact
+#   mechanism still not provable from outside GitHub's own scheduler.
 #
-# History below (P4 through P4.7) is retained for context on how this
+#   P4.9 (current, Option 2 fallback per the task's own explicit
+#   preference order): rather than keep guessing at this specific
+#   workflow's own registration, Campaign C's automatic processing now
+#   rides on notifications.yml's own proven-reliable registration, as a
+#   completely separate, isolated job (campaign-c-worker) -- never
+#   merged into that file's own A/B business logic, no shared state, no
+#   `needs:` link between the two jobs, each independently. See
+#   notifications.yml's own P4.9 comment for the full architecture.
+#   `schedule:` here is REMOVED again (workflow_dispatch-only, matching
+#   P4.7's shape) so exactly one automatic Campaign C trigger is active
+#   at a time. This file remains the sole manual/emergency dispatch
+#   entry point (including the P4.1 --execution-id scoped mode).
+#
+# History below (P4 through P4.8) is retained for context on how this
 # workflow reached its current shape -- none of it is stale
 # instruction, only record. Deliberately mirrors notifications.
 # yml/alerts.yml's own proven shape (checkout -> setup-python -> pip
@@ -106,11 +117,10 @@ name: Campaign C Notifications Worker
 # a gate/transport/worker logic change.
 #
 # (Historical -- describes the cadence while GitHub's own `schedule`
-# trigger was this workflow's automatic owner, P4 through P4.6; see
-# P4.7 above for why that stopped being true. Render Cron's own
-# schedule is configured on Render's side, not in this file, and is
-# documented in this repo's own deployment notes / the P4.7 activation
-# report, not here.) Every 15 minutes: due-scheduled-campaign delivery
+# trigger on THIS file was Campaign C's automatic owner, P4 through
+# P4.8; see the P4.9 block above for why automatic processing now
+# lives in notifications.yml's own campaign-c-worker job instead, at
+# the same cadence.) Every 15 minutes: due-scheduled-campaign delivery
 # lag was bounded to at most ~15 minutes past the chosen send time --
 # a deliberately conservative, "smallest reliable" cadence for a
 # human-scheduled, non-time-critical Admin campaign (not a
@@ -145,11 +155,6 @@ name: Campaign C Notifications Worker
 # fail-closed reasoning.
 
 on:
-  schedule:
-    # P4.8 -- offset from every popular minute-of-hour boundary
-    # (:00/:15/:30/:45), still exactly every 15 minutes. See the P4.8
-    # comment block above for why.
-    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
     inputs:
       max_executions:
