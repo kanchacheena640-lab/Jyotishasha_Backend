@@ -29,11 +29,15 @@ from sqlalchemy.exc import IntegrityError
 
 from extensions import db
 from notifications.campaign_service import CampaignError, fail, get_campaign, audience_definition
-from notifications.campaign_execution_models import NotificationCampaignExecution, NotificationSendNowRequest
+from notifications.campaign_execution_models import (
+    NotificationCampaignExecution, NotificationCampaignDelivery, NotificationCampaignAttempt,
+    NotificationSendNowRequest,
+)
 from notifications.campaign_execution_service import (
     ALL_USERS_PHRASE, LARGE_AUDIENCE_THRESHOLD, PREVIEW_MAX_AGE,
     _now, _parse_utc, _resolve_live, serialize_execution,
 )
+from notifications.campaign_bell_service import dismiss_bell_items_for_execution
 
 MAX_SCHEDULE_KEY_LENGTH = 128
 # N5.28 -- a small safety floor, not an arbitrary large minimum delay:
@@ -228,19 +232,41 @@ def reschedule(execution_id, data, actor=None):
 
 
 def cancel(execution_id, actor=None):
-    """N5.24 -- cancellable only before target freeze (SCHEDULED or a
-    pre-freeze PAUSED drift hold). Idempotent: cancelling an
-    already-CANCELLED execution is a no-op success. Once FROZEN/SENDING
-    or terminal, cancellation is refused outright rather than returning
-    a misleading success that does not actually guarantee no send."""
-    execution = db.session.get(NotificationCampaignExecution, str(execution_id))
+    """N5.24 (pre-freeze) + P4.5 (post-freeze, provably-unsent FROZEN --
+    see _cancel_unsent_frozen()'s own docstring for that narrower
+    contract). Idempotent either way: cancelling an already-CANCELLED
+    execution is a no-op success. Once SENDING or any terminal state
+    other than CANCELLED, cancellation is refused outright rather than
+    returning a misleading success that does not actually guarantee no
+    send -- a FROZEN execution with even one recorded attempt falls
+    into this same refusal, not the P4.5 path.
+
+    Row-locks `execution` (SELECT ... FOR UPDATE) before deciding
+    anything -- belt-and-suspenders against two concurrent cancel calls
+    racing each other; _cancel_unsent_frozen() below takes its OWN,
+    separate lock on the delivery rows, which is the lock that actually
+    matters against a concurrently-running worker (see that function's
+    own docstring)."""
+    execution = (
+        db.session.query(NotificationCampaignExecution)
+        .filter_by(id=str(execution_id))
+        .with_for_update()
+        .first()
+    )
     if execution is None:
         fail('not_found', 'Execution not found.', 404)
     if execution.state == 'CANCELLED':
         return serialize_execution(execution), 200
-    if execution.state not in ('SCHEDULED', 'PAUSED'):
-        fail('invalid_state', 'Only a SCHEDULED or PAUSED (pre-freeze) execution can be cancelled.', 409)
+    if execution.state in ('SCHEDULED', 'PAUSED'):
+        return _cancel_prefreeze(execution)
+    if execution.state == 'FROZEN':
+        return _cancel_unsent_frozen(execution)
+    fail('invalid_state',
+         'Only a SCHEDULED/PAUSED (pre-freeze) execution, or a FROZEN execution with zero '
+         'transport attempts, can be cancelled.', 409)
 
+
+def _cancel_prefreeze(execution):
     now = _now()
     execution.state = 'CANCELLED'
     execution.hold_reason = None
@@ -250,5 +276,99 @@ def cancel(execution_id, actor=None):
     campaign.state = 'CANCELLED'
     campaign.hold_reason = None
     campaign.updated_at = now
+    db.session.commit()
+    return serialize_execution(execution), 200
+
+
+def _cancel_unsent_frozen(execution):
+    """P4.5 -- cancels a FROZEN execution that is PROVABLY unsent: no
+    transport attempt has ever been made for any of its targets. A much
+    narrower contract than _cancel_prefreeze() above -- once ANY attempt
+    has occurred, cancellation is refused outright, exactly like the
+    pre-freeze path already refuses once FROZEN/SENDING/terminal (never
+    a misleading success that doesn't actually guarantee nothing was
+    sent). Required, jointly, before this may proceed:
+      - execution.started_at IS NULL -- process_execution() sets this,
+        together with flipping state to SENDING, the moment it
+        successfully claims ANY delivery (campaign_worker.py); if this
+        is set, a send attempt has begun and cancellation is refused.
+      - every delivery.status == 'PENDING'
+      - every delivery.attempt_count == 0
+      - no delivery currently has a live lease (lease_owner set, or
+        lease_until in the future) -- a worker may be mid-claim
+      - zero NotificationCampaignAttempt rows across every delivery
+
+    Concurrency: the caller (cancel() above) already holds a row lock
+    on `execution` itself, which does NOT by itself block
+    campaign_worker.py's own _claim_batch() -- that locks DELIVERY
+    rows, not the execution row. This function additionally takes its
+    own FOR UPDATE lock on every delivery row belonging to this
+    execution before making its decision. _claim_batch() locks those
+    exact same rows with FOR UPDATE SKIP LOCKED, so whichever side
+    acquires the delivery locks first genuinely wins the race: if a
+    worker got there first, its deliveries are no longer all-PENDING/
+    unleased by the time this function's own check runs, so
+    cancellation is correctly refused; if this function gets there
+    first, the worker's SKIP LOCKED claim simply sees zero claimable
+    rows this pass and moves on -- it never blocks waiting on us.
+
+    On success: execution/campaign -> CANCELLED (an existing, already-
+    valid state for both -- no migration needed), every delivery ->
+    SUPPRESSED with suppression_reason='ADMIN_CANCELLED' (a new, freely
+    allowed string value -- suppression_reason has no CHECK constraint),
+    and every still-visible Bell row for this execution is dismissed
+    (presentation-only, see dismiss_bell_items_for_execution()'s own
+    docstring) -- all in ONE commit. Nothing is ever deleted: campaign,
+    execution, delivery, attempt, and Bell rows all remain exactly as
+    they are for audit/history/monitoring -- only their state/visibility
+    changes."""
+    now = _now()
+    if execution.started_at is not None:
+        fail('invalid_state', 'This execution has already started sending -- it can no longer be cancelled.', 409)
+
+    deliveries = (
+        db.session.query(NotificationCampaignDelivery)
+        .filter(NotificationCampaignDelivery.execution_id == execution.id)
+        .with_for_update()
+        .all()
+    )
+    for delivery in deliveries:
+        if delivery.status != 'PENDING':
+            fail('invalid_state',
+                 'This execution has at least one non-PENDING delivery -- it can no longer be cancelled.', 409)
+        if delivery.attempt_count != 0:
+            fail('invalid_state',
+                 'This execution has at least one delivery with a recorded attempt -- it can no longer be cancelled.', 409)
+        if delivery.lease_owner is not None or (delivery.lease_until is not None and delivery.lease_until > now):
+            fail('invalid_state',
+                 'This execution has a delivery currently claimed by a worker -- try again shortly.', 409)
+
+    delivery_ids = [delivery.id for delivery in deliveries]
+    if delivery_ids:
+        attempt_count = (
+            db.session.query(NotificationCampaignAttempt)
+            .filter(NotificationCampaignAttempt.delivery_id.in_(delivery_ids))
+            .count()
+        )
+        if attempt_count != 0:
+            fail('invalid_state',
+                 'This execution has recorded transport attempts -- it can no longer be cancelled.', 409)
+
+    execution.state = 'CANCELLED'
+    execution.hold_reason = None
+    execution.completed_at = now
+    execution.updated_at = now
+    campaign = get_campaign(execution.campaign_id)
+    campaign.state = 'CANCELLED'
+    campaign.hold_reason = None
+    campaign.updated_at = now
+    for delivery in deliveries:
+        delivery.status = 'SUPPRESSED'
+        delivery.suppression_reason = 'ADMIN_CANCELLED'
+        delivery.lease_owner = None
+        delivery.lease_until = None
+
+    dismiss_bell_items_for_execution(execution.id, now)
+
     db.session.commit()
     return serialize_execution(execution), 200

@@ -210,3 +210,31 @@ def clear_all(user_id, now=None):
     _ab_query(user_id, now).update({"dismissed_at": now}, synchronize_session=False)
     _cc_query(user_id, now).update({"dismissed_at": now}, synchronize_session=False)
     db.session.commit()
+
+
+def dismiss_bell_items_for_execution(execution_id, now=None):
+    """P4.5 -- called from campaign_schedule_service.py's post-freeze
+    cancellation of a provably-unsent FROZEN execution: presentation-
+    only removal of every Bell row created for that execution's targets
+    at freeze time (create_bell_items_for_targets()), exactly like an
+    individual user's own dismiss_one()/clear_all() above -- sets
+    dismissed_at only, never deletes a row, never touches is_read, never
+    touches campaign/execution/delivery/attempt history. A user who
+    already read/opened the item before cancellation keeps that read
+    receipt; only future visibility in the Bell list changes.
+
+    Deliberately does NOT call db.session.commit() itself, unlike
+    dismiss_one()/clear_all() above -- the caller (_cancel_unsent_frozen())
+    folds this into the SAME single commit as the execution/campaign/
+    delivery state changes, so a crash between them can never leave a
+    cancelled execution with a still-visible Bell item (or vice versa).
+
+    Returns the number of rows dismissed (0 if none exist or all were
+    already dismissed)."""
+    now = now or datetime.now(timezone.utc)
+    return (
+        NotificationCampaignBellItem.query
+        .filter_by(execution_id=execution_id)
+        .filter(NotificationCampaignBellItem.dismissed_at.is_(None))
+        .update({"dismissed_at": now}, synchronize_session=False)
+    )

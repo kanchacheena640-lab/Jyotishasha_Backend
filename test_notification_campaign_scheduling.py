@@ -591,14 +591,27 @@ class N5SchedulingTests(unittest.TestCase):
         campaign = db.session.get(NotificationCampaign, draft['id'])
         self.assertEqual(campaign.state, 'CANCELLED')
 
-    def test_cancel_after_freeze_rejected(self):
+    def test_cancel_after_freeze_now_succeeds_when_still_unsent(self):
+        """P4.5 widened this: a freshly-FROZEN execution with zero
+        transport attempts CAN now be cancelled (a real production need
+        -- see notifications/campaign_schedule_service.py::
+        _cancel_unsent_frozen() and test_notification_campaign_frozen_
+        cancellation.py for the full contract, including every refusal
+        condition once ANY attempt has occurred). This test used to
+        assert 409 here, back when FROZEN was cancel()'s own hard
+        stop -- that assertion was this test's own, narrower, now
+        superseded contract, not a guarantee this task needed to keep."""
         draft = self.make_draft()
         response = self.schedule(draft['id'], scheduled_for=iso(datetime.now(timezone.utc) + timedelta(minutes=2)))
         execution_id = response.get_json()['id']
         stored = db.session.get(NotificationCampaignExecution, execution_id)
         scheduler.process_due_scheduled_campaigns(now=stored.scheduled_for + timedelta(seconds=1))
+        db.session.expire_all()
+        frozen = db.session.get(NotificationCampaignExecution, execution_id)
+        self.assertEqual(frozen.state, 'FROZEN')
         cancel_resp = self.client.post(f'/admin/api/notifications/executions/{execution_id}/cancel', json={}, headers=self.admin)
-        self.assertEqual(cancel_resp.status_code, 409)
+        self.assertEqual(cancel_resp.status_code, 200)
+        self.assertEqual(cancel_resp.get_json()['state'], 'CANCELLED')
 
     def test_cancelled_execution_never_claimed(self):
         draft = self.make_draft()

@@ -16,7 +16,11 @@ class NotificationCampaign(db.Model):
     # PARTIAL/FAILED (migration 5a1e9d2f4c73). N5 further adds SCHEDULED
     # (a DRAFT scheduled for a future UTC time) and CANCELLED (a
     # SCHEDULED/PAUSED execution cancelled before target freeze) --
-    # migration 8c2f7b91d4e6. EXPIRED/BLOCKED are execution-level-only
+    # migration 8c2f7b91d4e6. P4.5 widens CANCELLED's own meaning
+    # (no new migration needed -- the string was already valid) to also
+    # cover a FROZEN execution cancelled AFTER target freeze but BEFORE
+    # any transport attempt -- see campaign_schedule_service.py's own
+    # _cancel_unsent_frozen(). EXPIRED/BLOCKED are execution-level-only
     # states (campaign_execution_models.py); a campaign whose execution
     # ends up EXPIRED or BLOCKED is reflected here as FAILED, with
     # hold_reason carrying the specific reason.

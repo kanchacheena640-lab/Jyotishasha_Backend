@@ -218,7 +218,10 @@ def admin_reschedule_execution(execution_id):
 @routes_admin_notifications.route("/admin/api/notifications/executions/<execution_id>/cancel", methods=["POST"])
 @admin_or_bridge_required
 def admin_cancel_execution(execution_id):
-    """N5.24 -- pre-freeze only (SCHEDULED or PAUSED); idempotent."""
+    """N5.24 (pre-freeze: SCHEDULED or PAUSED) + P4.5 (post-freeze: a
+    FROZEN execution provably unsent -- zero transport attempts).
+    Idempotent. See notifications/campaign_schedule_service.py::cancel()
+    for the full, narrower-for-FROZEN contract."""
     try:
         body, status = cancel(execution_id, actor=_resolve_admin_identity())
     except CampaignError as exc:
