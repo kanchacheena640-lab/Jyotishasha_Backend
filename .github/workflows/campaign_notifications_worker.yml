@@ -1,30 +1,70 @@
 name: Campaign C Notifications Worker
 
-# P4.7 -- automatic ownership moved to a Render Cron Job (see
-# scripts/campaign_worker_runner.py's own docstring and this repo's
-# deployment notes for the exact Render setup). GitHub Actions' native
-# `schedule` trigger repeatedly failed to fire reliably in production
-# (twice observed: zero runs across 5+ ticks/58+ minutes, then zero
-# runs again across 2 ticks/32 minutes after a fresh re-enable) despite
-# sibling scheduled workflows in this same repo (Run Alerts Cron, Run
-# Notification Cron, Subscription State Sync) firing reliably on their
-# own crons in the same windows -- ruling out a repo-wide outage and
-# pointing at something specific to this one workflow's schedule
-# registration. Rather than keep guessing at GitHub's own scheduler,
-# `on:` here is now workflow_dispatch-ONLY, permanently: this workflow
-# remains available as EMERGENCY/MANUAL tooling only (including the
-# P4.1 --execution-id scoped mode), never the automatic trigger. Render
-# and this workflow are safe to invoke even if they ever overlap in
-# time -- process_execution()'s own FOR UPDATE SKIP LOCKED delivery
-# claim (see concurrency: block below for the belt-and-suspenders
-# GitHub-side lock on TOP of that) already makes a duplicate delivery
-# structurally impossible regardless of which platform claims a row
-# first -- but Render Cron is the one, single, intended automatic
-# owner going forward; this file should not be manually dispatched
-# during ordinary operation.
+# P4.8 -- Render Cron was rejected (no paid/new infrastructure; GitHub
+# stays the sole production automatic owner, matching every other
+# notification pipeline in this repo). Root-cause audit of P4.7's own
+# two failed schedule activations, compared against EVERY other
+# scheduled workflow in this repo:
 #
-# History below (P4 through P4.6) is retained for context on how this
-# workflow reached its current, final shape -- none of it is stale
+#   OBSERVATIONS (directly verified via the GitHub Actions API/git log,
+#   not assumed):
+#   - This workflow's `schedule:` trigger existed on origin/main for
+#     two separate, real windows (~74 min/5 due ticks; ~63 min/3 due
+#     ticks -- 8 due ticks total) and produced ZERO event="schedule"
+#     runs in either window (workflow id 354738496 -- total_count of
+#     schedule-triggered runs: 0, ever).
+#   - Every other scheduled workflow in this repo (notifications.yml,
+#     alerts.yml, subscription_state_sync.yml, update_ekadashi.yml)
+#     reliably produces event="schedule" runs -- confirmed via their
+#     own run histories, including runs that later FAILED for
+#     unrelated business reasons but still genuinely FIRED on schedule.
+#     This rules out a repo-wide Actions outage or an account/org-level
+#     restriction (Actions permissions confirmed "all actions allowed";
+#     no restrictive workflow-permissions setting).
+#   - This workflow's cron (`*/15 * * * *`) was the ONLY high-frequency
+#     (every-15-minutes) schedule in this entire repository -- every
+#     other workflow's cron fires once daily or once yearly. It was
+#     also the only cron aligned to the most popular minute-of-hour
+#     boundaries (:00/:15/:30/:45).
+#   - This workflow was the ONLY one of the compared set carrying a
+#     `concurrency:` block.
+#   - GitHub's own documentation states the schedule event "can be
+#     delayed during periods of high loads... High load times include
+#     the start of every hour," and recommends scheduling away from
+#     popular boundary times to reduce delay likelihood.
+#
+#   CONCLUSION: ROOT CAUSE NOT FULLY PROVEN -- no access to GitHub's
+#   internal scheduler telemetry exists to confirm the exact mechanism
+#   with certainty. The strongest, most concrete, evidence-consistent
+#   candidate is that this workflow's specific combination of very high
+#   frequency + exact alignment with the most contested cron boundaries
+#   made its ticks disproportionately likely to be silently dropped
+#   under GitHub's own documented best-effort scheduling -- not a bug
+#   in this repo's Actions configuration, permissions, or workflow
+#   file structure, all of which were checked and found identical/non-
+#   restrictive versus every reliably-firing sibling. A secondary,
+#   also-unproven possibility: a newly-(re)enabled schedule may need
+#   longer continuous dwell time than the ~1-1.25 hours each prior
+#   attempt allowed before GitHub begins honoring it.
+#
+#   FIX (the smallest change addressing both candidates, without
+#   touching worker/gate/transport logic or merging into another
+#   pipeline): the cron below is now offset from every popular boundary
+#   (":07/:22/:37/:52" instead of ":00/:15/:30/:45"), still exactly
+#   every 15 minutes -- the <=15-minute processing target is unchanged.
+#   The `concurrency:` block is removed -- it provided no safety value
+#   beyond what the DB's own FOR UPDATE SKIP LOCKED delivery claim
+#   already, independently guarantees (see process_execution() in
+#   notifications/campaign_worker.py -- unchanged, still the actual
+#   mechanism preventing a duplicate delivery even if two invocations,
+#   from any source, ever somehow overlapped), and it was the one
+#   other structural difference versus every reliable sibling, none of
+#   which use it. This workflow is left in place CONTINUOUSLY this
+#   time (not toggled off again after a short window) so a longer
+#   dwell-time effect, if real, has a genuine chance to be observed.
+#
+# History below (P4 through P4.7) is retained for context on how this
+# workflow reached its current shape -- none of it is stale
 # instruction, only record. Deliberately mirrors notifications.
 # yml/alerts.yml's own proven shape (checkout -> setup-python -> pip
 # install -> run one Python entrypoint inside create_app()'s
@@ -105,6 +145,11 @@ name: Campaign C Notifications Worker
 # fail-closed reasoning.
 
 on:
+  schedule:
+    # P4.8 -- offset from every popular minute-of-hour boundary
+    # (:00/:15/:30/:45), still exactly every 15 minutes. See the P4.8
+    # comment block above for why.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
     inputs:
       max_executions:
@@ -127,14 +172,6 @@ on:
         required: false
         default: ""
         type: string
-
-# Prevents two invocations from ever running concurrently -- pure belt-
-# and-suspenders on top of the DB's own FOR UPDATE SKIP LOCKED claim
-# (which already makes a duplicate delivery structurally impossible),
-# so we never pay for two runs racing over the same discovered backlog.
-concurrency:
-  group: campaign-notifications-worker
-  cancel-in-progress: false
 
 jobs:
   run-campaign-worker:
