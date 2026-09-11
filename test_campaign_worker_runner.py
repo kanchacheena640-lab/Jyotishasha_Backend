@@ -10,6 +10,7 @@ import io
 import os
 import sys
 import unittest
+import uuid
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
@@ -448,6 +449,73 @@ class RunnerIntegrationTests(unittest.TestCase):
         mock_send.assert_not_called()
         execution = db.session.get(NotificationCampaignExecution, execution_id)
         self.assertEqual(execution.state, 'SCHEDULED', 'kill switch stops promotion too, not only delivery')
+
+    def test_o_execution_id_flag_processes_only_that_execution_and_leaves_others_untouched(self):
+        """P4.1 incident-recovery mode: with a real production backlog of
+        MULTIPLE FROZEN executions (proven live via the read-only
+        diagnostic that found three simultaneously-FROZEN executions),
+        --execution-id must resume exactly ONE of them without sending
+        to any other campaign's targets."""
+        target_execution_id = self._frozen_execution(title='P4.1 target execution')
+        other_execution_id = self._frozen_execution(title='P4.1 bystander execution')
+        with _GateSandbox() as sandbox:
+            sandbox.prod()
+            with patch('firebase_admin.messaging.send', return_value='msg-scoped') as mock_send:
+                code = runner.run(runner.parse_args(['--max-executions', '5', '--execution-id', target_execution_id]))
+        self.assertEqual(code, 0)
+        self.assertEqual(mock_send.call_count, 1, 'must send to exactly the one scoped execution, never the bystander')
+        db.session.expire_all()
+        target = db.session.get(NotificationCampaignExecution, target_execution_id)
+        other = db.session.get(NotificationCampaignExecution, other_execution_id)
+        self.assertEqual(target.state, 'COMPLETED')
+        self.assertEqual(other.state, 'FROZEN', 'bystander execution must be left completely untouched')
+        target_delivery = NotificationCampaignDelivery.query.filter_by(execution_id=target_execution_id).first()
+        other_delivery = NotificationCampaignDelivery.query.filter_by(execution_id=other_execution_id).first()
+        self.assertEqual(target_delivery.status, 'ACCEPTED')
+        self.assertEqual(other_delivery.status, 'PENDING', 'bystander delivery must never be attempted')
+
+    def test_o2_execution_id_flag_rejects_unknown_id(self):
+        with _GateSandbox() as sandbox:
+            sandbox.prod()
+            with patch('firebase_admin.messaging.send') as mock_send:
+                with self.assertRaises(SystemExit) as ctx:
+                    runner.run(runner.parse_args(['--execution-id', str(uuid.uuid4())]))
+                self.assertEqual(ctx.exception.code, 1)
+        mock_send.assert_not_called()
+
+    def test_o3_execution_id_flag_rejects_non_frozen_state(self):
+        """A SCHEDULED-but-not-due execution id must be refused, not
+        silently force-processed -- --execution-id is scoped resumption
+        of already-approved FROZEN/SENDING work, never a bypass of the
+        FROZEN-state requirement itself."""
+        execution_id, _scheduled_for = self._scheduled_execution(title='P4.1 not processable yet')
+        with _GateSandbox() as sandbox:
+            sandbox.prod()
+            with patch('firebase_admin.messaging.send') as mock_send:
+                with self.assertRaises(SystemExit) as ctx:
+                    runner.run(runner.parse_args(['--execution-id', execution_id]))
+                self.assertEqual(ctx.exception.code, 1)
+        mock_send.assert_not_called()
+        execution = db.session.get(NotificationCampaignExecution, execution_id)
+        self.assertEqual(execution.state, 'SCHEDULED')
+
+    def test_o4_execution_id_flag_skips_scheduler_promotion_entirely(self):
+        """A separate due SCHEDULED execution must NOT be promoted as a
+        side effect of a scoped --execution-id run -- scoped mode
+        touches only the one named execution, full stop."""
+        target_execution_id = self._frozen_execution(title='P4.1 scoped target, scheduler bystander test')
+        sched_execution_id, scheduled_for = self._scheduled_execution(title='P4.1 due but must stay untouched')
+        due_now = scheduled_for + timedelta(seconds=5)
+        with _GateSandbox() as sandbox:
+            sandbox.prod()
+            with patch('notifications.campaign_scheduler._now', return_value=due_now), \
+                 patch('firebase_admin.messaging.send', return_value='msg-scoped2') as mock_send:
+                code = runner.run(runner.parse_args(['--execution-id', target_execution_id]))
+        self.assertEqual(code, 0)
+        self.assertEqual(mock_send.call_count, 1)
+        db.session.expire_all()
+        sched_execution = db.session.get(NotificationCampaignExecution, sched_execution_id)
+        self.assertEqual(sched_execution.state, 'SCHEDULED', 'due SCHEDULED execution must not be promoted in scoped mode')
 
     def test_e_eligible_execution_processes_with_all_gates_and_real_transport_class(self):
         execution_id = self._frozen_execution()

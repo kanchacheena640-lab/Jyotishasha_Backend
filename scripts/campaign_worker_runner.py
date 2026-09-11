@@ -20,13 +20,31 @@ This script contains NO worker business logic of its own -- it only:
      it only ever decides EXPIRED/BLOCKED/PAUSED/FROZEN for a due row;
      a newly-FROZEN execution is then picked up by step 3 below, in
      this SAME invocation, exactly like a Send Now-frozen one already
-     was.
+     was. SKIPPED ENTIRELY when --execution-id is given (see point 5).
   3. discovers eligible execution ids via
      notifications.campaign_worker.discover_processable_executions()
      (the one small, reusable, read-only helper P3A added there);
   4. calls notifications.campaign_worker.process_execution() for each,
      unchanged, exactly as every existing caller (tests, the P1/P2
      controlled-test script) already does.
+  5. P4.1 (incident recovery) -- optional --execution-id: when given,
+     this ONE invocation processes EXACTLY that one execution and
+     nothing else -- no scheduler promotion, no full-backlog discovery.
+     Added because discover_processable_executions() is, by design, a
+     whole-backlog sweep (every FROZEN/SENDING execution, oldest
+     first): if more than one execution is FROZEN at once (e.g.
+     several Admin campaigns approved/Send-Now'd before the trigger
+     was ever proven reliable), an un-scoped invocation would attempt
+     ALL of them, not just the one an operator means to resume. This
+     flag lets an operator deliberately resume one already-approved,
+     already-frozen execution without touching any other campaign's
+     targets -- still calls the exact same, unmodified
+     notifications.campaign_worker.process_execution(), still behind
+     every existing gate, still never a second delivery for the same
+     execution (process_execution()'s own FOR UPDATE SKIP LOCKED claim
+     is unchanged). Omit the flag for ordinary automatic operation
+     (schedule/plain workflow_dispatch), where the full-backlog sweep
+     remains exactly as it always was.
 
 Bounded by design -- never an unbounded while-true daemon:
   --max-executions   (default 20): at most this many executions claimed
@@ -122,6 +140,11 @@ def parse_args(argv=None):
                          help='Maximum deliveries attempted per execution per invocation (default 100, matches TRANSPORT_BATCH_LIMIT).')
     parser.add_argument('--max-runtime-seconds', type=int, default=240,
                          help='Wall-clock budget; once exhausted, no NEW execution is claimed (default 240s).')
+    parser.add_argument('--execution-id', type=str, default=None,
+                         help='If given, process ONLY this one execution id (must already be FROZEN/SENDING). '
+                              'Skips scheduler promotion and full-backlog discovery entirely -- every other '
+                              'execution currently FROZEN/SENDING is left untouched. Omit for ordinary '
+                              'whole-backlog operation.')
     return parser.parse_args(argv)
 
 
@@ -154,21 +177,38 @@ def run(args):
         # -- not merely "some non-NoSend transport" -- is what will be used.
         _verify_production_transport(select_transport, FirebaseTransport)
 
-        # P4 -- promote any DUE SCHEDULED execution to FROZEN/PAUSED/
-        # BLOCKED/EXPIRED before discovering processable work, so a
-        # newly-FROZEN one is processed in this SAME invocation. See the
-        # module docstring above for why this sits behind the identical
-        # gates as sending.
-        schedule_summary = process_due_scheduled_campaigns(batch_limit=args.max_executions)
-        if schedule_summary['claimed']:
-            print(f"[worker] Scheduler: promoted {schedule_summary['claimed']} due SCHEDULED execution(s): "
-                  f"{schedule_summary['results']}")
-        else:
-            print('[worker] Scheduler: no due SCHEDULED executions.')
+        scoped_execution_id = (args.execution_id or '').strip() or None
 
-        execution_ids = worker.discover_processable_executions(limit=args.max_executions)
-        print(f'[worker] Discovered {len(execution_ids)} processable execution(s) '
-              f'(states={worker.WORKER_PROCESSABLE_STATES}, limit={args.max_executions}).')
+        if scoped_execution_id:
+            # P4.1 -- deliberate single-execution recovery mode. Never
+            # promotes schedules, never sweeps the rest of the backlog.
+            execution = db.session.get(NotificationCampaignExecution, scoped_execution_id)
+            if execution is None:
+                _fail(f'--execution-id {scoped_execution_id} does not exist.')
+            if execution.state not in worker.WORKER_PROCESSABLE_STATES:
+                _fail(f'--execution-id {scoped_execution_id} is in state {execution.state!r}, '
+                      f'not one of {worker.WORKER_PROCESSABLE_STATES}. Refusing to process it.')
+            execution_ids = [scoped_execution_id]
+            print(f'[worker] --execution-id given: SCOPED MODE. Processing exactly '
+                  f'{scoped_execution_id} (state={execution.state}, campaign_id={execution.campaign_id}). '
+                  f'Scheduler promotion and full-backlog discovery are SKIPPED this invocation -- '
+                  f'no other FROZEN/SENDING execution is touched.')
+        else:
+            # P4 -- promote any DUE SCHEDULED execution to FROZEN/PAUSED/
+            # BLOCKED/EXPIRED before discovering processable work, so a
+            # newly-FROZEN one is processed in this SAME invocation. See the
+            # module docstring above for why this sits behind the identical
+            # gates as sending.
+            schedule_summary = process_due_scheduled_campaigns(batch_limit=args.max_executions)
+            if schedule_summary['claimed']:
+                print(f"[worker] Scheduler: promoted {schedule_summary['claimed']} due SCHEDULED execution(s): "
+                      f"{schedule_summary['results']}")
+            else:
+                print('[worker] Scheduler: no due SCHEDULED executions.')
+
+            execution_ids = worker.discover_processable_executions(limit=args.max_executions)
+            print(f'[worker] Discovered {len(execution_ids)} processable execution(s) '
+                  f'(states={worker.WORKER_PROCESSABLE_STATES}, limit={args.max_executions}).')
 
         started_at = time.monotonic()
         summary = []

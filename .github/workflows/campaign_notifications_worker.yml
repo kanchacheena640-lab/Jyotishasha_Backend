@@ -21,6 +21,13 @@ name: Campaign C Notifications Worker
 # promoted schedule) -- still the same single worker engine, never a
 # second one.
 #
+# P4.1 (incident recovery) -- workflow_dispatch also accepts an optional
+# execution_id input. When set, this ONE invocation processes exactly
+# that one already-FROZEN/SENDING execution and nothing else in the
+# backlog (no scheduler promotion, no other campaign's targets touched)
+# -- see scripts/campaign_worker_runner.py's own docstring for why.
+# Leave blank (the default) for ordinary whole-backlog operation.
+#
 # Every 15 minutes: due-scheduled-campaign delivery lag is bounded to
 # at most ~15 minutes past the chosen send time -- a deliberately
 # conservative, "smallest reliable" cadence for a human-scheduled,
@@ -54,6 +61,11 @@ on:
         description: "Wall-clock budget (seconds) before no new execution is claimed"
         required: false
         default: "240"
+        type: string
+      execution_id:
+        description: "OPTIONAL incident recovery: process ONLY this one execution id (must be FROZEN/SENDING). Leave blank for normal whole-backlog operation."
+        required: false
+        default: ""
         type: string
 
 # Prevents two invocations from ever running concurrently -- pure belt-
@@ -107,4 +119,5 @@ jobs:
           python scripts/campaign_worker_runner.py \
             --max-executions "${{ inputs.max_executions || '20' }}" \
             --batch-limit "${{ inputs.batch_limit || '100' }}" \
-            --max-runtime-seconds "${{ inputs.max_runtime_seconds || '240' }}"
+            --max-runtime-seconds "${{ inputs.max_runtime_seconds || '240' }}" \
+            --execution-id "${{ inputs.execution_id || '' }}"
