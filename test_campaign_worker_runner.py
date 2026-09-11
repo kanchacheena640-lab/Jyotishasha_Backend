@@ -11,7 +11,7 @@ import os
 import sys
 import unittest
 from contextlib import redirect_stdout
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import yaml
@@ -106,7 +106,12 @@ def iso(dt):
 # ---------------- A. workflow file itself ----------------
 
 class WorkflowFileTests(unittest.TestCase):
-    def test_a_workflow_is_workflow_dispatch_only(self):
+    def test_a_workflow_is_scheduled_and_manually_dispatchable(self):
+        """P4 -- Final Production Activation: the worker now runs on a
+        periodic schedule (so Send Now/Schedule work without a human
+        manually dispatching GitHub Actions), AND workflow_dispatch is
+        retained for manual/debugging runs. Still never push/pull_request
+        -- this remains a bounded, isolated cron job, not a CI trigger."""
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              '.github', 'workflows', 'campaign_notifications_worker.yml')
         with open(path, encoding='utf-8') as fh:
@@ -115,10 +120,12 @@ class WorkflowFileTests(unittest.TestCase):
         # semantics -- handle both spellings defensively.
         triggers = spec.get('on', spec.get(True))
         self.assertIsInstance(triggers, dict)
-        self.assertEqual(set(triggers.keys()), {'workflow_dispatch'})
-        self.assertNotIn('schedule', triggers)
+        self.assertEqual(set(triggers.keys()), {'schedule', 'workflow_dispatch'})
         self.assertNotIn('push', triggers)
         self.assertNotIn('pull_request', triggers)
+        # A real cron cadence, not an empty/malformed schedule list.
+        self.assertTrue(triggers['schedule'])
+        self.assertTrue(all('cron' in entry for entry in triggers['schedule']))
 
     def test_workflow_never_sets_test_mode_vars(self):
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
@@ -128,21 +135,40 @@ class WorkflowFileTests(unittest.TestCase):
         for forbidden in ('ADMIN_CAMPAIGN_TEST_TRANSPORT_ENABLED:', 'ADMIN_CAMPAIGN_TEST_RECIPIENT_APP_USER_ID:'):
             self.assertNotIn(forbidden, text)
 
-    def test_n_scheduler_never_referenced_by_runner_or_workflow(self):
+    def test_n_scheduler_is_now_invoked_by_runner_and_workflow_behind_the_same_gates(self):
+        """P4 -- the OPPOSITE of this test's own pre-P4 assertion:
+        notifications.campaign_scheduler.process_due_scheduled_campaigns()
+        is now called by the runner, so due SCHEDULED campaigns are
+        promoted without a human dispatching anything. Still gated by
+        the exact same preflight (DEPLOYMENT_ENVIRONMENT=production,
+        ADMIN_CAMPAIGN_SEND_ENABLED, ADMIN_CAMPAIGN_WORKER_AUTHORIZED,
+        FCM_SERVICE_ACCOUNT_JSON) BEFORE this call -- see
+        PreflightGateTests below, which prove the whole run (including
+        this promotion step) fails closed on any missing gate."""
         with open(runner.__file__, encoding='utf-8') as fh:
             runner_src = fh.read()
-        self.assertNotIn('campaign_scheduler', runner_src)
+        self.assertIn('process_due_scheduled_campaigns', runner_src)
+        self.assertIn('from notifications.campaign_scheduler import process_due_scheduled_campaigns', runner_src)
+        # The call must sit AFTER the preflight gate check and the
+        # production-transport verification, never before either.
+        # Isolate run()'s own body so a prose mention of these same names
+        # in the module docstring (explaining the change above) can never
+        # be mistaken for the actual call sites.
+        run_body = runner_src[runner_src.index('\ndef run('):]
+        preflight_pos = run_body.index('_preflight_gate_check()')
+        transport_pos = run_body.index('_verify_production_transport(select_transport, FirebaseTransport)')
+        scheduler_pos = run_body.index('process_due_scheduled_campaigns(')
+        self.assertLess(preflight_pos, scheduler_pos)
+        self.assertLess(transport_pos, scheduler_pos)
         # Checks what the workflow actually EXECUTES (the `run:` step's
-        # own shell command), not its prose comments -- this file's own
-        # comments legitimately explain that campaign_scheduler is NOT
-        # invoked, which would otherwise trip a whole-file substring check.
+        # own shell command) never itself needs to name campaign_scheduler
+        # -- that wiring lives inside campaign_worker_runner.py, called
+        # unconditionally as part of this one script's own run().
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              '.github', 'workflows', 'campaign_notifications_worker.yml')
         with open(path, encoding='utf-8') as fh:
             spec = yaml.safe_load(fh)
         run_command = spec['jobs']['run-campaign-worker']['steps'][-1]['run']
-        self.assertNotIn('campaign_scheduler', run_command)
-        self.assertNotIn('process_due_scheduled_campaigns', run_command)
         self.assertIn('campaign_worker_runner.py', run_command)
 
 
@@ -336,6 +362,92 @@ class RunnerIntegrationTests(unittest.TestCase):
                               headers=self.admin)
         self.assertEqual(r.status_code, 202)
         return r.get_json()['id']
+
+    def _scheduled_execution(self, title='P4 scheduled runner test'):
+        """P4 -- mirrors _frozen_execution() but via the Schedule path
+        (SCHEDULED, not FROZEN): a real draft, a real
+        POST .../schedule call at least MIN_SCHEDULE_LEAD (60s) in the
+        future -- the minimum this route accepts -- so the resulting
+        execution is genuinely SCHEDULED, not yet due, until a test
+        explicitly advances "now" past scheduled_for."""
+        payload = dict(title=title, body='Body', audience_mode='SAVED_AUDIENCE',
+                        saved_audience_id=self.audience_id,
+                        action={'type': 'NONE', 'target': None, 'parameters': {}})
+        r = self.client.post('/admin/api/notifications', json=payload, headers=self.admin)
+        self.assertEqual(r.status_code, 201)
+        campaign_id = r.get_json()['id']
+        self.campaigns.append(campaign_id)
+        now = datetime.now(timezone.utc)
+        scheduled_for = now + timedelta(seconds=90)
+        r = self.client.post(f'/admin/api/notifications/{campaign_id}/schedule', json={
+            'revision': 1, 'idempotency_key': 'sched-key-' + campaign_id,
+            'scheduled_for': scheduled_for.isoformat(), 'preview_generated_at': now.isoformat(),
+        }, headers=self.admin)
+        self.assertEqual(r.status_code, 202, r.get_json())
+        return r.get_json()['id'], scheduled_for
+
+    def test_m_due_scheduled_execution_is_promoted_and_processed_in_one_invocation(self):
+        """P4 -- Final Production Activation's own core requirement: a
+        due SCHEDULED campaign is delivered WITHOUT any human manually
+        dispatching anything -- one runner.run() call both promotes it
+        (SCHEDULED -> FROZEN, via the existing, unmodified N5
+        process_due_scheduled_campaigns()) and processes/sends it
+        (FROZEN -> COMPLETED, via the existing, unmodified N4 worker) --
+        exactly the "one worker engine" contract this task requires."""
+        execution_id, scheduled_for = self._scheduled_execution()
+        execution = db.session.get(NotificationCampaignExecution, execution_id)
+        self.assertEqual(execution.state, 'SCHEDULED')
+        due_now = scheduled_for + timedelta(seconds=5)
+        with _GateSandbox() as sandbox:
+            sandbox.prod()
+            with patch('notifications.campaign_scheduler._now', return_value=due_now), \
+                 patch('firebase_admin.messaging.send', return_value='msg-scheduled'):
+                code = runner.run(runner.parse_args(['--max-executions', '5']))
+        self.assertEqual(code, 0)
+        # The pre-run() fetch above cached this row in this session's
+        # identity map; runner.run()'s own nested app_context commits are
+        # real, but this OUTER session was never the one that committed
+        # them, so its cached copy is never auto-expired -- force a fresh
+        # read rather than trust a stale in-memory object.
+        db.session.expire_all()
+        execution = db.session.get(NotificationCampaignExecution, execution_id)
+        self.assertEqual(execution.state, 'COMPLETED')
+        delivery = NotificationCampaignDelivery.query.filter_by(execution_id=execution_id).first()
+        self.assertEqual(delivery.status, 'ACCEPTED')
+
+    def test_m2_not_yet_due_scheduled_execution_is_left_untouched(self):
+        """The complementary case: a SCHEDULED campaign whose time has
+        NOT yet arrived must remain SCHEDULED (never force-promoted,
+        never sent early) -- runner.run() is a pure no-op for it."""
+        execution_id, scheduled_for = self._scheduled_execution(title='P4 not yet due')
+        not_due_yet = scheduled_for - timedelta(seconds=30)
+        with _GateSandbox() as sandbox:
+            sandbox.prod()
+            with patch('notifications.campaign_scheduler._now', return_value=not_due_yet), \
+                 patch('firebase_admin.messaging.send') as mock_send:
+                code = runner.run(runner.parse_args(['--max-executions', '5']))
+        self.assertEqual(code, 0)
+        mock_send.assert_not_called()
+        execution = db.session.get(NotificationCampaignExecution, execution_id)
+        self.assertEqual(execution.state, 'SCHEDULED')
+
+    def test_n2_kill_switch_stops_schedule_promotion_too_not_only_delivery(self):
+        """P4's own explicit safety requirement: ADMIN_CAMPAIGN_SEND_ENABLED
+        is the kill switch for BOTH schedule promotion and delivery -- a
+        due campaign must simply wait (stay SCHEDULED) when sending is
+        disabled, never silently freeze targets while unable to send."""
+        execution_id, scheduled_for = self._scheduled_execution(title='P4 kill switch due')
+        due_now = scheduled_for + timedelta(seconds=5)
+        with _GateSandbox() as sandbox:
+            sandbox.prod(ADMIN_CAMPAIGN_SEND_ENABLED='false')
+            with patch('notifications.campaign_scheduler._now', return_value=due_now), \
+                 patch('firebase_admin.messaging.send') as mock_send:
+                with self.assertRaises(SystemExit) as ctx:
+                    runner.run(runner.parse_args(['--max-executions', '5']))
+                self.assertEqual(ctx.exception.code, 1, 'preflight must fail closed, never silently no-op')
+        mock_send.assert_not_called()
+        execution = db.session.get(NotificationCampaignExecution, execution_id)
+        self.assertEqual(execution.state, 'SCHEDULED', 'kill switch stops promotion too, not only delivery')
 
     def test_e_eligible_execution_processes_with_all_gates_and_real_transport_class(self):
         execution_id = self._frozen_execution()
