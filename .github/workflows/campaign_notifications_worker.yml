@@ -1,14 +1,31 @@
 name: Campaign C Notifications Worker
 
-# P4 -- Final Production Activation: runs on BOTH a periodic schedule
-# AND workflow_dispatch (workflow_dispatch retained for manual runs/
-# debugging with custom bounds). The schedule trigger was TEMPORARILY
-# PAUSED between P4.2 and P4.6 (see those comment blocks below for the
-# full history) and is RE-ENABLED as of P4.6, now that the backlog that
-# caused the pause (2 unauthorized FROZEN test executions) has been
-# safely resolved via the new P4.5 cancel-when-unsent capability --
-# confirmed FROZEN=0/SENDING=0 across the whole table immediately
-# before re-enabling. Deliberately mirrors notifications.
+# P4.7 -- automatic ownership moved to a Render Cron Job (see
+# scripts/campaign_worker_runner.py's own docstring and this repo's
+# deployment notes for the exact Render setup). GitHub Actions' native
+# `schedule` trigger repeatedly failed to fire reliably in production
+# (twice observed: zero runs across 5+ ticks/58+ minutes, then zero
+# runs again across 2 ticks/32 minutes after a fresh re-enable) despite
+# sibling scheduled workflows in this same repo (Run Alerts Cron, Run
+# Notification Cron, Subscription State Sync) firing reliably on their
+# own crons in the same windows -- ruling out a repo-wide outage and
+# pointing at something specific to this one workflow's schedule
+# registration. Rather than keep guessing at GitHub's own scheduler,
+# `on:` here is now workflow_dispatch-ONLY, permanently: this workflow
+# remains available as EMERGENCY/MANUAL tooling only (including the
+# P4.1 --execution-id scoped mode), never the automatic trigger. Render
+# and this workflow are safe to invoke even if they ever overlap in
+# time -- process_execution()'s own FOR UPDATE SKIP LOCKED delivery
+# claim (see concurrency: block below for the belt-and-suspenders
+# GitHub-side lock on TOP of that) already makes a duplicate delivery
+# structurally impossible regardless of which platform claims a row
+# first -- but Render Cron is the one, single, intended automatic
+# owner going forward; this file should not be manually dispatched
+# during ordinary operation.
+#
+# History below (P4 through P4.6) is retained for context on how this
+# workflow reached its current, final shape -- none of it is stale
+# instruction, only record. Deliberately mirrors notifications.
 # yml/alerts.yml's own proven shape (checkout -> setup-python -> pip
 # install -> run one Python entrypoint inside create_app()'s
 # app_context()) -- no new infrastructure category (no Celery, no
@@ -48,11 +65,17 @@ name: Campaign C Notifications Worker
 # available throughout the pause -- always a trigger change only, never
 # a gate/transport/worker logic change.
 #
-# Every 15 minutes: due-scheduled-campaign delivery lag is bounded to
-# at most ~15 minutes past the chosen send time -- a deliberately
-# conservative, "smallest reliable" cadence for a human-scheduled,
-# non-time-critical Admin campaign (not a high-frequency system), never
-# tighter than actually needed. Bounded, single-pass invocation:
+# (Historical -- describes the cadence while GitHub's own `schedule`
+# trigger was this workflow's automatic owner, P4 through P4.6; see
+# P4.7 above for why that stopped being true. Render Cron's own
+# schedule is configured on Render's side, not in this file, and is
+# documented in this repo's own deployment notes / the P4.7 activation
+# report, not here.) Every 15 minutes: due-scheduled-campaign delivery
+# lag was bounded to at most ~15 minutes past the chosen send time --
+# a deliberately conservative, "smallest reliable" cadence for a
+# human-scheduled, non-time-critical Admin campaign (not a
+# high-frequency system), never tighter than actually needed. Bounded,
+# single-pass invocation, still true regardless of trigger source:
 # processes at most --max-executions FROZEN/SENDING executions, at most
 # --batch-limit deliveries each, within --max-runtime-seconds -- then
 # exits. A larger backlog is picked up by the NEXT scheduled run, never
@@ -82,8 +105,6 @@ name: Campaign C Notifications Worker
 # fail-closed reasoning.
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:
       max_executions:

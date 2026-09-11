@@ -128,6 +128,54 @@ class WorkerBootWithoutOpenAIOrRazorpayTests(unittest.TestCase):
                           f'stdout={result.stdout!r} stderr={result.stderr!r}')
         self.assertIn('TRANSPORT_OK FirebaseTransport', result.stdout)
 
+    def test_exact_render_cron_command_runs_cleanly_end_to_end_with_zero_backlog(self):
+        """P4.7 -- proves the EXACT command line a Render Cron Job runs
+        (`python scripts/campaign_worker_runner.py --max-executions 20
+        --batch-limit 100 --max-runtime-seconds 240`) works end to end,
+        as a real subprocess, with the exact env shape planned for
+        Render (production gates + FCM, NO OpenAI/Razorpay) -- not just
+        `from app import app` or the transport-selection chain in
+        isolation like the two tests above. Runs against a real local
+        Postgres with (by construction, in this test run) zero FROZEN/
+        SENDING/SCHEDULED backlog, so a clean exit with 'Discovered 0
+        processable execution(s)' and no FCM call is the expected,
+        safe, verifiable outcome -- exactly the 'no-work run' shape
+        production itself is expected to show on Render's first real
+        invocation."""
+        # Precondition, not cleanup: this subprocess uses REAL
+        # DEPLOYMENT_ENVIRONMENT=production (to prove the exact Render
+        # command/gate sequence), so a stray FROZEN/SENDING execution
+        # left behind by an unrelated interrupted test run would be
+        # discovered and genuinely attempted against Firebase with this
+        # test's own fake FCM credential -- messy, not a real send risk
+        # (fake creds simply fail), but never assumed away. Skip rather
+        # than silently mutate another test file's fixtures.
+        from app import app as _app
+        from notifications import campaign_worker as _worker
+        with _app.app_context():
+            stray = _worker.discover_processable_executions(limit=1)
+        if stray:
+            self.skipTest(f'stray FROZEN/SENDING execution(s) present ({stray}) -- '
+                           'not this test\'s fixture to clean up, skipping to avoid a real Firebase attempt.')
+
+        env = _clean_worker_env(os.environ.get(
+            'DATABASE_URL', 'postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local'))
+        env['DEPLOYMENT_ENVIRONMENT'] = 'production'
+        env['ADMIN_CAMPAIGN_SEND_ENABLED'] = 'true'
+        env['ADMIN_CAMPAIGN_WORKER_AUTHORIZED'] = 'true'
+        env['ACTIVITY_EVENTS_ENVIRONMENT'] = 'production'
+        result = subprocess.run(
+            [sys.executable, 'scripts/campaign_worker_runner.py',
+             '--max-executions', '20', '--batch-limit', '100', '--max-runtime-seconds', '240'],
+            cwd=REPO_ROOT, env=env, capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(result.returncode, 0,
+                          f'stdout={result.stdout!r} stderr={result.stderr!r}')
+        self.assertIn('Preflight gates OK', result.stdout)
+        self.assertIn('Worker run finished normally', result.stdout)
+        self.assertNotIn('OpenAIError', result.stderr)
+        self.assertNotIn('Missing Razorpay API keys', result.stderr)
+
 
 class LazyClientCachingTests(unittest.TestCase):
     """In-process unit tests of the lazy-singleton MECHANICS themselves

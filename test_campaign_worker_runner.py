@@ -107,17 +107,17 @@ def iso(dt):
 # ---------------- A. workflow file itself ----------------
 
 class WorkflowFileTests(unittest.TestCase):
-    def test_a_workflow_is_scheduled_and_manually_dispatchable(self):
-        """P4.6 -- re-activation: the `schedule` trigger is back on (the
-        P4.2 pause -- 3 FROZEN executions, only 1 authorized -- is
-        resolved: the 2 unauthorized ones were cancelled via P4.5's
-        cancel-when-unsent capability, backlog independently reconfirmed
-        FROZEN=0/SENDING=0 before this trigger was restored). Send
-        Now/Schedule must now work automatically without a human
-        manually dispatching GitHub Actions. workflow_dispatch (incl.
-        the --execution-id scoped mode) remains available for manual/
-        debug runs. Still never push/pull_request -- this remains a
-        bounded, isolated cron job, not a CI trigger."""
+    def test_a_workflow_is_manual_emergency_tooling_only_render_cron_owns_automatic(self):
+        """P4.7 -- automatic ownership permanently moved to a Render
+        Cron Job: GitHub Actions' own `schedule` trigger repeatedly
+        failed to fire reliably in production (twice observed), while
+        sibling scheduled workflows in this same repo fired reliably on
+        their own crons in the same windows -- ruling out a repo-wide
+        outage. `on:` here is workflow_dispatch-ONLY, permanently --
+        this workflow remains available as emergency/manual tooling
+        (incl. the P4.1 --execution-id scoped mode) but is never the
+        automatic trigger going forward. Still never push/pull_request
+        -- this remains a bounded, isolated job, not a CI trigger."""
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              '.github', 'workflows', 'campaign_notifications_worker.yml')
         with open(path, encoding='utf-8') as fh:
@@ -126,13 +126,11 @@ class WorkflowFileTests(unittest.TestCase):
         # semantics -- handle both spellings defensively.
         triggers = spec.get('on', spec.get(True))
         self.assertIsInstance(triggers, dict)
-        self.assertEqual(set(triggers.keys()), {'schedule', 'workflow_dispatch'})
+        self.assertEqual(set(triggers.keys()), {'workflow_dispatch'}, 'schedule must stay permanently off (P4.7)')
         self.assertNotIn('push', triggers)
         self.assertNotIn('pull_request', triggers)
-        self.assertTrue(triggers['schedule'])
-        self.assertTrue(all('cron' in entry for entry in triggers['schedule']))
         self.assertIn('execution_id', triggers['workflow_dispatch']['inputs'],
-                       'scoped single-execution resume must remain available even with schedule active')
+                       'scoped single-execution resume must remain available for emergency/manual use')
 
     def test_a2_kill_switch_is_a_repo_variable_not_a_hardcoded_literal(self):
         """P4.4 -- operational hardening: ADMIN_CAMPAIGN_SEND_ENABLED must
