@@ -1,0 +1,94 @@
+name: Production Dasha Timeline Backfill (controlled, one-time-per-profile)
+
+# P4.10 -- controlled production invocation of scripts/backfill_dasha_
+# timeline.py's new --production mode. workflow_dispatch ONLY, never a
+# schedule -- this is a deliberate, human-triggered operation, not an
+# automatic pipeline. Reuses the EXISTING production DATABASE_URL
+# secret already registered on this repo -- no new secret is created,
+# no value is ever printed (only the resolved database NAME, via the
+# script's own _verify_production_database()).
+#
+# Two independent safety layers, both enforced INSIDE the script itself
+# (not merely by this workflow file -- a production DATABASE_URL alone
+# is never sufficient):
+#   1. --production must be passed explicitly (always is, below) AND
+#      is independently re-verified against the real connected
+#      database name AND ACTIVITY_EVENTS_ENVIRONMENT=production.
+#   2. A REAL (mode=real) run additionally requires the `confirm` input
+#      to exactly equal the script's own required phrase -- checked
+#      BEFORE the app even boots. Leaving `confirm` blank (the default)
+#      for mode=real safely refuses with nothing written.
+#
+# `mode: dry-run` (the default) performs ZERO writes regardless of
+# `confirm` -- classification/counts only. Only `mode: real` can ever
+# write, and only with the exact confirm phrase supplied.
+#
+# No Dasha calculation logic, no Admin Users API/frontend, no
+# notifications/Campaign C/SavedAudience file is invoked by this
+# workflow or the script it runs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run (default, zero writes) or real (writes -- requires the exact confirm phrase below)"
+        required: false
+        default: "dry-run"
+        type: choice
+        options:
+          - dry-run
+          - real
+      confirm:
+        description: 'ONLY for mode=real: must exactly equal "BACKFILL PRODUCTION DASHA TIMELINE"'
+        required: false
+        default: ""
+        type: string
+      batch_size:
+        description: "Candidate rows fetched per DB round-trip (default: 50)"
+        required: false
+        default: "50"
+        type: string
+      after_id:
+        description: "Resume from this app_users.id (exclusive) -- for a manual resume of a partial run"
+        required: false
+        default: "0"
+        type: string
+
+concurrency:
+  group: production-dasha-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python (matches production runtime.txt)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.9"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run backfill (production mode -- see script's own two-layer safety gate)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACTIVITY_EVENTS_ENVIRONMENT: production
+        run: |
+          if [ "${{ inputs.mode }}" = "real" ]; then
+            echo "[workflow] REAL production write requested."
+            python scripts/backfill_dasha_timeline.py --production \
+              --batch-size "${{ inputs.batch_size || '50' }}" \
+              --after-id "${{ inputs.after_id || '0' }}" \
+              --confirm "${{ inputs.confirm }}"
+          else
+            echo "[workflow] DRY RUN -- zero writes."
+            python scripts/backfill_dasha_timeline.py --production --dry-run \
+              --batch-size "${{ inputs.batch_size || '50' }}" \
+              --after-id "${{ inputs.after_id || '0' }}"
+          fi
