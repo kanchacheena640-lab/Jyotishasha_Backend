@@ -55,6 +55,11 @@ def check(label, condition):
 
 FB_PREFIX = "fb-dasha-backfill-u4a2-"
 
+# P4.11 -- fixtures with firebase_uid=None can't be found via the
+# FB_PREFIX `like` filter above (there's no string to match), so their
+# ids are tracked explicitly here and purged by id in cleanup().
+_NO_UID_FIXTURE_IDS = []
+
 
 def fb(n):
     return f"{FB_PREFIX}{n}"
@@ -62,10 +67,14 @@ def fb(n):
 
 def cleanup():
     ap_ids = [u.id for u in AppUser.query.filter(AppUser.firebase_uid.like(f"{FB_PREFIX}%")).all()]
+    ap_ids += [i for i in _NO_UID_FIXTURE_IDS if i is not None]
     if ap_ids:
         UserDashaTimeline.query.filter(UserDashaTimeline.user_id.in_(ap_ids)).delete(synchronize_session=False)
     AppUser.query.filter(AppUser.firebase_uid.like(f"{FB_PREFIX}%")).delete(synchronize_session=False)
+    if ap_ids:
+        AppUser.query.filter(AppUser.id.in_(ap_ids)).delete(synchronize_session=False)
     db.session.commit()
+    _NO_UID_FIXTURE_IDS.clear()
 
 
 def row_ids_for(profile_id):
@@ -79,6 +88,31 @@ def make_complete_user(n, dob="1990-06-15", tob="08:30"):
     )
     db.session.add(u)
     db.session.commit()
+    return u
+
+
+def make_complete_user_no_uid(name_suffix, dob="1990-06-15", tob="08:30"):
+    """P4.11 -- a complete-birth-data profile with NO Firebase login,
+    e.g. an additional family-member profile added under one account.
+    Tracked in _NO_UID_FIXTURE_IDS since it can't be found/cleaned up
+    via the FB_PREFIX firebase_uid filter every other fixture uses."""
+    u = AppUser(
+        firebase_uid=None, name=f"backfill-no-uid-{name_suffix}",
+        dob=dob, tob=tob, pob="Mumbai", lat=19.07, lng=72.87,
+    )
+    db.session.add(u)
+    db.session.commit()
+    _NO_UID_FIXTURE_IDS.append(u.id)
+    return u
+
+
+def make_incomplete_user_no_uid(name_suffix, dob="1990-06-15"):
+    """P4.11 -- a NO-login profile with incomplete birth data (tob/pob/
+    lat/lng missing) -- must remain excluded regardless of firebase_uid."""
+    u = AppUser(firebase_uid=None, name=f"backfill-no-uid-incomplete-{name_suffix}", dob=dob)
+    db.session.add(u)
+    db.session.commit()
+    _NO_UID_FIXTURE_IDS.append(u.id)
     return u
 
 
@@ -423,6 +457,64 @@ def main():
         # CLI default routes there.
         check("parse_args() with no flags routes to the local-only path by default (unchanged)",
               backfill_module.parse_args([]).production is False)
+
+        # ==========================================================
+        print("\n=== 13 (P4.11): BROAD SCOPE -- eligibility does not depend on firebase_uid ===")
+        # ==========================================================
+        # (a) A complete profile WITH firebase_uid is eligible -- already
+        # proven repeatedly above (sections 2/3/6/7 etc all use fb()
+        # fixtures); one more explicit check here for completeness.
+        u_with_uid = make_complete_user(60)
+        counts_with_uid = backfill_module.run_backfill(batch_size=50, after_id=0, force=False, dry_run=False)
+        check("complete profile WITH firebase_uid is scanned and generated",
+              len(row_ids_for(u_with_uid.id)) == EXPECTED_TIMELINE_ROW_COUNT)
+
+        # (b) A complete profile WITHOUT firebase_uid (firebase_uid IS
+        # NULL) is ALSO eligible -- the actual point of P4.11. Missing
+        # timeline -> selected for generation.
+        u_no_uid = make_complete_user_no_uid("missing")
+        check("no-uid fixture starts with zero rows", row_ids_for(u_no_uid.id) == [])
+        counts_no_uid = backfill_module.run_backfill(batch_size=50, after_id=0, force=False, dry_run=False)
+        check("no-uid fixture was SCANNED (not silently skipped)", counts_no_uid.scanned >= 1)
+        check("no-uid fixture with missing timeline got a real timeline generated",
+              len(row_ids_for(u_no_uid.id)) == EXPECTED_TIMELINE_ROW_COUNT)
+
+        # (c) Incomplete birth data, no firebase_uid -- remains excluded
+        # regardless (the firebase_uid change must not weaken the
+        # existing completeness gate).
+        u_no_uid_incomplete = make_incomplete_user_no_uid("skip")
+        counts_no_uid_incomplete = backfill_module.run_backfill(batch_size=50, after_id=0, force=False, dry_run=False)
+        check("incomplete no-uid profile is counted incomplete, not eligible",
+              counts_no_uid_incomplete.incomplete >= 1)
+        check("incomplete no-uid profile has zero rows (never generated for)",
+              row_ids_for(u_no_uid_incomplete.id) == [])
+
+        # (d) A VALID existing timeline for a no-uid profile is left
+        # completely untouched by a further run (idempotency).
+        rows_before_no_uid_revalid = row_ids_for(u_no_uid.id)
+        counts_no_uid_revalid = backfill_module.run_backfill(batch_size=50, after_id=0, force=False, dry_run=False)
+        check("second run: no-uid fixture now classified already_valid", counts_no_uid_revalid.already_valid >= 1)
+        check("second run: no-uid fixture's rows are UNCHANGED (idempotent, no unnecessary replacement)",
+              row_ids_for(u_no_uid.id) == rows_before_no_uid_revalid)
+
+        # (e) --dry-run against a no-uid missing profile still writes
+        # nothing.
+        u_no_uid_dry = make_complete_user_no_uid("dry")
+        dry_counts_no_uid = backfill_module.run_backfill(batch_size=50, after_id=0, force=False, dry_run=True)
+        check("dry-run classifies the no-uid fixture as missing", dry_counts_no_uid.missing >= 1)
+        check("dry-run wrote ZERO rows for the no-uid missing fixture", row_ids_for(u_no_uid_dry.id) == [])
+
+        # (f) --production + exact --confirm protection (section 12) is
+        # completely independent of this eligibility-query change --
+        # re-asserted here for a single combined regression point.
+        try:
+            backfill_module._require_production_confirmation(
+                backfill_module.parse_args(["--production"]))
+            still_blocked_without_confirm = False
+        except SystemExit:
+            still_blocked_without_confirm = True
+        check("P4.11 did not weaken the --production/--confirm gate (still refuses without --confirm)",
+              still_blocked_without_confirm)
 
         print(f"\n{'='*60}\nRESULTS: {passed} passed, {failed} failed\n{'='*60}")
 

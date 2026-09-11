@@ -53,6 +53,21 @@ live write-path hooks in modules/user_service.py and
 routes/routes_profile_bootstrap.py; this backfill's job is purely
 corrective for complete profiles).
 
+SCOPE (P4.11): the candidate query considers EVERY app_users profile
+with complete birth data, regardless of whether it is linked to a
+Firebase login (firebase_uid). This is deliberate -- a profile is not
+required to have firebase_uid to be Dasha-eligible: the calculation
+engine doesn't use it, sync_dasha_timeline_for_user()'s own live
+trigger doesn't check it, and a profile with no login (e.g. an
+additional family-member profile added under one account) is a real,
+intended user of this feature. An earlier revision of this script
+restricted the candidate query to firebase_uid IS NOT NULL only,
+which happened to match what modules/services/admin_users_service.py
+can display (it bridges via firebase_uid) but was never actually
+required by anything this script itself does, and undercounted the
+true eligible population by roughly 3.5x in production. That
+restriction has been removed.
+
 FAILURE SAFETY (U4A.2's own correctness fix, in the shared service
 this script calls): sync_dasha_timeline_for_user() never deletes an
 existing timeline before a replacement calculation has already
@@ -201,9 +216,24 @@ def _verify_production_database() -> None:
 
 
 def _candidate_query(AppUser, db, after_id: int):
+    # P4.11 -- BROAD SCOPE: no firebase_uid filter. Eligibility is
+    # governed ONLY by _has_complete_birth_details() (dob/tob/pob/lat/
+    # lng), matching both the calculation engine's own requirements and
+    # sync_dasha_timeline_for_user()'s live write-path trigger, neither
+    # of which reads firebase_uid at all. A profile never linked to a
+    # Firebase login (firebase_uid IS NULL -- e.g. an additional family-
+    # member profile under one account) is just as eligible as one that
+    # is. An earlier version of this query required firebase_uid IS NOT
+    # NULL; that silently narrowed the backfill to only the subset of
+    # profiles reachable through Admin's own firebase_uid identity
+    # bridge, well below this backfill's actual objective (see the
+    # reconciliation investigation that led to this change). Admin
+    # reachability is a display-layer concern of modules/services/
+    # admin_users_service.py, not a Dasha-eligibility concern -- this
+    # script has no reason to duplicate or depend on it.
     return (
         db.session.query(AppUser)
-        .filter(AppUser.id > after_id, AppUser.firebase_uid.isnot(None))
+        .filter(AppUser.id > after_id)
         .order_by(AppUser.id.asc())
     )
 
