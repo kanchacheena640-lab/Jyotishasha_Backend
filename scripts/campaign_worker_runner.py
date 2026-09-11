@@ -1,15 +1,30 @@
 """P3A -- production-quality, bounded, single-invocation Campaign C
-worker runner. Intended to be triggered by
-.github/workflows/campaign_notifications_worker.yml
-(workflow_dispatch ONLY, no schedule -- see that file's own comments).
+worker runner. Triggered by
+.github/workflows/campaign_notifications_worker.yml, now on BOTH a
+periodic schedule AND workflow_dispatch (P4 -- Final Production
+Activation; see that file's own comments for the exact cadence and the
+kill-switch behavior of turning the schedule off).
 
 This script contains NO worker business logic of its own -- it only:
   1. fails closed on any missing/conflicting safety gate, BEFORE ever
      importing the Flask app / touching the DB;
-  2. discovers eligible execution ids via
+  2. P4: promotes any DUE SCHEDULED execution via
+     notifications.campaign_scheduler.process_due_scheduled_campaigns()
+     -- the existing, already-tested N5 module that was built but never
+     wired to a trigger (see its own module docstring). This call sits
+     BEHIND the exact same production gates as sending itself (below),
+     so the kill switch (ADMIN_CAMPAIGN_SEND_ENABLED=false) stops
+     schedule promotion too, not only delivery -- a due campaign simply
+     waits, never silently freezes targets while sending is disabled.
+     Never calls Transport.send() itself (N5's own frozen contract) --
+     it only ever decides EXPIRED/BLOCKED/PAUSED/FROZEN for a due row;
+     a newly-FROZEN execution is then picked up by step 3 below, in
+     this SAME invocation, exactly like a Send Now-frozen one already
+     was.
+  3. discovers eligible execution ids via
      notifications.campaign_worker.discover_processable_executions()
      (the one small, reusable, read-only helper P3A added there);
-  3. calls notifications.campaign_worker.process_execution() for each,
+  4. calls notifications.campaign_worker.process_execution() for each,
      unchanged, exactly as every existing caller (tests, the P1/P2
      controlled-test script) already does.
 
@@ -128,6 +143,7 @@ def run(args):
     from notifications.campaign_transport import select_transport
     from notifications.firebase_transport import FirebaseTransport
     from notifications import campaign_worker as worker
+    from notifications.campaign_scheduler import process_due_scheduled_campaigns
     from notifications.campaign_execution_models import NotificationCampaignExecution
 
     with app.app_context():
@@ -137,6 +153,18 @@ def run(args):
         # independent, additional proof specifically that FirebaseTransport
         # -- not merely "some non-NoSend transport" -- is what will be used.
         _verify_production_transport(select_transport, FirebaseTransport)
+
+        # P4 -- promote any DUE SCHEDULED execution to FROZEN/PAUSED/
+        # BLOCKED/EXPIRED before discovering processable work, so a
+        # newly-FROZEN one is processed in this SAME invocation. See the
+        # module docstring above for why this sits behind the identical
+        # gates as sending.
+        schedule_summary = process_due_scheduled_campaigns(batch_limit=args.max_executions)
+        if schedule_summary['claimed']:
+            print(f"[worker] Scheduler: promoted {schedule_summary['claimed']} due SCHEDULED execution(s): "
+                  f"{schedule_summary['results']}")
+        else:
+            print('[worker] Scheduler: no due SCHEDULED executions.')
 
         execution_ids = worker.discover_processable_executions(limit=args.max_executions)
         print(f'[worker] Discovered {len(execution_ids)} processable execution(s) '

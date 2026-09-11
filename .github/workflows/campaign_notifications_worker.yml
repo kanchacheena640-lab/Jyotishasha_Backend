@@ -1,23 +1,43 @@
 name: Campaign C Notifications Worker
 
-# P3A -- manually-triggered ONLY. No schedule, no push, no pull_request.
-# Deliberately mirrors notifications.yml/alerts.yml's own proven shape
-# (checkout -> setup-python -> pip install -> run one Python entrypoint
-# inside create_app()'s app_context()) -- no new infrastructure category
-# (no Celery, no Redis, no dedicated Render worker service).
+# P4 -- Final Production Activation: now runs on BOTH a periodic
+# schedule AND workflow_dispatch (workflow_dispatch retained for manual
+# runs/debugging with custom bounds). Deliberately mirrors notifications.
+# yml/alerts.yml's own proven shape (checkout -> setup-python -> pip
+# install -> run one Python entrypoint inside create_app()'s
+# app_context()) -- no new infrastructure category (no Celery, no
+# Redis, no dedicated Render worker service), and this is the SAME
+# convention notifications.yml (the automatic A/B event pipeline)
+# already uses for its own, completely separate, unaffected cron slots.
 #
-# This workflow only ever calls scripts/campaign_worker_runner.py, which
-# itself calls notifications.campaign_worker.process_execution() --
-# UNCHANGED worker business logic. It never calls
-# notifications.campaign_scheduler (that remains a separate, still-
-# inactive, future activation step -- not this one).
+# This workflow only ever calls scripts/campaign_worker_runner.py,
+# which now (P4) ALSO calls
+# notifications.campaign_scheduler.process_due_scheduled_campaigns()
+# (the existing, already-tested N5 module -- see that script's own
+# updated docstring) before its unchanged
+# notifications.campaign_worker.process_execution() sweep, so ONE
+# invocation both promotes any due SCHEDULED campaign and processes/
+# sends whatever is FROZEN/SENDING (from Send Now OR from a just-
+# promoted schedule) -- still the same single worker engine, never a
+# second one.
 #
-# Bounded, single-pass invocation: processes at most --max-executions
-# FROZEN/SENDING executions, at most --batch-limit deliveries each,
-# within --max-runtime-seconds -- then exits. A larger backlog is picked
-# up by the NEXT manual run, never drained in one unbounded pass.
+# Every 15 minutes: due-scheduled-campaign delivery lag is bounded to
+# at most ~15 minutes past the chosen send time -- a deliberately
+# conservative, "smallest reliable" cadence for a human-scheduled,
+# non-time-critical Admin campaign (not a high-frequency system), never
+# tighter than actually needed. Bounded, single-pass invocation:
+# processes at most --max-executions FROZEN/SENDING executions, at most
+# --batch-limit deliveries each, within --max-runtime-seconds -- then
+# exits. A larger backlog is picked up by the NEXT scheduled run, never
+# drained in one unbounded pass. The EXISTING kill switch
+# (ADMIN_CAMPAIGN_SEND_ENABLED=false in this workflow's own env below)
+# stops both schedule promotion and delivery on the very next tick --
+# turning the cron trigger off entirely is never required for an
+# emergency stop.
 
 on:
+  schedule:
+    - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:
       max_executions:
@@ -85,6 +105,6 @@ jobs:
           # the whole run closed if either is ever present.
         run: |
           python scripts/campaign_worker_runner.py \
-            --max-executions "${{ inputs.max_executions }}" \
-            --batch-limit "${{ inputs.batch_limit }}" \
-            --max-runtime-seconds "${{ inputs.max_runtime_seconds }}"
+            --max-executions "${{ inputs.max_executions || '20' }}" \
+            --batch-limit "${{ inputs.batch_limit || '100' }}" \
+            --max-runtime-seconds "${{ inputs.max_runtime_seconds || '240' }}"

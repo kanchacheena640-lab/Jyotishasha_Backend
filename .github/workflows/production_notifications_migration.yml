@@ -1,53 +1,35 @@
 name: Production Notifications Migration (ONE-TIME)
 
-# Temporary, narrowly-scoped, workflow_dispatch-ONLY migration runner.
-# Its single purpose: bring the production database to c4d8f21a9e05
-# (Campaign C Bell items table + user_notifications.dismissed_at)
-# BEFORE backend commit 747a836 is deployed, since that commit's Bell
-# API code depends on both existing. Deliberately run from a temporary
-# branch, never from main, so this migration can happen strictly ahead
-# of any backend code deploy.
+# THIS RUN's purpose: READ-ONLY final-activation readiness check for
+# Notifications Campaigns. NO schema change, NO data mutation, NO test
+# row created, NO transport .send() call ever made (constructing/type-
+# checking a transport instance is not the same as sending -- this
+# mirrors exactly what scripts/campaign_worker_runner.py's own
+# _verify_production_transport() already does before claiming any real
+# work). Never prints DATABASE_URL/credentials. Confirms:
+#   1. the existing DRAFT campaign referencing the FIXED "sele" audience
+#      (never substituted, never broadened -- just located and reported).
+#   2. zero FROZEN/SENDING/SCHEDULED executions currently exist in
+#      production (proves activating the new worker cron is a safe
+#      no-op until the product owner actually approves something).
+#   3. select_transport() resolves to the REAL FirebaseTransport class
+#      under the EXACT production gate env the activated worker cron
+#      will use (proves the 4-gate chain is genuinely satisfied in
+#      production right now, not merely on paper).
 #
-# This workflow NEVER sets FCM_SERVICE_ACCOUNT_JSON, DEPLOYMENT_ENVIRONMENT,
-# ADMIN_CAMPAIGN_SEND_ENABLED, or ADMIN_CAMPAIGN_WORKER_AUTHORIZED --
-# even if some import path accidentally reached
-# notifications/campaign_transport.py::select_transport(), every one of
-# its four required gates would still be false/missing, so it could
-# only ever return NoSendTransport. It never imports or calls
-# scripts/campaign_worker_runner.py or notifications.campaign_worker at
-# all. Only two Alembic-facing Flask CLI commands are ever invoked:
-# `flask db current` (read-only) and `flask db upgrade` (the repository's
-# own reviewed, committed migration files -- no db.create_all(), no
-# manual DDL, nothing else).
-#
-# factory.py::create_app() itself was audited before writing this file:
-# db.create_all() was removed there (U6A.1), init_firebase() degrades to
-# a harmless warning when FCM_SERVICE_ACCOUNT_JSON is absent (never
-# raises), and no scheduler/Celery/Redis import happens at app-import
-# time -- so importing `app` here (required for any `flask db ...`
-# command) has no side effect beyond registering SQLAlchemy, which does
-# not itself open a connection or touch a table.
+# Temporary branch only, never main.
 
 on:
   workflow_dispatch: {}
 
 concurrency:
-  group: production-notifications-migration
+  group: production-diagnose-campaign-readiness
   cancel-in-progress: false
 
-# The one revision production must already be on before this workflow
-# may proceed to `db upgrade` -- origin/main's own current tip, i.e.
-# "whatever the currently-deployed backend's own last-applied migration
-# is". If production reports anything else, the workflow fails closed
-# here rather than guessing.
-env:
-  EXPECTED_STARTING_REVISION: 0e2036a0b4b7
-  EXPECTED_TARGET_REVISION: c4d8f21a9e05
-
 jobs:
-  migrate:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout this exact ref
         uses: actions/checkout@v4
@@ -60,15 +42,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Preflight -- positively confirm this is the intended production DB (name only, never host/URL/password)
+      - name: Preflight -- confirm this is the intended production DB (name only)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           python - <<'PY'
           import os
           import psycopg2
-          url = os.environ["DATABASE_URL"]
-          conn = psycopg2.connect(url)
+          conn = psycopg2.connect(os.environ["DATABASE_URL"])
           try:
               with conn.cursor() as cur:
                   cur.execute("SELECT current_database()")
@@ -77,14 +58,41 @@ jobs:
               conn.close()
           print(f"[preflight] current_database() = {name!r}")
           if name != "jyotishasha":
-              raise SystemExit(
-                  f"[preflight] REFUSING: expected database name 'jyotishasha', got {name!r}. "
-                  "Never proceeding against an unexpected target."
-              )
-          print("[preflight] Confirmed: this is the intended production 'jyotishasha' database.")
+              raise SystemExit(f"[preflight] REFUSING: expected 'jyotishasha', got {name!r}.")
+          print("[preflight] Confirmed production 'jyotishasha' database.")
           PY
 
-      - name: Preflight -- confirm no pre-existing user_dasha_timeline duplicates (required by 37fd90bfdfd5's new UNIQUE constraint)
+      - name: 1. Locate the existing DRAFT campaign for the FIXED "sele" audience (READ-ONLY)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg2
+          conn = psycopg2.connect(os.environ["DATABASE_URL"])
+          try:
+              with conn.cursor() as cur:
+                  cur.execute("SELECT id, name, audience_type, is_active FROM saved_audiences WHERE name = 'sele'")
+                  audiences = cur.fetchall()
+                  print(f"[audience] 'sele' saved_audiences row(s): {audiences}")
+
+                  cur.execute("SELECT user_id FROM saved_audience_members WHERE saved_audience_id = ANY(%s)", ([a[0] for a in audiences],))
+                  members = [m[0] for m in cur.fetchall()]
+                  print(f"[audience] 'sele' member user_id(s): {members}")
+
+                  cur.execute("""
+                      SELECT id, title, state, saved_audience_id, revision, created_at
+                      FROM notification_campaigns
+                      WHERE saved_audience_id = ANY(%s)
+                      ORDER BY created_at DESC
+                  """, ([a[0] for a in audiences],))
+                  campaigns = cur.fetchall()
+                  print(f"[campaign] campaign(s) referencing 'sele': {campaigns}")
+          finally:
+              conn.close()
+          PY
+
+      - name: 2. Confirm zero FROZEN/SENDING/SCHEDULED executions exist right now (READ-ONLY)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
@@ -95,160 +103,41 @@ jobs:
           try:
               with conn.cursor() as cur:
                   cur.execute("""
-                      SELECT count(*) FROM (
-                          SELECT user_id, mahadasha, antardasha
-                          FROM user_dasha_timeline
-                          GROUP BY user_id, mahadasha, antardasha
-                          HAVING count(*) > 1
-                      ) dupes
+                      SELECT id, campaign_id, state, scheduled_for
+                      FROM notification_campaign_executions
+                      WHERE state IN ('FROZEN', 'SENDING', 'SCHEDULED')
                   """)
-                  dupe_groups = cur.fetchone()[0]
+                  rows = cur.fetchall()
+                  print(f"[executions] FROZEN/SENDING/SCHEDULED execution(s) right now: {rows}")
+                  if rows:
+                      print("[executions] WARNING: activating the worker cron will process/promote the above on its next tick.")
+                  else:
+                      print("[executions] Confirmed: none -- activating the worker cron is a safe no-op until an operator approves something.")
           finally:
               conn.close()
-          print(f"[preflight] user_dasha_timeline duplicate (user_id, mahadasha, antardasha) groups: {dupe_groups}")
-          if dupe_groups != 0:
-              raise SystemExit(
-                  "[preflight] REFUSING: existing duplicate rows would make the new UNIQUE "
-                  "constraint (migration 37fd90bfdfd5) fail to apply. Stopping before upgrade."
-              )
-          print("[preflight] Confirmed: no duplicates -- the new UNIQUE constraint is safe to add.")
           PY
 
-      - name: Report current Alembic revision (read-only)
-        id: before
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          ACTIVITY_EVENTS_ENVIRONMENT: production
-          # None of these three are real -- `app.py` and several modules
-          # it imports (report_writer.py, modules/services/chat_engine.py,
-          # config/razorpay_config.py, etc.) construct an OpenAI/Razorpay
-          # client at MODULE IMPORT TIME, which raises if the key is
-          # empty. `flask --app app db ...` cannot import `app` at all
-          # without these being non-empty strings. This workflow never
-          # calls any code path that actually uses either service --
-          # same safe placeholder convention already used throughout
-          # this repo's own local migration-apply scripts (e.g.
-          # scripts/l3_local_verify.py).
-          OPENAI_API_KEY: "sk-migration-only-unused"
-          RAZORPAY_KEY_ID: "migration-only-unused"
-          RAZORPAY_KEY_SECRET: "migration-only-unused"
-          # notifications/notification_fcm.py (a legacy module app.py
-          # also transitively imports) unconditionally raises at MODULE
-          # IMPORT TIME if this is unset -- unlike extensions.py's own
-          # init_firebase(), which degrades gracefully. This value is a
-          # throwaway, locally-generated (this session, offline, never
-          # reused anywhere else), non-functional service-account JSON
-          # -- NOT the real secret, never derived from it, never capable
-          # of authenticating to any real Firebase project. Verified
-          # locally beforehand that it satisfies both that module's
-          # `project_id` check and credentials.Certificate()'s stricter
-          # PEM-parsing requirement, with zero network access either
-          # time. This workflow still never calls any FCM-sending code
-          # path.
-          FCM_SERVICE_ACCOUNT_JSON: '{"type":"service_account","project_id":"migration-only-unused","private_key_id":"migration-only-unused","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDPMyBqdLrbCfVJ\n8jGfMwJbmPMd3x3wm+dBjrQb/DftkVeGrtLVNocmyRHbQv1R+YEEda7UoWzy9DNX\nUbaoY4mfdmvs2PruqYzW5SPISxaupE8l5EgolZQ0fBGCyUgcHWJj++sxMkrIsRrQ\nGi6hl8tmWBj+NzGFBa8297lMRfkkM7QB6yhhAmZdJteHjpezl/p9Cjg7PHZ7wAz+\nWkIAaXCPpZlvMQDQlTP2Y5DF7lurCo890/ESKsEiPVcw3vIW8WFuuHHpKCPdzXP1\nUctR40pR9+WPjKUQ2gYjFrQsyoV6KiXCIomy9nnd6bLPPhIlqgOeiabbF82AMwMk\ne3VeAaxFAgMBAAECggEAD8EMauu7NWJZcyjmGvuu5zYG7jODvEKuX66xBRu1SOvv\nIr9yKmH9/rX1FJ3QUwZMiAFGrMYlWYe1y6Lb54vB8Az6AcUxtynPGpvLj7Qd4mN9\n3RyxW9ybqy3vyujxAao+S+ngpRn007ObnU0QVJsNDRgPtmyN6FZZTy2guirr2ZOt\nqXKaUbag//ItMLKCIsY+kfMnF0mW7BinM3+pbsPT7fZ0zVYTa66nKNs99KfiC2Lx\n4Y06lN42zC6PMLwsNulYKhcUpeprCcbcG8XEhAoeilhODUGC3jmP9whXkSa+6DXp\nZ+gs5xWY9dPOpkMKMH7vuOS63hEX74P6vzJkHwRlQQKBgQD7LtX9Z1x+CSb5Q2Yx\nauHIkEjxsxN7QHw+rrzzO+5jxZnme86Ccr8mizoY4IKIyH9cCWyBXtMjCf6axEVD\nbGS0N4ZQZSg+PsEhpGT1etOLjnDYsmpjv+7osbIBsWrLQYvpTWFD5efjAN0fgTzR\nXf67yjfBp5+dm4zw1aK6KihQFQKBgQDTLFu3n2/TIdlHYqNzUZR5vJRsX1Vo4ZYk\n67/ImzaidFU6b7e8l/0Nza2P8dy1lmgzOwaWlhG2u/UzIs7BQm+LFJuq/pN/rxUP\nppK1ljGsjaS5dDKjJaOKU6GzErUpFwdEBHiwpaB9uCyOrWxy5OUQ3gGpDT+swPKb\nNmKaw57HcQKBgHU6BJDBPn9r0g6fEACcO0eZXxG+W6c4D0RJ1NFH9RgHTq4stdJX\nrzJT5AdcME+aEyZnF4bBNJSzw2mDlDfFTLJ2/25h54g1TXlf+eY/Lp+BGNVpXxGy\nr9NVqxfzLz4xFxUJEg3YLILbElfzvuiPj6Ug2Si+DFZIFF0Jt2pe5nWJAoGBAI4Y\nhCLcCwAT/8PUMM4RMAp2hZ0izTME0OZJKETRhILuKsdmk0k5MJNQOiDpC6245qbK\nahV8J7FBaq4dFujeTnZUyKbYJOI/KrncSU4dIZHNwfD0qnozgoc63UzFItfiYgY3\nyAp9eK//9SOQuK/bK/QcnxtlCdqx/s3IW7NuPHJRAoGAI8KfG6EnScMBmF3qPjaG\nOnVGdaSns76SYt8ctqzjhio2jksHFifwa0XqcGkeGRyWRyLW/BSANdb/g6gPOvU/\nwo013MDoPN+pjGhQpxd73Qe+MnxEcKfK5E93SjDjkTqGGpLoWfDAATVLNLoezV1N\n9hZzaVh5L3pMvuvAbmZ2rL4=\n-----END PRIVATE KEY-----\n","client_email":"migration-only-unused@migration-only-unused.iam.gserviceaccount.com","client_id":"000000000000000000000","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/migration-only-unused%40migration-only-unused.iam.gserviceaccount.com","universe_domain":"googleapis.com"}'
-        run: |
-          set -o pipefail
-          python -m flask --app app db current | tee current_before.txt
-          echo "revision=$(grep -oE '[0-9a-f]{12}' current_before.txt | head -1)" >> "$GITHUB_OUTPUT"
-
-      - name: Report migration heads (read-only, from the committed migration files on this ref)
-        id: heads
-        run: |
-          set -o pipefail
-          python -m flask --app app db heads | tee heads.txt
-          echo "head_count=$(grep -cE '[0-9a-f]{12}' heads.txt)" >> "$GITHUB_OUTPUT"
+      - name: 3. Confirm select_transport() resolves to the REAL FirebaseTransport under production gates (READ-ONLY -- never calls .send())
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ACTIVITY_EVENTS_ENVIRONMENT: production
           OPENAI_API_KEY: "sk-migration-only-unused"
           RAZORPAY_KEY_ID: "migration-only-unused"
           RAZORPAY_KEY_SECRET: "migration-only-unused"
-          # notifications/notification_fcm.py (a legacy module app.py
-          # also transitively imports) unconditionally raises at MODULE
-          # IMPORT TIME if this is unset -- unlike extensions.py's own
-          # init_firebase(), which degrades gracefully. This value is a
-          # throwaway, locally-generated (this session, offline, never
-          # reused anywhere else), non-functional service-account JSON
-          # -- NOT the real secret, never derived from it, never capable
-          # of authenticating to any real Firebase project. Verified
-          # locally beforehand that it satisfies both that module's
-          # `project_id` check and credentials.Certificate()'s stricter
-          # PEM-parsing requirement, with zero network access either
-          # time. This workflow still never calls any FCM-sending code
-          # path.
-          FCM_SERVICE_ACCOUNT_JSON: '{"type":"service_account","project_id":"migration-only-unused","private_key_id":"migration-only-unused","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDPMyBqdLrbCfVJ\n8jGfMwJbmPMd3x3wm+dBjrQb/DftkVeGrtLVNocmyRHbQv1R+YEEda7UoWzy9DNX\nUbaoY4mfdmvs2PruqYzW5SPISxaupE8l5EgolZQ0fBGCyUgcHWJj++sxMkrIsRrQ\nGi6hl8tmWBj+NzGFBa8297lMRfkkM7QB6yhhAmZdJteHjpezl/p9Cjg7PHZ7wAz+\nWkIAaXCPpZlvMQDQlTP2Y5DF7lurCo890/ESKsEiPVcw3vIW8WFuuHHpKCPdzXP1\nUctR40pR9+WPjKUQ2gYjFrQsyoV6KiXCIomy9nnd6bLPPhIlqgOeiabbF82AMwMk\ne3VeAaxFAgMBAAECggEAD8EMauu7NWJZcyjmGvuu5zYG7jODvEKuX66xBRu1SOvv\nIr9yKmH9/rX1FJ3QUwZMiAFGrMYlWYe1y6Lb54vB8Az6AcUxtynPGpvLj7Qd4mN9\n3RyxW9ybqy3vyujxAao+S+ngpRn007ObnU0QVJsNDRgPtmyN6FZZTy2guirr2ZOt\nqXKaUbag//ItMLKCIsY+kfMnF0mW7BinM3+pbsPT7fZ0zVYTa66nKNs99KfiC2Lx\n4Y06lN42zC6PMLwsNulYKhcUpeprCcbcG8XEhAoeilhODUGC3jmP9whXkSa+6DXp\nZ+gs5xWY9dPOpkMKMH7vuOS63hEX74P6vzJkHwRlQQKBgQD7LtX9Z1x+CSb5Q2Yx\nauHIkEjxsxN7QHw+rrzzO+5jxZnme86Ccr8mizoY4IKIyH9cCWyBXtMjCf6axEVD\nbGS0N4ZQZSg+PsEhpGT1etOLjnDYsmpjv+7osbIBsWrLQYvpTWFD5efjAN0fgTzR\nXf67yjfBp5+dm4zw1aK6KihQFQKBgQDTLFu3n2/TIdlHYqNzUZR5vJRsX1Vo4ZYk\n67/ImzaidFU6b7e8l/0Nza2P8dy1lmgzOwaWlhG2u/UzIs7BQm+LFJuq/pN/rxUP\nppK1ljGsjaS5dDKjJaOKU6GzErUpFwdEBHiwpaB9uCyOrWxy5OUQ3gGpDT+swPKb\nNmKaw57HcQKBgHU6BJDBPn9r0g6fEACcO0eZXxG+W6c4D0RJ1NFH9RgHTq4stdJX\nrzJT5AdcME+aEyZnF4bBNJSzw2mDlDfFTLJ2/25h54g1TXlf+eY/Lp+BGNVpXxGy\nr9NVqxfzLz4xFxUJEg3YLILbElfzvuiPj6Ug2Si+DFZIFF0Jt2pe5nWJAoGBAI4Y\nhCLcCwAT/8PUMM4RMAp2hZ0izTME0OZJKETRhILuKsdmk0k5MJNQOiDpC6245qbK\nahV8J7FBaq4dFujeTnZUyKbYJOI/KrncSU4dIZHNwfD0qnozgoc63UzFItfiYgY3\nyAp9eK//9SOQuK/bK/QcnxtlCdqx/s3IW7NuPHJRAoGAI8KfG6EnScMBmF3qPjaG\nOnVGdaSns76SYt8ctqzjhio2jksHFifwa0XqcGkeGRyWRyLW/BSANdb/g6gPOvU/\nwo013MDoPN+pjGhQpxd73Qe+MnxEcKfK5E93SjDjkTqGGpLoWfDAATVLNLoezV1N\n9hZzaVh5L3pMvuvAbmZ2rL4=\n-----END PRIVATE KEY-----\n","client_email":"migration-only-unused@migration-only-unused.iam.gserviceaccount.com","client_id":"000000000000000000000","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/migration-only-unused%40migration-only-unused.iam.gserviceaccount.com","universe_domain":"googleapis.com"}'
-
-      - name: Gate -- refuse to proceed unless starting revision and heads are exactly as expected
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          DEPLOYMENT_ENVIRONMENT: production
+          ADMIN_CAMPAIGN_SEND_ENABLED: "true"
+          ADMIN_CAMPAIGN_WORKER_AUTHORIZED: "true"
         run: |
-          echo "Current production revision: ${{ steps.before.outputs.revision }}"
-          echo "Expected starting revision:   $EXPECTED_STARTING_REVISION"
-          if [ "${{ steps.before.outputs.revision }}" != "$EXPECTED_STARTING_REVISION" ]; then
-            echo "REFUSING: production is not on the expected starting revision. Stopping before upgrade."
-            exit 1
-          fi
-          if [ "${{ steps.heads.outputs.head_count }}" != "1" ]; then
-            echo "REFUSING: migration files on this ref do not resolve to exactly one head. Stopping before upgrade."
-            cat heads.txt
-            exit 1
-          fi
-          if ! grep -q "$EXPECTED_TARGET_REVISION" heads.txt; then
-            echo "REFUSING: the single head found is not $EXPECTED_TARGET_REVISION. Stopping before upgrade."
-            cat heads.txt
-            exit 1
-          fi
-          echo "Gate passed: safe to upgrade."
+          python - <<'PY'
+          from app import app
+          from notifications.campaign_transport import select_transport
+          from notifications.firebase_transport import FirebaseTransport
 
-      - name: Apply migrations (flask db upgrade -- committed Alembic files only)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          ACTIVITY_EVENTS_ENVIRONMENT: production
-          OPENAI_API_KEY: "sk-migration-only-unused"
-          RAZORPAY_KEY_ID: "migration-only-unused"
-          RAZORPAY_KEY_SECRET: "migration-only-unused"
-          # notifications/notification_fcm.py (a legacy module app.py
-          # also transitively imports) unconditionally raises at MODULE
-          # IMPORT TIME if this is unset -- unlike extensions.py's own
-          # init_firebase(), which degrades gracefully. This value is a
-          # throwaway, locally-generated (this session, offline, never
-          # reused anywhere else), non-functional service-account JSON
-          # -- NOT the real secret, never derived from it, never capable
-          # of authenticating to any real Firebase project. Verified
-          # locally beforehand that it satisfies both that module's
-          # `project_id` check and credentials.Certificate()'s stricter
-          # PEM-parsing requirement, with zero network access either
-          # time. This workflow still never calls any FCM-sending code
-          # path.
-          FCM_SERVICE_ACCOUNT_JSON: '{"type":"service_account","project_id":"migration-only-unused","private_key_id":"migration-only-unused","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDPMyBqdLrbCfVJ\n8jGfMwJbmPMd3x3wm+dBjrQb/DftkVeGrtLVNocmyRHbQv1R+YEEda7UoWzy9DNX\nUbaoY4mfdmvs2PruqYzW5SPISxaupE8l5EgolZQ0fBGCyUgcHWJj++sxMkrIsRrQ\nGi6hl8tmWBj+NzGFBa8297lMRfkkM7QB6yhhAmZdJteHjpezl/p9Cjg7PHZ7wAz+\nWkIAaXCPpZlvMQDQlTP2Y5DF7lurCo890/ESKsEiPVcw3vIW8WFuuHHpKCPdzXP1\nUctR40pR9+WPjKUQ2gYjFrQsyoV6KiXCIomy9nnd6bLPPhIlqgOeiabbF82AMwMk\ne3VeAaxFAgMBAAECggEAD8EMauu7NWJZcyjmGvuu5zYG7jODvEKuX66xBRu1SOvv\nIr9yKmH9/rX1FJ3QUwZMiAFGrMYlWYe1y6Lb54vB8Az6AcUxtynPGpvLj7Qd4mN9\n3RyxW9ybqy3vyujxAao+S+ngpRn007ObnU0QVJsNDRgPtmyN6FZZTy2guirr2ZOt\nqXKaUbag//ItMLKCIsY+kfMnF0mW7BinM3+pbsPT7fZ0zVYTa66nKNs99KfiC2Lx\n4Y06lN42zC6PMLwsNulYKhcUpeprCcbcG8XEhAoeilhODUGC3jmP9whXkSa+6DXp\nZ+gs5xWY9dPOpkMKMH7vuOS63hEX74P6vzJkHwRlQQKBgQD7LtX9Z1x+CSb5Q2Yx\nauHIkEjxsxN7QHw+rrzzO+5jxZnme86Ccr8mizoY4IKIyH9cCWyBXtMjCf6axEVD\nbGS0N4ZQZSg+PsEhpGT1etOLjnDYsmpjv+7osbIBsWrLQYvpTWFD5efjAN0fgTzR\nXf67yjfBp5+dm4zw1aK6KihQFQKBgQDTLFu3n2/TIdlHYqNzUZR5vJRsX1Vo4ZYk\n67/ImzaidFU6b7e8l/0Nza2P8dy1lmgzOwaWlhG2u/UzIs7BQm+LFJuq/pN/rxUP\nppK1ljGsjaS5dDKjJaOKU6GzErUpFwdEBHiwpaB9uCyOrWxy5OUQ3gGpDT+swPKb\nNmKaw57HcQKBgHU6BJDBPn9r0g6fEACcO0eZXxG+W6c4D0RJ1NFH9RgHTq4stdJX\nrzJT5AdcME+aEyZnF4bBNJSzw2mDlDfFTLJ2/25h54g1TXlf+eY/Lp+BGNVpXxGy\nr9NVqxfzLz4xFxUJEg3YLILbElfzvuiPj6Ug2Si+DFZIFF0Jt2pe5nWJAoGBAI4Y\nhCLcCwAT/8PUMM4RMAp2hZ0izTME0OZJKETRhILuKsdmk0k5MJNQOiDpC6245qbK\nahV8J7FBaq4dFujeTnZUyKbYJOI/KrncSU4dIZHNwfD0qnozgoc63UzFItfiYgY3\nyAp9eK//9SOQuK/bK/QcnxtlCdqx/s3IW7NuPHJRAoGAI8KfG6EnScMBmF3qPjaG\nOnVGdaSns76SYt8ctqzjhio2jksHFifwa0XqcGkeGRyWRyLW/BSANdb/g6gPOvU/\nwo013MDoPN+pjGhQpxd73Qe+MnxEcKfK5E93SjDjkTqGGpLoWfDAATVLNLoezV1N\n9hZzaVh5L3pMvuvAbmZ2rL4=\n-----END PRIVATE KEY-----\n","client_email":"migration-only-unused@migration-only-unused.iam.gserviceaccount.com","client_id":"000000000000000000000","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/migration-only-unused%40migration-only-unused.iam.gserviceaccount.com","universe_domain":"googleapis.com"}'
-        run: python -m flask --app app db upgrade
-
-      - name: Report final Alembic revision and verify it is exactly the expected target
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          ACTIVITY_EVENTS_ENVIRONMENT: production
-          OPENAI_API_KEY: "sk-migration-only-unused"
-          RAZORPAY_KEY_ID: "migration-only-unused"
-          RAZORPAY_KEY_SECRET: "migration-only-unused"
-          # notifications/notification_fcm.py (a legacy module app.py
-          # also transitively imports) unconditionally raises at MODULE
-          # IMPORT TIME if this is unset -- unlike extensions.py's own
-          # init_firebase(), which degrades gracefully. This value is a
-          # throwaway, locally-generated (this session, offline, never
-          # reused anywhere else), non-functional service-account JSON
-          # -- NOT the real secret, never derived from it, never capable
-          # of authenticating to any real Firebase project. Verified
-          # locally beforehand that it satisfies both that module's
-          # `project_id` check and credentials.Certificate()'s stricter
-          # PEM-parsing requirement, with zero network access either
-          # time. This workflow still never calls any FCM-sending code
-          # path.
-          FCM_SERVICE_ACCOUNT_JSON: '{"type":"service_account","project_id":"migration-only-unused","private_key_id":"migration-only-unused","private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDPMyBqdLrbCfVJ\n8jGfMwJbmPMd3x3wm+dBjrQb/DftkVeGrtLVNocmyRHbQv1R+YEEda7UoWzy9DNX\nUbaoY4mfdmvs2PruqYzW5SPISxaupE8l5EgolZQ0fBGCyUgcHWJj++sxMkrIsRrQ\nGi6hl8tmWBj+NzGFBa8297lMRfkkM7QB6yhhAmZdJteHjpezl/p9Cjg7PHZ7wAz+\nWkIAaXCPpZlvMQDQlTP2Y5DF7lurCo890/ESKsEiPVcw3vIW8WFuuHHpKCPdzXP1\nUctR40pR9+WPjKUQ2gYjFrQsyoV6KiXCIomy9nnd6bLPPhIlqgOeiabbF82AMwMk\ne3VeAaxFAgMBAAECggEAD8EMauu7NWJZcyjmGvuu5zYG7jODvEKuX66xBRu1SOvv\nIr9yKmH9/rX1FJ3QUwZMiAFGrMYlWYe1y6Lb54vB8Az6AcUxtynPGpvLj7Qd4mN9\n3RyxW9ybqy3vyujxAao+S+ngpRn007ObnU0QVJsNDRgPtmyN6FZZTy2guirr2ZOt\nqXKaUbag//ItMLKCIsY+kfMnF0mW7BinM3+pbsPT7fZ0zVYTa66nKNs99KfiC2Lx\n4Y06lN42zC6PMLwsNulYKhcUpeprCcbcG8XEhAoeilhODUGC3jmP9whXkSa+6DXp\nZ+gs5xWY9dPOpkMKMH7vuOS63hEX74P6vzJkHwRlQQKBgQD7LtX9Z1x+CSb5Q2Yx\nauHIkEjxsxN7QHw+rrzzO+5jxZnme86Ccr8mizoY4IKIyH9cCWyBXtMjCf6axEVD\nbGS0N4ZQZSg+PsEhpGT1etOLjnDYsmpjv+7osbIBsWrLQYvpTWFD5efjAN0fgTzR\nXf67yjfBp5+dm4zw1aK6KihQFQKBgQDTLFu3n2/TIdlHYqNzUZR5vJRsX1Vo4ZYk\n67/ImzaidFU6b7e8l/0Nza2P8dy1lmgzOwaWlhG2u/UzIs7BQm+LFJuq/pN/rxUP\nppK1ljGsjaS5dDKjJaOKU6GzErUpFwdEBHiwpaB9uCyOrWxy5OUQ3gGpDT+swPKb\nNmKaw57HcQKBgHU6BJDBPn9r0g6fEACcO0eZXxG+W6c4D0RJ1NFH9RgHTq4stdJX\nrzJT5AdcME+aEyZnF4bBNJSzw2mDlDfFTLJ2/25h54g1TXlf+eY/Lp+BGNVpXxGy\nr9NVqxfzLz4xFxUJEg3YLILbElfzvuiPj6Ug2Si+DFZIFF0Jt2pe5nWJAoGBAI4Y\nhCLcCwAT/8PUMM4RMAp2hZ0izTME0OZJKETRhILuKsdmk0k5MJNQOiDpC6245qbK\nahV8J7FBaq4dFujeTnZUyKbYJOI/KrncSU4dIZHNwfD0qnozgoc63UzFItfiYgY3\nyAp9eK//9SOQuK/bK/QcnxtlCdqx/s3IW7NuPHJRAoGAI8KfG6EnScMBmF3qPjaG\nOnVGdaSns76SYt8ctqzjhio2jksHFifwa0XqcGkeGRyWRyLW/BSANdb/g6gPOvU/\nwo013MDoPN+pjGhQpxd73Qe+MnxEcKfK5E93SjDjkTqGGpLoWfDAATVLNLoezV1N\n9hZzaVh5L3pMvuvAbmZ2rL4=\n-----END PRIVATE KEY-----\n","client_email":"migration-only-unused@migration-only-unused.iam.gserviceaccount.com","client_id":"000000000000000000000","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/migration-only-unused%40migration-only-unused.iam.gserviceaccount.com","universe_domain":"googleapis.com"}'
-        run: |
-          set -o pipefail
-          python -m flask --app app db current | tee current_after.txt
-          FINAL=$(grep -oE '[0-9a-f]{12}' current_after.txt | head -1)
-          echo "Final revision: $FINAL"
-          if [ "$FINAL" != "$EXPECTED_TARGET_REVISION" ]; then
-            echo "MIGRATION VERIFICATION FAILED: expected $EXPECTED_TARGET_REVISION, got $FINAL"
-            exit 1
-          fi
-          echo "Verified: production is now at $EXPECTED_TARGET_REVISION."
+          with app.app_context():
+              transport = select_transport()
+              print(f"[transport] select_transport() resolved to: {type(transport).__name__}")
+              if type(transport) is not FirebaseTransport:
+                  raise SystemExit(f"[transport] NOT FirebaseTransport -- got {type(transport).__name__}. Activation is NOT ready.")
+              print("[transport] Confirmed: FirebaseTransport -- production sending gates are genuinely satisfied. (No .send() call made -- this proves resolution only.)")
+          PY
