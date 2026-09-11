@@ -107,12 +107,15 @@ def iso(dt):
 # ---------------- A. workflow file itself ----------------
 
 class WorkflowFileTests(unittest.TestCase):
-    def test_a_workflow_is_scheduled_and_manually_dispatchable(self):
-        """P4 -- Final Production Activation: the worker now runs on a
-        periodic schedule (so Send Now/Schedule work without a human
-        manually dispatching GitHub Actions), AND workflow_dispatch is
-        retained for manual/debugging runs. Still never push/pull_request
-        -- this remains a bounded, isolated cron job, not a CI trigger."""
+    def test_a_workflow_is_manually_dispatchable_schedule_temporarily_paused(self):
+        """P4.2 -- controlled first-production-send pause: the `schedule`
+        trigger is deliberately OFF right now (a real production backlog
+        had 3 FROZEN executions, only 1 authorized to send; an automatic
+        cron sweep would have attempted all 3). workflow_dispatch (incl.
+        the --execution-id scoped mode) must remain fully available
+        throughout the pause. Still never push/pull_request -- this
+        remains a bounded, isolated job, not a CI trigger. See the
+        workflow file's own P4.2 comment for the exact restore step."""
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              '.github', 'workflows', 'campaign_notifications_worker.yml')
         with open(path, encoding='utf-8') as fh:
@@ -121,12 +124,11 @@ class WorkflowFileTests(unittest.TestCase):
         # semantics -- handle both spellings defensively.
         triggers = spec.get('on', spec.get(True))
         self.assertIsInstance(triggers, dict)
-        self.assertEqual(set(triggers.keys()), {'schedule', 'workflow_dispatch'})
+        self.assertEqual(set(triggers.keys()), {'workflow_dispatch'}, 'schedule must stay paused (P4.2)')
         self.assertNotIn('push', triggers)
         self.assertNotIn('pull_request', triggers)
-        # A real cron cadence, not an empty/malformed schedule list.
-        self.assertTrue(triggers['schedule'])
-        self.assertTrue(all('cron' in entry for entry in triggers['schedule']))
+        self.assertIn('execution_id', triggers['workflow_dispatch']['inputs'],
+                       'scoped single-execution resume must remain available during the pause')
 
     def test_workflow_never_sets_test_mode_vars(self):
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),

@@ -1,8 +1,10 @@
 name: Campaign C Notifications Worker
 
-# P4 -- Final Production Activation: now runs on BOTH a periodic
+# P4 -- Final Production Activation: designed to run on BOTH a periodic
 # schedule AND workflow_dispatch (workflow_dispatch retained for manual
-# runs/debugging with custom bounds). Deliberately mirrors notifications.
+# runs/debugging with custom bounds) -- the schedule trigger is
+# TEMPORARILY PAUSED right now, see the P4.2 comment block below for
+# why and how to restore it. Deliberately mirrors notifications.
 # yml/alerts.yml's own proven shape (checkout -> setup-python -> pip
 # install -> run one Python entrypoint inside create_app()'s
 # app_context()) -- no new infrastructure category (no Celery, no
@@ -28,23 +30,44 @@ name: Campaign C Notifications Worker
 # -- see scripts/campaign_worker_runner.py's own docstring for why.
 # Leave blank (the default) for ordinary whole-backlog operation.
 #
-# Every 15 minutes: due-scheduled-campaign delivery lag is bounded to
-# at most ~15 minutes past the chosen send time -- a deliberately
-# conservative, "smallest reliable" cadence for a human-scheduled,
-# non-time-critical Admin campaign (not a high-frequency system), never
-# tighter than actually needed. Bounded, single-pass invocation:
-# processes at most --max-executions FROZEN/SENDING executions, at most
-# --batch-limit deliveries each, within --max-runtime-seconds -- then
-# exits. A larger backlog is picked up by the NEXT scheduled run, never
-# drained in one unbounded pass. The EXISTING kill switch
-# (ADMIN_CAMPAIGN_SEND_ENABLED=false in this workflow's own env below)
-# stops both schedule promotion and delivery on the very next tick --
-# turning the cron trigger off entirely is never required for an
-# emergency stop.
+# P4.2 (controlled first-production-send pause) -- the `schedule:`
+# trigger below is TEMPORARILY DISABLED. Real production diagnostics
+# during the first-ever real send found THREE simultaneously-FROZEN
+# executions already sitting in the backlog, only ONE of which is
+# currently product-owner-authorized to actually send. An automatic
+# cron tick sweeping the WHOLE backlog (its normal, correct,
+# already-tested behavior -- see the comment block this replaces)
+# would attempt all three, including two that are not yet authorized.
+# Rather than mutate/hide those rows or silently no-op inside the
+# script, the trigger itself is paused here so nothing can fire
+# unscoped while the first controlled production test is in progress.
+# workflow_dispatch (including the --execution-id scoped mode above)
+# remains fully available throughout this pause -- this is a trigger
+# change only, no gate/transport/worker logic touched.
+#
+# RE-ENABLE once the one-user production acceptance criteria pass by
+# uncommenting the block below (restoring `on:` to `schedule:` +
+# `workflow_dispatch:` exactly as P4 first activated it) once every
+# execution the operator does NOT want auto-processed has been
+# resolved out of FROZEN/SENDING (sent deliberately via
+# --execution-id, or explicitly deferred by the product owner):
+#
+#   schedule:
+#     - cron: "*/15 * * * *"
+#
+# Every 15 minutes was the cadence when active: due-scheduled-campaign
+# delivery lag bounded to at most ~15 minutes past the chosen send
+# time -- a deliberately conservative, "smallest reliable" cadence for
+# a human-scheduled, non-time-critical Admin campaign (not a
+# high-frequency system), never tighter than actually needed. Bounded,
+# single-pass invocation unchanged either way: processes at most
+# --max-executions FROZEN/SENDING executions, at most --batch-limit
+# deliveries each, within --max-runtime-seconds -- then exits. The
+# EXISTING kill switch (ADMIN_CAMPAIGN_SEND_ENABLED=false in this
+# workflow's own env below) still independently stops both schedule
+# promotion and delivery even once the schedule trigger is restored.
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
     inputs:
       max_executions:
