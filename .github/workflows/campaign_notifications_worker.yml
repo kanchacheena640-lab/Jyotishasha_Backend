@@ -63,9 +63,18 @@ name: Campaign C Notifications Worker
 # single-pass invocation unchanged either way: processes at most
 # --max-executions FROZEN/SENDING executions, at most --batch-limit
 # deliveries each, within --max-runtime-seconds -- then exits. The
-# EXISTING kill switch (ADMIN_CAMPAIGN_SEND_ENABLED=false in this
-# workflow's own env below) still independently stops both schedule
-# promotion and delivery even once the schedule trigger is restored.
+# EXISTING kill switch (ADMIN_CAMPAIGN_SEND_ENABLED, now a GitHub
+# Actions repository VARIABLE -- see P4.4 below -- set to false)
+# still independently stops both schedule promotion and delivery even
+# once the schedule trigger is restored.
+#
+# P4.4 (operational hardening) -- ADMIN_CAMPAIGN_SEND_ENABLED below is
+# now sourced from the GitHub Actions repository variable of the same
+# name (${{ vars.ADMIN_CAMPAIGN_SEND_ENABLED }}), not a hardcoded
+# literal -- flipping it is an immediate, code-free operational
+# action (gh variable set / the Settings UI), taking effect on the
+# very next run. See that env line's own comment for the full
+# fail-closed reasoning.
 
 on:
   workflow_dispatch:
@@ -131,7 +140,24 @@ jobs:
           # Campaign C production sending gates -- all four required
           # together by notifications/campaign_transport.py::select_transport().
           DEPLOYMENT_ENVIRONMENT: production
-          ADMIN_CAMPAIGN_SEND_ENABLED: "true"
+          # P4.4 (operational hardening) -- THE emergency kill switch is now
+          # a GitHub Actions repository VARIABLE (not a secret -- it is a
+          # plain boolean flag, never sensitive), not a hardcoded literal.
+          # Flipping it (gh variable set ADMIN_CAMPAIGN_SEND_ENABLED --body
+          # false, or the Settings -> Secrets and variables -> Actions ->
+          # Variables UI) takes effect on the very next run -- schedule tick
+          # or workflow_dispatch -- with NO commit/PR/deploy of any kind.
+          # Absence of the variable evaluates to an empty string, which
+          # _env_true() in scripts/campaign_worker_runner.py treats as
+          # false -- fails CLOSED, exactly like every other gate here, never
+          # fails open. DEPLOYMENT_ENVIRONMENT and ADMIN_CAMPAIGN_WORKER_
+          # AUTHORIZED deliberately stay hardcoded literals, not variables:
+          # they are identity/authorization gates for THIS workflow file
+          # existing and running at all, not an operator's emergency stop --
+          # exactly the two gates that must never be flipped by anything
+          # other than a reviewed code change -- widening what's remotely
+          # toggleable here would weaken, not harden, this design.
+          ADMIN_CAMPAIGN_SEND_ENABLED: ${{ vars.ADMIN_CAMPAIGN_SEND_ENABLED }}
           ADMIN_CAMPAIGN_WORKER_AUTHORIZED: "true"
           # Deliberately NEVER set here:
           #   ADMIN_CAMPAIGN_TEST_TRANSPORT_ENABLED

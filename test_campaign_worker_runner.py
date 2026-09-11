@@ -130,6 +130,26 @@ class WorkflowFileTests(unittest.TestCase):
         self.assertIn('execution_id', triggers['workflow_dispatch']['inputs'],
                        'scoped single-execution resume must remain available during the pause')
 
+    def test_a2_kill_switch_is_a_repo_variable_not_a_hardcoded_literal(self):
+        """P4.4 -- operational hardening: ADMIN_CAMPAIGN_SEND_ENABLED must
+        be sourced from ${{ vars.ADMIN_CAMPAIGN_SEND_ENABLED }} (a GitHub
+        Actions repository variable, flippable with no commit/PR/deploy),
+        never a hardcoded "true"/"false" literal -- that would put the
+        emergency kill switch back behind a code change. The other two
+        gates (DEPLOYMENT_ENVIRONMENT, ADMIN_CAMPAIGN_WORKER_AUTHORIZED)
+        deliberately stay hardcoded -- only the kill switch itself moves."""
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             '.github', 'workflows', 'campaign_notifications_worker.yml')
+        with open(path, encoding='utf-8') as fh:
+            spec = yaml.safe_load(fh)
+        env = spec['jobs']['run-campaign-worker']['steps'][-1]['env']
+        self.assertEqual(env['ADMIN_CAMPAIGN_SEND_ENABLED'].strip(),
+                          '${{ vars.ADMIN_CAMPAIGN_SEND_ENABLED }}')
+        self.assertEqual(env['DEPLOYMENT_ENVIRONMENT'], 'production',
+                          'identity gate must stay a hardcoded literal, not remotely toggleable')
+        self.assertEqual(env['ADMIN_CAMPAIGN_WORKER_AUTHORIZED'], 'true',
+                          'authorization gate must stay a hardcoded literal, not remotely toggleable')
+
     def test_workflow_never_sets_test_mode_vars(self):
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              '.github', 'workflows', 'campaign_notifications_worker.yml')
