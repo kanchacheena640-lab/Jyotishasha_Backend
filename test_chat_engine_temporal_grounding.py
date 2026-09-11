@@ -180,7 +180,7 @@ class _FakeOpenAIClient:
         # Ask Now Timeout Delivery Fix: chat_engine.py now derives its
         # scoped (timeout=20, max_retries=0) client via
         # client.with_options(...) at CALL TIME from whatever
-        # chat_engine_module.client currently is -- so this fake must
+        # chat_engine_module._client currently is -- so this fake must
         # answer to the same call the real openai.OpenAI client
         # supports. Returns self (not a copy): a fake has no separate
         # config to scope, so the only thing that matters is that
@@ -197,11 +197,11 @@ def _run_chat_engine_captured(question):
     chat_engine(), and returns (result, captured_prompt).
     """
     captured = {}
-    original_client = chat_engine_module.client
+    original_client = chat_engine_module._client
     original_kundali_fn = chat_engine_module.generate_full_kundali_payload
     original_transit_fn = chat_engine_module.get_current_positions
 
-    chat_engine_module.client = _FakeOpenAIClient(captured)
+    chat_engine_module._client = _FakeOpenAIClient(captured)
     chat_engine_module.generate_full_kundali_payload = lambda payload: {
         "lagna_sign": "Leo",
         "rashi": "Scorpio",
@@ -233,7 +233,7 @@ def _run_chat_engine_captured(question):
             question,
         )
     finally:
-        chat_engine_module.client = original_client
+        chat_engine_module._client = original_client
         chat_engine_module.generate_full_kundali_payload = original_kundali_fn
         chat_engine_module.get_current_positions = original_transit_fn
 
@@ -378,10 +378,10 @@ def main():
 
     result_missing, prompt_missing, kwargs_missing = None, None, None
     original_kundali_fn = chat_engine_module.generate_full_kundali_payload
-    original_client = chat_engine_module.client
+    original_client = chat_engine_module._client
     captured_missing = {}
     try:
-        chat_engine_module.client = _FakeOpenAIClient(captured_missing)
+        chat_engine_module._client = _FakeOpenAIClient(captured_missing)
         chat_engine_module.generate_full_kundali_payload = lambda payload: {
             "lagna_sign": "Leo",
             # rashi, chart_data, yogas all deliberately absent entirely
@@ -394,7 +394,7 @@ def main():
         prompt_missing = captured_missing.get("prompt", "")
     finally:
         chat_engine_module.generate_full_kundali_payload = original_kundali_fn
-        chat_engine_module.client = original_client
+        chat_engine_module._client = original_client
     check("G-16: chat_engine() never crashes when chart_data/rashi/yogas are entirely absent",
           result_missing is not None and "Ascendant (Lagna): Leo" in prompt_missing
           and "No significant yogas or doshas" in prompt_missing)

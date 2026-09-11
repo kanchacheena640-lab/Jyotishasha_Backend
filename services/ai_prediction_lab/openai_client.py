@@ -18,7 +18,18 @@ from openai import OpenAI
 
 load_dotenv()
 
-_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Lazy singleton -- constructed on first REAL use (the first call to
+# generate()/generate_with_raw()), not merely by importing this module
+# (see report_writer.py's own identical pattern for the full rationale).
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _client
+
 
 _MODEL = "gpt-5.6-luna"
 
@@ -42,7 +53,7 @@ def _call(prompt: str):
     )
     if _MODEL not in _MODELS_WITHOUT_CUSTOM_TEMPERATURE:
         kwargs["temperature"] = 0.7
-    return _client.chat.completions.create(**kwargs)
+    return _get_client().chat.completions.create(**kwargs)
 
 
 def generate(prompt: str) -> str:

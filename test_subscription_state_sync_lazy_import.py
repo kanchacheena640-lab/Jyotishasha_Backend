@@ -64,6 +64,9 @@ def check(label, condition):
         failed += 1
 
 
+LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+
+
 def run_in_fresh_process(code: str, strip_razorpay_env: bool) -> subprocess.CompletedProcess:
     """Runs `code` in a brand-new Python process (own sys.modules), with
     the Razorpay env vars removed if requested -- and, critically, an
@@ -74,6 +77,12 @@ def run_in_fresh_process(code: str, strip_razorpay_env: bool) -> subprocess.Comp
         env["RAZORPAY_KEY_ID"] = ""
         env["RAZORPAY_KEY_SECRET"] = ""
     env.setdefault("OPENAI_API_KEY", "sk-test-dummy-not-used")
+    # LOCAL/PRODUCTION SAFETY BOUNDARY -- this subprocess (scenario D
+    # below does `from app import app`, a full boot) previously inherited
+    # DATABASE_URL from the ambient environment/.env's own production
+    # URL if nothing was exported. Made explicit and local-only.
+    env["DATABASE_URL"] = LOCAL_DB_URL
+    env["ACTIVITY_EVENTS_ENVIRONMENT"] = "local"
     env["PYTHONIOENCODING"] = "utf-8"
     return subprocess.run(
         [sys.executable, "-c", code],
@@ -160,20 +169,36 @@ def main():
         print("    stderr:", result_d.stderr[-500:])
 
     # ==========================================================
-    print("\n=== E: negative control -- routes.py ITSELF still fails without Razorpay keys "
-          "(proves this is a real fix, not a change to routes.py/razorpay_config.py's own behavior) ===")
+    print("\n=== E: config/razorpay_config.py's OWN separate fix (P4.3, Campaign C worker "
+          "boot incident) -- razorpay_client is now a lazy proxy, so importing routes.py "
+          "directly no longer itself requires Razorpay keys; REAL use still fails exactly "
+          "as before (proves E is not a silent fake-credential fallback on a real payment "
+          "path) ===")
     # ==========================================================
-    code_e = (
+    code_e1 = (
         "import sys; sys.path.insert(0, '.');"
         "from modules.subscription.routes import subscription_bp;"
+        "print('IMPORT_OK')"
+    )
+    result_e1 = run_in_fresh_process(code_e1, strip_razorpay_env=True)
+    check("E-1: directly importing modules.subscription.routes WITHOUT Razorpay keys now "
+          "succeeds (config/razorpay_config.py's own P4.3 lazy-proxy fix, orthogonal to "
+          "this file's own lazy-IMPORT fix above)",
+          result_e1.returncode == 0 and "IMPORT_OK" in result_e1.stdout)
+
+    code_e2 = (
+        "import sys; sys.path.insert(0, '.');"
+        "from config.razorpay_config import razorpay_client;"
+        "razorpay_client.order;"  # first REAL use -- must still fail clearly
         "print('SHOULD_NOT_REACH_HERE')"
     )
-    result_e = run_in_fresh_process(code_e, strip_razorpay_env=True)
-    check("E-1: directly importing modules.subscription.routes WITHOUT Razorpay keys still fails "
-          "(routes.py/razorpay_config.py themselves are untouched)",
-          result_e.returncode != 0
-          and ("Missing Razorpay API keys" in result_e.stderr
-               or "Missing Razorpay API keys" in result_e.stdout))
+    result_e2 = run_in_fresh_process(code_e2, strip_razorpay_env=True)
+    check("E-2: first REAL use of razorpay_client (not merely importing it) WITHOUT "
+          "Razorpay keys still fails with the exact original message -- proves the P4.3 "
+          "fix only deferred WHEN the check runs, never weakened it",
+          result_e2.returncode != 0
+          and ("Missing Razorpay API keys" in result_e2.stderr
+               or "Missing Razorpay API keys" in result_e2.stdout))
 
     print(f"\n{'='*50}\nRESULT: {passed} passed, {failed} failed\n{'='*50}")
     if failed:

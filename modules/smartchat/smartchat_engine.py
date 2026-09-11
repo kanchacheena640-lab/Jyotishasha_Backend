@@ -16,9 +16,18 @@ from transit_engine import get_current_positions
 
 
 # ----------------------------------------------------------
-# Initialize OpenAI client
+# Lazy singleton -- constructed on first REAL use, not merely by
+# importing this module (see report_writer.py's own identical pattern
+# for the full rationale).
 # ----------------------------------------------------------
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _client
 
 
 # ----------------------------------------------------------
@@ -97,7 +106,7 @@ def run_smartchat(birth: dict, question: str) -> dict:
 
     # 6) GPT Call
     try:
-        response = client.chat.completions.create(
+        response = _get_client().chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a senior Vedic astrologer."},

@@ -9,8 +9,19 @@ import re
 
 summary_api = Blueprint('summary_api', __name__)
 
-# Initialize OpenAI client
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Lazy singleton -- constructed on first REAL use, not merely by
+# importing this module (see report_writer.py's own identical pattern
+# for the full rationale: a script that reaches this module via
+# `from app import app` for something unrelated must not be forced to
+# have OPENAI_API_KEY set just to boot).
+_openai_client = None
+
+
+def _get_openai_client():
+    global _openai_client
+    if _openai_client is None:
+        _openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _openai_client
 
 @summary_api.route("/api/generate-summary-report", methods=["POST"])
 def generate_full_summary_report():
@@ -49,7 +60,7 @@ def generate_full_summary_report():
 
     # Step 5: Send to GPT
     try:
-        response = openai_client.chat.completions.create(
+        response = _get_openai_client().chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt_final}]
         )

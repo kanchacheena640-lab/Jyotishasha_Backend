@@ -28,8 +28,17 @@ from modules.services.asknow_category_service import get_active_category_names
 logger = logging.getLogger("chat_engine")
 
 
-# Initialize OpenAI client once
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Lazy singleton -- constructed on first REAL use, not merely by
+# importing this module (see report_writer.py's own identical pattern
+# for the full rationale).
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _client
 
 # Ask Now Category Architecture v1 (FINAL PRODUCT DECISION): concern
 # categories are NO LONGER a hardcoded Python list here. They live in a
@@ -547,7 +556,7 @@ USER QUESTION
         # split.py / test_trust_foundation_phase0.py's _FakeOpenAIClient
         # .with_options() -- each returns self, so the fake stays fully
         # in control of chat.completions.create() below.
-        generation_client = client.with_options(
+        generation_client = _get_client().with_options(
             timeout=_GENERATION_TIMEOUT_SECONDS, max_retries=0
         )
         response = generation_client.chat.completions.create(

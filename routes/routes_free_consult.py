@@ -26,8 +26,17 @@ import os
 
 routes_free_consult = Blueprint("routes_free_consult", __name__)
 
-# 🔑 Initialize OpenAI client once
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# 🔑 Lazy singleton -- constructed on first REAL use, not merely by
+# importing this module (see report_writer.py's own identical pattern
+# for the full rationale).
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _client
 
 @routes_free_consult.route("/api/free-consult", methods=["POST"])
 def free_consult():
@@ -82,7 +91,7 @@ def free_consult():
 
     # 6️⃣ Call GPT
     try:
-        response = client.chat.completions.create(
+        response = _get_client().chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a senior Vedic astrologer."},

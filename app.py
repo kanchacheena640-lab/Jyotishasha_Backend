@@ -9,7 +9,6 @@ from services.zodiac_service import get_zodiac_traits
 from transit_engine import get_current_positions, get_all_planets_next_12, get_current_sign_residency
 from life_tools_report import life_tools_bp
 from routes.generate_report import generate_report_bp
-from openai import OpenAI
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -74,7 +73,17 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 migrate = Migrate(app, db)
 app.register_blueprint(life_tools_bp)
 app.register_blueprint(generate_report_bp)
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# (Removed: an eagerly-constructed, module-level `openai_client = OpenAI(...)`
+# used to live here. Confirmed dead code -- grep found zero readers of
+# it anywhere in the codebase, not even elsewhere in this file -- and
+# its eager construction was the last of several landmines that forced
+# every script merely importing `app` (e.g.
+# scripts/campaign_worker_runner.py, which never touches OpenAI) to
+# also have a real-shaped OPENAI_API_KEY just to boot. See
+# report_writer.py / summary_api.py / routes/routes_free_consult.py /
+# modules/services/chat_engine.py / modules/smartchat/smartchat_engine.py
+# / services/ai_prediction_lab/openai_client.py for the ACTUALLY-used
+# clients, which were converted to lazy singletons instead of removed.)
 app.register_blueprint(admin_orders_bp)
 app.register_blueprint(routes_reconciliation)
 app.register_blueprint(routes_metrics)

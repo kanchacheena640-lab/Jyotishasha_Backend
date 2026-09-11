@@ -7,10 +7,27 @@ from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
 #from pdf_generator import generate_pdf_report
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Lazy singleton -- constructed on first REAL use (the first call to
+# get_openai_response()), not merely by importing this module. Any
+# script that reaches this module transitively via `from app import app`
+# (e.g. scripts/campaign_worker_runner.py, which never calls this
+# function) must not be forced to have OPENAI_API_KEY set just to boot.
+# Real report generation still fails with the exact same, unchanged
+# openai.OpenAIError the moment it actually runs without a real key --
+# no behavior change for any caller that does use this.
+_client = None
+
+
+def _get_client():
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    return _client
+
 
 def get_openai_response(prompt):
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a senior Vedic astrologer writing detailed reports."},
