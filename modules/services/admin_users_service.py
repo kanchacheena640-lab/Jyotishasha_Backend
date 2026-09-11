@@ -1346,8 +1346,17 @@ def list_users(
     total_count = query.order_by(None).count()
     total_pages = max(1, math.ceil(total_count / page_size)) if total_count else 1
 
+    # Default list ordering: newest signup first. created_at DESC is the
+    # real ordering; User.id DESC is a deterministic tie-breaker only
+    # (two rows can share a created_at timestamp -- id DESC keeps
+    # pagination stable/non-duplicating across pages in that case,
+    # exactly like id ASC did before this change). Deliberately scoped
+    # to THIS query only -- resolve_user_ids() below (the SavedAudience
+    # resolver) keeps its own, separate User.id.asc() ordering
+    # untouched; that function's own membership/order contract is out
+    # of scope for this change.
     rows = (
-        query.order_by(User.id.asc())
+        query.order_by(User.created_at.desc(), User.id.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()

@@ -100,6 +100,15 @@ U_YOG_G = 989038   # G: Panch Mahapurush umbrella + Ruchaka sub-yog, Pada 1
 # it is already exactly "a users row with no firebase_uid at all",
 # there is no reason to duplicate a second identical fixture for it.
 
+# Default list ordering (created_at DESC, id DESC tie-breaker).
+# TIE_A/TIE_B deliberately share the exact same created_at -- TIE_B has
+# the higher id and must sort before TIE_A under the id DESC tie-break.
+U_ORD_OLDEST = 989039
+U_ORD_MIDDLE = 989040
+U_ORD_NEWEST = 989041
+U_ORD_TIE_A = 989042
+U_ORD_TIE_B = 989043
+
 ALL_TEST_UIDS = [
     ADMIN_UID, U_ACTIVE, U_INACTIVE, U_UNKNOWN_NO_FB, U_UNKNOWN_NO_ACTIVITY,
     U_CHATPACK_PAYER, U_CHATPACK_FAILED, U_SUB_ACTIVE, U_SUB_GRACE, U_SUB_TRIAL,
@@ -107,6 +116,7 @@ ALL_TEST_UIDS = [
     U_SEARCHME, U_OTHER_EVENT_ONLY, U_DOB_BRIDGE_ONLY, U_DOB_PRECEDENCE,
     U_ASTRO_FULL, U_ASTRO_PARTIAL, U_ASTRO_OTHER1, U_ASTRO_OTHER2,
     U_YOG_A, U_YOG_B, U_YOG_C, U_YOG_D, U_YOG_E, U_YOG_G,
+    U_ORD_OLDEST, U_ORD_MIDDLE, U_ORD_NEWEST, U_ORD_TIE_A, U_ORD_TIE_B,
 ]
 
 # AppUser ids deliberately NOT matching the User ids above -- explicit
@@ -216,6 +226,20 @@ def main():
         db.session.add(make_user(U_YOG_D, firebase_uid=fb(U_YOG_D)))
         db.session.add(make_user(U_YOG_E, firebase_uid=fb(U_YOG_E)))
         db.session.add(make_user(U_YOG_G, firebase_uid=fb(U_YOG_G)))
+
+        # Default list ordering fixtures -- distinct, controlled
+        # created_at values, isolated from every other fixture via a
+        # distinctive search marker in `name`. TIE_A/TIE_B share the
+        # exact same created_at to exercise the id DESC tie-breaker.
+        ord_tie_ts = now - timedelta(days=10)
+        db.session.add(make_user(U_ORD_OLDEST, name="OrderMarker Oldest",
+                                  created_at=now - timedelta(days=30)))
+        db.session.add(make_user(U_ORD_MIDDLE, name="OrderMarker Middle",
+                                  created_at=now - timedelta(days=15)))
+        db.session.add(make_user(U_ORD_NEWEST, name="OrderMarker Newest",
+                                  created_at=now - timedelta(minutes=1)))
+        db.session.add(make_user(U_ORD_TIE_A, name="OrderMarker TieA", created_at=ord_tie_ts))
+        db.session.add(make_user(U_ORD_TIE_B, name="OrderMarker TieB", created_at=ord_tie_ts))
         db.session.commit()
 
         # Activity events -- active vs inactive vs no-activity-at-all,
@@ -936,6 +960,36 @@ def main():
                       query_count["n"] <= 10)
             finally:
                 event.remove(Engine, "before_cursor_execute", _count_queries)
+
+            # ==========================================================
+            print("\n=== 25: default list ordering -- created_at DESC, id DESC tie-break ===")
+            # ==========================================================
+            expected_order = [U_ORD_NEWEST, U_ORD_TIE_B, U_ORD_TIE_A, U_ORD_MIDDLE, U_ORD_OLDEST]
+
+            r_ord = client.get("/admin/api/users?search=OrderMarker&page_size=200", headers=headers_admin)
+            ord_ids = [u["id"] for u in r_ord.get_json()["users"]]
+            check("25: exactly the 5 OrderMarker fixtures returned in the expected newest-first order",
+                  ord_ids == expected_order)
+            check("25: newest signup appears first", ord_ids[0] == U_ORD_NEWEST)
+            check("25: oldest signup appears last", ord_ids[-1] == U_ORD_OLDEST)
+            check("25: equal created_at ties broken by id DESC (TieB before TieA)",
+                  ord_ids.index(U_ORD_TIE_B) < ord_ids.index(U_ORD_TIE_A))
+
+            # Pagination must preserve this exact ordering -- concatenating
+            # every page (page_size=2) must reproduce the same sequence
+            # with no gaps/duplicates/reordering across the page boundary.
+            paged_ids = []
+            for pg in (1, 2, 3):
+                r_pg = client.get(f"/admin/api/users?search=OrderMarker&page={pg}&page_size=2", headers=headers_admin)
+                paged_ids.extend(u["id"] for u in r_pg.get_json()["users"])
+            check("25: pagination (page_size=2, 3 pages) preserves the exact same ordering",
+                  paged_ids == expected_order)
+
+            # Search/filter combined with the new default order still works.
+            r_ord_search_narrow = client.get("/admin/api/users?search=OrderMarker+Tie&page_size=200", headers=headers_admin)
+            narrow_ids = [u["id"] for u in r_ord_search_narrow.get_json()["users"]]
+            check("25: a narrower search still applies correctly under the new ordering",
+                  narrow_ids == [U_ORD_TIE_B, U_ORD_TIE_A])
 
             print(f"\n{'='*50}\nRESULT: {passed} passed, {failed} failed\n{'='*50}")
         finally:
