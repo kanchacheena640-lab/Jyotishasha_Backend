@@ -88,6 +88,15 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          # N-FIX-1 -- db_safety.enforce_local_database_safety() (called
+          # unconditionally at factory.py's own create_app()) requires
+          # this to be explicitly "production" to allow startup against
+          # the real DATABASE_URL secret above; GitHub Actions runners
+          # have neither RENDER=true nor a local-allowlisted DB, so
+          # without this every run here unconditionally raised
+          # DatabaseSafetyError at boot. Same value campaign-c-worker
+          # (below) and campaign_notifications_worker.yml already set.
+          ACTIVITY_EVENTS_ENVIRONMENT: production
           # GitHub Actions is the single source of truth for which slot is
           # running -- it knows which schedule entry fired (or which slot
           # a manual run requested), so the scheduler never has to guess

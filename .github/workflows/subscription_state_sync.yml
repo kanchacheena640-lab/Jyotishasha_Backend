@@ -32,6 +32,15 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          # N-FIX-1 -- db_safety.enforce_local_database_safety() (called
+          # unconditionally at factory.py's own create_app()) requires
+          # this to be explicitly "production" to allow startup against
+          # the real DATABASE_URL secret above; GitHub Actions runners
+          # have neither RENDER=true nor a local-allowlisted DB, so
+          # without this every run here unconditionally raised
+          # DatabaseSafetyError at boot. Same value notifications.yml's
+          # campaign-c-worker job already sets.
+          ACTIVITY_EVENTS_ENVIRONMENT: production
           # Required by the Google Play revocation reconciliation added in
           # d51d63a (SubscriptionStateSyncService._check_google_revocation()
           # -> GooglePlayProvider.verify_subscription_purchase() ->
