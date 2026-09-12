@@ -159,6 +159,20 @@ def main():
             conn.commit()
 
         now = datetime(2026, 8, 15, 12, 0, 0)
+        # N-FIX-3 -- EntitlementService._is_trial_window_active() compares
+        # a CurrentEntitlement row's own trial_expires_at against the REAL
+        # wall clock (datetime.utcnow()), never against a caller-supplied
+        # "now" (unlike this file's own `now` above, which is purely a
+        # domain/business-date anchor used for alert evaluated_at/active_
+        # from/active_until -- get_user_facing_alerts_for_profile() does
+        # not filter alerts by real current date, only by state/cooldown/
+        # confidence, so that anchor staying fixed is fine and intentional).
+        # A trial window computed from that SAME frozen `now` (fixed at
+        # authoring time to 2026-08-15) silently goes stale and expires
+        # for real the moment enough wall-clock time passes -- exactly what
+        # broke Test 8/Test 9 here. `real_now` keeps the trial window
+        # genuinely open at whatever real instant this test actually runs.
+        real_now = datetime.utcnow()
         with db.engine.connect() as conn:
             conn.execute(text(
                 "INSERT INTO current_entitlements "
@@ -184,12 +198,12 @@ def main():
                 "INSERT INTO current_entitlements "
                 "(profile_id, status, trial_started_at, trial_expires_at, created_at, updated_at) "
                 "VALUES (:p, 'TRIAL', :s, :e, now(), now())"
-            ), {"p": P_MULTI, "s": now - timedelta(days=1), "e": now + timedelta(days=6)})
+            ), {"p": P_MULTI, "s": real_now - timedelta(days=1), "e": real_now + timedelta(days=6)})
             conn.execute(text(
                 "INSERT INTO current_entitlements "
                 "(profile_id, status, trial_started_at, trial_expires_at, created_at, updated_at) "
                 "VALUES (:p, 'TRIAL', :s, :e, now(), now())"
-            ), {"p": P_TRIAL, "s": now - timedelta(days=1), "e": now + timedelta(days=6)})
+            ), {"p": P_TRIAL, "s": real_now - timedelta(days=1), "e": real_now + timedelta(days=6)})
             conn.execute(text(
                 "INSERT INTO current_entitlements "
                 "(profile_id, status, plan, subscription_started_at, subscription_expires_at, created_at, updated_at) "
