@@ -333,7 +333,11 @@ def main():
 
         sent_calls = []
 
-        def _fake_send_push_notification(*, token, title, body, data, android_tag=None):
+        def _fake_send_push_notification(*, token, title, body, data, android_tag=None, app_user_id=None):
+            # N-FIX-2B: real send_push_notification() now accepts this
+            # optional keyword; accepted here so event_scheduler.py's
+            # real call site (which now passes it unconditionally) never
+            # raises against this fake.
             sent_calls.append({"token": token, "title": title, "data": data})
             return True
 

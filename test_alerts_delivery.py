@@ -97,7 +97,11 @@ class FakeFcmSender:
         self.raise_exc = raise_exc
         self.calls = []
 
-    def __call__(self, *, token, title, body, data=None, android_tag=None):
+    def __call__(self, *, token, title, body, data=None, android_tag=None, app_user_id=None):
+        # N-FIX-2B: real send_push_notification() now accepts this
+        # optional keyword -- accepted here too so the real caller
+        # (alert_delivery_service.py) passing it unconditionally never
+        # raises against this fake.
         self.calls.append({"token": token, "title": title, "body": body, "data": data})
         if self.raise_exc:
             raise self.raise_exc

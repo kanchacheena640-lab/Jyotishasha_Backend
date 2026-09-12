@@ -273,7 +273,8 @@ def admin_test_send_notification():
         token=user.fcm_token,
         title=final_title,
         body=final_body,
-        data=final_data
+        data=final_data,
+        app_user_id=user.id,
     )
 
     if success:

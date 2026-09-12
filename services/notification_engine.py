@@ -151,7 +151,34 @@ def sort_by_priority(events):
 # -------------------------------
 # 🔹 SEND PUSH
 # -------------------------------
-def send_push_notification(token, title, body, data=None, android_tag=None):
+def send_push_notification(token, title, body, data=None, android_tag=None, *, app_user_id=None):
+    """
+    N-FIX-2B -- `app_user_id` is a new, OPTIONAL, keyword-only parameter
+    (default None): the public contract (positional token/title/body/
+    data/android_tag, boolean return) is completely unchanged for any
+    existing caller that doesn't pass it. When supplied, it enables safe
+    invalid-token cleanup on a definitively-dead token (see below) --
+    when omitted, this function behaves byte-for-byte as before (still
+    retries twice, still returns True/False, just never clears a token,
+    exactly like today). Every real production caller (services/
+    event_scheduler.py, modules/alerts/alert_delivery_service.py,
+    notifications/notification_routes.py) already has the AppUser id in
+    scope at its own call site and has been updated to pass it.
+
+    Token invalidation reuses notifications/firebase_transport.py's own
+    already-proven classification/clearing (Campaign C) rather than a
+    second, potentially-drifting copy -- see is_invalid_token_error()/
+    clear_invalid_fcm_token() there. Race-safe: the clear only applies
+    when AppUser.id == app_user_id AND AppUser.fcm_token == token BOTH
+    still match at UPDATE time, so a token this recipient has since
+    refreshed is never wrongly cleared -- never looked up by token alone.
+
+    The existing two-attempt retry loop is completely unchanged: this
+    only adds a side effect (clearing a proven-dead token) AFTER both
+    attempts are exhausted, classified from whichever exception the
+    last attempt raised -- it does not skip/shorten a retry for a token
+    already known to be dead, exactly preserving today's behavior.
+    """
     try:
         if not token:
             return False
@@ -170,6 +197,7 @@ def send_push_notification(token, title, body, data=None, android_tag=None):
             if android_tag else None
         )
 
+        last_exception = None
         for attempt in range(2):  # retry 2 times
             try:
                 message = messaging.Message(
@@ -187,7 +215,20 @@ def send_push_notification(token, title, body, data=None, android_tag=None):
                 return True
 
             except Exception as e:
+                last_exception = e
                 print(f"⚠️ Retry {attempt + 1} failed: {str(e)}")
+
+        # N-FIX-2B -- both attempts exhausted. If the caller identified
+        # who this was for AND the failure is one of the two definitively
+        # invalid-token types (never a transient/unknown one), clear the
+        # dead token so future runs stop retrying it forever. A cleared
+        # token is self-healing on the client (FcmTokenManager re-uploads
+        # the current token on every authenticated app start), so this
+        # never has an identity/account side effect.
+        if app_user_id is not None and last_exception is not None:
+            from notifications.firebase_transport import is_invalid_token_error, clear_invalid_fcm_token
+            if is_invalid_token_error(last_exception):
+                clear_invalid_fcm_token(app_user_id, token)
 
         return False
 

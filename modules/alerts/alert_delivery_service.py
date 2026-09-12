@@ -255,6 +255,7 @@ def deliver_alert(
         success = send_push_notification(
             token=fcm_token, title=content["title"], body=content["body"],
             data={**content["data"], "notification_id": str(push_notification_id)},
+            app_user_id=profile_id,
         )
     except Exception as exc:
         return AlertDeliveryResult(

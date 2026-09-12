@@ -564,7 +564,8 @@ def run_daily_event_job():
                                 title=c["n"].get("title"),
                                 body=c["n"].get("body"),
                                 data={**c["data"], "notification_id": str(push_notification_id)},
-                                android_tag=c["android_tag"]
+                                android_tag=c["android_tag"],
+                                app_user_id=user.id,
                             )
 
                         if success:

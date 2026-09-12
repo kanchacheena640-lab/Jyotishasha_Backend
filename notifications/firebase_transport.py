@@ -95,6 +95,51 @@ def _build_fcm_data(message: RenderedMessage) -> dict:
     }
 
 
+def clear_invalid_fcm_token(app_user_id: int, token: str) -> None:
+    """N-FIX-2B -- extracted from this module's own _handle_invalid_token()
+    (unchanged behavior, same WHERE clause) so services/notification_engine.py
+    (A/B + Personalized Alerts) can reuse the identical, already-proven,
+    race-safe invalidation instead of a second, potentially-drifting
+    copy. This is the ONE place AppUser.fcm_token is ever cleared for a
+    definitively-invalid-token result, shared by Campaign C and A/B/Alerts
+    alike.
+
+    Race-safe by construction: clears AppUser.fcm_token ONLY when BOTH
+    AppUser.id == app_user_id AND AppUser.fcm_token == token still hold
+    at UPDATE time -- so a token this exact recipient has since REFRESHED
+    (their row's fcm_token no longer equals the value that just failed,
+    the value resolved in-memory before THIS attempt) can never be
+    cleared by a stale result; the row simply fails to match and nothing
+    is touched. Never looks up a user by token alone -- id AND token are
+    both required to match the same row."""
+    from extensions import db
+    from modules.models_user import AppUser
+    updated = (
+        AppUser.query.filter(AppUser.id == app_user_id, AppUser.fcm_token == token)
+        .update({'fcm_token': None}, synchronize_session=False)
+    )
+    if updated:
+        db.session.commit()
+    else:
+        db.session.rollback()
+
+
+def is_invalid_token_error(exc: Exception) -> bool:
+    """N-FIX-2B -- the exact two firebase_admin exception types this
+    module's own FirebaseTransport.send() (below) already treats as a
+    definitively-dead token (OUTCOME_FAILED_PERMANENT, invalid_token=True,
+    _handle_invalid_token() called) -- extracted as a pure predicate so
+    services/notification_engine.py (A/B + Personalized Alerts) can reuse
+    the identical classification rather than hand-copying/duplicating
+    this list, which could silently drift from Campaign C's own mapping
+    over time. Every other exception type (transient, config, unknown,
+    non-Firebase) is deliberately NOT covered here -- this module's own
+    richer per-type classification below is Campaign C's alone; A/B/
+    Alerts only need this one narrow, binary question. Never raises."""
+    from firebase_admin import messaging
+    return isinstance(exc, (messaging.UnregisteredError, messaging.SenderIdMismatchError))
+
+
 def _handle_invalid_token(target: Target) -> None:
     """Reuses notification_fcm.py's own proven policy (clear
     AppUser.fcm_token on a definitively invalid/unregistered token) --
@@ -104,17 +149,12 @@ def _handle_invalid_token(target: Target) -> None:
     exact recipient has since REFRESHED (their row's fcm_token no longer
     equals target.fcm_token, the value resolved in-memory before THIS
     attempt) can never be cleared by a stale result -- the row simply
-    fails to match and nothing is touched."""
-    from extensions import db
-    from modules.models_user import AppUser
-    updated = (
-        AppUser.query.filter(AppUser.id == target.app_user_id, AppUser.fcm_token == target.fcm_token)
-        .update({'fcm_token': None}, synchronize_session=False)
-    )
-    if updated:
-        db.session.commit()
-    else:
-        db.session.rollback()
+    fails to match and nothing is touched.
+
+    N-FIX-2B: now a thin wrapper around the module-level
+    clear_invalid_fcm_token() -- same WHERE clause, same behavior, byte-
+    for-byte, just no longer duplicated in-line here."""
+    clear_invalid_fcm_token(target.app_user_id, target.fcm_token)
 
 
 class FirebaseTransport:
