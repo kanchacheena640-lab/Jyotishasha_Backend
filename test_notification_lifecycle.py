@@ -32,7 +32,7 @@ not just the pure function in isolation.
 
 import os
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -117,33 +117,33 @@ def main():
         check(
             "Tomorrow-framed event (sent Aug 15 evening, event on Aug 16) "
             "expires exactly at Aug 16 00:00 IST (== Aug 15 18:30 UTC)",
-            tomorrow_expiry == datetime(2026, 8, 15, 18, 30, 0),
+            tomorrow_expiry == datetime(2026, 8, 15, 18, 30, 0, tzinfo=timezone.utc),
         )
         today_expiry = expiry_for_astro_event_notification(event_date=aug16, is_forward_looking=False)
         check(
             "Today-framed event (sent Aug 16 morning) expires at end of Aug 16 "
             "(Aug 17 00:00 IST == Aug 16 18:30 UTC)",
-            today_expiry == datetime(2026, 8, 16, 18, 30, 0),
+            today_expiry == datetime(2026, 8, 16, 18, 30, 0, tzinfo=timezone.utc),
         )
 
         print("\n=== Pure function: expiry_for_same_day_notification (Dasha start) ===")
         dasha_expiry = expiry_for_same_day_notification(generated_on=aug16)
         check(
             "Dasha-start expires at end of its generation day",
-            dasha_expiry == datetime(2026, 8, 16, 18, 30, 0),
+            dasha_expiry == datetime(2026, 8, 16, 18, 30, 0, tzinfo=timezone.utc),
         )
 
         print("\n=== Pure function: expiry_for_alert_notification ===")
         alert_expiry = expiry_for_alert_notification(active_until=date(2026, 8, 17))
         check(
             "Alert expires at end of its active_until date",
-            alert_expiry == datetime(2026, 8, 17, 18, 30, 0),
+            alert_expiry == datetime(2026, 8, 17, 18, 30, 0, tzinfo=timezone.utc),
         )
 
         # ==============================================================
         print("\n=== Bell visibility: active vs. expired (server-side) ===")
         # ==============================================================
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         row_active = UserNotification(
             user_id=PROFILE, title="N2 Active", body="still valid",
@@ -181,13 +181,13 @@ def main():
         db.session.add(tomorrow_row)
         db.session.commit()
 
-        before_midnight = datetime(2026, 8, 15, 12, 0, 0)  # Aug 15 17:30 IST -- clearly evening, pre-midnight
+        before_midnight = datetime(2026, 8, 15, 12, 0, 0, tzinfo=timezone.utc)  # Aug 15 17:30 IST -- clearly evening, pre-midnight
         check(
             "Tomorrow-framed notification IS visible before IST midnight",
             tomorrow_row.id in bell_visible_ids(PROFILE, before_midnight),
         )
 
-        after_midnight = datetime(2026, 8, 15, 19, 0, 0)  # Aug 16 00:30 IST -- just past midnight
+        after_midnight = datetime(2026, 8, 15, 19, 0, 0, tzinfo=timezone.utc)  # Aug 16 00:30 IST -- just past midnight
         check(
             "SAME Tomorrow-framed notification is INVISIBLE after IST midnight "
             "-- the exact stale-'Tomorrow' scenario N2 targets",
@@ -218,7 +218,7 @@ def main():
         )
         db.session.add(legacy_row)
         db.session.commit()
-        far_future = datetime(2099, 1, 1)
+        far_future = datetime(2099, 1, 1, tzinfo=timezone.utc)
         check(
             "NULL expires_at (legacy row / transactional notification) remains "
             "visible indefinitely -- not accidentally removed by this policy, "
@@ -236,7 +236,7 @@ def main():
         )
         db.session.add(late_row)
         db.session.commit()
-        far_after = datetime(2026, 8, 17, 0, 0, 0)
+        far_after = datetime(2026, 8, 17, 0, 0, 0, tzinfo=timezone.utc)
         check(
             "A Tomorrow notification's expiry is derived from event_date, not "
             "send time -- even if inserted very late, it is correctly excluded "
@@ -252,7 +252,7 @@ def main():
             "Dasha-pre expires exactly at IST midnight of its OWN transition "
             "date (Aug 20 00:00 IST == Aug 19 18:30 UTC) -- the instant the "
             "new Dasha begins, not end-of-day",
-            dasha_pre_expiry == datetime(2026, 8, 19, 18, 30, 0),
+            dasha_pre_expiry == datetime(2026, 8, 19, 18, 30, 0, tzinfo=timezone.utc),
         )
 
         # ==============================================================
@@ -275,14 +275,14 @@ def main():
         db.session.commit()
 
         # Requirement 1: visible before the transition.
-        before_transition = datetime(2026, 8, 18, 12, 0, 0)  # Aug 18, well before Aug 20
+        before_transition = datetime(2026, 8, 18, 12, 0, 0, tzinfo=timezone.utc)  # Aug 18, well before Aug 20
         check(
             "N2.1 Test 1: Dasha-pre IS visible before its transition boundary",
             dasha_pre_row.id in bell_visible_ids(PROFILE, before_transition),
         )
 
         # Requirement 2: invisible exactly when the transition boundary is reached.
-        at_transition = datetime(2026, 8, 19, 19, 0, 0)  # Aug 20 00:30 IST -- just past the boundary
+        at_transition = datetime(2026, 8, 19, 19, 0, 0, tzinfo=timezone.utc)  # Aug 20 00:30 IST -- just past the boundary
         check(
             "N2.1 Test 2: Dasha-pre is INVISIBLE once the transition boundary "
             "is reached",
@@ -323,7 +323,7 @@ def main():
         check(
             "N2.1 Test 4: expiry depends only on transition_date, not on "
             "send timestamp (identical regardless of when it was generated)",
-            expiry_if_sent_aug15 == expiry_if_sent_aug18 == datetime(2026, 8, 19, 18, 30, 0),
+            expiry_if_sent_aug15 == expiry_if_sent_aug18 == datetime(2026, 8, 19, 18, 30, 0, tzinfo=timezone.utc),
         )
 
         # Requirement 5: a delayed scheduler run (inserting the row late)
@@ -339,7 +339,7 @@ def main():
         )
         db.session.add(late_dasha_pre_row)
         db.session.commit()
-        far_after_transition = datetime(2026, 8, 21, 0, 0, 0)
+        far_after_transition = datetime(2026, 8, 21, 0, 0, 0, tzinfo=timezone.utc)
         check(
             "N2.1 Test 5: a late-inserted Dasha-pre row is still excluded "
             "once the real transition boundary has passed -- delayed "
@@ -371,18 +371,18 @@ def main():
             "...with expires_at derived from active_until (Aug 16), not None "
             "and not an arbitrary generic number",
             alert_bell_row is not None
-            and alert_bell_row.expires_at == datetime(2026, 8, 16, 18, 30, 0),
+            and alert_bell_row.expires_at == datetime(2026, 8, 16, 18, 30, 0, tzinfo=timezone.utc),
         )
         check(
             "Personalized Alert respects its real validity: visible before "
             "active_until's boundary",
             alert_bell_row is not None
-            and alert_bell_row.id in bell_visible_ids(PROFILE, datetime(2026, 8, 16, 12, 0, 0)),
+            and alert_bell_row.id in bell_visible_ids(PROFILE, datetime(2026, 8, 16, 12, 0, 0, tzinfo=timezone.utc)),
         )
         check(
             "...and excluded once active_until's own boundary has passed",
             alert_bell_row is not None
-            and alert_bell_row.id not in bell_visible_ids(PROFILE, datetime(2026, 8, 17, 0, 0, 0)),
+            and alert_bell_row.id not in bell_visible_ids(PROFILE, datetime(2026, 8, 17, 0, 0, 0, tzinfo=timezone.utc)),
         )
 
         # ==============================================================

@@ -141,7 +141,23 @@ class UserNotification(db.Model):
     # shown (Bell + tray) even if the user never taps it -- e.g. the
     # morning Panchang notification expires at 5 PM the same day.
     # NULL means "never auto-expires".
-    expires_at = db.Column(db.DateTime, nullable=True)
+    #
+    # N-FIX-2A: timezone=True (matches dismissed_at below, and
+    # NotificationCampaignBellItem.expires_at) -- was previously a naive
+    # DateTime while every writer (services/notification_lifecycle.py,
+    # services/event_scheduler.py's Panchang calc) produced a naive-UTC
+    # value and the ONE real comparison site
+    # (notifications/campaign_bell_service.py's now/expires_at filter)
+    # compares against an AWARE datetime.now(timezone.utc). Proven via
+    # direct Postgres testing that this mismatch produces a WRONG
+    # comparison result whenever the connection's session TimeZone GUC
+    # is not UTC (e.g. Asia/Calcutta) -- see migration
+    # 0aea42c0e4d0_make_user_notifications_expires_at_tz_aware.py's own
+    # docstring for the full root-cause writeup and the explicit
+    # AT TIME ZONE 'UTC' conversion this required (a plain ALTER COLUMN
+    # TYPE would have silently corrupted every existing row under a
+    # non-UTC session).
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # N6 -- presentation-only "Clear"/individual-dismiss marker. Never
     # read by services/attention_policy.py or services/event_scheduler.py

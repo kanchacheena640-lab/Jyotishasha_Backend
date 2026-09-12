@@ -164,8 +164,8 @@ def main():
         db.session.add(tomorrow_row)
         db.session.commit()
 
-        before_boundary = datetime(2026, 8, 15, 12, 0, 0)
-        after_boundary = datetime(2026, 8, 15, 19, 0, 0)  # past IST midnight of Aug 16
+        before_boundary = datetime(2026, 8, 15, 12, 0, 0, tzinfo=timezone.utc)
+        after_boundary = datetime(2026, 8, 15, 19, 0, 0, tzinfo=timezone.utc)  # past IST midnight of Aug 16
 
         check("N5 Test 1: Tomorrow item IS visible before the IST boundary",
               tomorrow_row.id in {r.id for r in bell_list(PROFILE, before_boundary)})
@@ -240,7 +240,7 @@ def main():
             notification_title="Mood Positive", notification_body="body text",
             notification_data={"type": "alert", "event_id": ALERT_EVENT_ID},
             active_until=date(2026, 8, 17),
-            now=datetime(2026, 8, 15, 6, 0, 0),
+            now=datetime(2026, 8, 15, 6, 0, 0, tzinfo=timezone.utc),
         )
         check("record_bell_only() creates exactly one Bell row", bell_row is not None)
         row_after = repo.read(profile_id=PROFILE, event_id=ALERT_EVENT_ID)
@@ -255,7 +255,7 @@ def main():
             notification_title="Mood Positive", notification_body="body text",
             notification_data={"type": "alert", "event_id": ALERT_EVENT_ID},
             active_until=date(2026, 8, 17),
-            now=datetime(2026, 8, 15, 8, 0, 0),  # simulates a later run the SAME day
+            now=datetime(2026, 8, 15, 8, 0, 0, tzinfo=timezone.utc),  # simulates a later run the SAME day
         )
         check("record_bell_only() is idempotent -- a later run the same day, while the first "
               "bell-only row is still active, does NOT insert a duplicate",

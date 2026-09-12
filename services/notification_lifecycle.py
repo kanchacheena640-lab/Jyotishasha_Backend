@@ -9,10 +9,11 @@ calendar day a notification was generated on) rather than an arbitrary
 generic retention number.
 
 Deliberately pure and stateless: every function here takes plain values
-(dates, an explicit "now"/reference where relevant) and returns a naive
-UTC datetime -- no DB access, no import of the scheduling/detection/
-entitlement layers, so this module can be reused (and unit-tested)
-independently of services/event_scheduler.py and the Alerts pipeline.
+(dates, an explicit "now"/reference where relevant) and returns a
+timezone-AWARE UTC datetime -- no DB access, no import of the
+scheduling/detection/entitlement layers, so this module can be reused
+(and unit-tested) independently of services/event_scheduler.py and the
+Alerts pipeline.
 
 Scope, explicitly:
 - This module answers ONLY "when does this notification stop being
@@ -29,11 +30,22 @@ Scope, explicitly:
 
 Timezone convention: every boundary is computed as IST midnight (or IST
 17:00 for the one type that already had a rule -- Panchang, unchanged,
-not duplicated here), expressed as a naive UTC datetime -- the exact
-convention services/event_scheduler.py's own pre-existing Panchang
-expiry already uses
-(`datetime.combine(...).astimezone(timezone.utc).replace(tzinfo=None)`),
-reused here rather than inventing a second convention.
+not duplicated here), expressed as a timezone-AWARE UTC datetime -- the
+same `datetime.combine(...).astimezone(timezone.utc)` conversion
+services/event_scheduler.py's own Panchang expiry uses, reused here
+rather than inventing a second convention.
+
+N-FIX-2A: prior to this fix, both this module and event_scheduler.py's
+Panchang calc additionally stripped tzinfo (`.replace(tzinfo=None)`)
+before returning, matching the OLD naive `user_notifications.expires_at`
+column. That column is now `DateTime(timezone=True)` (migration
+0aea42c0e4d0) -- see that migration's own docstring for the full,
+empirically-verified root cause (a naive/aware mismatch against the one
+real comparison site, notifications/campaign_bell_service.py, produced
+wrong results whenever the Postgres session's TimeZone GUC was not
+UTC). The actual real-world instants this module computes are
+completely unchanged by N-FIX-2A -- only their Python/DB representation
+gained an explicit tzinfo.
 """
 
 from __future__ import annotations
@@ -44,11 +56,20 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 
 def _ist_midnight_utc(d: date) -> datetime:
-    """IST 00:00 of `d`, as a naive UTC datetime."""
+    """IST 00:00 of `d`, as a timezone-AWARE UTC datetime.
+
+    N-FIX-2A: previously stripped tzinfo (`.replace(tzinfo=None)`) here,
+    matching the OLD naive `user_notifications.expires_at` column. That
+    column is now `DateTime(timezone=True)` (migration
+    0aea42c0e4d0_make_user_notifications_expires_at_tz_aware.py) and the
+    one real comparison site (notifications/campaign_bell_service.py)
+    already compared against an aware `datetime.now(timezone.utc)) -- so
+    this function must also return aware UTC now, not naive. The actual
+    real-world instant this function computes is completely unchanged;
+    only its Python representation gained an explicit tzinfo."""
     return (
         datetime.combine(d, time(hour=0), tzinfo=IST)
         .astimezone(timezone.utc)
-        .replace(tzinfo=None)
     )
 
 

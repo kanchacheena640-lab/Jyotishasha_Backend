@@ -370,16 +370,30 @@ def run_daily_event_job():
 
                         if ntype == "panchang":
                             # Unchanged (pre-N2): same-day utility,
-                            # expires at PANCHANG_AUTO_DISMISS_HOUR_IST,
-                            # also carries the cutoff in the payload so
-                            # the app can clear the tray even if never
-                            # tapped (see PanchangDismissBridge).
+                            # expires at PANCHANG_AUTO_DISMISS_HOUR_IST
+                            # (17:00 IST) -- same real-world instant as
+                            # always; also carries the cutoff in the
+                            # payload so the app can clear the tray even
+                            # if never tapped (see PanchangDismissBridge).
+                            #
+                            # N-FIX-2A: kept timezone-AWARE UTC now
+                            # (removed the old `.replace(tzinfo=None)`)
+                            # to match user_notifications.expires_at's
+                            # new DateTime(timezone=True) column -- see
+                            # migration 0aea42c0e4d0's own docstring.
+                            # expires_at.isoformat() on an aware datetime
+                            # already ends in "+00:00", so the manual
+                            # "Z" suffix below was removed too -- it
+                            # would otherwise have produced a malformed
+                            # "...+00:00Z" string (this field is not
+                            # currently read by any Flutter client, so
+                            # this was a latent defect, not a live one).
                             expires_at = datetime.combine(
                                 target_date,
                                 time(hour=PANCHANG_AUTO_DISMISS_HOUR_IST),
                                 tzinfo=IST
-                            ).astimezone(timezone.utc).replace(tzinfo=None)
-                            data["auto_dismiss_at"] = expires_at.isoformat() + "Z"
+                            ).astimezone(timezone.utc)
+                            data["auto_dismiss_at"] = expires_at.isoformat()
                             android_tag = "panchang_morning"
 
                         elif ntype in ("event", "transit", "panchak"):

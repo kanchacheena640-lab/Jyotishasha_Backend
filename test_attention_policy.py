@@ -305,8 +305,8 @@ def main():
             )
             return {r.id for r in rows}
 
-        before_midnight = datetime(2026, 8, 15, 12, 0, 0)
-        after_midnight = datetime(2026, 8, 15, 19, 0, 0)
+        before_midnight = datetime(2026, 8, 15, 12, 0, 0, tzinfo=timezone.utc)
+        after_midnight = datetime(2026, 8, 15, 19, 0, 0, tzinfo=timezone.utc)
         check("N4 Test 15: Bell-only row IS visible before its N2-computed expiry boundary",
               bell_only_row.id in bell_visible_ids(PROFILE, before_midnight))
         check("N4 Test 15: SAME Bell-only row is EXCLUDED once its N2 expiry boundary passes -- "

@@ -75,7 +75,7 @@ persistence-only Phase 1.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.exc import IntegrityError
@@ -679,7 +679,13 @@ class AlertPersistenceRepository:
         `active_until` -- N2 lifecycle remains the sole authority on
         when it disappears, whether it arrived via push or Bell-only.
         """
-        now = now or datetime.utcnow()
+        # N-FIX-2A: was `datetime.utcnow()` (naive) -- user_notifications.
+        # expires_at is now DateTime(timezone=True) (migration
+        # 0aea42c0e4d0), so the comparison below needs an aware `now` to
+        # avoid the exact naive/aware mismatch that motivated this fix
+        # (Postgres would otherwise reinterpret a naive `now` using the
+        # connection's own session TimeZone before comparing).
+        now = now or datetime.now(timezone.utc)
 
         existing = (
             UserNotification.query
