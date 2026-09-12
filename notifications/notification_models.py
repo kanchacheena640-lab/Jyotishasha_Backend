@@ -127,8 +127,24 @@ class UserNotification(db.Model):
     )
 
     # 🕒 timestamps
+    #
+    # N-FIX-2C: timezone=True -- was previously a naive DateTime whose
+    # default (db.func.current_timestamp(), evaluated inside Postgres at
+    # INSERT time, never in Python) meant its actual meaning depended on
+    # the connecting session's own TimeZone GUC. Production evidence
+    # (SHOW timezone='UTC'; 10/10 recent rows correlated against the
+    # independently server-generated activity_events.recorded_at with
+    # only 5-10 second gaps; no evidence of any historical timezone
+    # reconfiguration) confirmed every existing value already means UTC
+    # wall-clock -- see migration
+    # 6d2ed1d602c1_make_user_notifications_created_at_tz_aware.py's own
+    # docstring for the full evidence writeup.
+    # default=db.func.current_timestamp() is UNCHANGED --
+    # Postgres's CURRENT_TIMESTAMP already returns a genuine instant;
+    # the only thing that was wrong was the COLUMN silently discarding
+    # its own timezone information on the way in.
     created_at = db.Column(
-        db.DateTime,
+        db.DateTime(timezone=True),
         nullable=False,
         default=db.func.current_timestamp(),
         index=True

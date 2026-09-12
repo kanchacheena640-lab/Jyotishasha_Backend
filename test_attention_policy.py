@@ -214,20 +214,24 @@ def main():
         # ==============================================================
         print("\n=== N4 Test 8/9/10/11: shared persisted counter -- real DB integration ===")
         # ==============================================================
-        now_ist_noon = datetime(2026, 8, 15, 6, 30, 0)  # 2026-08-15 12:00 IST, naive UTC
+        # N-FIX-2C: UserNotification.created_at is now DateTime(timezone=True)
+        # (migration 6d2ed1d602c1) -- this must be an AWARE UTC value now.
+        # Inserting a naive datetime here into the now-timezone-aware column
+        # would be interpreted using this local dev DB's own session
+        # timezone (Asia/Kolkata, documented in modules/alerts/
+        # user_alert_selection_service.py's own resolve_daily_cap_window_
+        # start() docstring), silently shifting the stored instant by
+        # +5:30 -- explicit tzinfo=timezone.utc keeps this test deterministic
+        # and correct regardless of session timezone.
+        now_ist_noon = datetime(2026, 8, 15, 6, 30, 0, tzinfo=timezone.utc)  # 2026-08-15 12:00 IST
 
         check("N4 Test 8 (baseline): 0 pushes today before any write", count_pushes_sent_today(PROFILE, now=now_ist_noon) == 0)
 
         # Morning run "sends" 1 qualifying notification (e.g. a Dasha push).
-        # created_at is set EXPLICITLY (naive UTC), rather than relying on
-        # the column's db.func.current_timestamp() default -- this local
-        # dev DB's own session timezone (Asia/Kolkata, documented in
-        # modules/alerts/user_alert_selection_service.py's own
-        # resolve_daily_cap_window_start() docstring) would otherwise make
-        # CURRENT_TIMESTAMP write IST wall-clock digits into this naive
-        # column, not UTC, which is a local-dev-connection quirk, not
-        # production's actual behavior -- setting it explicitly keeps this
-        # test deterministic regardless of session timezone.
+        # created_at is set EXPLICITLY (aware UTC, see now_ist_noon's own
+        # comment above), rather than relying on the column's
+        # db.func.current_timestamp() default, to keep this test
+        # deterministic regardless of session timezone.
         db.session.add(UserNotification(
             user_id=PROFILE, title="Dasha push", body="...",
             data={"type": "dasha"}, is_read=False,
@@ -266,13 +270,13 @@ def main():
         # N4 Test 11: a delayed run (much later the SAME IST day) still
         # sees the same count -- date semantics are calendar-day, not
         # clock-time-window based.
-        later_same_day = datetime(2026, 8, 15, 15, 0, 0)  # 2026-08-15 20:30 IST, still same IST day
+        later_same_day = datetime(2026, 8, 15, 15, 0, 0, tzinfo=timezone.utc)  # 2026-08-15 20:30 IST, still same IST day
         check("N4 Test 11: a delayed same-IST-day run still sees count = 2, cannot bypass via lateness",
               count_pushes_sent_today(PROFILE, now=later_same_day) == 2)
 
         # And the IST-day boundary itself is real: a query anchored to
         # the PREVIOUS IST day must not see today's rows, and vice versa.
-        next_ist_day = datetime(2026, 8, 15, 19, 0, 0)  # 2026-08-16 00:30 IST -- next day
+        next_ist_day = datetime(2026, 8, 15, 19, 0, 0, tzinfo=timezone.utc)  # 2026-08-16 00:30 IST -- next day
         check("N4 Test 11: crossing the real IST midnight boundary resets the count to 0 for the new day "
               "(delayed scheduler cannot resurrect yesterday's spent budget as unspent, nor bleed it forward)",
               count_pushes_sent_today(PROFILE, now=next_ist_day) == 0)

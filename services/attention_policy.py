@@ -156,15 +156,27 @@ def tier_for_alert_severity(severity: Optional[str]) -> int:
 # Shared daily push counter
 # ---------------------------------------------------------------------------
 def start_of_today_ist(now: datetime) -> datetime:
-    """IST midnight of `now`'s own IST calendar day, as a naive UTC
-    datetime -- the exact convention services/notification_lifecycle.py's
-    own _ist_midnight_utc() already established, recomputed locally here
-    rather than importing that module's private helper."""
+    """IST midnight of `now`'s own IST calendar day, as a timezone-AWARE
+    UTC datetime.
+
+    N-FIX-2C: previously stripped tzinfo (`.replace(tzinfo=None)`) here,
+    matching the OLD naive `UserNotification.created_at` column this
+    function's own caller (count_pushes_sent_today() below) compares
+    against. That column is now `DateTime(timezone=True)` (migration
+    6d2ed1d602c1) -- see that migration's own docstring for the full,
+    production-evidence-backed root cause -- so this boundary must also
+    be aware to compare correctly. The actual real-world IST-midnight
+    instant this function computes, and therefore the EXISTING business
+    definition of "today" for the daily push budget, is completely
+    unchanged -- only the Python representation gained an explicit
+    tzinfo, mirroring N-FIX-2A's own _ist_midnight_utc() fix (this
+    function is recomputed locally rather than importing that module's
+    private helper, as it always was)."""
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
     ist_now = now.astimezone(IST)
     ist_midnight = datetime.combine(ist_now.date(), time(0), tzinfo=IST)
-    return ist_midnight.astimezone(timezone.utc).replace(tzinfo=None)
+    return ist_midnight.astimezone(timezone.utc)
 
 
 def count_pushes_sent_today(user_id: int, now: Optional[datetime] = None) -> int:
@@ -180,7 +192,11 @@ def count_pushes_sent_today(user_id: int, now: Optional[datetime] = None) -> int
     at all (every row ever written before N4, and every ordinary pushed
     row since) are counted, by design -- no backfill/migration needed.
     """
-    now = now or datetime.utcnow()
+    # N-FIX-2C: was datetime.utcnow() (naive) -- UserNotification.
+    # created_at is now DateTime(timezone=True) (migration 6d2ed1d602c1),
+    # so `since` (derived from `now` below) must be aware to compare
+    # correctly.
+    now = now or datetime.now(timezone.utc)
     since = start_of_today_ist(now)
     return (
         UserNotification.query.filter(

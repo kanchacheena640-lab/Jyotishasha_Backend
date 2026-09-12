@@ -118,7 +118,14 @@ def main():
             ), {"id": PROFILE, "token": "fake-fcm-9901"})
             conn.commit()
 
-        now = datetime.utcnow()
+        # N-FIX-2C: UserNotification.created_at is now DateTime(timezone=True)
+        # (migration 6d2ed1d602c1) -- `now` is used both to seed created_at
+        # directly and to derive bell_list()'s own `cutoff` (compared against
+        # created_at). A naive `now` here would insert created_at using this
+        # LOCAL dev session's own default timezone (Asia/Kolkata) rather than
+        # the intended UTC instant, and would compare naive-vs-aware in
+        # bell_list()'s query -- must be aware.
+        now = datetime.now(timezone.utc)
 
         # ==============================================================
         print("=== N5 Test 4/5: unread-count / list consistency fix ===")

@@ -44,11 +44,17 @@ def _emit_notification_events(*, created_rows, job):
     unchanged, exactly as before."""
     for user_notification, push_notification_id in created_rows:
         entity_id = str(user_notification.id)
-        # created_at is a naive-UTC DateTime (db.func.current_timestamp()
-        # default) -- made explicitly timezone-aware ONLY for this
-        # analytics call, never mutating the persisted business column.
+        # N-FIX-2C: UserNotification.created_at is now genuinely
+        # timezone-aware (DateTime(timezone=True), migration
+        # 6d2ed1d602c1) -- it no longer needs (and must not have) a
+        # `.replace(tzinfo=timezone.utc)` assumption forced onto it,
+        # which would silently corrupt an already-aware value. This
+        # route (POST /<job_id>/send-now, admin-authenticated "force
+        # send now") is a live, reachable caller of this function, not
+        # dead code -- found and fixed during N-FIX-2C's own
+        # repo-wide re-audit.
         occurred_at = (
-            user_notification.created_at.replace(tzinfo=timezone.utc)
+            user_notification.created_at
             if user_notification.created_at is not None
             else datetime.now(timezone.utc)
         )

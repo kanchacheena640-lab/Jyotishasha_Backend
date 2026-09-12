@@ -83,8 +83,13 @@ def _emit_alert_notification_events(*, user_notification, emit_sent=True, push_n
     `entity_id`/`dedupe_key` keep using `user_notification.id`
     unchanged, exactly as before."""
     entity_id = str(user_notification.id)
+    # N-FIX-2C: UserNotification.created_at is now genuinely
+    # timezone-aware (DateTime(timezone=True), migration 6d2ed1d602c1)
+    # -- it no longer needs (and must not have) a
+    # `.replace(tzinfo=timezone.utc)` assumption forced onto it. Used
+    # exactly as read.
     occurred_at = (
-        user_notification.created_at.replace(tzinfo=timezone.utc)
+        user_notification.created_at
         if user_notification.created_at is not None
         else datetime.now(timezone.utc)
     )

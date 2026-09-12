@@ -71,8 +71,14 @@ def _emit_scheduler_notification_events(*, rows_this_commit, slot):
     for user_notification, ntype, was_pushed, push_notification_id in rows_this_commit:
         entity_id = str(user_notification.id)
         context_notification_id = str(push_notification_id) if push_notification_id is not None else entity_id
+        # N-FIX-2C: UserNotification.created_at is now genuinely
+        # timezone-aware (DateTime(timezone=True), migration
+        # 6d2ed1d602c1) -- it no longer needs (and must not have) a
+        # `.replace(tzinfo=timezone.utc)` assumption forced onto it,
+        # which would silently corrupt an already-aware value if it
+        # weren't in UTC. Used exactly as read.
         occurred_at = (
-            user_notification.created_at.replace(tzinfo=timezone.utc)
+            user_notification.created_at
             if user_notification.created_at is not None
             else datetime.now(timezone.utc)
         )

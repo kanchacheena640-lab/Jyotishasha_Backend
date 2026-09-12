@@ -96,6 +96,16 @@ def _cc_query(user_id, now):
 
 
 def _serialize_ab(row):
+    # N-FIX-2C: UserNotification.created_at is now genuinely
+    # timezone-aware (DateTime(timezone=True), migration 6d2ed1d602c1),
+    # so `.astimezone(timezone.utc)` here is now a SAFE normalization of
+    # an already-unambiguous instant -- before this fix, calling
+    # `.astimezone()` on created_at's own naive value would have silently
+    # (mis)interpreted it using this PROCESS's own OS-level local
+    # timezone (a third, independent timezone concept, never the DB
+    # session's own TimeZone GUC). No code change was needed here beyond
+    # the column itself becoming aware -- documented per N-FIX-2C's own
+    # audit requirement.
     return {
         "id": f"ab:{row.id}", "source": "AB", "title": row.title, "body": row.body,
         "data": row.data, "is_read": row.is_read,
@@ -128,6 +138,12 @@ def _serialize_cc(row):
 def list_unified_bell(user_id, now=None, limit=10):
     now = now or datetime.now(timezone.utc)
     cutoff = now - UNREAD_LOOKBACK
+    # N-FIX-2C: `cutoff` is aware and UserNotification.created_at is now
+    # ALSO aware (DateTime(timezone=True), migration 6d2ed1d602c1) --
+    # this unread-lookback comparison is now a correct aware-vs-aware
+    # comparison, closing the exact naive-vs-aware mismatch this task's
+    # own audit found here. No query-logic change was needed beyond the
+    # column itself becoming aware.
     ab_rows = _ab_query(user_id, now).filter(
         or_(UserNotification.is_read.is_(False), UserNotification.created_at > cutoff)
     ).order_by(UserNotification.created_at.desc()).limit(limit).all()
