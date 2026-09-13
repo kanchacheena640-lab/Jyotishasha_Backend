@@ -1,38 +1,19 @@
 name: Run Notification Cron
 
-# P4.9 (Campaign C, isolated job -- Option 2 fallback) -- Campaign C's
-# OWN dedicated schedule (.github/workflows/campaign_notifications_
-# worker.yml, P4/P4.6/P4.8) never produced a single real event="schedule"
-# run across 3 separate activation attempts and 11 due ticks total (2
-# cron expressions tried), while THIS workflow -- registered since
-# 2026-04-02, fired hundreds of times -- has never missed a tick.
-# Rather than keep guessing at what's specific to that newer workflow
-# file/id, Campaign C's automatic processing is added HERE as a
-# completely separate, isolated JOB (campaign-c-worker below), riding
-# on this proven-reliable workflow's own registration -- never merged
-# into run-cron's own business logic, never sharing env/state with it.
-#
-# The added 4th `schedule:` entry below is Campaign C's OWN cron slot,
-# independent of the 3 existing A/B slots -- every 15 minutes, offset
-# from the popular :00/:15/:30/:45 boundaries (same P4.8 reasoning).
-# campaign-c-worker's own `if:` restricts it to fire ONLY on that one
-# slot (github.event.schedule equality check, the exact same pattern
-# run-cron's own NOTIFICATION_SLOT already uses below to tell its 3
-# slots apart) -- it never runs on the 3 A/B slots, and run-cron never
-# runs on the Campaign C slot (NOTIFICATION_SLOT resolves to 'skip' for
-# it, matching every other unrecognized/manual case already handled).
-# The two jobs have no `needs:` link -- GitHub Actions runs them fully
-# independently: a run-cron failure can never skip/break campaign-c-
-# worker, and a campaign-c-worker failure can never skip/break/corrupt
-# run-cron. Manual/emergency Campaign C dispatch remains exclusively in
-# campaign_notifications_worker.yml (its own workflow_dispatch, incl.
-# the scoped --execution-id mode) -- not duplicated here, so there is
-# exactly one manual entry point.
-#
-# campaign_notifications_worker.yml's own `schedule:` trigger is
-# removed again (workflow_dispatch-only, matching its P4.7 shape) so
-# there is exactly one automatic Campaign C trigger active at a time,
-# never two schedules racing to claim the same backlog.
+# Campaign C Render cutover (retires the P4.9 GitHub-hosted campaign-c-
+# worker job that used to live here): Campaign C's automatic scheduling
+# now runs exclusively on Render Cron (jyotishasha-campaign-c-worker,
+# render.yaml, "7,22,37,52 * * * *" -- the identical cadence this file
+# used to carry), proven in production (recovered an overdue SCHEDULED
+# campaign, froze/attempted/accepted exactly 1 delivery, device
+# received it, tapped through to the correct destination, Campaign +
+# Execution both COMPLETED). This file is A/B-only again -- its own 3
+# schedule entries (morning/evening/dismiss_panchang) and run-cron job
+# below are completely unchanged by that cutover. Manual/emergency
+# Campaign C dispatch remains exclusively in
+# campaign_notifications_worker.yml's own workflow_dispatch (incl. the
+# scoped --execution-id mode) -- unchanged, still the one manual entry
+# point.
 
 on:
   schedule:
@@ -42,10 +23,6 @@ on:
     - cron: "30 11 * * *"
     # 🕒 6:00 PM IST -> evening slot
     - cron: "30 12 * * *"
-    # P4.9 -- Campaign C's own isolated slot, every 15 minutes, offset
-    # from the popular :00/:15/:30/:45 boundaries. Never touches/alters
-    # the 3 A/B slots above.
-    - cron: "7,22,37,52 * * * *"
 
   workflow_dispatch:
     inputs:
@@ -61,11 +38,12 @@ on:
 
 jobs:
   run-cron:
-    # P4.9 -- explicit exclusion of the new Campaign C-only slot: this
-    # job must keep firing for the 3 original A/B slots and for
-    # workflow_dispatch exactly as it always has, and must NEVER also
-    # fire (and call run_daily_event_job()) on the new 4th cron slot
-    # added below purely for campaign-c-worker.
+    # This `if:` predates the Campaign C Render cutover -- it originally
+    # excluded a 4th, Campaign-C-only schedule entry this file no longer
+    # has (see the file-level comment above). Left exactly as-is
+    # (byte-unchanged, unconditionally true now) rather than simplified,
+    # so this job's own trigger behavior for the 3 real A/B slots and
+    # workflow_dispatch is provably untouched by that cutover.
     if: github.event_name == 'workflow_dispatch' || github.event.schedule != '7,22,37,52 * * * *'
     runs-on: ubuntu-latest
 
@@ -94,8 +72,8 @@ jobs:
           # the real DATABASE_URL secret above; GitHub Actions runners
           # have neither RENDER=true nor a local-allowlisted DB, so
           # without this every run here unconditionally raised
-          # DatabaseSafetyError at boot. Same value campaign-c-worker
-          # (below) and campaign_notifications_worker.yml already set.
+          # DatabaseSafetyError at boot. Same value
+          # campaign_notifications_worker.yml already sets.
           ACTIVITY_EVENTS_ENVIRONMENT: production
           # GitHub Actions is the single source of truth for which slot is
           # running -- it knows which schedule entry fired (or which slot
@@ -119,50 +97,3 @@ jobs:
               else:
                   run_daily_event_job()
           EOF
-
-  campaign-c-worker:
-    # P4.9 -- isolated Campaign C job, riding on this workflow's own
-    # proven-reliable registration (see the file-level P4.9 comment
-    # above for the full root-cause context). Fires ONLY on its own
-    # dedicated cron slot -- never on the 3 A/B slots, never on this
-    # workflow's own workflow_dispatch (manual Campaign C dispatch
-    # stays exclusively in campaign_notifications_worker.yml). No
-    # `needs:` link to run-cron -- the two jobs are fully independent;
-    # neither's failure can skip, break, or corrupt the other.
-    if: github.event_name == 'schedule' && github.event.schedule == '7,22,37,52 * * * *'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-
-      - name: Run Campaign C Worker (bounded, production gates required)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
-          # Identical gate set to campaign_notifications_worker.yml's
-          # own job -- reused verbatim, not redesigned. See that file's
-          # own comments for the full fail-closed reasoning on each.
-          ACTIVITY_EVENTS_ENVIRONMENT: production
-          DEPLOYMENT_ENVIRONMENT: production
-          ADMIN_CAMPAIGN_SEND_ENABLED: ${{ vars.ADMIN_CAMPAIGN_SEND_ENABLED }}
-          ADMIN_CAMPAIGN_WORKER_AUTHORIZED: "true"
-          # Deliberately NEVER set here:
-          #   ADMIN_CAMPAIGN_TEST_TRANSPORT_ENABLED
-          #   ADMIN_CAMPAIGN_TEST_RECIPIENT_APP_USER_ID
-        run: |
-          python scripts/campaign_worker_runner.py \
-            --max-executions 20 \
-            --batch-limit 100 \
-            --max-runtime-seconds 240
