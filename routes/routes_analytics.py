@@ -3,10 +3,15 @@
 """
 Phase 6B.4 -- backend-only Admin analytics API. Same convention as
 routes/routes_metrics.py (Payment Hardening Phase 8): read-only
-`/admin/api/...` endpoints, no UI, gated by the exact same
-`admin_required` (JWT + ADMIN_USER_IDS allowlist,
-notifications/notification_routes.py) every other admin route in this
-codebase already reuses -- no new auth mechanism.
+`/admin/api/...` endpoints, no UI, gated by the same
+`admin_or_bridge_required` (routes/routes_app_version.py) every other
+Admin-BFF-connected route family (Users, Audiences, Notifications,
+Orders) already reuses -- no new auth mechanism. Accepts EITHER the
+existing admin JWT + ADMIN_USER_IDS allowlist (unchanged, still the
+fallback for every existing caller) OR the Next.js Admin BFF's
+server-side X-Admin-Bridge-Key header (A1, Admin Analytics Access
+Layer) -- this file previously used plain `admin_required` (JWT-only),
+which is why no browser-driven Admin BFF request could ever reach it.
 
 This file is THIN by design (Phase 6A/6B "Frozen Architecture"):
 
@@ -16,7 +21,7 @@ This file is THIN by design (Phase 6A/6B "Frozen Architecture"):
         -> this file (auth + parse + validate + serialize)
 
 Routes below do exactly five things and nothing else: authenticate
-(admin_required), parse start/end/platform from the query string,
+(admin_or_bridge_required), parse start/end/platform from the query string,
 construct a frozen AnalyticsWindow (which self-validates), call ONE
 AnalyticsService method, and serialize its frozen dataclass result to
 JSON via dataclasses.asdict() -- the exact same serialization idiom
@@ -48,7 +53,7 @@ from flask import Blueprint, jsonify, request
 from modules.activity_events.analytics_contract import InvalidPlatformFilter
 from modules.activity_events.analytics_models import AnalyticsWindow, InvalidAnalyticsWindow
 from modules.activity_events.analytics_service import AnalyticsService
-from notifications.notification_routes import admin_required
+from routes.routes_app_version import admin_or_bridge_required
 
 routes_analytics = Blueprint("routes_analytics", __name__)
 
@@ -115,36 +120,36 @@ def _run(get_metrics):
 
 
 @routes_analytics.route("/admin/api/analytics/overview", methods=["GET"])
-@admin_required
+@admin_or_bridge_required
 def analytics_overview():
     return _run(_service.get_overview)
 
 
 @routes_analytics.route("/admin/api/analytics/engagement", methods=["GET"])
-@admin_required
+@admin_or_bridge_required
 def analytics_engagement():
     return _run(_service.get_engagement)
 
 
 @routes_analytics.route("/admin/api/analytics/asknow", methods=["GET"])
-@admin_required
+@admin_or_bridge_required
 def analytics_asknow():
     return _run(_service.get_asknow_metrics)
 
 
 @routes_analytics.route("/admin/api/analytics/reports", methods=["GET"])
-@admin_required
+@admin_or_bridge_required
 def analytics_reports():
     return _run(_service.get_report_metrics)
 
 
 @routes_analytics.route("/admin/api/analytics/subscriptions", methods=["GET"])
-@admin_required
+@admin_or_bridge_required
 def analytics_subscriptions():
     return _run(_service.get_subscription_metrics)
 
 
 @routes_analytics.route("/admin/api/analytics/notifications", methods=["GET"])
-@admin_required
+@admin_or_bridge_required
 def analytics_notifications():
     return _run(_service.get_notification_metrics)

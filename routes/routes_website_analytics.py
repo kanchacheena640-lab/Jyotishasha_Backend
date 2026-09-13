@@ -4,10 +4,15 @@
 Task 12 -- backend-only, read-only Admin API exposing Task 11's
 WebsiteAnalyticsService. Same convention as routes/routes_analytics.py
 (Phase 6B.4) and routes/routes_metrics.py (Payment Hardening Phase 8):
-`/admin/api/...` prefix, gated by the exact same admin_required (JWT +
-ADMIN_USER_IDS allowlist, notifications/notification_routes.py) every
-other admin route in this codebase already reuses -- no new auth
-mechanism.
+`/admin/api/...` prefix, gated by the same admin_or_bridge_required
+(routes/routes_app_version.py) every other Admin-BFF-connected route
+family (Users, Audiences, Notifications, Orders) already reuses -- no
+new auth mechanism. Accepts EITHER the existing admin JWT +
+ADMIN_USER_IDS allowlist (unchanged, still the fallback for every
+existing caller) OR the Next.js Admin BFF's server-side
+X-Admin-Bridge-Key header (A1, Admin Analytics Access Layer) -- this
+file previously used plain `admin_required` (JWT-only), which is why
+no browser-driven Admin BFF request could ever reach it.
 
 Deliberately a SEPARATE blueprint/file from routes_analytics.py, not an
 extension of it -- that file serves the OLD, frozen Phase 6B cross-
@@ -26,7 +31,7 @@ This file is THIN by design, matching the exact same layering:
                      -> this file (auth + parse + validate + serialize)
 
 Routes below do exactly these things and nothing else: authenticate
-(admin_required), parse metric_id + period (+ start/end for custom) +
+(admin_or_bridge_required), parse metric_id + period (+ start/end for custom) +
 optional dimension/limit from the request, call ONE
 WebsiteAnalyticsService.get_metric() per requested metric, and
 serialize its frozen result dataclass into ONE stable JSON envelope.
@@ -70,7 +75,7 @@ from modules.activity_events.website_analytics_service import (
     WebsiteAnalyticsService,
     WebsiteMetricNotImplemented,
 )
-from notifications.notification_routes import admin_required
+from routes.routes_app_version import admin_or_bridge_required
 
 routes_website_analytics = Blueprint("routes_website_analytics", __name__)
 
@@ -288,7 +293,7 @@ def _fetch_one(metric_id: str, window: AnalyticsWindow, period_label: str, dimen
 
 
 @routes_website_analytics.route("/admin/api/website-analytics/metrics/<metric_id>", methods=["GET"])
-@admin_required
+@admin_or_bridge_required
 def website_analytics_metric(metric_id: str):
     try:
         window, period_label = _parse_period(request.args)
@@ -318,7 +323,7 @@ def website_analytics_metric(metric_id: str):
 
 
 @routes_website_analytics.route("/admin/api/website-analytics/metrics/batch", methods=["POST"])
-@admin_required
+@admin_or_bridge_required
 def website_analytics_metrics_batch():
     """Read-only despite the POST verb -- no state is ever created,
     updated, or deleted by this route (Task 12 S10). POST is used only
