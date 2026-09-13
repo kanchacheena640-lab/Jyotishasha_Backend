@@ -56,6 +56,25 @@ services:
       python scripts/campaign_worker_runner.py
       --max-executions 20 --batch-limit 100 --max-runtime-seconds 240
     envVars:
+      # Runtime-parity fix -- this repo's own runtime.txt (root, "python-
+      # 3.11.9") is the one authoritative, already-committed Python
+      # version declaration; the running jyotishasha-backend web service
+      # builds against it successfully today. This NEW cron service,
+      # having no prior Render build history of its own, was instead
+      # given Render's current newest-available Python (3.14) -- for
+      # which requirements.txt's own transitive pydantic_core==2.33.2
+      # (pulled in by openai, never pinned directly here) ships no
+      # prebuilt wheel, forcing a source build via Rust/maturin that then
+      # fails against Render's read-only Cargo registry path. Explicitly
+      # pinning PYTHON_VERSION here (Render's own documented, current
+      # env-var mechanism for this, read before any build step) forces
+      # this service onto the EXACT SAME interpreter the web service
+      # already uses -- restoring wheel availability for pydantic_core
+      # (and every other dependency) without touching a single package
+      # version. Deliberately NOT a new number -- copied verbatim from
+      # runtime.txt, never guessed.
+      - key: PYTHON_VERSION
+        value: "3.11.9"
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET_KEY
