@@ -7,3 +7,68 @@ services:
         libcairo2 libpango-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info \
         && pip install -r requirements.txt
     startCommand: gunicorn app:app
+
+  # Render Cron Migration, Step 1 (Campaign C only) -- moves the ONE
+  # workflow that has already demonstrably failed to fire in production
+  # (GitHub Actions dropped every scheduled tick of notifications.yml's
+  # campaign-c-worker job for 75+ minutes spanning campaign
+  # ea964389-c9df-42c9-8f07-d7dafff8c50f's own scheduled send) off
+  # GitHub cron and onto Render's own native scheduler.
+  #
+  # Deliberately its OWN, separate `- type: cron` entry -- the existing
+  # `jyotishasha-backend` web service block above is completely
+  # untouched (same name, same config), so a Blueprint sync of this
+  # file only ADDS this new resource; it never alters or recreates the
+  # web service. Render matches/manages services by `name:`, so an
+  # unrelated new list entry cannot affect an existing one.
+  #
+  # Reuses scripts/campaign_worker_runner.py UNCHANGED -- the exact
+  # same entrypoint, arguments, and 4-gate kill switch (DEPLOYMENT_
+  # ENVIRONMENT / ADMIN_CAMPAIGN_SEND_ENABLED / ADMIN_CAMPAIGN_WORKER_
+  # AUTHORIZED / real FCM credentials) already proven safe in
+  # notifications.yml's own campaign-c-worker job -- no second Campaign
+  # C implementation, no weakened leasing/expiry/idempotency (none of
+  # that lives here; it is entirely inside campaign_scheduler.py/
+  # campaign_worker.py, both unmodified by this change).
+  #
+  # buildCommand deliberately mirrors the GitHub Actions job's own
+  # proven-working install step (`pip install -r requirements.txt`
+  # alone, no apt-get) -- that exact command chain already imports
+  # `app.py`'s full ~40-blueprint chain (including this script's own
+  # `factory.create_app()` call) successfully in a bare Ubuntu runner
+  # today; matching it here rather than copying the web service's own
+  # apt-get line (added for reasons unrelated to this entrypoint) keeps
+  # this change minimal and exactly as validated.
+  #
+  # No envVars carry a literal secret value in this file -- every
+  # credential-shaped var below uses `sync: false` (Render prompts for
+  # it once in the Dashboard, per-service; never written to git). The
+  # four kill-switch/config values are plain, non-secret configuration
+  # (the exact same trust classification notifications.yml's own
+  # workflow already gives them via GitHub's `vars:`/plain env,
+  # distinct from its `secrets:` block) and are safe as literal values.
+  - type: cron
+    name: jyotishasha-campaign-c-worker
+    env: python
+    schedule: "7,22,37,52 * * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: >-
+      python scripts/campaign_worker_runner.py
+      --max-executions 20 --batch-limit 100 --max-runtime-seconds 240
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: FCM_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: DEPLOYMENT_ENVIRONMENT
+        value: production
+      - key: ADMIN_CAMPAIGN_SEND_ENABLED
+        value: "true"
+      - key: ADMIN_CAMPAIGN_WORKER_AUTHORIZED
+        value: "true"
+      - key: ACTIVITY_EVENTS_ENVIRONMENT
+        value: production
