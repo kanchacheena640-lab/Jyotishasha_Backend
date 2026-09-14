@@ -50,6 +50,22 @@ from typing import Any, Dict, Optional
 
 from extensions import db
 from models import Order
+from modules.payments.report_product_registry import ReportProduct
+
+
+class OrderValidationError(ValueError):
+    """
+    Paid Report Platform v1.0 -- R3. Raised by create_pending_order()
+    for a missing/unknown/inactive report_slug, or a missing required
+    report input, ALWAYS before any Order is added to the session --
+    see create_pending_order()'s own docstring: validation runs
+    entirely before db.session.add(), so a rejection here never leaves
+    a partial row and never needs a rollback (nothing was ever
+    staged). A ValueError subclass (not a bare ValueError) so a future
+    caller can distinguish "this payload was invalid" from any other
+    ValueError, while every existing catch-ValueError call site keeps
+    working unchanged.
+    """
 
 
 class ReportDispatchError(Exception):
@@ -67,6 +83,70 @@ class ReportDispatchError(Exception):
         super().__init__(f"Order {order_id} was created, but dispatch failed: {original_exception}")
 
 
+# ---------------------------------------------------------------------
+# Paid Report Platform v1.0 -- R3. The exact, currently-proven required-
+# input sets for each generator -- derived directly from the real, live
+# code that already enforces or depends on them, never invented:
+#
+#   - jyotishasha-frontend/components/reports/ReportCheckout.tsx::
+#     handleSubmit() (the live purchase gate for every standard-report
+#     product) rejects the purchase attempt unless name/email/phone/
+#     dob/tob/pob/latitude/longitude are all present.
+#   - tasks.py::_generate_and_send_report_core() bracket-accesses
+#     order["name"]/["dob"]/["tob"]/["pob"]/["email"] (crashes if
+#     missing); latitude/longitude have a silent Delhi fallback there,
+#     but the live customer-facing form already requires real values --
+#     this preserves that stricter, existing customer contract rather
+#     than the looser one a crash-avoidance-only reading of tasks.py
+#     would suggest.
+# ---------------------------------------------------------------------
+STANDARD_REQUIRED_FIELDS = (
+    "name", "email", "phone", "dob", "tob", "pob", "latitude", "longitude",
+)
+
+# jyotishasha-frontend/app/[locale]/love/report/relationship_future_report/
+# RelationshipFutureReportForm.tsx's own entire component state has NO
+# phone field for either person at all -- confirmed absent, not merely
+# optional -- so phone is deliberately NOT required here, unlike every
+# standard report. Boy-side fields mirror that live form's own required
+# inputs (name/email/dob/tob/pob/latitude/longitude) exactly.
+#
+# modules/love/love_data_collector.py::collect_love_report_data() hard-
+# raises LoveCollectorError for a missing user name/dob/tob or lat/lng;
+# modules/love/love_premium_task.py itself hard-raises RuntimeError for
+# a missing/falsy partner_payload. Partner-side pob is required here to
+# match that same live form's own contract (it collects pob for both
+# people identically) even though collect_love_report_data()'s own
+# narrower internal check only hard-requires partner name+dob --
+# under-requiring here would let an Order through that the live form
+# itself would never have allowed to reach payment in the first place.
+LOVE_PREMIUM_PRODUCT_SLUG = "relationship_future_report"
+LOVE_PREMIUM_GENERATOR = "love_premium_v1"
+LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS = (
+    "name", "email", "dob", "tob", "pob", "latitude", "longitude",
+)
+LOVE_PREMIUM_PARTNER_REQUIRED_FIELDS = (
+    "name", "dob", "tob", "pob", "latitude", "longitude",
+)
+
+
+def _has_value(value: Any) -> bool:
+    """True unless `value` is None or an empty/whitespace-only string --
+    NEVER treats a legitimate falsy-but-real value (e.g. latitude=0 at
+    the equator, longitude=0 at the prime meridian, both real, valid
+    coordinates) as missing. A naive `if not value` would incorrectly
+    reject exactly those two real cases."""
+    if value is None:
+        return False
+    if isinstance(value, str) and not value.strip():
+        return False
+    return True
+
+
+def _missing_fields(payload: Dict[str, Any], required_fields) -> list:
+    return [f for f in required_fields if not _has_value(payload.get(f) if isinstance(payload, dict) else None)]
+
+
 @dataclass
 class CreatedReportOrder:
     order_id: int
@@ -77,6 +157,154 @@ class CreatedReportOrder:
 
 
 class OrderService:
+    # -------------------------------------------------------------
+    # Paid Report Platform v1.0 -- R3 (Pre-Payment Order Service).
+    # create_pending_order() and mark_paid_and_dispatch() below are
+    # NEW and are not called from anywhere yet (no route, no
+    # PaymentService wiring) -- create_paid_report_order() and
+    # redispatch_report_generation() further down are the EXISTING,
+    # completely unmodified, still-live methods every real payment
+    # goes through today.
+    # -------------------------------------------------------------
+    def create_pending_order(self, payload: Dict[str, Any]) -> Order:
+        """
+        Paid Report Platform v1.0 -- R3. Persists a COMPLETE report
+        Order BEFORE any payment is attempted (the future R6 caller:
+        the order-creation route, before it ever calls Razorpay).
+
+        Non-negotiable rule this method exists to enforce: no
+        incomplete paid-report Order may be created. Every required
+        input for the resolved product's own generator is validated
+        BEFORE this method ever calls db.session.add() -- a rejection
+        (OrderValidationError) therefore never leaves a partial row
+        and never requires a rollback, since nothing was ever staged
+        in the session in the first place.
+
+        report_slug is resolved through the ReportProduct registry
+        (R2) -- an unknown or inactive product is rejected before any
+        other validation runs. The value ultimately written to
+        Order.product is ALWAYS the registry's own canonical
+        report_slug (normalized: stripped + lowercased, the exact same
+        normalization app.py::create_razorpay_order() already applies
+        to a product slug today) -- never whatever raw casing/
+        whitespace the caller happened to send, and never something a
+        later step (payment data, a retry, anything else) can change
+        after this call returns.
+
+        Required fields are validated directly against the two real,
+        already-proven sets this module now documents (STANDARD_
+        REQUIRED_FIELDS / LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS /
+        LOVE_PREMIUM_PARTNER_REQUIRED_FIELDS) -- selected by the
+        resolved product's own `generator` column, never by re-deriving
+        or guessing from the payload itself. This deliberately does
+        NOT read/enforce ReportProduct.required_input_schema (still
+        NULL for every product as of R2) -- direct validation against
+        proven existing requirements is what this phase asks for; a
+        schema-driven version is a future phase, once that column has
+        a real, defined format.
+
+        No field is normalized beyond the report_slug lookup itself --
+        name/email/phone/dob/tob/pob/latitude/longitude/partner are
+        persisted exactly as received, matching create_paid_report_
+        order()'s own existing, unmodified behavior (verbatim storage,
+        no reformatting) -- DOB/TOB/POB semantics are never altered.
+
+        Raises OrderValidationError (never creates a row) for: a
+        missing report_slug/product, an unknown product, an inactive
+        product, or any missing required field for that product's
+        generator.
+        """
+        raw_slug = payload.get("report_slug") or payload.get("product")
+        if not _has_value(raw_slug) or not isinstance(raw_slug, str):
+            raise OrderValidationError("report_slug (or product) is required.")
+        report_slug = raw_slug.strip().lower()
+        if not report_slug:
+            raise OrderValidationError("report_slug (or product) is required.")
+
+        product = ReportProduct.query.get(report_slug)
+        if product is None:
+            raise OrderValidationError(f"Unknown report product: {report_slug!r}")
+        if not product.active:
+            raise OrderValidationError(f"Report product is not currently available: {report_slug!r}")
+
+        partner_payload: Optional[Dict[str, Any]] = None
+
+        if product.generator == LOVE_PREMIUM_GENERATOR:
+            missing = _missing_fields(payload, LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS)
+            if missing:
+                raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
+
+            partner_payload = payload.get("partner")
+            if not isinstance(partner_payload, dict) or not partner_payload:
+                raise OrderValidationError("partner details are required for this report.")
+            partner_missing = _missing_fields(partner_payload, LOVE_PREMIUM_PARTNER_REQUIRED_FIELDS)
+            if partner_missing:
+                raise OrderValidationError(
+                    f"Missing required partner field(s): {', '.join('partner.' + f for f in partner_missing)}"
+                )
+        else:
+            missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
+            if missing:
+                raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
+            # Not required for a standard report, but stored verbatim
+            # if a caller happens to send one -- never invented, never
+            # rejected either way. Matches create_paid_report_order()'s
+            # own existing partner_payload handling exactly.
+            candidate_partner = payload.get("partner")
+            if isinstance(candidate_partner, dict):
+                partner_payload = candidate_partner
+
+        order = Order(
+            name=payload.get("name"),
+            email=payload.get("email"),
+            phone=payload.get("phone"),
+            product=report_slug,
+            dob=payload.get("dob"),
+            tob=payload.get("tob"),
+            pob=payload.get("pob"),
+            language=payload.get("language", "en"),
+            status="PENDING",
+            payment_status="CREATED",
+            report_stage="Pending",
+            latitude=payload.get("latitude"),
+            longitude=payload.get("longitude"),
+            partner_payload=partner_payload,
+            # Paid Report Platform v1.0 -- R4. Immutable price snapshot,
+            # in paise, from the registry's OWN rupee price at the
+            # moment this Order is created -- never recomputed or
+            # trusted from any later payment payload. See models.py's
+            # own column docstring / migration 0518660f81fc.
+            amount_paise=product.price * 100,
+        )
+        db.session.add(order)
+        db.session.commit()
+        return order
+
+    def mark_paid_and_dispatch(self, order_id: int):
+        """
+        FUTURE BOUNDARY -- Paid Report Platform v1.0 R4 (Payment
+        Finalization Service). Deliberately NOT implemented in R3.
+
+        This method name/signature is reserved so R4 has a stable,
+        already-agreed place to put "flip an existing pending Order to
+        PAID and dispatch generation exactly once" -- but its actual
+        body requires the atomic conditional-UPDATE semantics
+        (PAYMENT_PENDING -> PAID, then Pending -> Queued, each its own
+        compare-and-swap) that R4's own payment-finalization design
+        owns. Implementing it now would mean guessing that design
+        rather than being told it -- R3's own instructions are
+        explicit that this must not happen.
+
+        Raises NotImplementedError unconditionally. Not called from
+        anywhere in R3 (no route, no PaymentService wiring) -- this
+        method existing does not change any current live payment
+        behavior in any way.
+        """
+        raise NotImplementedError(
+            "OrderService.mark_paid_and_dispatch() is a reserved R4 (Payment "
+            "Finalization) boundary -- not implemented until that phase."
+        )
+
     def create_paid_report_order(self, order_payload: Dict[str, Any]) -> CreatedReportOrder:
         """
         order_payload carries exactly the fields app.py's /webhook

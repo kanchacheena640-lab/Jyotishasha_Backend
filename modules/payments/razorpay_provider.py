@@ -149,6 +149,34 @@ class RazorpayProvider(PaymentProvider):
         return extract_campaign_context_from_notes((order or {}).get("notes"))
 
     @staticmethod
+    def fetch_payment(payment_id: str):
+        """
+        Paid Report Platform v1.0 -- R4. Independent, server-side
+        source of truth for a payment's own `order_id` and captured
+        `amount` (paise) -- Razorpay's Payment API, not a value trusted
+        from any webhook payload or browser callback field (a browser
+        callback never carries amount at all; a webhook payload's own
+        entity.amount, while itself signed, is still one extra hop away
+        from Razorpay's own live record). Used by
+        PaymentFinalizationService to verify a payment genuinely
+        belongs to the resolved Order's razorpay_order_id and that its
+        captured amount exactly equals Order.amount_paise, BEFORE any
+        PAID transition.
+
+        Mirrors fetch_order_campaign_context()'s own defensive
+        contract: never raises, returns None for ANY failure (network,
+        auth, unknown payment_id) -- the caller must treat None as
+        "cannot independently verify," never as "verified anyway" or
+        "amount is zero."
+        """
+        if not payment_id:
+            return None
+        try:
+            return razorpay_client.payment.fetch(payment_id)
+        except Exception:
+            return None
+
+    @staticmethod
     def verify_webhook_signature(raw_body: str, signature: str) -> bool:
         """
         Authenticates a server-to-server webhook delivery: HMAC-SHA256

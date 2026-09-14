@@ -52,6 +52,52 @@ class Order(db.Model):
     # "give an operator a clue," not "reproduce the full traceback."
     email_error = db.Column(db.String(500), nullable=True)
 
+    # Paid Report Platform v1.0 -- R1 (Schema Foundation). Purely
+    # additive; no existing column above is touched, and nothing yet
+    # reads or writes these three columns (that begins at R3+ -- see
+    # migrations/versions/7064abce6f23_r1_add_report_products_table_
+    # and_order_.py for the full rationale, including how historical
+    # rows were backfilled). `product` remains the physical, canonical
+    # report_slug column for backward compatibility -- no new
+    # report_slug column is introduced here.
+    #
+    # razorpay_order_id: the future reconciliation key an Order will be
+    # looked up by (once R6 creates the Order BEFORE calling Razorpay,
+    # instead of today's after-the-fact OrderService.
+    # create_paid_report_order()). Unique when set -- one Order maps to
+    # at most one Razorpay order. NULL for every historical row (no
+    # existing code path has ever recorded this value anywhere).
+    razorpay_order_id = db.Column(db.String(64), nullable=True)
+    # Denormalized for observability/admin debugging once populated;
+    # modules/models_processed_payments.py::ProcessedPayment remains the
+    # actual idempotency ledger keyed on this value -- this column is a
+    # convenience mirror, never a second source of truth.
+    razorpay_payment_id = db.Column(db.String(64), nullable=True)
+    # CREATED / PAYMENT_PENDING / PAID / PAYMENT_FAILED -- distinct from
+    # the legacy `status` column above, which is left completely
+    # untouched (still set to "PAID" by the current, unmodified
+    # OrderService) for backward compatibility with every existing
+    # reader of `.status`. Historical rows were backfilled to "PAID"
+    # wherever status == "PAID" (see the migration's own docstring for
+    # why this is safe); the "CREATED" default only applies going
+    # forward, and until R3-R6 wire the new pre-payment order-creation
+    # flow, every NEW Order the current, unmodified code creates will
+    # still show payment_status="CREATED" alongside status="PAID" -- a
+    # known, deliberate, temporary inconsistency for the R1-R6
+    # transition window, not a bug.
+    payment_status = db.Column(db.String(20), nullable=False, default="CREATED")
+
+    # Paid Report Platform v1.0 -- R4. Immutable expected-price snapshot
+    # in paise (never a float -- see migrations/versions/0518660f81fc's
+    # own docstring for why no float/rupee representation is used).
+    # NULL for every historical, pre-R4 Order (no safe backfill exists);
+    # always populated by OrderService.create_pending_order() (R3,
+    # updated in R4) as ReportProduct.price * 100 for every NEW-platform
+    # Order. Once set, no payment callback may ever change it --
+    # PaymentFinalizationService (R4) only ever reads it for comparison
+    # against a payment's own captured amount.
+    amount_paise = db.Column(db.Integer, nullable=True)
+
 class AstroEvent(db.Model):
     __tablename__ = "astro_events"
 
