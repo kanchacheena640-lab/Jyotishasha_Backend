@@ -45,7 +45,9 @@ additive:
 from __future__ import annotations
 
 import threading
+import re
 from dataclasses import dataclass
+from datetime import date
 from typing import Any, Dict, Optional
 
 from extensions import db
@@ -147,6 +149,16 @@ def _missing_fields(payload: Dict[str, Any], required_fields) -> list:
     return [f for f in required_fields if not _has_value(payload.get(f) if isinstance(payload, dict) else None)]
 
 
+def _validate_dob(value: Any, field: str) -> None:
+    """Require a real YYYY-MM-DD calendar date; preserve the original string."""
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value):
+        raise OrderValidationError(f"{field} must be a valid YYYY-MM-DD calendar date.")
+    try:
+        date.fromisoformat(value)
+    except ValueError as exc:
+        raise OrderValidationError(f"{field} must be a valid YYYY-MM-DD calendar date.") from exc
+
+
 @dataclass
 class CreatedReportOrder:
     order_id: int
@@ -233,6 +245,7 @@ class OrderService:
             missing = _missing_fields(payload, LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS)
             if missing:
                 raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
+            _validate_dob(payload.get("dob"), "dob")
 
             partner_payload = payload.get("partner")
             if not isinstance(partner_payload, dict) or not partner_payload:
@@ -242,10 +255,12 @@ class OrderService:
                 raise OrderValidationError(
                     f"Missing required partner field(s): {', '.join('partner.' + f for f in partner_missing)}"
                 )
+            _validate_dob(partner_payload.get("dob"), "partner.dob")
         else:
             missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
             if missing:
                 raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
+            _validate_dob(payload.get("dob"), "dob")
             # Not required for a standard report, but stored verbatim
             # if a caller happens to send one -- never invented, never
             # rejected either way. Matches create_paid_report_order()'s
@@ -253,6 +268,8 @@ class OrderService:
             candidate_partner = payload.get("partner")
             if isinstance(candidate_partner, dict):
                 partner_payload = candidate_partner
+                if "dob" in partner_payload:
+                    _validate_dob(partner_payload.get("dob"), "partner.dob")
 
         order = Order(
             name=payload.get("name"),
@@ -318,6 +335,15 @@ class OrderService:
 
         if not all([name, email, product]):
             raise ValueError("name, email, and product are required to create a report order.")
+
+        _validate_dob(order_payload.get("dob"), "dob")
+        partner = order_payload.get("partner")
+        if product == LOVE_PREMIUM_PRODUCT_SLUG:
+            if not isinstance(partner, dict):
+                raise OrderValidationError("partner details are required for this report.")
+            _validate_dob(partner.get("dob"), "partner.dob")
+        elif isinstance(partner, dict) and "dob" in partner:
+            _validate_dob(partner.get("dob"), "partner.dob")
 
         order = Order(
             name=name,
