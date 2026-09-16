@@ -127,6 +127,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 from extensions import db
@@ -183,6 +184,45 @@ class ReportGenerationDispatcher:
         # report_slug comes ONLY from the already-persisted Order.product
         # -- never from any argument this method could otherwise accept.
         # ---------------------------------------------------------
+        invalid = self._validate_product(order)
+        if invalid is not None:
+            return invalid
+
+        # ---------------------------------------------------------
+        # The one atomic ownership transition -- ALL preconditions
+        # ---------------------------------------------------------
+        rows_updated = Order.query.filter_by(
+            id=order.id, payment_status="PAID", status="PAID", report_stage="Pending",
+        ).update(
+            {"report_stage": "Queued", "processing_started_at": datetime.utcnow()},
+            synchronize_session=False,
+        )
+        db.session.commit()
+
+        if rows_updated != 1:
+            return self._classify_non_win(order.id)
+
+        return self._handoff(order.id)
+
+    def dispatch_claimed(self, order_id: int) -> ReportGenerationDispatchResult:
+        """Dispatch an existing PAID Order already atomically claimed as Processing."""
+        order = Order.query.get(order_id)
+        if order is None:
+            return ReportGenerationDispatchResult(
+                status=ReportGenerationDispatchStatus.ORDER_NOT_FOUND, order_id=order_id,
+            )
+        invalid = self._validate_product(order)
+        if invalid is not None:
+            self._mark_claim_failed(order_id)
+            return invalid
+        if order.payment_status != "PAID" or order.status != "PAID" or order.report_stage != "Processing":
+            return ReportGenerationDispatchResult(
+                status=ReportGenerationDispatchStatus.INVALID_STATE, order_id=order_id,
+                message="Claimed dispatch requires a PAID Order in Processing state.",
+            )
+        return self._handoff(order_id)
+
+    def _validate_product(self, order: Order) -> Optional[ReportGenerationDispatchResult]:
         product = ReportProduct.query.get(order.product)
         if product is None:
             return ReportGenerationDispatchResult(
@@ -199,46 +239,35 @@ class ReportGenerationDispatcher:
                 status=ReportGenerationDispatchStatus.UNKNOWN_GENERATOR, order_id=order.id,
                 message=f"Report product {order.product!r} has an unrecognized generator: {product.generator!r}.",
             )
+        return None
 
-        # ---------------------------------------------------------
-        # The one atomic ownership transition -- ALL preconditions
-        # (Section C) folded into ONE conditional UPDATE's WHERE
-        # clause, so only the caller whose UPDATE actually matches a
-        # row may proceed to dispatch. Mirrors PaymentService.
-        # _try_acquire_resume_ownership()'s own proven idiom.
-        # ---------------------------------------------------------
-        rows_updated = Order.query.filter_by(
-            id=order.id, payment_status="PAID", status="PAID", report_stage="Pending",
-        ).update({"report_stage": "Queued"}, synchronize_session=False)
-        db.session.commit()
-
-        if rows_updated != 1:
-            return self._classify_non_win(order.id)
-
-        # ---------------------------------------------------------
-        # Won ownership -- hand off to the existing, unmodified
-        # generation entry point. See module docstring for why both
-        # KNOWN_GENERATORS values reach the SAME call.
-        # ---------------------------------------------------------
+    def _handoff(self, order_id: int) -> ReportGenerationDispatchResult:
         try:
-            task_id = self._start_generation(order.id)
+            task_id = self._start_generation(order_id)
         except Exception as exc:
             # Section D -- do not leave report_stage stuck at Queued
             # with no signal. Reuses the EXISTING "Failed" vocabulary
             # (see module docstring's DISPATCH-FAILURE LIMITATION) --
             # never automatically re-queued by this dispatcher.
-            Order.query.filter_by(id=order.id).update(
+            Order.query.filter_by(id=order_id).update(
                 {"report_stage": "Failed"}, synchronize_session=False,
             )
             db.session.commit()
             return ReportGenerationDispatchResult(
-                status=ReportGenerationDispatchStatus.DISPATCH_FAILED, order_id=order.id,
+                status=ReportGenerationDispatchStatus.DISPATCH_FAILED, order_id=order_id,
                 message=f"Ownership was claimed but the dispatch call itself failed: {exc}",
             )
 
         return ReportGenerationDispatchResult(
-            status=ReportGenerationDispatchStatus.DISPATCHED, order_id=order.id, task_id=task_id,
+            status=ReportGenerationDispatchStatus.DISPATCHED, order_id=order_id, task_id=task_id,
         )
+
+    @staticmethod
+    def _mark_claim_failed(order_id: int) -> None:
+        Order.query.filter_by(id=order_id, report_stage="Processing").update(
+            {"report_stage": "Failed"}, synchronize_session=False,
+        )
+        db.session.commit()
 
     # ------------------------------------------------------------
     def _classify_non_win(self, order_id: int) -> ReportGenerationDispatchResult:

@@ -16,15 +16,11 @@ other caller.
   B. PUT order: same auth matrix; correct-credential PUTs actually
      persist dob/tob/pob/latitude/longitude; a rejected PUT changes
      nothing; 404 on a nonexistent order_id through either credential.
-  C. POST resend: same auth matrix; tasks.generate_and_send_report is
-     mocked (this repo's local dev checkpoint runs USE_CELERY=False, so
-     generate_and_send_report has no .delay() at all -- see
-     test_report_email_status.py's own note on this pre-existing,
-     out-of-scope quirk; mocking sidesteps it and, either way, proves
-     ONLY the auth gate + report_stage="Regenerating" side effect, never
-     a real report/email send) -- correct-credential resend calls
-     .delay(order_id) exactly once and sets report_stage; a rejected
-     resend calls it zero times and changes nothing.
+  C. POST resend: same auth matrix; ReconciliationService is mocked so
+     this remains an auth/route-contract test and never starts a real
+     report. Correct credentials call regenerate(order_id); rejected
+     requests never cross that boundary, and the route itself invents
+     no report stage.
 
 LOCAL ONLY -- connects exclusively to jyotishasha_local, refuses to run
 against anything else. No real Celery/report/email call is ever made.
@@ -32,6 +28,7 @@ against anything else. No real Celery/report/email call is ever made.
 
 import os
 import sys
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -90,6 +87,7 @@ def make_order(**overrides):
         tob="10:00",
         pob="Delhi",
         status="PAID",
+        payment_status="PAID",
         language="en",
         report_stage="Ready",
     )
@@ -199,46 +197,55 @@ def main():
             check("B: nonexistent order_id through bridge -> 404", resp.status_code == 404)
 
             # ==========================================================
-            print("\n=== C: POST /admin/api/resend/<id> auth matrix (Celery task mocked) ===")
+            print("\n=== C: POST /admin/api/resend/<id> auth matrix (reconciliation mocked) ===")
             # ==========================================================
-            with patch("tasks.generate_and_send_report") as mock_task:
-                mock_task.delay = MagicMock()
+            with patch("routes.admin_orders.ReconciliationService") as mock_service_cls:
+                mock_service = mock_service_cls.return_value
+                success = SimpleNamespace(
+                    resumed=True, task_id=None,
+                    decision=SimpleNamespace(report_stage="Ready", reason="claimed"),
+                )
+                mock_service.regenerate.return_value = success
 
                 order.report_stage = "Ready"
                 db.session.commit()
 
                 resp = client.post(f"/admin/api/resend/{order.id}")
                 check("C: no auth at all -> 401", resp.status_code == 401)
-                check("C: rejected resend (no auth) never called the task", mock_task.delay.call_count == 0)
+                check("C: rejected resend (no auth) never called reconciliation", mock_service.regenerate.call_count == 0)
                 db.session.refresh(order)
                 check("C: rejected resend (no auth) changed nothing", order.report_stage == "Ready")
 
                 resp = client.post(f"/admin/api/resend/{order.id}", headers={"Authorization": f"Bearer {token_non_admin}"})
                 check("C: authenticated non-admin -> 403", resp.status_code == 403)
-                check("C: rejected resend (non-admin) never called the task", mock_task.delay.call_count == 0)
+                check("C: rejected resend (non-admin) never called reconciliation", mock_service.regenerate.call_count == 0)
 
                 resp = client.post(f"/admin/api/resend/{order.id}", headers={"Authorization": f"Bearer {token_admin}"})
                 check("C: admin JWT -> 200 (unchanged regression path)", resp.status_code == 200)
-                check("C: admin JWT resend called the task exactly once", mock_task.delay.call_count == 1)
-                mock_task.delay.assert_called_with(order.id)
+                check("C: admin JWT resend called reconciliation exactly once", mock_service.regenerate.call_count == 1)
+                mock_service.regenerate.assert_called_with(order.id)
                 db.session.refresh(order)
-                check("C: admin JWT resend set report_stage=Regenerating", order.report_stage == "Regenerating")
+                check("C: route itself does not invent a report stage", order.report_stage == "Ready")
 
-                mock_task.delay.reset_mock()
+                mock_service.regenerate.reset_mock()
                 order.report_stage = "Ready"
                 db.session.commit()
 
                 resp = client.post(f"/admin/api/resend/{order.id}", headers={"X-Admin-Bridge-Key": "wrong-key"})
                 check("C: wrong bridge key -> 401", resp.status_code == 401)
-                check("C: rejected resend (wrong bridge key) never called the task", mock_task.delay.call_count == 0)
+                check("C: rejected resend (wrong bridge key) never called reconciliation", mock_service.regenerate.call_count == 0)
 
                 resp = client.post(f"/admin/api/resend/{order.id}", headers={"X-Admin-Bridge-Key": BRIDGE_SECRET})
                 check("C: correct bridge key, no JWT at all -> 200", resp.status_code == 200)
-                check("C: bridge-path resend called the task exactly once", mock_task.delay.call_count == 1)
-                mock_task.delay.assert_called_with(order.id)
+                check("C: bridge-path resend called reconciliation exactly once", mock_service.regenerate.call_count == 1)
+                mock_service.regenerate.assert_called_with(order.id)
                 db.session.refresh(order)
-                check("C: bridge-path resend set report_stage=Regenerating", order.report_stage == "Regenerating")
+                check("C: bridge route itself does not invent a report stage", order.report_stage == "Ready")
 
+                mock_service.regenerate.return_value = SimpleNamespace(
+                    resumed=False, task_id=None,
+                    decision=SimpleNamespace(report_stage=None, reason="No Order exists"),
+                )
                 resp = client.post("/admin/api/resend/999999999", headers={"X-Admin-Bridge-Key": BRIDGE_SECRET})
                 check("C: nonexistent order_id through bridge -> 404", resp.status_code == 404)
 

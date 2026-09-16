@@ -12,7 +12,7 @@ cannot reach at all: an interrupted deployment, a worker crash, or an
 infrastructure outage where no client ever resubmits the original
 webhook to trigger PaymentService's own retry logic.
 
-Two operations:
+Core operations:
     inspect(order_id) -> ReconciliationDecision
         Purely read-only. Classifies one Order's report_stage into one
         of five actions (see reconciliation_models.ReconciliationAction).
@@ -20,15 +20,15 @@ Two operations:
 
     resume(order_id) -> ReconciliationResumeResult
         Only actually resumes when inspect() says RESUME_ALLOWED.
-        Never creates a new Order and never re-runs payment
-        verification -- it calls OrderService.redispatch_report_
-        generation(order_id), the exact same already-public method
-        PaymentService's own RESUME path (Phase 5/6) calls, against
-        the SAME existing Order row. "Existing payment" is reused
-        implicitly: an Order only ever reaches "Failed" after a real
-        payment was verified and claimed in Phase 3's ProcessedPayment
-        ledger, and resume() never touches that ledger -- it only acts
-        on the Order's report_stage.
+        Never creates a new Order and never re-runs payment verification.
+        It atomically claims the existing paid Order, then uses
+        ReportGenerationDispatcher's registry-validated, mode-aware
+        handoff.
+
+    regenerate(order_id) -> ReconciliationResumeResult
+        Admin-only explicit regeneration. A completed PAID Order is
+        atomically claimed Ready -> Processing; all other stages use the
+        same resume eligibility rules above.
 
 Concurrency safety (reusing Payment Hardening Phase 6.2's proven
 mechanism, not a new one): before dispatching, resume() performs the
@@ -125,7 +125,9 @@ from typing import Optional
 
 from extensions import db
 from models import Order
-from modules.payments.order_service import OrderService
+from modules.payments.report_generation_dispatcher import (
+    ReportGenerationDispatcher, ReportGenerationDispatchStatus,
+)
 from modules.payments.reconciliation_models import (
     ReconciliationAction,
     ReconciliationDecision,
@@ -143,9 +145,10 @@ class ReconciliationService:
     # the one stage whose legitimate duration can approach an
     # abandonment threshold on its own. See module docstring.
     ABANDONED_PROCESSING_THRESHOLD_SECONDS = 40 * 60
+    ABANDONED_QUEUED_THRESHOLD_SECONDS = 5 * 60
 
-    def __init__(self, order_service: Optional[OrderService] = None):
-        self._order_service = order_service or OrderService()
+    def __init__(self, dispatcher: Optional[ReportGenerationDispatcher] = None):
+        self._dispatcher = dispatcher or ReportGenerationDispatcher()
 
     def inspect(self, order_id: int) -> ReconciliationDecision:
         order = Order.query.get(order_id)
@@ -155,6 +158,14 @@ class ReconciliationService:
                 report_stage=None,
                 action=ReconciliationAction.INVALID_STATE,
                 reason=f"No Order exists with id={order_id}.",
+            )
+
+        if order.payment_status != "PAID" or order.status != "PAID":
+            return ReconciliationDecision(
+                order_id=order_id,
+                report_stage=order.report_stage,
+                action=ReconciliationAction.INVALID_STATE,
+                reason="Only an existing PAID report Order may be recovered.",
             )
 
         if order.report_stage == "Pending":
@@ -167,6 +178,25 @@ class ReconciliationService:
                     "been dispatched yet; this Order is not stuck, no "
                     "action needed."
                 ),
+            )
+
+        if order.report_stage == "Queued":
+            age = self._queued_age_seconds(order)
+            if age is not None and age >= self.ABANDONED_QUEUED_THRESHOLD_SECONDS:
+                return ReconciliationDecision(
+                    order_id=order_id,
+                    report_stage="Queued",
+                    action=ReconciliationAction.RESUME_ALLOWED,
+                    reason=(
+                        f"report_stage has been Queued for {int(age)}s without "
+                        "generation starting -- presumed abandoned and safe to resume."
+                    ),
+                )
+            return ReconciliationDecision(
+                order_id=order_id,
+                report_stage="Queued",
+                action=ReconciliationAction.ALREADY_RUNNING,
+                reason="Report was queued too recently to reclaim safely.",
             )
 
         if order.report_stage == "Processing":
@@ -242,6 +272,17 @@ class ReconciliationService:
             started = started.replace(tzinfo=None)
         return (datetime.utcnow() - started).total_seconds()
 
+    def _queued_age_seconds(self, order: Order) -> Optional[float]:
+        # New dispatches timestamp the Queued claim in processing_started_at.
+        # created_at is the conservative fallback for rows stranded by the
+        # older dispatcher, which never wrote a Queued timestamp at all.
+        queued_at = order.processing_started_at or order.created_at
+        if queued_at is None:
+            return None
+        if queued_at.tzinfo is not None:
+            queued_at = queued_at.replace(tzinfo=None)
+        return (datetime.utcnow() - queued_at).total_seconds()
+
     def resume(self, order_id: int) -> ReconciliationResumeResult:
         decision = self.inspect(order_id)
         if decision.action != ReconciliationAction.RESUME_ALLOWED:
@@ -266,12 +307,57 @@ class ReconciliationService:
                 order_id=order_id, resumed=False, decision=lost_decision,
             )
 
-        resumed_order = self._order_service.redispatch_report_generation(order_id)
+        dispatch = self._dispatcher.dispatch_claimed(order_id)
+        if dispatch.status != ReportGenerationDispatchStatus.DISPATCHED:
+            failed_decision = ReconciliationDecision(
+                order_id=order_id,
+                report_stage="Failed",
+                action=ReconciliationAction.INVALID_STATE,
+                reason=dispatch.message or dispatch.status,
+            )
+            return ReconciliationResumeResult(
+                order_id=order_id, resumed=False, decision=failed_decision,
+            )
         return ReconciliationResumeResult(
             order_id=order_id,
             resumed=True,
             decision=decision,
-            task_id=resumed_order.task_id,
+            task_id=dispatch.task_id,
+        )
+
+    def regenerate(self, order_id: int) -> ReconciliationResumeResult:
+        """Admin regeneration for a completed PAID Order, with atomic ownership."""
+        order = Order.query.get(order_id)
+        if order is None:
+            decision = self.inspect(order_id)
+            return ReconciliationResumeResult(order_id=order_id, resumed=False, decision=decision)
+        if order.report_stage != "Ready":
+            return self.resume(order_id)
+        if order.payment_status != "PAID" or order.status != "PAID":
+            decision = self.inspect(order_id)
+            return ReconciliationResumeResult(order_id=order_id, resumed=False, decision=decision)
+        if not self._try_acquire_regeneration_ownership(order_id):
+            decision = ReconciliationDecision(
+                order_id=order_id, report_stage="Processing",
+                action=ReconciliationAction.ALREADY_RUNNING,
+                reason="Another request already claimed this Order for regeneration.",
+            )
+            return ReconciliationResumeResult(order_id=order_id, resumed=False, decision=decision)
+        dispatch = self._dispatcher.dispatch_claimed(order_id)
+        if dispatch.status != ReportGenerationDispatchStatus.DISPATCHED:
+            decision = ReconciliationDecision(
+                order_id=order_id, report_stage="Failed",
+                action=ReconciliationAction.INVALID_STATE,
+                reason=dispatch.message or dispatch.status,
+            )
+            return ReconciliationResumeResult(order_id=order_id, resumed=False, decision=decision)
+        decision = ReconciliationDecision(
+            order_id=order_id, report_stage="Ready",
+            action=ReconciliationAction.RESUME_ALLOWED,
+            reason="Completed PAID Order was explicitly claimed for admin regeneration.",
+        )
+        return ReconciliationResumeResult(
+            order_id=order_id, resumed=True, decision=decision, task_id=dispatch.task_id,
         )
 
     def _try_acquire_resume_ownership(self, order_id: int) -> bool:
@@ -294,14 +380,44 @@ class ReconciliationService:
         )
         rows_updated = Order.query.filter(
             Order.id == order_id,
+            Order.payment_status == "PAID",
+            Order.status == "PAID",
             db.or_(
                 Order.report_stage == "Failed",
+                db.and_(
+                    Order.report_stage == "Queued",
+                    db.or_(
+                        Order.processing_started_at < (
+                            datetime.utcnow() - timedelta(
+                                seconds=self.ABANDONED_QUEUED_THRESHOLD_SECONDS
+                            )
+                        ),
+                        db.and_(
+                            Order.processing_started_at.is_(None),
+                            Order.created_at < (
+                                datetime.utcnow() - timedelta(
+                                    seconds=self.ABANDONED_QUEUED_THRESHOLD_SECONDS
+                                )
+                            ),
+                        ),
+                    ),
+                ),
                 db.and_(
                     Order.report_stage == "Processing",
                     Order.processing_started_at.isnot(None),
                     Order.processing_started_at < cutoff,
                 ),
             ),
+        ).update(
+            {"report_stage": "Processing", "processing_started_at": datetime.utcnow()},
+            synchronize_session=False,
+        )
+        db.session.commit()
+        return rows_updated == 1
+
+    def _try_acquire_regeneration_ownership(self, order_id: int) -> bool:
+        rows_updated = Order.query.filter_by(
+            id=order_id, payment_status="PAID", status="PAID", report_stage="Ready",
         ).update(
             {"report_stage": "Processing", "processing_started_at": datetime.utcnow()},
             synchronize_session=False,

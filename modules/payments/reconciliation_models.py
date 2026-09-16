@@ -21,11 +21,11 @@ class ReconciliationAction:
                               was never dispatched (or hasn't reached
                               its first checkpoint yet). Not stuck --
                               nothing to reconcile.
-        RESUME_ALLOWED     -- report_stage is "Failed"; the pipeline
-                              definitively finished failing. Safe to
-                              resume for the existing Order.
-        ALREADY_RUNNING    -- report_stage is "Processing"; the
-                              pipeline is actively running right now.
+        RESUME_ALLOWED     -- report_stage is "Failed", stale "Queued",
+                              or stale "Processing". Safe to resume the
+                              existing paid Order.
+        ALREADY_RUNNING    -- report_stage is fresh "Queued" or
+                              "Processing"; generation is active/recent.
                               Never resume -- doing so risks a
                               duplicate GPT call/PDF write/email send.
         ALREADY_COMPLETED  -- report_stage is "Ready"; the pipeline

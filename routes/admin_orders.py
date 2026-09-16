@@ -3,6 +3,7 @@
 from flask import Blueprint, jsonify
 from extensions import db
 from models import Order
+from modules.payments.reconciliation_service import ReconciliationService
 
 # Bucket A -- Critical Fix #7. All three routes below are gated by
 # admin_or_bridge_required (routes/routes_app_version.py), which tries
@@ -53,20 +54,19 @@ def get_all_orders():
 @admin_orders_bp.route('/admin/api/resend/<int:order_id>', methods=['POST'])
 @admin_or_bridge_required
 def resend_order(order_id):
-    from tasks import generate_and_send_report   # ✅ NEW import
-
-    order = Order.query.get(order_id)
-    if not order:
+    result = ReconciliationService().regenerate(order_id)
+    if result.decision.report_stage is None:
         return jsonify({"error": "Order not found"}), 404
-
-    # Celery task फिर से चलाओ
-    generate_and_send_report.delay(order_id)
-
-    # Optional: stage update
-    order.report_stage = "Regenerating"
-    db.session.commit()
-
-    return jsonify({"message": f"Report regeneration started for order {order_id}"}), 200
+    if not result.resumed:
+        return jsonify({
+            "error": "Report regeneration is not currently eligible.",
+            "reason": result.decision.reason,
+            "report_stage": result.decision.report_stage,
+        }), 409
+    return jsonify({
+        "message": f"Report regeneration started for order {order_id}",
+        "task_id": result.task_id,
+    }), 200
 
 # ------------------- UPDATE ORDER ------------------- #
 @admin_orders_bp.route('/admin/api/order/<int:order_id>', methods=['PUT'])
