@@ -94,7 +94,11 @@ def fake_verify(self, request):
         reference=request.reference,
         verified=True,
         message="Google Play verification: VERIFIED",
-        raw_payload={},
+        # F1 (Google Play report payment integrity) cross-checks this
+        # against the registry-expected Play product for the requested
+        # report; every scenario in this file requests "sadhesati_report"
+        # (a standard INR 51 report), whose expected product is "reports51".
+        raw_payload={"product_id": "reports51"},
     )
 
 
