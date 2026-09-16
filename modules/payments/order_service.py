@@ -169,6 +169,19 @@ class CreatedReportOrder:
 
 
 class OrderService:
+    @staticmethod
+    def resolve_paid_report_product(raw_slug: Any) -> ReportProduct:
+        """Resolve an active report from the backend registry before paid creation."""
+        if not isinstance(raw_slug, str) or not raw_slug.strip():
+            raise OrderValidationError("product is required.")
+        report_slug = raw_slug.strip().lower()
+        product = ReportProduct.query.get(report_slug)
+        if product is None:
+            raise OrderValidationError(f"Unknown report product: {report_slug!r}")
+        if not product.active:
+            raise OrderValidationError(f"Report product is not currently available: {report_slug!r}")
+        return product
+
     # -------------------------------------------------------------
     # Paid Report Platform v1.0 -- R3 (Pre-Payment Order Service).
     # create_pending_order() and mark_paid_and_dispatch() below are
@@ -331,11 +344,13 @@ class OrderService:
         """
         name = order_payload.get("name")
         email = order_payload.get("email")
-        product = order_payload.get("product")
+        raw_product = order_payload.get("product")
 
-        if not all([name, email, product]):
+        if not all([name, email, raw_product]):
             raise ValueError("name, email, and product are required to create a report order.")
 
+        registry_product = self.resolve_paid_report_product(raw_product)
+        product = registry_product.report_slug
         _validate_dob(order_payload.get("dob"), "dob")
         partner = order_payload.get("partner")
         if product == LOVE_PREMIUM_PRODUCT_SLUG:
@@ -350,6 +365,7 @@ class OrderService:
             email=email,
             phone=order_payload.get("phone"),
             product=product,
+            amount_paise=registry_product.price * 100,
             dob=order_payload.get("dob"),
             tob=order_payload.get("tob"),
             pob=order_payload.get("pob"),

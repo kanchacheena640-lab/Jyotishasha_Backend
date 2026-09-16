@@ -58,6 +58,7 @@ from modules.payments import (
     PaymentStatus,
 )
 from modules.payments.google_play_models import GooglePlayVerificationStatus
+from modules.payments.order_service import OrderValidationError
 
 routes_google_report_confirm = Blueprint("routes_google_report_confirm", __name__)
 
@@ -114,6 +115,8 @@ def confirm_google_report_purchase():
 
     try:
         result = PaymentService().process_payment(payment_request)
+    except OrderValidationError as exc:
+        return _bad_request(str(exc))
     except Exception:
         # Never leak an unhandled exception as Flask's default 500 page --
         # same policy as app.py's /webhook route. PaymentService has

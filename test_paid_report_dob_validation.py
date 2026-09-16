@@ -59,7 +59,7 @@ class PaidReportDobValidationTests(unittest.TestCase):
         self.assertEqual(self.db.session.add.call_count, 1)
 
     def test_pending_relationship_primary_and_partner(self):
-        self.query.get.return_value = SimpleNamespace(active=True, generator="love_premium_v1", price=199)
+        self.query.get.return_value = SimpleNamespace(report_slug="relationship_future_report", active=True, generator="love_premium_v1", price=199)
         order = OrderService().create_pending_order(relationship())
         self.assertEqual(order.dob, "1990-11-03")
         self.assertEqual(order.partner_payload["dob"], "2024-02-29")

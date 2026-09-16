@@ -144,7 +144,10 @@ from models import Order
 from modules.models_processed_payments import ProcessedPayment
 from modules.payments.google_play_models import GooglePlayVerificationStatus
 from modules.payments.google_play_provider import GooglePlayProvider
-from modules.payments.order_service import OrderService, ReportDispatchError
+from modules.payments.order_service import (
+    OrderService, OrderValidationError, ReportDispatchError,
+)
+from config.google_play_report_products import expected_report_product_id
 from modules.payments.payment_logger import log_payment_event, new_correlation_id
 from modules.payments.payment_models import (
     PaymentProviderType,
@@ -296,6 +299,27 @@ class PaymentService:
         existing = self._find_processed_payment_logged(request, log_ctx)
         if existing is not None:
             return self._handle_retry(request, existing, log_ctx)
+
+        if (
+            request.provider == PaymentProviderType.GOOGLE_PLAY
+            and request.purpose == PaymentPurpose.REPORT_PURCHASE
+        ):
+            # Invalid products and product-tier mismatches must never leave
+            # an unfinished token claim.
+            report_product = self._order_service.resolve_paid_report_product(
+                (request.order_payload or {}).get("product")
+            )
+            try:
+                expected_product_id = expected_report_product_id(
+                    report_product.report_slug, report_product.price,
+                )
+            except ValueError as exc:
+                raise OrderValidationError(str(exc)) from exc
+            verified_product_id = (result.raw_payload or {}).get("product_id")
+            if verified_product_id != expected_product_id:
+                raise OrderValidationError(
+                    "Google Play product does not match the requested report."
+                )
 
         try:
             claimed = self._try_claim(request)
