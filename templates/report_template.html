@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ lang or 'en' }}">
 <head>
   <meta charset="utf-8">
   <title>Jyotishasha Report</title>
@@ -12,166 +12,598 @@
       font-style: normal;
     }
 
-    @page { size: A4; margin: 20mm; }
+    /* ===== PAGE / FOOTER / PAGE NUMBERS =====
+       Q2 -- CSS Paged Media running element, not a manually-positioned
+       DOM div: WeasyPrint renders this once per page, inside the page
+       margin box, so it can never collide with body content and never
+       needs a per-report hack. bottom margin is intentionally larger
+       than the side/top margins to leave room for it. */
+    @page {
+      size: A4;
+      margin: 20mm 18mm 26mm 18mm;
+      @bottom-center {
+        content: "Jyotishasha  \2022  Page " counter(page) " of " counter(pages);
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: 9pt;
+        color: #8a8a8a;
+      }
+    }
+
+    :root {
+      --ink: #201d1a;
+      --muted: #6b655d;
+      --accent: #7a4b1f;
+      --accent-soft: #efe3d3;
+      --rule: #ddd6c9;
+      --card-bg: #fdfcfa;
+      --card-border: #ece5d8;
+      --notice-bg: #fdf3e7;
+      --notice-border: #e8b96b;
+      --highlight-bg: #eef4ee;
+      --highlight-border: #9dbf9d;
+      --gem-bg: #f6f0fb;
+      --gem-border: #c9aee0;
+    }
 
     body {
       font-family: Helvetica, Arial, sans-serif;
-      font-size: 12pt;
-      line-height: 1.6;
-      color: #111;
+      font-size: 11.5pt;
+      line-height: 1.65;
+      color: var(--ink);
     }
 
-    h1 {
-      text-align: center;
-      font-size: 22pt;
-      margin-bottom: 10mm;
+    /* Q2 -- Hindi typography is now an explicit, language-driven choice
+       (body.hi, set only when the order's own language is "hi") rather
+       than a class hardcoded onto every single card regardless of the
+       report's actual language. A Latin fallback stack stays in place
+       either way, so nothing depends solely on the Devanagari face
+       loading successfully. */
+    body.hi, body.hi p, body.hi li, body.hi td, body.hi th {
+      font-family: 'NotoSansDevanagari', 'Noto Sans', Helvetica, Arial, sans-serif;
     }
 
-    p { margin: 0 0 6px; }
-
+    p { margin: 0 0 8px; orphans: 2; widows: 2; }
+    ul, ol { margin: 0 0 8px; padding-left: 20px; }
+    li { margin-bottom: 4px; }
     .center { text-align: center; }
 
-    .hi { font-family: 'NotoSansDevanagari'; }
+    /* ===== HEADING HIERARCHY ===== */
+    h1, h2, h3 { color: var(--ink); }
 
-    .cover { margin-top: 40mm; }
-
-    .kundali {
-      width: 340px;
-      display: block;
-      margin: 0 auto 10px auto;
-    }
-
-    .footer {
-      margin-top: 20mm;
-      font-size: 11pt;
-      color: #333;
-    }
-
-    /* ===== PREMIUM SECTION HEADINGS ===== */
     .section-heading {
-      font-size: 15pt;
+      font-size: 14.5pt;
       font-weight: bold;
-      color: #222;
-      margin-top: 22px;
+      margin-top: 20px;
       margin-bottom: 10px;
       padding-bottom: 4px;
-      border-bottom: 2px solid #ccc;
+      border-bottom: 2px solid var(--accent-soft);
       page-break-after: avoid;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.2px;
     }
 
-    /* ===== CONTENT CARDS ===== */
+    .sub-heading {
+      font-size: 12.5pt;
+      font-weight: bold;
+      color: var(--accent);
+      margin-top: 14px;
+      margin-bottom: 6px;
+      page-break-after: avoid;
+    }
+
+    /* ===== CONTENT CARD (GPT narrative paragraphs/sections) =====
+       Q2.1 -- lightened (thinner border, near-white background instead
+       of a heavy filled beige box) so the "heading -> card -> paragraph"
+       shape that every one of the 24 standard prompts' own fixed
+       7-section structure still produces (Q2.1 cannot rewrite prompts)
+       at least reads as calmer, premium spacing rather than a stack of
+       mechanically repeated boxes. narrative_style="plain" (see
+       pdf_generator_weasy.py) skips this shell entirely when a future
+       Q3 caller chooses to. */
     .card {
-      padding: 10px 12px;
-      background: #fafafa;
-      border: 1px solid #e5e5e5;
+      padding: 8px 4px;
+      background: var(--card-bg);
+      border: none;
+      border-left: 2px solid var(--card-border);
+      padding-left: 12px;
+      border-radius: 0;
+      margin: 4px 0 16px 0;
+      page-break-inside: avoid;
+    }
+    .card p:last-child { margin-bottom: 0; }
+    .body-list { margin: 4px 0 8px 0; }
+    .body-list li { font-size: 11pt; }
+
+    /* ===================================================
+       1. COVER SYSTEM -- Page 1 ONLY. Deliberately minimal: brand,
+       real title, optional subtitle, prepared-for/date, optional
+       SAMPLE marker. NOTHING astrology-related, no cards, no CTA ever
+       renders inside .cover-page -- enforced structurally by simply
+       never placing any other component inside this block.
+       =================================================== */
+    .cover-page {
+      min-height: 233mm; /* fills the A4 content box so the break below lands cleanly */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      page-break-after: always;
+    }
+
+    .cover-logo { width: 84px; margin-bottom: 10mm; }
+
+    .cover-sample-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      margin-bottom: 8mm;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      font-size: 10pt;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+
+    .cover-eyebrow {
+      font-size: 10.5pt;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6mm;
+    }
+
+    .cover-title {
+      font-size: 25pt;
+      font-weight: bold;
+      line-height: 1.3;
+      margin: 0 8mm 4mm 8mm;
+    }
+
+    .cover-subtitle {
+      font-size: 12.5pt;
+      color: var(--muted);
+      margin: 0 10mm 10mm 10mm;
+    }
+
+    .cover-rule {
+      width: 46mm;
+      border: none;
+      border-top: 2px solid var(--accent-soft);
+      margin: 6mm 0 8mm 0;
+    }
+
+    .cover-meta { font-size: 11pt; color: var(--muted); }
+    .cover-meta strong { color: var(--ink); }
+    .cover-meta div { margin-bottom: 2mm; }
+
+    /* ===================================================
+       2. PAGE-2 PRIMARY ANSWER HERO (Q2.1) -- optional; when supplied,
+       this is the FIRST thing after the cover break, deliberately
+       placed BEFORE the Kundali snapshot so the purchased answer is
+       never preceded by a generic astrology-data dump. Visually the
+       most prominent component in the whole system (larger type,
+       bordered box) -- Q3 supplies the actual per-product content.
+       =================================================== */
+    .answer-hero {
+      background: linear-gradient(180deg, var(--accent-soft) 0%, #fff 70%);
+      border: 1.5px solid var(--accent);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin: 0 0 16px 0;
+      page-break-inside: avoid;
+    }
+    .answer-hero-label {
+      font-size: 10.5pt;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .answer-hero-value { font-size: 21pt; font-weight: bold; color: var(--ink); line-height: 1.25; }
+    .answer-hero-interpretation { font-size: 11pt; color: var(--ink); margin-top: 8px; }
+    .answer-hero-evidence { margin: 8px 0 0 0; padding-left: 18px; }
+    .answer-hero-evidence li { font-size: 10.5pt; color: var(--muted); }
+    .answer-hero-timing { font-size: 10.5pt; margin-top: 8px; }
+    .answer-hero-caution { font-size: 9.5pt; color: var(--muted); margin-top: 6px; font-style: italic; }
+
+    /* ===================================================
+       PAGE-2 ASTROLOGY SNAPSHOT (chart + client details + Q1 facts)
+       -- deliberately NO forced page-break before or after this
+       section; it flows naturally into whatever follows it, so a
+       short snapshot (e.g. the relationship pipeline's empty
+       summary_blocks case) never leaves a page nearly blank. Comes
+       AFTER the answer hero (when supplied) so it supports the
+       answer instead of competing with it.
+       =================================================== */
+    .snapshot-kundali {
+      text-align: center;
+      page-break-inside: avoid;
+      margin-bottom: 6px;
+    }
+    .kundali-img { width: 340px; max-width: 100%; display: block; margin: 0 auto 6px auto; }
+    .snapshot-client-line {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 10.5pt;
+      color: var(--muted);
+    }
+    .snapshot-legend {
+      font-size: 9pt;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ===================================================
+       3. REUSABLE PREMIUM COMPONENTS (all optional; Q3 selects)
+       =================================================== */
+
+    /* 3A. Result / key-finding card (compact -- distinct from the
+       page-2 hero, meant for a secondary/supporting finding) */
+    .result-card {
+      background: linear-gradient(180deg, var(--accent-soft) 0%, #fff 65%);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 10px 0;
+      page-break-inside: avoid;
+    }
+    .result-card-label {
+      font-size: 9.5pt;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+    .result-card-value { font-size: 15pt; font-weight: bold; color: var(--ink); }
+    .result-card-detail { font-size: 10.5pt; color: var(--muted); margin-top: 3px; }
+
+    /* 3B. Astrology fact card */
+    .fact-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 8px 0;
+      page-break-inside: avoid;
+    }
+    .fact-card .sub-heading { margin-top: 0; }
+    .fact-list { margin: 4px 0 0 0; padding-left: 18px; }
+    .fact-list li { font-size: 11pt; }
+
+    /* 3C. Timeline */
+    .timeline-block { margin: 10px 0; }
+    .timeline { border-left: 2px solid var(--accent-soft); margin-left: 6px; padding-left: 16px; }
+    .timeline-entry { margin-bottom: 10px; page-break-inside: avoid; position: relative; }
+    .timeline-entry:last-child { margin-bottom: 0; }
+    .timeline-marker {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--accent-soft); border: 2px solid var(--accent);
+      position: absolute; left: -21px; top: 3px;
+    }
+    .timeline-entry.is-current .timeline-marker { background: var(--accent); }
+    .timeline-label { font-weight: bold; font-size: 11pt; }
+    .timeline-entry.is-current .timeline-label { color: var(--accent); }
+    .timeline-range { font-size: 10pt; color: var(--muted); }
+    .timeline-note { font-size: 10.5pt; margin-top: 2px; }
+
+    /* 3D. Table */
+    .table-block { margin: 10px 0; page-break-inside: avoid; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+    .data-table th, .data-table td {
+      border: 1px solid var(--card-border);
+      padding: 6px 8px;
+      text-align: left;
+    }
+    .data-table th { background: var(--accent-soft); color: var(--ink); font-weight: bold; }
+    .data-table tr:nth-child(even) td { background: #fbfaf7; }
+
+    /* 3E. Notice / caution box */
+    .notice-box {
+      background: var(--notice-bg);
+      border: 1px solid var(--notice-border);
       border-radius: 8px;
-      margin: 8px 0 14px 0;
+      padding: 10px 14px;
+      margin: 10px 0;
+      page-break-inside: avoid;
+      font-size: 10.5pt;
+    }
+    .notice-heading { font-weight: bold; margin-bottom: 3px; color: #8a5a10; }
+
+    /* 3F. Highlight / guidance box */
+    .highlight-box {
+      background: var(--highlight-bg);
+      border: 1px solid var(--highlight-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 10px 0;
+      page-break-inside: avoid;
+    }
+    .highlight-heading { font-weight: bold; margin-bottom: 3px; color: #3f6b3f; }
+
+    /* 3G. Numbered action / guidance list (Q2.1) -- a distinct visual
+       grammar from a fact-card's plain bullet list, for step-like
+       remedy/guidance content. */
+    .action-list-block { margin: 10px 0; page-break-inside: avoid; }
+    .action-list { counter-reset: action-step; list-style: none; padding-left: 0; margin: 6px 0 0 0; }
+    .action-list li {
+      counter-increment: action-step;
+      position: relative;
+      padding-left: 26px;
+      margin-bottom: 8px;
+      font-size: 11pt;
+    }
+    .action-list li::before {
+      content: counter(action-step);
+      position: absolute;
+      left: 0; top: 0;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 9.5pt;
+      font-weight: bold;
+      text-align: center;
+      line-height: 18px;
+    }
+
+    /* 3H. Gemstone recommendation box (Q2.1) -- ONLY rendered when
+       concrete data is supplied (see template guard below); this
+       component itself carries NO filler copy of any kind. */
+    .gemstone-box {
+      background: var(--gem-bg);
+      border: 1px solid var(--gem-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 10px 0;
+      page-break-inside: avoid;
+    }
+    .gemstone-heading {
+      font-size: 10pt; letter-spacing: 1px; text-transform: uppercase;
+      color: #6a3f8f; font-weight: bold; margin-bottom: 4px;
+    }
+    .gemstone-value { font-size: 14pt; font-weight: bold; color: var(--ink); }
+    .gemstone-substone, .gemstone-planet { font-size: 10.5pt; color: var(--muted); margin-top: 2px; }
+    .gemstone-reason { font-size: 10.5pt; margin-top: 6px; }
+    .gemstone-caution { font-size: 9.5pt; color: var(--muted); margin-top: 6px; font-style: italic; }
+
+    /* ===================================================
+       7. DISCLAIMER SLOT -- short, restrained, never dominant
+       =================================================== */
+    .disclaimer-box {
+      font-size: 9.5pt;
+      color: var(--muted);
+      border-top: 1px solid var(--rule);
+      padding-top: 6px;
+      margin: 16px 0 0 0;
       page-break-inside: avoid;
     }
 
-    .card p {
-      margin-bottom: 8px;
+    /* ===================================================
+       6/8. APP DOWNLOAD CLOSING CTA (Q2.1) -- the ONLY shared closing
+       CTA this system supports. No consultation/gemstone-purchase/
+       cross-sell copy is possible through this component; it only
+       ever names the one locked action (downloading the app) plus
+       whatever store links (if any) are supplied.
+       =================================================== */
+    .app-download-box {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border: 1.5px solid var(--accent);
+      border-radius: 10px;
+      background: var(--accent-soft);
+      text-align: center;
+      page-break-inside: avoid;
     }
+    .app-download-heading { font-size: 12.5pt; font-weight: bold; color: var(--accent); margin-bottom: 4px; }
+    .app-download-text { font-size: 10.5pt; color: var(--ink); margin-bottom: 6px; }
+    .app-download-action { font-size: 11pt; font-weight: bold; color: var(--accent); margin-bottom: 4px; }
+    .app-download-link { font-size: 9.5pt; color: var(--muted); }
 
   </style>
 </head>
 
-<body>
+<body class="{{ 'hi' if is_hindi else '' }}">
 
-  <!-- ================= COVER PAGE ================= -->
-  <div class="cover center">
-    {% if logo_src %}
-      <img src="{{ logo_src }}" style="width:100px; margin-bottom:10mm;">
-    {% endif %}
-
-    <h1>Jyotishasha {{ report_title }}</h1>
-
-    <p><b>Client:</b> {{ user_info.name }}</p>
-    <p><b>Purchase Date:</b> {{ today_str }}</p>
+  <!-- ================= 1. COVER (Page 1 -- clean, restrained) ================= -->
+  <div class="cover-page">
+    {% if logo_src %}<img class="cover-logo" src="{{ logo_src }}">{% endif %}
+    {% if is_sample %}<div class="cover-sample-badge">Sample Report</div>{% endif %}
+    <div class="cover-eyebrow">Jyotishasha Premium Astrology Report</div>
+    <div class="cover-title">{{ report_title }}</div>
+    {% if report_subtitle %}<div class="cover-subtitle">{{ report_subtitle }}</div>{% endif %}
+    <hr class="cover-rule">
+    <div class="cover-meta">
+      <div><strong>Prepared for:</strong> {{ user_info.name }}</div>
+      <div><strong>Report Date:</strong> {{ today_str }}</div>
+    </div>
   </div>
 
-  <div style="page-break-after: always;"></div>
+  <!-- ================= 2. PAGE-2 PRIMARY ANSWER HERO (optional) =================
+       Deliberately the FIRST element after the cover break, before the
+       Kundali snapshot, so the customer sees the answer to their
+       purchased question before any astrology-data presentation. -->
+  {% if answer_hero %}
+    <div class="answer-hero">
+      {% if answer_hero.label %}<div class="answer-hero-label">{{ answer_hero.label }}</div>{% endif %}
+      {% if answer_hero.value %}<div class="answer-hero-value">{{ answer_hero.value }}</div>{% endif %}
+      {% if answer_hero.interpretation %}<p class="answer-hero-interpretation">{{ answer_hero.interpretation }}</p>{% endif %}
+      {% if answer_hero.get('evidence') %}
+        <ul class="answer-hero-evidence">
+          {% for point in answer_hero.get('evidence') %}<li>{{ point }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+      {% if answer_hero.timing %}<div class="answer-hero-timing"><strong>Timing:</strong> {{ answer_hero.timing }}</div>{% endif %}
+      {% if answer_hero.caution %}<div class="answer-hero-caution">{{ answer_hero.caution }}</div>{% endif %}
+    </div>
+  {% endif %}
 
-  <!-- ================= KUNDALI PAGE ================= -->
-  <div class="center">
-    {% if kundali_img_src %}
-      <img class="kundali" src="{{ kundali_img_src }}">
-    {% endif %}
-
-    <p style="font-family: monospace; font-size: 11.5pt; margin-top: 6px;">
+  <!-- ================= ASTROLOGY SNAPSHOT (supports the answer, never competes) ================= -->
+  <div class="snapshot-kundali">
+    {% if kundali_img_src %}<img class="kundali-img" src="{{ kundali_img_src }}">{% endif %}
+    <div class="snapshot-client-line">
       {{ user_info.name }} | DOB: {{ user_info.dob }} | TOB: {{ user_info.tob }} | POB: {{ user_info.pob }}
-    </p>
+    </div>
+    {% if kundali_img_src %}
+      <div class="snapshot-legend">Su = Sun &nbsp; Mo = Moon &nbsp; Ma = Mars &nbsp; Me = Mercury &nbsp; Ju = Jupiter &nbsp; Ve = Venus &nbsp; Sa = Saturn &nbsp; Ra = Rahu &nbsp; Ke = Ketu</div>
+    {% endif %}
   </div>
 
   {% if birth_chart_summary %}
-    <h2 class="section-heading">Birth Chart Summary</h2>
-    <div class="card hi">{{ birth_chart_summary | safe }}</div>
+    <div class="fact-card">
+      <h3 class="sub-heading">Birth Chart Summary</h3>
+      <p>{{ birth_chart_summary | safe }}</p>
+    </div>
   {% endif %}
 
   {% if mahadasha_summary %}
-    <h2 class="section-heading">Mahadasha Summary</h2>
-    <div class="card hi">{{ mahadasha_summary | safe }}</div>
+    <div class="fact-card">
+      <h3 class="sub-heading">Mahadasha Summary</h3>
+      <p>{{ mahadasha_summary | safe }}</p>
+    </div>
   {% endif %}
 
   {% if current_transit_summary %}
-    <h2 class="section-heading">Current Transit Summary</h2>
-    <div class="card hi">{{ current_transit_summary | safe }}</div>
+    <div class="fact-card">
+      <h3 class="sub-heading">Current Transit Summary</h3>
+      <p>{{ current_transit_summary | safe }}</p>
+    </div>
   {% endif %}
 
-  <div style="page-break-after: always;"></div>
+  <!-- ================= 3A. RESULT / KEY-FINDING CARDS (optional) ================= -->
+  {% for card in result_cards %}
+    <div class="result-card">
+      {% if card.label %}<div class="result-card-label">{{ card.label }}</div>{% endif %}
+      {% if card.value %}<div class="result-card-value">{{ card.value }}</div>{% endif %}
+      {% if card.detail %}<div class="result-card-detail">{{ card.detail }}</div>{% endif %}
+    </div>
+  {% endfor %}
 
-  <!-- ================= GPT PREMIUM REPORT ================= -->
-  <h2 class="section-heading">Personalized Astrology Report</h2>
+  <!-- ================= 3B. ASTROLOGY FACT CARDS (optional) =================
+       Q2.1 -- an empty house is presented through sign/lord/lord-
+       placement (primary), with occupancy as SECONDARY information --
+       Q3's own fixture data decides the exact wording; this component
+       itself makes no claim either way about whether a house is
+       occupied. -->
+  {% for card in fact_cards %}
+    <div class="fact-card">
+      {% if card.heading %}<h3 class="sub-heading">{{ card.heading }}</h3>{% endif %}
+      {% if card.text %}<p>{{ card.text }}</p>{% endif %}
+      {% if card.get('items') %}
+        <ul class="fact-list">
+          {% for item in card.get('items') %}<li>{{ item }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  {% endfor %}
 
-  <!-- IMPORTANT: no wrapper here -->
+  <!-- ================= 3C. TIMELINE (optional) ================= -->
+  {% if timeline and timeline.entries %}
+    <div class="timeline-block">
+      {% if timeline.heading %}<h2 class="section-heading">{{ timeline.heading }}</h2>{% endif %}
+      <div class="timeline">
+        {% for entry in timeline.entries %}
+          <div class="timeline-entry{{ ' is-current' if entry.current else '' }}">
+            <div class="timeline-marker"></div>
+            <div class="timeline-content">
+              {% if entry.label %}<div class="timeline-label">{{ entry.label }}</div>{% endif %}
+              {% if entry.date_range %}<div class="timeline-range">{{ entry.date_range }}</div>{% endif %}
+              {% if entry.note %}<div class="timeline-note">{{ entry.note }}</div>{% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- ================= 3D. TABLES (optional) ================= -->
+  {% for table in tables %}
+    <div class="table-block">
+      {% if table.heading %}<h3 class="sub-heading">{{ table.heading }}</h3>{% endif %}
+      <table class="data-table">
+        {% if table.headers %}
+          <thead><tr>{% for h in table.headers %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+        {% endif %}
+        <tbody>
+          {% for row in table.rows %}
+            <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endfor %}
+
+  <!-- ================= 5. REPORT BODY (GPT narrative) =================
+       No hardcoded wrapper heading here -- both the standard_v1 and
+       love_premium_v1 prompts already instruct the model to open with
+       its own first heading. Content flows directly; page breaks occur
+       naturally wherever it actually runs out of room. Q2.1: real
+       bullet-list lines now render as real <ul><li> (or are dropped
+       entirely if they carry no content -- see convert_headings()),
+       and narrative_style="plain" (a pdf_generator_weasy.py parameter)
+       can skip the card shell entirely for a future Q3 caller. -->
   {{ gpt_response_html | safe }}
 
-  <!-- ================= FOOTER ================= -->
-  <div class="footer">
-    With warm regards,<br/>
-    <b>Team Jyotishasha</b><br/>
-    May your stars guide you to success.
-  </div>
+  <!-- ================= 3G. NUMBERED ACTION / GUIDANCE LIST (optional) ================= -->
+  {% if action_list and action_list.get('items') %}
+    <div class="action-list-block">
+      {% if action_list.heading %}<h3 class="sub-heading">{{ action_list.heading }}</h3>{% endif %}
+      <ol class="action-list">
+        {% for item in action_list.get('items') %}<li>{{ item }}</li>{% endfor %}
+      </ol>
+    </div>
+  {% endif %}
 
-  <!-- ================= CTA BLOCK ================= -->
-  <div style="
-      margin-top:25px;
-      padding:22px;
-      border-radius:14px;
-      background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb);
-      color:#222;
-      text-align:center;
-      font-size:13.5pt;
-      font-weight:bold;
-      box-shadow:0 4px 10px rgba(0,0,0,0.15);
-      page-break-inside: avoid;
-  ">
-    💎 Confused where to find the
-    <span style="color:#b71c1c;">Original Abhimantrit Gemstone</span>?
-    <br/><br/>
+  <!-- ================= 3F. HIGHLIGHT / GUIDANCE BOXES (optional) ================= -->
+  {% for highlight in highlights %}
+    <div class="highlight-box">
+      {% if highlight.heading %}<div class="highlight-heading">{{ highlight.heading }}</div>{% endif %}
+      {% if highlight.text %}<div>{{ highlight.text }}</div>{% endif %}
+    </div>
+  {% endfor %}
 
-    <span style="font-size:14pt; color:#2c3e50;">
-      Jyotishasha se behtar aur koi nahi
-    </span>
-    <br/><br/>
+  <!-- ================= 3E. NOTICE / CAUTION BOXES (optional) ================= -->
+  {% for notice in notices %}
+    <div class="notice-box">
+      {% if notice.heading %}<div class="notice-heading">{{ notice.heading }}</div>{% endif %}
+      {% if notice.text %}<div>{{ notice.text }}</div>{% endif %}
+    </div>
+  {% endfor %}
 
-    <span style="
-      background:#fff;
-      color:#d35400;
-      padding:8px 18px;
-      border-radius:10px;
-      font-weight:bold;
-      display:inline-block;
-    ">
-      📞 Call Now: 7007012255
-    </span>
-    <br/><br/>
+  <!-- ================= 3H. GEMSTONE RECOMMENDATION (optional) =================
+       LOCKED RULE: renders ONLY when concrete data (a real gemstone
+       name or supporting planet) is supplied -- never a generic
+       "a supportive gemstone..." filler. Absent by default. -->
+  {% if gemstone and (gemstone.gemstone or gemstone.planet) %}
+    <div class="gemstone-box">
+      <div class="gemstone-heading">Recommended Gemstone</div>
+      {% if gemstone.gemstone %}<div class="gemstone-value">{{ gemstone.gemstone }}</div>{% endif %}
+      {% if gemstone.substone %}<div class="gemstone-substone">Alternative sub-stone: {{ gemstone.substone }}</div>{% endif %}
+      {% if gemstone.planet %}<div class="gemstone-planet">Supporting planet: {{ gemstone.planet }}</div>{% endif %}
+      {% if gemstone.reason %}<p class="gemstone-reason">{{ gemstone.reason }}</p>{% endif %}
+      {% if gemstone.caution %}<div class="gemstone-caution">{{ gemstone.caution }}</div>{% endif %}
+    </div>
+  {% endif %}
 
-    <span style="font-size:12.5pt; color:#2e7d32; font-weight:600;">
-      Original Gemstone at Best Price – Guaranteed
-    </span>
-  </div>
+  <!-- ================= 7. DISCLAIMER (optional) ================= -->
+  {% if disclaimer %}
+    <div class="disclaimer-box">{{ disclaimer }}</div>
+  {% endif %}
+
+  <!-- ================= 6/8. APP DOWNLOAD CLOSING CTA (optional) =================
+       LOCKED RULE: the only shared closing CTA. No fake store links --
+       a URL renders only when actually supplied. -->
+  {% if app_download %}
+    <div class="app-download-box">
+      <div class="app-download-heading">{{ app_download.heading or "Get the Jyotishasha App" }}</div>
+      {% if app_download.benefit_text %}<div class="app-download-text">{{ app_download.benefit_text }}</div>{% endif %}
+      <div class="app-download-action">Download the Jyotishasha App</div>
+      {% if app_download.play_store_url %}<div class="app-download-link">Google Play: {{ app_download.play_store_url }}</div>{% endif %}
+      {% if app_download.app_store_url %}<div class="app-download-link">App Store: {{ app_download.app_store_url }}</div>{% endif %}
+    </div>
+  {% endif %}
 
 </body>
 </html>

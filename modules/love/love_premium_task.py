@@ -238,6 +238,11 @@ def generate_love_premium_report(order_id: int):
                 kundali_drawing=kundali_drawing,
                 used_placeholders=[],
                 product="relationship_future_report",
+                # Q2 -- wires the language this function already resolves
+                # (see `language` above) through to the PDF's own
+                # typography choice; no new report content/component is
+                # supplied here (that stays a Q3 decision).
+                language=language,
             )
 
             del kundali_drawing

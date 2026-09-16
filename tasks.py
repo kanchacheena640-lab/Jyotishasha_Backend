@@ -276,7 +276,12 @@ def _generate_and_send_report_core(order_id):
                 gpt_response=gpt_content,
                 kundali_drawing=kundali_drawing,
                 used_placeholders=used_placeholders,
-                product=order["product"]
+                product=order["product"],
+                # Q2 -- wires the language this function already resolves
+                # (see `language` above) through to the PDF's own
+                # typography choice; no new report content/component is
+                # supplied here (that stays a Q3 decision).
+                language=language,
             )
 
             # Step 7: Save + Email
