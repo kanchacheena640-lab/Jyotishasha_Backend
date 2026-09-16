@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from extensions import db
 from models import Order
 from email_utils import send_email
+from modules.payments.report_delivery_service import deliver_generated_report
 from summary_blocks import build_summary_blocks_with_transit
 from full_kundali_api import calculate_full_kundali
 from transit_engine import get_current_positions
@@ -300,13 +301,6 @@ def _generate_and_send_report_core(order_id):
                     attempt_started_at=attempt_started_at,
                 )
 
-            subject = f"Your {product_slug.replace('-', ' ').title()} Report"
-            body = (
-                f"Hello {order['name']},\n\n"
-                f"Please find attached your personalized astrology report.\n\n"
-                f"Regards,\nTeam Jyotishasha"
-            )
-
             # Task 17B -- deliberately its OWN try/except, separate from
             # this function's outer one below. report_stage is already
             # "Ready" at this point (the report itself is genuinely done);
@@ -322,32 +316,10 @@ def _generate_and_send_report_core(order_id):
             # can never falsely claim an email was sent (or attempted)
             # before the real SMTP outcome is already known.
             try:
-                send_email(order["email"], subject, body, output_path)
+                deliver_generated_report(order_id, output_path, send_email_fn=send_email)
                 print(f"[Task] ✅ Email sent to {order['email']}")
-                email_order = Order.query.get(order_id)
-                if email_order:
-                    now = datetime.utcnow()
-                    email_order.email_last_attempt_at = now
-                    email_order.email_status = "SENT"
-                    email_order.email_sent_at = now
-                    email_order.email_error = None
-                    db.session.commit()
             except Exception as email_exc:
                 print(f"[Task] ❌ Error sending report email: {email_exc}")
-                try:
-                    email_order = Order.query.get(order_id)
-                    if email_order:
-                        email_order.email_last_attempt_at = datetime.utcnow()
-                        email_order.email_status = "FAILED"
-                        # Bounded/sanitized: smtplib's own exception text never
-                        # contains SENDER_PASSWORD/credentials, but this is
-                        # truncated defensively regardless -- this column's
-                        # only job is "give an operator a clue," never a full
-                        # traceback or provider internals.
-                        email_order.email_error = str(email_exc)[:500]
-                        db.session.commit()
-                except Exception as state_write_error:
-                    print(f"[Task] ⚠️ Could not record email FAILED state: {state_write_error}")
                 # Deliberately NOT re-raised -- report generation already
                 # succeeded (report_stage == "Ready") and must stay that
                 # way; see this block's own docstring-comment above.

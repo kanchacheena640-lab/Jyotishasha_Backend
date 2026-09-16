@@ -128,6 +128,10 @@ from models import Order
 from modules.payments.report_generation_dispatcher import (
     ReportGenerationDispatcher, ReportGenerationDispatchStatus,
 )
+from modules.payments.report_delivery_service import (
+    deliver_generated_report,
+    pdf_artifact_is_usable,
+)
 from modules.payments.reconciliation_models import (
     ReconciliationAction,
     ReconciliationDecision,
@@ -360,6 +364,81 @@ class ReconciliationService:
             order_id=order_id, resumed=True, decision=decision, task_id=dispatch.task_id,
         )
 
+    def retry_delivery(self, order_id: int) -> ReconciliationResumeResult:
+        """Retry a FAILED paid-report delivery without creating business rows.
+
+        A usable temporary PDF takes the email-only path. If it has vanished,
+        the existing atomic Ready -> Processing regeneration path recreates it.
+        FAILED -> SENDING is the concurrency claim for the email-only decision.
+        """
+        order = Order.query.get(order_id)
+        if order is None:
+            return ReconciliationResumeResult(
+                order_id=order_id, resumed=False, decision=self.inspect(order_id),
+            )
+        if (
+            order.payment_status != "PAID"
+            or order.status != "PAID"
+            or order.report_stage != "Ready"
+            or order.email_status != "FAILED"
+        ):
+            decision = ReconciliationDecision(
+                order_id=order_id,
+                report_stage=order.report_stage,
+                action=ReconciliationAction.INVALID_STATE,
+                reason="Delivery retry requires a PAID, Ready Order with email_status=FAILED.",
+            )
+            return ReconciliationResumeResult(order_id=order_id, resumed=False, decision=decision)
+
+        if not self._try_acquire_delivery_ownership(order_id):
+            decision = ReconciliationDecision(
+                order_id=order_id,
+                report_stage="Ready",
+                action=ReconciliationAction.ALREADY_RUNNING,
+                reason="Another request already claimed this failed delivery.",
+            )
+            return ReconciliationResumeResult(order_id=order_id, resumed=False, decision=decision)
+
+        claimed = Order.query.get(order_id)
+        pdf_path = claimed.pdf_url if claimed is not None else None
+        if pdf_artifact_is_usable(pdf_path):
+            try:
+                deliver_generated_report(order_id, pdf_path)
+            except Exception as exc:
+                decision = ReconciliationDecision(
+                    order_id=order_id,
+                    report_stage="Ready",
+                    action=ReconciliationAction.INVALID_STATE,
+                    reason=f"Report email retry failed: {exc}",
+                )
+                return ReconciliationResumeResult(order_id=order_id, resumed=False, decision=decision)
+            decision = ReconciliationDecision(
+                order_id=order_id,
+                report_stage="Ready",
+                action=ReconciliationAction.RESUME_ALLOWED,
+                reason="Existing temporary PDF was delivered successfully.",
+            )
+            return ReconciliationResumeResult(order_id=order_id, resumed=True, decision=decision)
+
+        # The temporary artifact is unavailable. Keep the same Order/payment,
+        # release the email claim into the normal pre-attempt state, and use
+        # F2's atomic Ready -> Processing regeneration + mode-aware dispatch.
+        Order.query.filter_by(id=order_id, email_status="SENDING").update(
+            {"email_status": "NOT_ATTEMPTED"}, synchronize_session=False,
+        )
+        db.session.commit()
+        result = self.regenerate(order_id)
+        if not result.resumed:
+            Order.query.filter_by(id=order_id).update(
+                {
+                    "email_status": "FAILED",
+                    "email_error": "Temporary PDF was unavailable and regeneration could not be dispatched.",
+                },
+                synchronize_session=False,
+            )
+            db.session.commit()
+        return result
+
     def _try_acquire_resume_ownership(self, order_id: int) -> bool:
         """
         Same atomic compare-and-swap idiom as
@@ -420,6 +499,20 @@ class ReconciliationService:
             id=order_id, payment_status="PAID", status="PAID", report_stage="Ready",
         ).update(
             {"report_stage": "Processing", "processing_started_at": datetime.utcnow()},
+            synchronize_session=False,
+        )
+        db.session.commit()
+        return rows_updated == 1
+
+    def _try_acquire_delivery_ownership(self, order_id: int) -> bool:
+        rows_updated = Order.query.filter_by(
+            id=order_id,
+            payment_status="PAID",
+            status="PAID",
+            report_stage="Ready",
+            email_status="FAILED",
+        ).update(
+            {"email_status": "SENDING", "email_last_attempt_at": datetime.utcnow()},
             synchronize_session=False,
         )
         db.session.commit()

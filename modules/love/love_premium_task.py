@@ -17,6 +17,7 @@ from transit_engine import get_current_positions
 from kundali_chart_generator import generate_kundali_drawing
 from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
 from email_utils import send_email
+from modules.payments.report_delivery_service import deliver_generated_report
 from models import Order
 from extensions import db
 from app import app
@@ -258,12 +259,10 @@ def generate_love_premium_report(order_id: int):
                 attempt_started_at=attempt_started_at,
             )
 
-            send_email(
-                order.email,
-                "Your Love & Marriage Life Report",
-                f"Hello {order.name},\n\nYour Love & Relationship report is ready.",
-                output_path,
-            )
+            try:
+                deliver_generated_report(order_id, output_path, send_email_fn=send_email)
+            except Exception as email_exc:
+                print("[LOVE PREMIUM EMAIL ERROR]", email_exc)
 
             import gc
             gc.collect()

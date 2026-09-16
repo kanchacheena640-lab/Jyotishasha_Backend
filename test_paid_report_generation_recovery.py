@@ -145,7 +145,7 @@ class RecoveryDispatchTests(unittest.TestCase):
         resend = source.split("def resend_order", 1)[1].split(
             "# ------------------- UPDATE ORDER", 1
         )[0]
-        self.assertIn("ReconciliationService().regenerate(order_id)", resend)
+        self.assertIn("ReconciliationService().retry_delivery(order_id)", resend)
         self.assertNotIn(".delay(", resend)
         self.assertNotIn("Regenerating", resend)
 

@@ -33,7 +33,8 @@ class Order(db.Model):
     # SENT (smtplib's send_message() returned without raising -- our own
     # SMTP interaction with Gmail completed; this is NOT inbox-delivery or
     # open confirmation, which this integration has no way to know), FAILED
-    # (the SMTP attempt raised). See email_utils.py::send_email() and
+    # (the SMTP attempt raised), SENDING (an admin retry atomically owns the
+    # delivery). See email_utils.py::send_email() and
     # tasks.py's own dedicated try/except around the email step for where
     # these are set -- never inferred from report_stage.
     email_status = db.Column(db.String(20), nullable=False, default="NOT_ATTEMPTED")

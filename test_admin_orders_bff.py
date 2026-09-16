@@ -18,7 +18,7 @@ other caller.
      nothing; 404 on a nonexistent order_id through either credential.
   C. POST resend: same auth matrix; ReconciliationService is mocked so
      this remains an auth/route-contract test and never starts a real
-     report. Correct credentials call regenerate(order_id); rejected
+     report. Correct credentials call retry_delivery(order_id); rejected
      requests never cross that boundary, and the route itself invents
      no report stage.
 
@@ -153,6 +153,14 @@ def main():
             bridge_row = next((o for o in bridge_body if o["id"] == order.id), None)
             check("A: bridge-path response contract identical to JWT-path", bridge_row == row)
 
+            resp = client.get(f"/admin/download/{order.id}")
+            check("A: report download without auth -> 401", resp.status_code == 401)
+            resp = client.get(
+                f"/admin/download/{order.id}",
+                headers={"X-Admin-Bridge-Key": BRIDGE_SECRET},
+            )
+            check("A: authorized report download reaches resource lookup", resp.status_code == 404)
+
             # ==========================================================
             print("\n=== B: PUT /admin/api/order/<id> auth matrix + persistence ===")
             # ==========================================================
@@ -205,44 +213,44 @@ def main():
                     resumed=True, task_id=None,
                     decision=SimpleNamespace(report_stage="Ready", reason="claimed"),
                 )
-                mock_service.regenerate.return_value = success
+                mock_service.retry_delivery.return_value = success
 
                 order.report_stage = "Ready"
                 db.session.commit()
 
                 resp = client.post(f"/admin/api/resend/{order.id}")
                 check("C: no auth at all -> 401", resp.status_code == 401)
-                check("C: rejected resend (no auth) never called reconciliation", mock_service.regenerate.call_count == 0)
+                check("C: rejected resend (no auth) never called reconciliation", mock_service.retry_delivery.call_count == 0)
                 db.session.refresh(order)
                 check("C: rejected resend (no auth) changed nothing", order.report_stage == "Ready")
 
                 resp = client.post(f"/admin/api/resend/{order.id}", headers={"Authorization": f"Bearer {token_non_admin}"})
                 check("C: authenticated non-admin -> 403", resp.status_code == 403)
-                check("C: rejected resend (non-admin) never called reconciliation", mock_service.regenerate.call_count == 0)
+                check("C: rejected resend (non-admin) never called reconciliation", mock_service.retry_delivery.call_count == 0)
 
                 resp = client.post(f"/admin/api/resend/{order.id}", headers={"Authorization": f"Bearer {token_admin}"})
                 check("C: admin JWT -> 200 (unchanged regression path)", resp.status_code == 200)
-                check("C: admin JWT resend called reconciliation exactly once", mock_service.regenerate.call_count == 1)
-                mock_service.regenerate.assert_called_with(order.id)
+                check("C: admin JWT resend called reconciliation exactly once", mock_service.retry_delivery.call_count == 1)
+                mock_service.retry_delivery.assert_called_with(order.id)
                 db.session.refresh(order)
                 check("C: route itself does not invent a report stage", order.report_stage == "Ready")
 
-                mock_service.regenerate.reset_mock()
+                mock_service.retry_delivery.reset_mock()
                 order.report_stage = "Ready"
                 db.session.commit()
 
                 resp = client.post(f"/admin/api/resend/{order.id}", headers={"X-Admin-Bridge-Key": "wrong-key"})
                 check("C: wrong bridge key -> 401", resp.status_code == 401)
-                check("C: rejected resend (wrong bridge key) never called reconciliation", mock_service.regenerate.call_count == 0)
+                check("C: rejected resend (wrong bridge key) never called reconciliation", mock_service.retry_delivery.call_count == 0)
 
                 resp = client.post(f"/admin/api/resend/{order.id}", headers={"X-Admin-Bridge-Key": BRIDGE_SECRET})
                 check("C: correct bridge key, no JWT at all -> 200", resp.status_code == 200)
-                check("C: bridge-path resend called reconciliation exactly once", mock_service.regenerate.call_count == 1)
-                mock_service.regenerate.assert_called_with(order.id)
+                check("C: bridge-path resend called reconciliation exactly once", mock_service.retry_delivery.call_count == 1)
+                mock_service.retry_delivery.assert_called_with(order.id)
                 db.session.refresh(order)
                 check("C: bridge route itself does not invent a report stage", order.report_stage == "Ready")
 
-                mock_service.regenerate.return_value = SimpleNamespace(
+                mock_service.retry_delivery.return_value = SimpleNamespace(
                     resumed=False, task_id=None,
                     decision=SimpleNamespace(report_stage=None, reason="No Order exists"),
                 )

@@ -54,17 +54,17 @@ def get_all_orders():
 @admin_orders_bp.route('/admin/api/resend/<int:order_id>', methods=['POST'])
 @admin_or_bridge_required
 def resend_order(order_id):
-    result = ReconciliationService().regenerate(order_id)
+    result = ReconciliationService().retry_delivery(order_id)
     if result.decision.report_stage is None:
         return jsonify({"error": "Order not found"}), 404
     if not result.resumed:
         return jsonify({
-            "error": "Report regeneration is not currently eligible.",
+            "error": "Report delivery retry is not currently eligible.",
             "reason": result.decision.reason,
             "report_stage": result.decision.report_stage,
         }), 409
     return jsonify({
-        "message": f"Report regeneration started for order {order_id}",
+        "message": f"Report delivery retry accepted for order {order_id}",
         "task_id": result.task_id,
     }), 200
 

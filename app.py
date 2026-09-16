@@ -52,6 +52,7 @@ from routes.routes_google_purchase_confirm import routes_google_purchase_confirm
 from routes.routes_google_report_confirm import routes_google_report_confirm
 from routes.routes_alerts_dashboard import routes_alerts_dashboard
 from routes.routes_app_version import routes_app_version
+from routes.routes_app_version import admin_or_bridge_required
 from routes.routes_admin_users import routes_admin_users
 from routes.routes_admin_audiences import routes_admin_audiences
 from routes.routes_admin_notifications import routes_admin_notifications
@@ -440,6 +441,7 @@ def transit_current_plus_12():
 # ------------------- ADMIN REPORT DOWNLOAD ------------------- #
 
 @app.route("/admin/download/<int:order_id>")
+@admin_or_bridge_required
 def admin_download_report(order_id):
     """
     Admin ke liye report download endpoint.

@@ -34,6 +34,22 @@ def send_email(to_email, subject, body, pdf_path):
     attachment path on success, and the caller decides what (bounded,
     sanitized) failure detail is worth persisting.
     """
+    # A paid-report email is never valid without its PDF. Validate the
+    # complete attachment before opening an SMTP connection so a missing,
+    # unreadable, empty, or non-PDF artifact cannot become a successful
+    # attachment-free delivery.
+    if not pdf_path or not os.path.isfile(pdf_path):
+        raise FileNotFoundError(f"Report PDF is missing: {pdf_path!r}")
+    try:
+        with open(pdf_path, "rb") as attachment:
+            pdf_bytes = attachment.read()
+    except OSError as exc:
+        raise OSError(f"Report PDF is unreadable: {pdf_path!r}") from exc
+    if not pdf_bytes:
+        raise ValueError(f"Report PDF is empty: {pdf_path!r}")
+    if not pdf_bytes.startswith(b"%PDF-"):
+        raise ValueError(f"Report artifact is not a valid PDF: {pdf_path!r}")
+
     # Create Email
     msg = MIMEMultipart()
     msg['From'] = SENDER_EMAIL
@@ -43,14 +59,12 @@ def send_email(to_email, subject, body, pdf_path):
     # Email Body
     msg.attach(MIMEText(body, 'plain'))
 
-    # Attach PDF
-    if os.path.exists(pdf_path):
-        with open(pdf_path, "rb") as attachment:
-            part = MIMEBase('application', 'octet-stream')
-            part.set_payload(attachment.read())
-            encoders.encode_base64(part)
-            part.add_header('Content-Disposition', f'attachment; filename={os.path.basename(pdf_path)}')
-            msg.attach(part)
+    # Attach the already-validated bytes. There is no attachment-free path.
+    part = MIMEBase('application', 'pdf')
+    part.set_payload(pdf_bytes)
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', f'attachment; filename={os.path.basename(pdf_path)}')
+    msg.attach(part)
 
     # Send Email -- any exception here (SMTP connect/login/send failure,
     # or the os.path.exists/open above) now propagates to the caller
