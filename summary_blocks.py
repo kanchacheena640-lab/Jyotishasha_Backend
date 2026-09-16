@@ -185,6 +185,227 @@ def _build_gemstone_summary(kundali: dict) -> str:
     return summary
 
 
+# Q1.5 -- Paid Report Product Intelligence Data Foundation.
+#
+# Standard sign-rulership (Vedic astrology's own universal convention,
+# not invented here): this exact mapping already exists, byte-for-byte
+# identical, in services/gemstone_recommender.py::PLANET_OWNERSHIP,
+# services/foreign_travel.py::SIGN_LORDS, and services/
+# full_kundali_service.py::SIGN_LORDS (cross-checked against all
+# three before writing this). A fourth small, local, dependency-free
+# copy is written here deliberately rather than importing any of
+# those: services/full_kundali_service.py is a large aggregator whose
+# own module-level import chain pulls in full_kundali_api.py (which
+# itself constructs a Flask app at import time) plus numerous other
+# services -- importing it into this otherwise dependency-free,
+# hot-path report-context module would be exactly the kind of
+# unnecessary coupling problem Q1's own _ordinal() decision already
+# established the precedent for avoiding.
+SIGN_LORDS = {
+    "Aries": "Mars", "Taurus": "Venus", "Gemini": "Mercury", "Cancer": "Moon",
+    "Leo": "Sun", "Virgo": "Mercury", "Libra": "Venus", "Scorpio": "Mars",
+    "Sagittarius": "Jupiter", "Capricorn": "Saturn", "Aquarius": "Saturn", "Pisces": "Jupiter",
+}
+
+
+def build_house_lord_facts(kundali: dict) -> list:
+    """
+    Q1.5 -- structured, deterministic house-by-house facts for all 12
+    houses, ALWAYS all 12 regardless of occupancy: an empty house is
+    never dropped, since sign/lord/lord-placement are all derivable
+    from the natal Lagna alone, independent of whether any planet
+    happens to sit in that house. Each entry:
+        {house, sign, lord, lord_house, lord_sign, occupying_planets}
+    lord_house/lord_sign are None only when the lord planet's own
+    placement genuinely isn't resolvable from `kundali["planets"]`
+    (never guessed). Public (no leading underscore): later PDF/table
+    work (Q2/Q3) may want this structured shape directly, not only the
+    flattened prompt-facing string house_lord_summary below reads.
+    Returns [] if lagna_sign is unrecognized -- never fabricates a
+    house from an unknown Ascendant.
+    """
+    lagna_sign = kundali.get("lagna_sign")
+    if lagna_sign not in SIGN_ORDER:
+        return []
+
+    planets = kundali.get("planets", [])
+    placement_by_planet = {}
+    occupants_by_house = {}
+    for p in planets:
+        name = p.get("name")
+        house = p.get("house")
+        if not name or name == "Ascendant (Lagna)":
+            continue
+        placement_by_planet[name] = {"house": house, "sign": p.get("sign")}
+        if house:
+            occupants_by_house.setdefault(house, []).append(name)
+
+    lagna_index = SIGN_ORDER.index(lagna_sign)
+    facts = []
+    for house_num in range(1, 13):
+        sign = SIGN_ORDER[(lagna_index + house_num - 1) % 12]
+        lord = SIGN_LORDS.get(sign)
+        lord_placement = placement_by_planet.get(lord) if lord else None
+        facts.append({
+            "house": house_num,
+            "sign": sign,
+            "lord": lord,
+            "lord_house": lord_placement["house"] if lord_placement else None,
+            "lord_sign": lord_placement["sign"] if lord_placement else None,
+            "occupying_planets": occupants_by_house.get(house_num, []),
+        })
+    return facts
+
+
+def _build_house_lord_summary(house_facts: list) -> str:
+    """Prompt-friendly flattening of build_house_lord_facts() -- one
+    sentence per house, EMPTY houses explicitly stated as such (never
+    silently omitted) while still carrying their sign/lord/lord-
+    placement facts."""
+    if not house_facts:
+        return "House-lord data not available."
+
+    lines = []
+    for f in house_facts:
+        occupants = ", ".join(f["occupying_planets"]) if f["occupying_planets"] else "no planet placed"
+        if f["lord"] and f["lord_house"]:
+            lord_text = f"its lord {f['lord']} is placed in {_ordinal(f['lord_house'])} house ({f['lord_sign']})"
+        elif f["lord"]:
+            lord_text = f"its lord {f['lord']}'s own placement is not available"
+        else:
+            lord_text = "its lord could not be determined"
+        lines.append(f"House {f['house']} ({f['sign']}): {occupants}; {lord_text}.")
+    return " ".join(lines)
+
+
+def _build_targeted_aspect_summary(kundali: dict, house_facts: list) -> str:
+    """Deterministic, targeted aspect facts reusing ONLY
+    full_kundali_api.py::DRISHTI_RULES (via kundali["house_aspects"],
+    the same table calculate_drishti_for_planets() already uses for
+    the existing aspect_summary) -- no new astrological doctrine.
+    States which planets' special aspects reach the 7th house and the
+    7th lord's own house (the single most-requested cross-report
+    fact), plus Saturn/Venus/Moon's own aspect targets and whether
+    each reaches the 7th house. Facts only -- deliberately never says
+    "afflicted"/"malefic"/"benefic": this codebase has no existing,
+    reusable benefic/malefic doctrine, and inventing one here would
+    violate this phase's own "reuse only existing rules" instruction.
+    Interpretation of these facts stays the report prompt's job (Q3)."""
+    house_aspects = kundali.get("house_aspects") or {}
+    if not house_aspects or not house_facts:
+        return "Targeted aspect data not available."
+
+    facts_by_house = {f["house"]: f for f in house_facts}
+    lines = []
+
+    aspecting_7th = house_aspects.get(7, [])
+    lines.append(
+        f"Planets aspecting the 7th house: {', '.join(aspecting_7th) if aspecting_7th else 'none'}."
+    )
+
+    seventh = facts_by_house.get(7)
+    if seventh and seventh["lord"] and seventh["lord_house"]:
+        lord_house = seventh["lord_house"]
+        aspecting_lord_house = house_aspects.get(lord_house, [])
+        lines.append(
+            f"The 7th house lord ({seventh['lord']}) is placed in house {lord_house} ({seventh['lord_sign']}). "
+            f"Planets aspecting that house: {', '.join(aspecting_lord_house) if aspecting_lord_house else 'none'}."
+        )
+
+    planets_by_name = {p.get("name"): p for p in kundali.get("planets", []) if p.get("name")}
+    for planet in ("Saturn", "Venus", "Moon"):
+        if planet not in planets_by_name:
+            continue
+        targets = sorted(h for h, occupants in house_aspects.items() if planet in occupants)
+        if targets:
+            ordinals = ", ".join(_ordinal(h) for h in targets)
+            reaches_7th = "including the 7th house" if 7 in targets else "not including the 7th house"
+            lines.append(f"{planet} aspects the {ordinals} house(s) from its own position ({reaches_7th}).")
+
+    return " ".join(lines)
+
+
+_SADHESATI_PHASE_KEY_MAP = {
+    "1st Phase": "first_phase", "2nd Phase": "second_phase", "3rd Phase": "third_phase",
+}
+
+
+def _build_sadhesati_summary(kundali: dict) -> str:
+    """Surfaces services/sadhesati_report_generator.py's own
+    deterministic result (already computed in kundali["sadhesati"] by
+    full_kundali_api.py, previously unused by any paid-report prompt --
+    the same class of pre-Q1 disconnect gemstone_suggestion had).
+
+    Deliberately does NOT use that function's own `short_description`
+    active-case wording verbatim, and independently re-resolves the
+    current window's dates from the RAW `phase_dates` dict rather than
+    trusting that function's own internal date fields: inspection
+    found a real, pre-existing key-mismatch bug there -- classify_
+    sade_sati() emits phase labels "1st Phase"/"2nd Phase"/"3rd Phase",
+    but that function's own internal lookup derives its `phase_dates`
+    key as "1st_phase" (phase.lower().replace(" ", "_")) while
+    `phase_dates` itself is actually keyed "first_phase"/"second_
+    phase"/"third_phase" -- so that function's own start_date/end_date
+    are always empty strings for the Active case. Reported here, NOT
+    fixed (sadhesati_report_generator.py is untouched, out of this
+    phase's scope) -- this function sidesteps the bug entirely by
+    reading the raw, correctly-keyed `phase_dates` dict directly via
+    the mapping above, so it is unaffected by it."""
+    info = kundali.get("sadhesati") or {}
+    status = info.get("status")
+    if status not in ("Active", "Inactive"):
+        return "Sade Sati data not available."
+
+    moon_rashi = info.get("moon_rashi")
+    saturn_rashi = info.get("saturn_rashi")
+    phase_dates = info.get("phase_dates") or {}
+
+    if status == "Inactive":
+        base = "You are not currently under Saturn's Sade Sati."
+        upcoming = phase_dates.get("first_phase")
+        if upcoming and upcoming.get("start"):
+            base += (
+                f" Your next Sade Sati is expected to begin around {upcoming['start']} "
+                f"and continue until approximately {upcoming.get('end', 'an unknown date')}."
+            )
+        return base
+
+    phase = info.get("phase")
+    window_key = _SADHESATI_PHASE_KEY_MAP.get(phase)
+    window = phase_dates.get(window_key) if window_key else None
+
+    base = f"You are currently in the {phase} of Sade Sati (Moon sign {moon_rashi}, Saturn transiting {saturn_rashi})."
+    if window and window.get("start") and window.get("end"):
+        base += f" This phase runs from {window['start']} to {window['end']}."
+    return base
+
+
+def _build_foreign_travel_summary(kundali: dict) -> str:
+    """Surfaces services/foreign_travel.py::build_foreign_travel()'s
+    already-computed, deterministic points -- wired into
+    calculate_full_kundali() (Q1.5, see that function's own comment)
+    as kundali["foreign_travel"]. That function returns each point
+    bilingually ({"en": ..., "hi": ...}); this reads the "en" variant
+    only, matching every other key in this module's own established,
+    English-only convention (mahadasha_summary/current_transit_summary/
+    etc. carry no language dimension either -- the report TEMPLATE
+    file chosen by language is what varies, never this shared data
+    layer). Bilingual data is still preserved in kundali["foreign_
+    travel"] itself for any future consumer that needs it."""
+    info = kundali.get("foreign_travel") or {}
+    positive = info.get("positive_points") or []
+    negative = info.get("negative_points") or []
+    if not positive and not negative:
+        return "Foreign travel indication data not available."
+
+    lines = []
+    if positive:
+        lines.append("Supportive indications: " + " ".join(p.get("en", "") for p in positive if p.get("en")))
+    if negative:
+        lines.append("Cautionary indications: " + " ".join(p.get("en", "") for p in negative if p.get("en")))
+    return " ".join(lines)
+
+
 def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
     planets = kundali.get("planets", [])
     lagna_sign = kundali.get("lagna_sign", "")
@@ -254,6 +475,16 @@ def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
     transit_facts_summary = _build_transit_facts_summary(transit, lagna_sign)
     gemstone_summary = _build_gemstone_summary(kundali)
 
+    # 7. Q1.5 NEW -- further additive, deterministic context keys (see
+    # module comment block above each builder). None of the 24 current
+    # prompts reference these yet either; inert via str.format() until
+    # Q3 opts specific report prompts into specific keys.
+    house_facts = build_house_lord_facts(kundali)
+    house_lord_summary = _build_house_lord_summary(house_facts)
+    targeted_aspect_summary = _build_targeted_aspect_summary(kundali, house_facts)
+    sadhesati_summary = _build_sadhesati_summary(kundali)
+    foreign_travel_summary = _build_foreign_travel_summary(kundali)
+
     return {
         "birth_chart_summary": birth_chart_summary,
         "aspect_summary": aspect_summary,
@@ -263,4 +494,8 @@ def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
         "dasha_window_summary": dasha_window_summary,
         "transit_facts_summary": transit_facts_summary,
         "gemstone_summary": gemstone_summary,
+        "house_lord_summary": house_lord_summary,
+        "targeted_aspect_summary": targeted_aspect_summary,
+        "sadhesati_summary": sadhesati_summary,
+        "foreign_travel_summary": foreign_travel_summary,
     }

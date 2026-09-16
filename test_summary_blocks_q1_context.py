@@ -285,8 +285,17 @@ check("H: every existing prompt-facing key is present",
       REQUIRED_EXISTING_KEYS.issubset(blocks.keys()))
 check("H: every Q1 new/stabilized key is present",
       REQUIRED_NEW_KEYS.issubset(blocks.keys()))
-check("H: exactly 8 keys total (no accidental extra/renamed key)",
-      set(blocks.keys()) == REQUIRED_EXISTING_KEYS | REQUIRED_NEW_KEYS)
+# Q1.5 -- Paid Report Product Intelligence Data Foundation legitimately
+# added further keys (house_lord_summary/targeted_aspect_summary/
+# sadhesati_summary/foreign_travel_summary) after this Q1 test file was
+# written. This was an exact-equality check when Q1 was the only phase
+# that had touched this dict; it is now a subset check instead, so it
+# keeps proving "no Q1 key was ever renamed/dropped" (its real intent)
+# without falsely flagging Q1.5's own approved, additive evolution of
+# the same dict as a regression. Q1.5's own test file owns the current
+# full key-count assertion.
+check("H: no Q1 key was renamed or dropped by any later phase",
+      (REQUIRED_EXISTING_KEYS | REQUIRED_NEW_KEYS).issubset(blocks.keys()))
 check("H: every value is a plain string (str.format()-safe, no nested dict/list leaking into a prompt)",
       all(isinstance(v, str) for v in blocks.values()))
 

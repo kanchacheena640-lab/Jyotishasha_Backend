@@ -22,6 +22,7 @@ from services.rajya_sambandh_rajyog import evaluate_rajya_sambandh_rajyog
 from services.shubh_kartari_yog import evaluate_shubh_kartari_yog
 from services.vipreet_rajyog import evaluate_vipreet_rajyog
 from services.gemstone_recommender import recommend_gemstone_from_lagna_9th
+from services.foreign_travel import build_foreign_travel
 from modules.models_user import UserDashaTimeline
 from extensions import db
 
@@ -142,14 +143,22 @@ def calculate_planet_positions(dob, tob, lat, lon):
 
     return sorted(planet_data, key=lambda x: (x['house'], x['name']))
 
+# Q1.5 -- hoisted from calculate_drishti_for_planets()'s own former
+# local variable to a module-level constant, byte-for-byte identical
+# values, so calculate_house_aspects() (below) can reuse the exact
+# same drishti rule table instead of duplicating it. Pure refactor --
+# calculate_drishti_for_planets()'s own behavior is unchanged.
+DRISHTI_RULES = {
+    "Saturn": [3, 7, 10],
+    "Mars": [4, 7, 8],
+    "Jupiter": [5, 7, 9],
+    "Rahu": [5, 7, 9],
+    "Ketu": [5, 7, 9]
+}
+
+
 def calculate_drishti_for_planets(planets):
-    drishti_rules = {
-        "Saturn": [3, 7, 10],
-        "Mars": [4, 7, 8],
-        "Jupiter": [5, 7, 9],
-        "Rahu": [5, 7, 9],
-        "Ketu": [5, 7, 9]
-    }
+    drishti_rules = DRISHTI_RULES
 
     house_planet_map = {i: [] for i in range(1, 13)}
     for p in planets:
@@ -179,6 +188,31 @@ def calculate_drishti_for_planets(planets):
                     )
 
     return aspect_data
+
+
+def calculate_house_aspects(planets):
+    """
+    Q1.5 -- Paid Report Product Intelligence Data Foundation.
+
+    House-indexed drishti (special aspect) facts: for each house 1-12,
+    which planets' aspects (DRISHTI_RULES -- the SAME table
+    calculate_drishti_for_planets() already uses for planet-to-planet
+    aspects, reused verbatim here, never re-invented) reach it,
+    regardless of whether that house is occupied. This is the one
+    thing calculate_drishti_for_planets() cannot answer on its own --
+    it only records an aspect where the TARGET house already has a
+    planet in it, so an aspect onto an EMPTY house (e.g. an empty 7th
+    house) is invisible there. Applying the exact same rules house-by-
+    house instead of planet-by-planet closes that gap without adding
+    any new astrological doctrine.
+    """
+    house_aspects = {h: [] for h in range(1, 13)}
+    for p in planets:
+        rules = DRISHTI_RULES.get(p['name'], [7])
+        for drishti_count in rules:
+            target_house = (p['house'] + drishti_count - 1) % 12 or 12
+            house_aspects[target_house].append(p['name'])
+    return house_aspects
 
 def calculate_shadbala_for_planets(planets):
     shadbala_data = {}
@@ -360,6 +394,24 @@ def calculate_full_kundali(name, dob, tob, lat, lon, user_id=None, language='en'
     shubh_kartari_result = evaluate_shubh_kartari_yog(planets, language)
     vipreet_rajyog_result = evaluate_vipreet_rajyog(planets, lagna_sign, language)
     gemstone_suggestion = recommend_gemstone_from_lagna_9th(lagna_sign, planets,language)
+
+    # Q1.5 -- Paid Report Product Intelligence Data Foundation. Smallest
+    # safe additive wiring, mirroring exactly how gemstone_suggestion
+    # (above) and sadhesati_result (below) are already computed and
+    # attached: build_foreign_travel() is a complete, already-tested,
+    # bilingual 9th/12th-house-lord + drishti analyzer that existed in
+    # this codebase but was never called from here -- no astrology
+    # logic is duplicated, only invoked, with the exact input shape
+    # ({"planets": ..., "lagna_sign": ...}) it already expects (the
+    # same pattern build_manglik_dosh() below already uses).
+    foreign_travel_result = build_foreign_travel(
+        {"planets": planets, "lagna_sign": lagna_sign}, lang=language
+    )
+    # Q1.5 -- house-indexed aspect facts (see calculate_house_aspects()
+    # docstring above), computed once here alongside the existing
+    # planet-indexed drishti_info this function already builds.
+    house_aspects = calculate_house_aspects(planets)
+
     moon_sign = next((p['sign'] for p in planets if p["name"] == "Moon"), None)
     lagna_sign = next((p['sign'] for p in planets if "Ascendant" in p["name"]), None)
 
@@ -401,6 +453,9 @@ def calculate_full_kundali(name, dob, tob, lat, lon, user_id=None, language='en'
         "shubh_kartari_yog": shubh_kartari_result,
         "vipreet_rajyog": vipreet_rajyog_result,
         "gemstone_suggestion": gemstone_suggestion,
+        # Q1.5 additions -- purely additive, no existing key touched.
+        "foreign_travel": foreign_travel_result,
+        "house_aspects": house_aspects,
     }
 
 
