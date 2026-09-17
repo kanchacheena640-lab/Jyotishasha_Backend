@@ -45,6 +45,11 @@ from modules.payments.report_q3_batch1 import (
     get_mandatory_disclaimer,
 )
 
+# Q3 Batch 2 -- product-specific deterministic timeline wiring for the
+# 4 marriage-family products. See report_q3_batch2.py's own docstring;
+# same "no new AI call/component shape/astrology calculation" rule.
+from modules.payments.report_q3_batch2 import compute_dasha_window_timeline
+
 # Q3 Batch 1 (visual QA correction round) -- shared, renderer-level
 # label localization (see report_i18n_labels.py's own docstring) and
 # the Q2.1 app-download CTA's verified store URL(s) (see app_config.py
@@ -358,6 +363,17 @@ def _generate_and_send_report_core(order_id):
                     deterministic_value = saturn_hero["value"]
                     deterministic_timing = saturn_hero["timing"]
                     timeline_component = saturn_hero["timeline"]
+                elif product_slug in ("marriage_report", "delay_in_marriage_report"):
+                    # Q3 Batch 2 -- these 2 products (of the 4 marriage-
+                    # family products) declare timeline=True in their
+                    # registry entry; hero value/timing stay AI-authored
+                    # (no deterministic override -- unlike gemstone_
+                    # consultation/saturn_transit_report above, no
+                    # marriage-scoring or marriage-timing-event engine
+                    # exists to source a deterministic value from). Real
+                    # Dasha-window dates only, never a guessed marriage
+                    # date -- see report_q3_batch2.py's own docstring.
+                    timeline_component = compute_dasha_window_timeline(kundali, language=language)
 
                 answer_hero = assemble_answer_hero(
                     hero,

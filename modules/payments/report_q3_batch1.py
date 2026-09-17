@@ -9,6 +9,12 @@ mood_mental_health_report, divorce_possibility_report). Kept OUT of
 tasks.py's own core function to avoid growing that one function with a
 4th large per-product special-case block.
 
+DISCLAIMER_TEXT/get_mandatory_disclaimer() below are generic and
+shared -- Q3 Batch 2 (modules/payments/report_q3_batch2.py) reuses
+them unchanged for its own 2 mandatory disclaimer types rather than
+duplicating the mechanism; module name is historical, not a scope
+boundary.
+
 Does NOT redesign Batch 0's architecture: everything here is either a
 thin, product-specific deterministic-value computation feeding
 modules/payments/report_structured_output.py::assemble_answer_hero()'s
@@ -71,6 +77,45 @@ DISCLAIMER_TEXT = {
             "नहीं है। महत्वपूर्ण पारिवारिक या कानूनी निर्णय आपकी वास्तविक "
             "परिस्थितियों और आवश्यकता होने पर उचित पेशेवर सलाह के आधार पर ही "
             "लिए जाने चाहिए।"
+        ),
+    },
+    # Q3 Batch 2 -- problem_in_marriage_report. Never a divorce
+    # prediction, never a claim about the partner's private thoughts or
+    # intentions.
+    "marriage_problem_non_certainty_mandatory": {
+        "en": (
+            "This is an astrology-based view of relationship friction "
+            "tendencies, not a diagnosis of your relationship or a "
+            "prediction of separation or divorce. It says nothing about "
+            "your partner's private thoughts or intentions. Important "
+            "relationship decisions should be based on your real "
+            "circumstances and, where helpful, a qualified counsellor."
+        ),
+        "hi": (
+            "यह रिपोर्ट संबंधों में संभावित तनाव की प्रवृत्तियों का "
+            "ज्योतिष-आधारित आकलन है; यह आपके रिश्ते का निदान या "
+            "अलगाव/तलाक की भविष्यवाणी नहीं है। यह आपके साथी के निजी "
+            "विचारों या इरादों के बारे में कुछ नहीं बताती। महत्वपूर्ण "
+            "निर्णय आपकी वास्तविक परिस्थितियों और आवश्यकता होने पर किसी "
+            "योग्य परामर्शदाता की सलाह के आधार पर लिए जाने चाहिए।"
+        ),
+    },
+    # Q3 Batch 2 -- second_marriage_report. Never a guarantee, never a
+    # statement about the outcome/ending of any current marriage.
+    "second_marriage_non_certainty_mandatory": {
+        "en": (
+            "This is an astrology-based tendency reading about the "
+            "possibility of a second marriage or a significant later "
+            "union -- not a guarantee, and not a statement about the "
+            "outcome or ending of any current marriage. Personal and "
+            "legal decisions should rest on your real circumstances."
+        ),
+        "hi": (
+            "यह दूसरे विवाह या किसी महत्वपूर्ण बाद के संबंध की संभावना के "
+            "बारे में ज्योतिष-आधारित प्रवृत्ति है -- यह कोई गारंटी नहीं है, "
+            "और न ही यह किसी वर्तमान विवाह के परिणाम या समाप्ति के बारे में "
+            "कोई कथन है। व्यक्तिगत और कानूनी निर्णय आपकी वास्तविक "
+            "परिस्थितियों पर आधारित होने चाहिए।"
         ),
     },
 }

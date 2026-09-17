@@ -74,16 +74,20 @@ check("A: REGISTRY keys are exactly the 25 trusted report_slugs (no typo, none m
       set(REGISTRY.keys()) == EXPECTED_SLUGS)
 
 # =================================================================
-print("\n=== B: CRITICAL -- exactly the 4 Q3 Batch 1 products are enabled ===")
+print("\n=== B: CRITICAL -- exactly the 8 Q3 Batch 1 + Batch 2 products are enabled ===")
 # =================================================================
 EXPECTED_Q3_ENABLED = {
+    # Q3 Batch 1
     "gemstone_consultation", "saturn_transit_report",
     "mood_mental_health_report", "divorce_possibility_report",
+    # Q3 Batch 2
+    "marriage_report", "delay_in_marriage_report",
+    "problem_in_marriage_report", "second_marriage_report",
 }
 actually_enabled = {slug for slug, p in REGISTRY.items() if p.q3_enabled}
-check("B: exactly these 4 products have q3_enabled=True (Q3 Batch 1)",
+check("B: exactly these 8 products have q3_enabled=True (Q3 Batch 1 + Batch 2)",
       actually_enabled == EXPECTED_Q3_ENABLED)
-check("B: the remaining 21 products all have q3_enabled=False (staged migration safety)",
+check("B: the remaining 17 products all have q3_enabled=False (staged migration safety)",
       all(not p.q3_enabled for slug, p in REGISTRY.items() if slug not in EXPECTED_Q3_ENABLED))
 
 # =================================================================

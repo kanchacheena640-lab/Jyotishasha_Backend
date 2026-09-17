@@ -46,6 +46,20 @@ LABELS = {
         "en": "Current Saturn Transit Window",
         "hi": "वर्तमान शनि गोचर अवधि",
     },
+    # Q3 Batch 2 -- shared Dasha-window timeline component (marriage_
+    # report, delay_in_marriage_report), see report_q3_batch2.py.
+    "dasha_timeline_heading": {
+        "en": "Current & Upcoming Dasha Windows",
+        "hi": "वर्तमान एवं आगामी दशा अवधि",
+    },
+    "current_dasha_window": {
+        "en": "Current period",
+        "hi": "वर्तमान अवधि",
+    },
+    "upcoming_dasha_window": {
+        "en": "Upcoming window",
+        "hi": "आगामी अवधि",
+    },
     "app_download_heading": {
         "en": "Continue Your Astrology Journey",
         "hi": "अपनी ज्योतिष यात्रा जारी रखें",

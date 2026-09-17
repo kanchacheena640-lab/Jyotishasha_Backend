@@ -13,18 +13,19 @@ versioned with the code that consumes it, not admin-editable runtime
 business data (price/active-status, which already live in
 ReportProduct, untouched by this file).
 
-CRITICAL scope rule, updated for Q3 Batch 1: at Batch 0 every one of
-the 25 entries had q3_enabled=False. Batch 1 flips exactly 4 of them
-to q3_enabled=True -- gemstone_consultation, saturn_transit_report,
-mood_mental_health_report, divorce_possibility_report -- the only 4
-whose EN+HI prompts have actually been rewritten for the structured-
-output contract. All other 21 products remain q3_enabled=False and
-byte-for-byte unaffected; flipping any of them on is a later batch's
-job, done together with that product's own prompt rewrite, never
-before. tasks.py/modules/love/love_premium_task.py both check this
-flag before ever calling report_structured_output.py's parser/
-validator -- a product with q3_enabled=False is completely unaffected
-by anything in this file beyond being looked up.
+CRITICAL scope rule, updated for Q3 Batch 2: at Batch 0 every one of
+the 25 entries had q3_enabled=False. Batch 1 flipped 4 -- gemstone_
+consultation, saturn_transit_report, mood_mental_health_report,
+divorce_possibility_report. Batch 2 flips 4 more -- marriage_report,
+delay_in_marriage_report, problem_in_marriage_report, second_marriage_
+report -- for a total of 8 q3_enabled=True out of 25. Each flip happens
+only together with that product's own prompt rewrite for the
+structured-output contract, never before. The remaining 17 products
+stay q3_enabled=False and byte-for-byte unaffected; flipping any of
+them on is a later batch's job. tasks.py/modules/love/love_premium_
+task.py both check this flag before ever calling report_structured_
+output.py's parser/validator -- a product with q3_enabled=False is
+completely unaffected by anything in this file beyond being looked up.
 
 Fields per entry:
   generator            "standard_v1" | "love_premium_v1"
@@ -124,11 +125,23 @@ REGISTRY: dict = {
         hero_value_source="ai", required_hero_fields=("label", "interpretation", "evidence"),
         gemstone="optional", disclaimer="relationship_privacy",
     ),
+    # Q3 Batch 2 -- ENABLED. `value` stays AI-authored (a qualitative
+    # outlook descriptor, e.g. "Supportive, With Steady Effort" -- never
+    # an exact age/date; the previous prompt's "before 24 / after 29"
+    # instruction is removed, not softened -- no deterministic engine
+    # in this codebase computes a marriage age). `timeline` is real
+    # Dasha-window dates via report_q3_batch2.py::compute_dasha_window_
+    # timeline() (reuses summary_blocks.py's own dasha-sequence
+    # flattening -- no new astrology calculation).
     "marriage_report": _standard(
         "marriage_report",
-        houses=(7,), planets=("Venus", "Jupiter", "Mars", "Rahu"),
+        houses=(7,), planets=("Venus", "Jupiter", "Mars", "Saturn", "Rahu"),
         context_keys=("house_lord_summary", "manglik_summary", "dasha_window_summary", "targeted_aspect_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "gemstone": True, "timeline": True, "action_list": True},
         gemstone="optional", disclaimer="general",
+        q3_enabled=True,
     ),
     "startup_suggestion_report": _standard(
         "startup_suggestion_report",
@@ -191,11 +204,22 @@ REGISTRY: dict = {
         context_keys=("house_lord_summary", "dasha_window_summary"),
         gemstone="optional", disclaimer="sensitive_topic",
     ),
+    # Q3 Batch 2 -- ENABLED. `value` stays AI-authored but is
+    # PROMPT-CONSTRAINED (not backend-enum-validated -- same established
+    # precedent as divorce_possibility_report's own Low/Moderate/Elevated
+    # field, Q3 Batch 1) to exactly one of Low/Moderate/Elevated -- never
+    # a percentage or score, since no deterministic delay-scoring engine
+    # exists. `timeline` is real Dasha-window dates, same helper as
+    # marriage_report.
     "delay_in_marriage_report": _standard(
         "delay_in_marriage_report",
-        houses=(7,), planets=("Venus", "Jupiter", "Saturn"),
+        houses=(7,), planets=("Venus", "Jupiter", "Saturn", "Mars", "Rahu", "Ketu"),
         context_keys=("house_lord_summary", "targeted_aspect_summary", "dasha_window_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "gemstone": True, "timeline": True, "action_list": True},
         gemstone="optional", disclaimer="general",
+        q3_enabled=True,
     ),
     "financial_stability_report": _standard(
         "financial_stability_report",
@@ -223,11 +247,28 @@ REGISTRY: dict = {
         context_keys=("house_lord_summary", "aspect_summary", "targeted_aspect_summary"),
         gemstone="optional", disclaimer="relationship_privacy",
     ),
+    # Q3 Batch 2 -- ENABLED. `value` stays AI-authored, a calm
+    # qualitative descriptor (e.g. "Manageable With Communication") --
+    # never a diagnostic/certainty label, never Low/Moderate/Elevated
+    # (deliberately NOT forced into that tier family -- this is a
+    # friction-pattern product, not a risk-signal product). Safety-
+    # sensitive (no claims about a partner's private thoughts/
+    # intentions, no divorce prediction) -- the mandatory disclaimer is
+    # backend-controlled via DISCLAIMER_TEXT["marriage_problem_non_
+    # certainty_mandatory"] in report_q3_batch1.py, injected
+    # unconditionally regardless of Luna's own output. No gemstone --
+    # a gemstone box on a marital-friction product would read as "wear
+    # this to fix your marriage," matching the precedent already set
+    # for mood_mental_health_report/divorce_possibility_report.
     "problem_in_marriage_report": _standard(
         "problem_in_marriage_report",
         houses=(7,), planets=("Venus", "Jupiter"),
-        context_keys=("house_lord_summary", "targeted_aspect_summary"),
-        gemstone="optional", disclaimer="general",
+        context_keys=("house_lord_summary", "targeted_aspect_summary", "dasha_window_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "gemstone": False, "timeline": False, "action_list": True, "disclaimer": True},
+        gemstone="disabled", disclaimer="marriage_problem_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     # Q3 Batch 1 -- ENABLED. `value` stays AI-authored (a gentle
     # tendency descriptor, never a diagnostic label) -- hero_value_
@@ -286,11 +327,25 @@ REGISTRY: dict = {
         gemstone="disabled", disclaimer="none",
         q3_enabled=True,
     ),
+    # Q3 Batch 2 -- ENABLED. `value` stays AI-authored, PROMPT-
+    # CONSTRAINED (not backend-enum-validated, same precedent as
+    # delay_in_marriage_report above) to exactly one of Low/Moderate/
+    # Elevated. Evidence spans BOTH the 7th and 9th houses (classical
+    # second-marriage significators) -- an empty house is never treated
+    # as "no evidence" (see the prompt's own explicit instruction).
+    # Safety-sensitive: the mandatory disclaimer (DISCLAIMER_TEXT
+    # ["second_marriage_non_certainty_mandatory"]) is backend-
+    # controlled, never left to Luna. No gemstone, same reasoning as
+    # problem_in_marriage_report.
     "second_marriage_report": _standard(
         "second_marriage_report",
         houses=(7, 9), planets=("Venus", "Jupiter"),
         context_keys=("house_lord_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="general",
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "gemstone": False, "timeline": False, "action_list": True, "disclaimer": True},
+        gemstone="disabled", disclaimer="second_marriage_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     # Q3 Batch 1 -- ENABLED. `value` stays AI-authored (a calibrated
     # Low/Moderate/Elevated tendency, always framed as astrological
