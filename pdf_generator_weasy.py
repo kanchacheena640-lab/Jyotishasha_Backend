@@ -5,6 +5,14 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
 from reportlab.graphics import renderSVG
 
+# Q3 Batch 1 (visual QA correction round) -- shared presentation-layer
+# date formatter (DD/MM/YYYY for every customer-facing date) and
+# shared component-label localization (EN/HI), reused by tasks.py/
+# modules/payments/report_q3_batch1.py too so the SAME rules apply
+# everywhere a date or a shared component label reaches a customer.
+from modules.payments.report_date_format import format_customer_date
+from modules.payments.report_i18n_labels import labels_for_language
+
 # Base paths
 BASE_DIR = os.path.dirname(__file__)
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
@@ -261,7 +269,16 @@ def generate_pdf_report_weasy(
         renderSVG.drawToFile(kundali_drawing, kundali_abs)
 
     # ✅ Step 2: Context for Jinja template
-    today_str = datetime.now().strftime("%d %b %Y")
+    # Q3 Batch 1 (visual QA correction) -- ALL customer-facing dates use
+    # the shared DD/MM/YYYY presentation formatter; canonical/internal
+    # date storage (Order.dob's own ISO "YYYY-MM-DD" column, kundali/
+    # dasha/transit calculation) is completely untouched -- only how a
+    # date STRING is displayed here changes.
+    today_str = format_customer_date(datetime.now())
+    display_user_info = dict(user_info or {})
+    if display_user_info.get("dob"):
+        display_user_info["dob"] = format_customer_date(display_user_info["dob"])
+
     ctx = {
         "report_title": product.replace("_", " ").title(),
         "report_subtitle": report_subtitle,
@@ -269,10 +286,15 @@ def generate_pdf_report_weasy(
         "is_hindi": language == "hi",
         "lang": language,
         "today_str": today_str,
-        "user_info": user_info,
+        "user_info": display_user_info,
         "kundali_img_src": kundali_rel,
         "logo_src": logo_src,
         "fonts_dir_rel": FONTS_REL,
+        # Q3 Batch 1 -- shared, renderer-level localized labels for the
+        # small set of fixed component strings (gemstone box, timing
+        # label, action-list heading, app-download CTA) -- see
+        # modules/payments/report_i18n_labels.py's own docstring.
+        "labels": labels_for_language(language),
 
         # Summaries (only if used) -- unchanged Q1/Q1.5 contract, same
         # keys, same "only if the prompt actually references it" gate.

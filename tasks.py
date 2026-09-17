@@ -12,9 +12,48 @@ from modules.payments.report_delivery_service import deliver_generated_report
 from summary_blocks import build_summary_blocks_with_transit
 from full_kundali_api import calculate_full_kundali
 from transit_engine import get_current_positions
-from openai import OpenAI
 from kundali_chart_generator import generate_kundali_drawing
 from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
+
+# Q3 Batch 0 -- shared paid-report AI client/model (replaces this
+# file's own former direct `from openai import OpenAI` + module-level
+# client + hardcoded model="gpt-4o-mini"; see modules/payments/
+# report_ai_client.py's own docstring for the full rationale, incl.
+# the locked "no automatic model fallback" rule).
+from modules.payments.report_ai_client import generate_report_completion
+from modules.payments.report_product_intelligence import get_product_intelligence
+from modules.payments.report_structured_output import (
+    parse_structured_response,
+    validate_required_hero_fields,
+    assemble_answer_hero,
+    assemble_gemstone_component,
+    ReportMetadataError,
+)
+# ReportMetadataError is imported here ONLY to be RAISED (Q3 Batch 1 --
+# gemstone_consultation's own-gemstone-missing case and saturn_transit_
+# report's own-house-undetermined case below), never caught -- it must
+# still propagate to this function's own existing `except Exception`
+# below unchanged (see report_structured_output.py's own docstring).
+
+# Q3 Batch 1 -- product-specific deterministic hero/timing/disclaimer
+# wiring for the 4 newly-enabled products. See report_q3_batch1.py's
+# own docstring; this introduces no new AI call, PDF component shape,
+# or astrology calculation.
+from modules.payments.report_q3_batch1 import (
+    compute_gemstone_hero_value,
+    compute_saturn_transit_hero,
+    get_mandatory_disclaimer,
+)
+
+# Q3 Batch 1 (visual QA correction round) -- shared, renderer-level
+# label localization (see report_i18n_labels.py's own docstring) and
+# the Q2.1 app-download CTA's verified store URL(s) (see app_config.py
+# -- JYOTISHASHA_PLAY_STORE_URL is derived from the exact production
+# package id already used by the live Force-Update system, never
+# invented; JYOTISHASHA_APP_STORE_URL is None because this app does not
+# yet ship on iOS).
+from modules.payments.report_i18n_labels import get_label
+from app_config import JYOTISHASHA_PLAY_STORE_URL, JYOTISHASHA_APP_STORE_URL
 
 # Phase 4C -- the existing, unmodified Phase-2 ledger write path. This
 # import introduces no circular dependency: modules.activity_events.*
@@ -31,6 +70,17 @@ def _emit_report_event(
     attempt_started_at,
     report_type=None,
     failure_reason=None,
+    # Q3 Batch 0 -- AI usage/cost observability (report_generation_
+    # completed only; see call site). Never PII: a model name and four
+    # numbers. None means "not applicable/not attempted" and is simply
+    # omitted below, matching every other optional field's convention
+    # in this function.
+    model=None,
+    input_tokens=None,
+    output_tokens=None,
+    total_tokens=None,
+    duration_seconds=None,
+    structured_metadata_valid=None,
 ):
     """Phase 4C -- observational only, called ONLY after this pipeline's
     own authoritative report_stage commit for this attempt has already
@@ -62,6 +112,33 @@ def _emit_report_event(
             properties["report_type"] = report_type
         if failure_reason is not None:
             properties["failure_reason"] = failure_reason
+        # Q3 Batch 0 -- AI usage/cost observability. No prompt text, no
+        # response text, no customer PII -- model name + token counts +
+        # duration only (modules/payments/report_ai_client.py's own
+        # docstring states the same "never log content/PII" rule; this
+        # is the one place that data is allowed to reach a durable log).
+        # Property KEYS are "ai_*_units", not "*_tokens" -- discovered
+        # by a real failing test that activity_events' own
+        # _FORBIDDEN_KEY_SUBSTRINGS denylist (correctly) rejects any
+        # key containing "token" as a defense-in-depth measure against
+        # auth/session/API tokens, regardless of allowlist membership;
+        # see event_schemas.py's own comment on this exact entry. The
+        # local Python parameter names here stay input_tokens/
+        # output_tokens/total_tokens (accurate, matches
+        # ReportAICompletion's own field names) -- only the string keys
+        # actually written into `properties` are renamed.
+        if model is not None:
+            properties["model"] = model
+        if input_tokens is not None:
+            properties["ai_input_units"] = input_tokens
+        if output_tokens is not None:
+            properties["ai_output_units"] = output_tokens
+        if total_tokens is not None:
+            properties["ai_total_units"] = total_tokens
+        if duration_seconds is not None:
+            properties["duration_seconds"] = round(duration_seconds, 3)
+        if structured_metadata_valid is not None:
+            properties["structured_metadata_valid"] = structured_metadata_valid
 
         dedupe_key = None
         if attempt_started_at is not None:
@@ -115,8 +192,11 @@ from app import app
 # Load environment variables
 load_dotenv()
 
-# OpenAI client
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Q3 Batch 0 -- the module-level `openai_client = OpenAI(...)` that
+# used to live here is gone; generate_report_completion()
+# (modules/payments/report_ai_client.py) owns its own lazy singleton
+# client now, shared with modules/love/love_premium_task.py instead of
+# each file constructing its own.
 
 # ------------------------------------------------------------
 # 🚀 Dual-Mode Task Definition
@@ -219,12 +299,131 @@ def _generate_and_send_report_core(order_id):
             with open(f"debug_prompts/{product_slug}_{order_id}_prompt.txt", "w", encoding="utf-8") as f:
                 f.write(prompt_final)
 
-            # Step 5: GPT call
-            response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt_final}]
-            )
-            gpt_content = response.choices[0].message.content.strip()
+            # Step 5: AI call (Q3 Batch 0 -- shared Luna client). Raises
+            # straight through on failure -- no automatic fallback
+            # model (see report_ai_client.py's own docstring) -- caught
+            # by this function's own existing outer except-Exception
+            # below, exactly as an OpenAI failure already was before
+            # this change.
+            completion = generate_report_completion(prompt_final)
+
+            # Q3 Batch 0/1 -- product-intelligence lookup. Exactly 4
+            # products (gemstone_consultation, saturn_transit_report,
+            # mood_mental_health_report, divorce_possibility_report)
+            # have q3_enabled=True as of Batch 1; the `if` branch below
+            # is unreachable for any of the other 21 products, which
+            # keep their exact pre-Batch-0 narrative-only behavior.
+            product_intel = get_product_intelligence(product_slug)
+            answer_hero = None
+            gemstone_component = None
+            action_list_component = None
+            timeline_component = None
+            structured_metadata_valid = None  # None = not attempted
+
+            if product_intel.q3_enabled:
+                # Q3 Batch 0 correction #1 (LOCKED): missing/malformed
+                # structured metadata for a Q3-enabled product is a
+                # HARD FAILURE -- validate_required_hero_fields() raises
+                # ReportMetadataError here, which propagates to this
+                # function's own existing outer except-Exception and
+                # becomes report_stage="Failed" (F2-recoverable),
+                # exactly like any other generation failure. This never
+                # silently degrades to a narrative-only report for a
+                # Q3-enabled product -- Page 2 must answer the
+                # purchased question, or the report is not delivered.
+                metadata, gpt_content = parse_structured_response(completion.content)
+                hero = validate_required_hero_fields(metadata, product_intel.required_hero_fields)
+
+                # Q3 Batch 1 -- product-specific deterministic
+                # value/timing overrides. AI's own value/timing is
+                # discarded (never merged) whenever one of these is
+                # supplied -- see assemble_answer_hero()'s own docstring.
+                deterministic_value = None
+                deterministic_timing = None
+                if product_slug == "gemstone_consultation":
+                    deterministic_value = compute_gemstone_hero_value(kundali.get("gemstone_suggestion"))
+                    if not deterministic_value:
+                        # This product's purchased answer IS the
+                        # gemstone recommendation -- with no
+                        # deterministic recommendation to show, this
+                        # must FAIL rather than render an incomplete
+                        # (or AI-invented) premium report.
+                        raise ReportMetadataError(
+                            "gemstone_consultation: deterministic gemstone "
+                            "recommendation unavailable; the purchased "
+                            "answer cannot be produced."
+                        )
+                elif product_slug == "saturn_transit_report":
+                    saturn_hero = compute_saturn_transit_hero(kundali, language=language)
+                    deterministic_value = saturn_hero["value"]
+                    deterministic_timing = saturn_hero["timing"]
+                    timeline_component = saturn_hero["timeline"]
+
+                answer_hero = assemble_answer_hero(
+                    hero,
+                    deterministic_value=deterministic_value,
+                    deterministic_timing=deterministic_timing,
+                )
+                structured_metadata_valid = True
+
+                if product_intel.gemstone_policy != "disabled":
+                    gemstone_component = assemble_gemstone_component(
+                        kundali.get("gemstone_suggestion"),
+                        ai_reason=metadata.get("gemstone_reason"),
+                    )
+                    if gemstone_component is None and product_intel.gemstone_policy == "required":
+                        # Q3 Batch 1 -- gemstone_consultation's own
+                        # required-gemstone rule (see comment above):
+                        # this branch is actually unreachable in
+                        # practice since deterministic_value's own
+                        # check above already caught the same missing
+                        # data, but is kept as an explicit, direct
+                        # safeguard against exactly this failure mode
+                        # for any future "required" product.
+                        raise ReportMetadataError(
+                            f"{product_slug}: deterministic gemstone data "
+                            "unavailable; this product's purchased answer "
+                            "cannot be produced without it."
+                        )
+
+                # Q3 Batch 1 -- AI-authored action_items, only when the
+                # product's own registry entry enables the component and
+                # the metadata actually supplied a valid, non-empty list
+                # of non-empty strings. Never invented by the backend.
+                if product_intel.components_enabled.get("action_list"):
+                    raw_items = metadata.get("action_items")
+                    if isinstance(raw_items, list):
+                        items = [item.strip() for item in raw_items if isinstance(item, str) and item.strip()]
+                        if items:
+                            action_list_component = {"heading": get_label("suggested_next_steps", language), "items": items}
+            else:
+                # Not yet migrated to Q3 structured output -- the
+                # entire response is narrative, byte-for-byte the same
+                # behavior as every report generated before Batch 0.
+                gpt_content = completion.content
+
+            # Q3 Batch 1 -- fixed, backend-controlled disclaimer text.
+            # Never sourced from Luna's own output; returns None for
+            # every disclaimer_type other than the two Batch-1 mandatory
+            # ones, so this is inert for all other products/products'
+            # existing behavior.
+            disclaimer_text = get_mandatory_disclaimer(product_intel.disclaimer_type, language)
+
+            # Q3 Batch 1 (visual QA correction) -- Q2.1's own LOCKED
+            # closing CTA. Every paid report (not just the 4 Q3-enabled
+            # ones -- this was a global gap, never wired from this call
+            # site at all until now) ends with the Jyotishasha App
+            # download CTA. No consultation/gemstone-purchase/cross-sell
+            # copy is possible through this component (Q2.1's own
+            # structural rule); play_store_url is the verified,
+            # non-invented production URL from app_config.py,
+            # app_store_url stays None (no verified iOS listing exists).
+            app_download_component = {
+                "heading": get_label("app_download_heading", language),
+                "benefit_text": get_label("app_download_body", language),
+                "play_store_url": JYOTISHASHA_PLAY_STORE_URL,
+                "app_store_url": JYOTISHASHA_APP_STORE_URL,
+            }
 
             # Payment Hardening Blocker 02.1 (Progress Heartbeat): GPT is
             # the one stage whose legitimate duration can approach the
@@ -279,9 +478,19 @@ def _generate_and_send_report_core(order_id):
                 product=order["product"],
                 # Q2 -- wires the language this function already resolves
                 # (see `language` above) through to the PDF's own
-                # typography choice; no new report content/component is
-                # supplied here (that stays a Q3 decision).
+                # typography choice.
                 language=language,
+                # Q3 Batch 0/1 -- None for every product not enabled in
+                # the registry (generate_pdf_report_weasy() already
+                # treats None as "render nothing" for all of these,
+                # Q2/Q2.1); populated only for the 4 Q3 Batch 1 products
+                # per their own registry configuration above.
+                answer_hero=answer_hero,
+                gemstone=gemstone_component,
+                action_list=action_list_component,
+                timeline=timeline_component,
+                disclaimer=disclaimer_text,
+                app_download=app_download_component,
             )
 
             # Step 7: Save + Email
@@ -304,6 +513,15 @@ def _generate_and_send_report_core(order_id):
                     order_id=order_id,
                     report_type=product,
                     attempt_started_at=attempt_started_at,
+                    # Q3 Batch 0 -- AI usage/cost observability. No
+                    # prompt/response content, no PII -- see
+                    # _emit_report_event()'s own docstring/comment.
+                    model=completion.model,
+                    input_tokens=completion.input_tokens,
+                    output_tokens=completion.output_tokens,
+                    total_tokens=completion.total_tokens,
+                    duration_seconds=completion.duration_seconds,
+                    structured_metadata_valid=structured_metadata_valid,
                 )
 
             # Task 17B -- deliberately its OWN try/except, separate from

@@ -52,13 +52,33 @@
       color: var(--ink);
     }
 
-    /* Q2 -- Hindi typography is now an explicit, language-driven choice
+    /* Q2 -- Hindi typography is an explicit, language-driven choice
        (body.hi, set only when the order's own language is "hi") rather
        than a class hardcoded onto every single card regardless of the
        report's actual language. A Latin fallback stack stays in place
        either way, so nothing depends solely on the Devanagari face
-       loading successfully. */
-    body.hi, body.hi p, body.hi li, body.hi td, body.hi th {
+       loading successfully.
+
+       Q3 Batch 1 (visual QA correction) -- ROOT CAUSE of the reported
+       "visibly corrupted Devanagari glyphs": this rule used to list
+       only body/p/li/td/th. Every component added since Q2.1 (cover
+       title, section/sub headings, the answer-hero label/value/
+       interpretation, the gemstone box, the disclaimer box, the
+       app-download CTA, timeline/result-card labels) was never in that
+       list, so for a Hindi report those elements silently fell through
+       to the PLAIN body rule below (Helvetica/Arial -- zero Devanagari
+       coverage), forcing WeasyPrint/Pango into uncontrolled system
+       font-fallback substitution for exactly that text -- which is
+       what produces broken conjuncts/misplaced matras ("corrupted"
+       glyphs), not a defect in the font file itself (confirmed: the
+       embedded fonts/NotoSansDevanagari-Regular.ttf has full Devanagari
+       + Latin coverage and renders correctly wherever this rule DOES
+       apply, e.g. narrative paragraphs). Using `body.hi *` instead of
+       an enumerated tag/class list is deliberate: it is not just a fix
+       for the components named above, it is also future-proof -- any
+       new component class added later automatically inherits correct
+       Hindi typography without another CSS edit. */
+    body.hi, body.hi * {
       font-family: 'NotoSansDevanagari', 'Noto Sans', Helvetica, Arial, sans-serif;
     }
 
@@ -435,7 +455,7 @@
           {% for point in answer_hero.get('evidence') %}<li>{{ point }}</li>{% endfor %}
         </ul>
       {% endif %}
-      {% if answer_hero.timing %}<div class="answer-hero-timing"><strong>Timing:</strong> {{ answer_hero.timing }}</div>{% endif %}
+      {% if answer_hero.timing %}<div class="answer-hero-timing"><strong>{{ labels.timing }}:</strong> {{ answer_hero.timing }}</div>{% endif %}
       {% if answer_hero.caution %}<div class="answer-hero-caution">{{ answer_hero.caution }}</div>{% endif %}
     </div>
   {% endif %}
@@ -578,10 +598,10 @@
        "a supportive gemstone..." filler. Absent by default. -->
   {% if gemstone and (gemstone.gemstone or gemstone.planet) %}
     <div class="gemstone-box">
-      <div class="gemstone-heading">Recommended Gemstone</div>
+      <div class="gemstone-heading">{{ labels.recommended_gemstone }}</div>
       {% if gemstone.gemstone %}<div class="gemstone-value">{{ gemstone.gemstone }}</div>{% endif %}
-      {% if gemstone.substone %}<div class="gemstone-substone">Alternative sub-stone: {{ gemstone.substone }}</div>{% endif %}
-      {% if gemstone.planet %}<div class="gemstone-planet">Supporting planet: {{ gemstone.planet }}</div>{% endif %}
+      {% if gemstone.substone %}<div class="gemstone-substone">{{ labels.alternative_substone }}: {{ gemstone.substone }}</div>{% endif %}
+      {% if gemstone.planet %}<div class="gemstone-planet">{{ labels.supporting_planet }}: {{ gemstone.planet }}</div>{% endif %}
       {% if gemstone.reason %}<p class="gemstone-reason">{{ gemstone.reason }}</p>{% endif %}
       {% if gemstone.caution %}<div class="gemstone-caution">{{ gemstone.caution }}</div>{% endif %}
     </div>
@@ -597,11 +617,11 @@
        a URL renders only when actually supplied. -->
   {% if app_download %}
     <div class="app-download-box">
-      <div class="app-download-heading">{{ app_download.heading or "Get the Jyotishasha App" }}</div>
+      <div class="app-download-heading">{{ app_download.heading or labels.app_download_heading }}</div>
       {% if app_download.benefit_text %}<div class="app-download-text">{{ app_download.benefit_text }}</div>{% endif %}
-      <div class="app-download-action">Download the Jyotishasha App</div>
-      {% if app_download.play_store_url %}<div class="app-download-link">Google Play: {{ app_download.play_store_url }}</div>{% endif %}
-      {% if app_download.app_store_url %}<div class="app-download-link">App Store: {{ app_download.app_store_url }}</div>{% endif %}
+      <div class="app-download-action">{{ labels.app_download_action }}</div>
+      {% if app_download.play_store_url %}<div class="app-download-link">{{ labels.google_play }}: {{ app_download.play_store_url }}</div>{% endif %}
+      {% if app_download.app_store_url %}<div class="app-download-link">{{ labels.app_store }}: {{ app_download.app_store_url }}</div>{% endif %}
     </div>
   {% endif %}
 

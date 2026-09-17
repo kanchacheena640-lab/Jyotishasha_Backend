@@ -10,8 +10,6 @@ import traceback
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 
-from openai import OpenAI
-
 from full_kundali_api import calculate_full_kundali
 from transit_engine import get_current_positions
 from kundali_chart_generator import generate_kundali_drawing
@@ -31,9 +29,27 @@ from modules.love.love_prompt_builder import build_love_premium_prompt
 # imports nothing from modules.love.
 from modules.activity_events.service import record_event
 
-load_dotenv()
+# Q3 Batch 0 -- shared paid-report AI client/model (replaces this
+# file's own former direct `from openai import OpenAI` + module-level
+# client + hardcoded model="gpt-4o-mini"; see modules/payments/
+# report_ai_client.py's own docstring for the full rationale, incl.
+# the locked "no automatic model fallback" rule). Same shared client
+# tasks.py now uses -- no separate OpenAI client instance lives here
+# anymore.
+from modules.payments.report_ai_client import generate_report_completion
+from modules.payments.report_product_intelligence import get_product_intelligence
+from modules.payments.report_structured_output import (
+    parse_structured_response,
+    validate_required_hero_fields,
+    assemble_answer_hero,
+    assemble_gemstone_component,
+)
+# ReportMetadataError is deliberately not imported/caught here -- a
+# Q3-enabled product's invalid structured metadata must propagate to
+# this function's own existing `except Exception` below unchanged (see
+# report_structured_output.py's own docstring for why).
 
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+load_dotenv()
 
 _activity_events_logger = logging.getLogger("activity_events")
 
@@ -45,6 +61,17 @@ def _emit_report_event(
     attempt_started_at,
     report_type=None,
     failure_reason=None,
+    # Q3 Batch 0 -- AI usage/cost observability (report_generation_
+    # completed only; see call site). Never PII: a model name and four
+    # numbers. None means "not applicable/not attempted" and is simply
+    # omitted below, matching every other optional field's convention
+    # in this function.
+    model=None,
+    input_tokens=None,
+    output_tokens=None,
+    total_tokens=None,
+    duration_seconds=None,
+    structured_metadata_valid=None,
 ):
     """Phase 4C -- observational only, called ONLY after this pipeline's
     own authoritative report_stage commit for this attempt has already
@@ -65,6 +92,29 @@ def _emit_report_event(
             properties["report_type"] = report_type
         if failure_reason is not None:
             properties["failure_reason"] = failure_reason
+        # Q3 Batch 0 -- AI usage/cost observability. No prompt text, no
+        # response text, no customer PII -- model name + token counts +
+        # duration only. Property KEYS are "ai_*_units", not
+        # "*_tokens" -- activity_events' own _FORBIDDEN_KEY_SUBSTRINGS
+        # denylist rejects any key containing "token" (defense-in-depth
+        # against auth/session/API tokens) regardless of allowlist
+        # membership; see event_schemas.py's own comment on this exact
+        # entry, and tasks.py's identical fix. Local Python parameter
+        # names stay input_tokens/output_tokens/total_tokens (matches
+        # ReportAICompletion's own field names) -- only the string keys
+        # written into `properties` are renamed.
+        if model is not None:
+            properties["model"] = model
+        if input_tokens is not None:
+            properties["ai_input_units"] = input_tokens
+        if output_tokens is not None:
+            properties["ai_output_units"] = output_tokens
+        if total_tokens is not None:
+            properties["ai_total_units"] = total_tokens
+        if duration_seconds is not None:
+            properties["duration_seconds"] = round(duration_seconds, 3)
+        if structured_metadata_valid is not None:
+            properties["structured_metadata_valid"] = structured_metadata_valid
 
         dedupe_key = None
         if attempt_started_at is not None:
@@ -187,13 +237,47 @@ def generate_love_premium_report(order_id: int):
             with open(f"debug_prompts/love_{order_id}.txt", "w", encoding="utf-8") as f:
                 f.write(final_prompt)
 
-            # ---------------- 6) OpenAI Call ----------------
-            response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": final_prompt}],
-            )
+            # ---------------- 6) AI Call (Q3 Batch 0 -- shared Luna client) ----------------
+            # Raises straight through on failure -- no automatic
+            # fallback model (see report_ai_client.py's own docstring)
+            # -- caught by this function's own existing outer
+            # except-Exception below, exactly as an OpenAI failure
+            # already was before this change.
+            completion = generate_report_completion(final_prompt)
 
-            report_text = response.choices[0].message.content.strip()
+            # Q3 Batch 0 -- product-intelligence lookup. relationship_
+            # future_report's own registry entry has q3_enabled=False
+            # at Batch 0 (its own prompt builder has not been extended
+            # for the structured-output contract yet), so the `if`
+            # branch below is currently unreachable -- it exists, and
+            # is fully tested, so a later batch's only change is
+            # flipping this one product's registry entry.
+            product_intel = get_product_intelligence("relationship_future_report")
+            answer_hero = None
+            gemstone_component = None
+            structured_metadata_valid = None  # None = not attempted
+
+            if product_intel.q3_enabled:
+                # Q3 Batch 0 correction #1 (LOCKED): missing/malformed
+                # structured metadata for a Q3-enabled product is a
+                # HARD FAILURE -- propagates to this function's own
+                # existing outer except-Exception and becomes
+                # report_stage="Failed" (F2-recoverable), never a
+                # silent narrative-only degrade.
+                metadata, report_text = parse_structured_response(completion.content)
+                hero = validate_required_hero_fields(metadata, product_intel.required_hero_fields)
+                answer_hero = assemble_answer_hero(hero)
+                structured_metadata_valid = True
+                if product_intel.gemstone_policy != "disabled":
+                    gemstone_component = assemble_gemstone_component(
+                        kundali.get("gemstone_suggestion"),
+                        ai_reason=metadata.get("gemstone_reason"),
+                    )
+            else:
+                # Not yet migrated to Q3 structured output -- entire
+                # response is narrative, byte-for-byte the same
+                # behavior as before Batch 0.
+                report_text = completion.content
 
             report_text = report_text[:18000]
 
@@ -240,9 +324,13 @@ def generate_love_premium_report(order_id: int):
                 product="relationship_future_report",
                 # Q2 -- wires the language this function already resolves
                 # (see `language` above) through to the PDF's own
-                # typography choice; no new report content/component is
-                # supplied here (that stays a Q3 decision).
+                # typography choice.
                 language=language,
+                # Q3 Batch 0 -- both None today (q3_enabled=False for
+                # relationship_future_report in the registry); inert
+                # until a later batch enables it.
+                answer_hero=answer_hero,
+                gemstone=gemstone_component,
             )
 
             del kundali_drawing
@@ -262,6 +350,15 @@ def generate_love_premium_report(order_id: int):
                 order_id=order_id,
                 report_type=order.product,
                 attempt_started_at=attempt_started_at,
+                # Q3 Batch 0 -- AI usage/cost observability. No
+                # prompt/response content, no PII -- see
+                # _emit_report_event()'s own docstring/comment.
+                model=completion.model,
+                input_tokens=completion.input_tokens,
+                output_tokens=completion.output_tokens,
+                total_tokens=completion.total_tokens,
+                duration_seconds=completion.duration_seconds,
+                structured_metadata_valid=structured_metadata_valid,
             )
 
             try:

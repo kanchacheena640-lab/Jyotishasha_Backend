@@ -252,7 +252,37 @@ EVENT_SCHEMAS = {
     # untouched -- Task 9A does not invent one for the catalog page.
     ("report_discovery_viewed", 1): _schema({"report_type", "page_path"}),
     ("report_generation_started", 1): _schema({"report_type"}),
-    ("report_generation_completed", 1): _schema({"report_type"}),
+    # Q3 Batch 0 -- "model"/"ai_input_units"/"ai_output_units"/
+    # "ai_total_units"/"duration_seconds"/"structured_metadata_valid"
+    # added (all optional), matching the exact precedent Task 9A
+    # already set for adding an optional property to an existing v1
+    # event (see "page_path" above) rather than bumping event_version.
+    # AI usage/cost observability only -- a model name (a static
+    # string, not PII), four numbers, and a boolean. Never the prompt
+    # text or the AI's response text (modules/payments/
+    # report_ai_client.py's own docstring states the same rule).
+    #
+    # Deliberately named "..._units", not "..._tokens": these are LLM
+    # token COUNTS (OpenAI's own response.usage.prompt_tokens/
+    # completion_tokens/total_tokens), but "token" is one of this same
+    # file's own _FORBIDDEN_KEY_SUBSTRINGS (line ~80, alongside
+    # password/secret/auth/jwt/credential -- correctly guarding against
+    # a real auth/session/API token ever being logged). That substring
+    # check is intentionally NOT scoped by allowlist membership (see
+    # sanitize_properties()'s own "defense-in-depth... even an
+    # allowlisted key name is refused" comment) and must not be
+    # weakened for this unrelated meaning of the English word "token"
+    # -- discovered by a real, failing integration test (properties
+    # were silently dropped) before this file was written, not assumed.
+    #
+    # Populated only on a successful generation (tasks.py/modules/love/
+    # love_premium_task.py's own report_generation_completed call
+    # site); report_generation_started/report_generation_failed are
+    # left untouched since no usage data exists yet at those points.
+    ("report_generation_completed", 1): _schema({
+        "report_type", "model", "ai_input_units", "ai_output_units",
+        "ai_total_units", "duration_seconds", "structured_metadata_valid",
+    }),
     ("report_generation_failed", 1): _schema({"failure_reason"}),
     ("report_viewed", 1): _schema(set()),
     ("report_downloaded", 1): _schema(set()),

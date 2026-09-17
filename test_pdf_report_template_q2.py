@@ -56,6 +56,13 @@ from pdf_generator_weasy import (
     env, convert_headings, generate_pdf_report_weasy, BASE_DIR,
 )
 from kundali_chart_generator import generate_kundali_drawing
+# Q3 Batch 1 (visual QA correction round) -- generate_pdf_report_weasy()
+# now always supplies a `labels` dict to the template (see report_i18n_
+# labels.py); this file's own _base_ctx() renders the template directly,
+# bypassing that function, so it must supply the same shape itself --
+# labels_for_language("en") is the exact real value generate_pdf_report_
+# weasy() would build for language="en".
+from modules.payments.report_i18n_labels import labels_for_language
 
 passed = 0
 failed = 0
@@ -106,6 +113,7 @@ def _base_ctx(**overrides):
         disclaimer=None,
         app_download=None,
         gpt_response_html="<div class='card'><p>Body content.</p></div>",
+        labels=labels_for_language("en"),
     )
     ctx.update(overrides)
     return ctx
@@ -206,7 +214,10 @@ check("C: no consultation-style copy exists anywhere in the template source",
 app_html = render(app_download={"heading": "Discover more with the app", "benefit_text": "Daily personalized insights."})
 b = body_of(app_html)
 check("C: app-download renders heading/benefit text", "Discover more with the app" in b and "Daily personalized insights." in b)
-check("C: app-download always states the one locked action", "Download the Jyotishasha App" in b)
+# Q3 Batch 1 (human visual QA correction) -- exact CTA copy updated to
+# "Download Jyotishasha App" (was "Download the Jyotishasha App");
+# still the one locked action, still app-download only.
+check("C: app-download always states the one locked action", "Download Jyotishasha App" in b)
 
 app_with_urls = render(app_download={"play_store_url": "https://play.google.com/store/apps/details?id=com.jyotishasha.app"})
 check("C: optional Play Store URL renders when supplied", "play.google.com/store/apps/details?id=com.jyotishasha.app" in body_of(app_with_urls))
