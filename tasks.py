@@ -50,6 +50,13 @@ from modules.payments.report_q3_batch1 import (
 # same "no new AI call/component shape/astrology calculation" rule.
 from modules.payments.report_q3_batch2 import compute_dasha_window_timeline
 
+# Q3 Batch 3 -- the 6 career/money/business products reuse the exact
+# same compute_dasha_window_timeline() helper above (imported directly
+# from report_q3_batch2, not re-exported/duplicated) -- see
+# report_q3_batch3.py's own docstring for why this batch needs no
+# compute_*_hero() function of its own.
+from modules.payments.report_q3_batch3 import BATCH3_PRODUCT_SLUGS
+
 # Q3 Batch 1 (visual QA correction round) -- shared, renderer-level
 # label localization (see report_i18n_labels.py's own docstring) and
 # the Q2.1 app-download CTA's verified store URL(s) (see app_config.py
@@ -373,6 +380,15 @@ def _generate_and_send_report_core(order_id):
                     # exists to source a deterministic value from). Real
                     # Dasha-window dates only, never a guessed marriage
                     # date -- see report_q3_batch2.py's own docstring.
+                    timeline_component = compute_dasha_window_timeline(kundali, language=language)
+                elif product_slug in BATCH3_PRODUCT_SLUGS:
+                    # Q3 Batch 3 -- all 6 career/money/business products
+                    # declare timeline=True; hero value stays AI-
+                    # authored for all 6 (no financial/career/business
+                    # scoring engine exists to source a deterministic
+                    # value from -- see report_q3_batch3.py's own
+                    # docstring). Same Dasha-window helper as Batch 2,
+                    # reused unchanged, never duplicated.
                     timeline_component = compute_dasha_window_timeline(kundali, language=language)
 
                 answer_hero = assemble_answer_hero(

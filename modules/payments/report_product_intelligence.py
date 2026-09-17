@@ -13,19 +13,22 @@ versioned with the code that consumes it, not admin-editable runtime
 business data (price/active-status, which already live in
 ReportProduct, untouched by this file).
 
-CRITICAL scope rule, updated for Q3 Batch 2: at Batch 0 every one of
+CRITICAL scope rule, updated for Q3 Batch 3: at Batch 0 every one of
 the 25 entries had q3_enabled=False. Batch 1 flipped 4 -- gemstone_
 consultation, saturn_transit_report, mood_mental_health_report,
-divorce_possibility_report. Batch 2 flips 4 more -- marriage_report,
+divorce_possibility_report. Batch 2 flipped 4 more -- marriage_report,
 delay_in_marriage_report, problem_in_marriage_report, second_marriage_
-report -- for a total of 8 q3_enabled=True out of 25. Each flip happens
-only together with that product's own prompt rewrite for the
-structured-output contract, never before. The remaining 17 products
-stay q3_enabled=False and byte-for-byte unaffected; flipping any of
-them on is a later batch's job. tasks.py/modules/love/love_premium_
-task.py both check this flag before ever calling report_structured_
-output.py's parser/validator -- a product with q3_enabled=False is
-completely unaffected by anything in this file beyond being looked up.
+report. Batch 3 flips 6 more -- financial_report, financial_stability_
+report, career_report, government_job_report, business_report,
+startup_suggestion_report -- for a total of 14 q3_enabled=True out of
+25. Each flip happens only together with that product's own prompt
+rewrite for the structured-output contract, never before. The
+remaining 11 products stay q3_enabled=False and byte-for-byte
+unaffected; flipping any of them on is a later batch's job. tasks.py/
+modules/love/love_premium_task.py both check this flag before ever
+calling report_structured_output.py's parser/validator -- a product
+with q3_enabled=False is completely unaffected by anything in this
+file beyond being looked up.
 
 Fields per entry:
   generator            "standard_v1" | "love_premium_v1"
@@ -112,11 +115,25 @@ REGISTRY: dict = {
         gemstone="substone_only",
         disclaimer="none",
     ),
+    # Q3 Batch 3 -- ENABLED. `value` stays AI-authored (a qualitative
+    # wealth-growth descriptor, e.g. "Building Momentum" -- no numeric
+    # financial-score engine exists in this codebase, so this can never
+    # be a deterministic value). `wealth_yoga_summary` surfaces already-
+    # computed Dhan/Kuber/Lakshmi/Chandra-Mangal Yog results (see
+    # summary_blocks.py) -- real deterministic evidence, never invented
+    # by Luna. `timeline` reuses report_q3_batch2.py's own Dasha-window
+    # helper unchanged (see report_q3_batch3.py). This product answers
+    # GENERATING/BUILDING wealth -- distinct from financial_stability_
+    # report's own RETENTION/VOLATILITY question.
     "financial_report": _standard(
         "financial_report",
-        houses=(2, 5, 8, 11), planets=("Jupiter", "Venus", "Mercury"),
-        context_keys=("house_lord_summary", "dasha_window_summary", "gemstone_summary"),
-        gemstone="optional", disclaimer="financial_business",
+        houses=(2, 5, 8, 11), planets=("Jupiter", "Venus", "Mercury", "Saturn"),
+        context_keys=("house_lord_summary", "dasha_window_summary", "wealth_yoga_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="financial_advice_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     "love_relationship_report": _standard(
         "love_relationship_report",
@@ -143,11 +160,24 @@ REGISTRY: dict = {
         gemstone="optional", disclaimer="general",
         q3_enabled=True,
     ),
+    # Q3 Batch 3 -- ENABLED. `value` stays AI-authored, PREPARATION/
+    # LAUNCH-READINESS framed (e.g. "Preparation Phase", "Comparatively
+    # Ready to Launch") -- deliberately distinct from business_report's
+    # own ONGOING-CAPACITY framing (see that entry's own comment). Same
+    # relevant_houses as business_report intentionally narrowed to the
+    # tighter 2/7/10 launch-evidence set (business_report additionally
+    # covers the 11th for sustaining/growth) -- one concrete registry-
+    # level differentiation signal on top of the much larger hero/
+    # section differences the prompt itself carries.
     "startup_suggestion_report": _standard(
         "startup_suggestion_report",
-        houses=(2, 7, 10), planets=("Mercury", "Jupiter", "Saturn"),
-        context_keys=("house_lord_summary", "dasha_window_summary", "gemstone_summary"),
-        gemstone="optional", disclaimer="financial_business",
+        houses=(2, 7, 10), planets=("Mercury", "Jupiter", "Saturn", "Mars"),
+        context_keys=("house_lord_summary", "dasha_window_summary", "career_yoga_summary", "wealth_yoga_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="business_outcome_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     "love_marriage_report": _standard(
         "love_marriage_report",
@@ -155,11 +185,24 @@ REGISTRY: dict = {
         context_keys=("house_lord_summary", "dasha_window_summary"),
         gemstone="optional", disclaimer="relationship_privacy",
     ),
+    # Q3 Batch 3 -- ENABLED. `value` stays AI-authored, PROMPT-
+    # constrained (not backend-enum-validated, same precedent as
+    # delay_in_marriage_report/second_marriage_report in Q3 Batch 2) to
+    # exactly one of Low/Moderate/Elevated -- an astrological TENDENCY
+    # signal only, never a prediction of exam success, selection, or
+    # appointment (see the mandatory disclaimer). `career_yoga_summary`
+    # surfaces already-computed Rajya-Sambandh/Parashari/Panch-
+    # Mahapurush/Gajakesari/etc. yoga results -- real evidence, never
+    # invented.
     "government_job_report": _standard(
         "government_job_report",
         houses=(6, 9, 10, 11), planets=("Sun", "Saturn", "Mars", "Jupiter"),
-        context_keys=("house_lord_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="general",
+        context_keys=("house_lord_summary", "dasha_window_summary", "career_yoga_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="government_job_selection_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     "foreign_travel_report": _standard(
         "foreign_travel_report",
@@ -168,17 +211,36 @@ REGISTRY: dict = {
         hero_value_source="ai", required_hero_fields=("label", "interpretation", "evidence"),
         gemstone="disabled", disclaimer="general",
     ),
+    # Q3 Batch 3 -- ENABLED. `value` stays AI-authored, ONGOING-CAPACITY
+    # framed (e.g. "Naturally Suited, With Steady Discipline") --
+    # deliberately distinct from startup_suggestion_report's own
+    # PREPARATION/LAUNCH-READINESS framing (see that entry's own
+    # comment). Answers "can I run/sustain/grow a business", not
+    # "should I start one now."
     "business_report": _standard(
         "business_report",
-        houses=(2, 7, 10), planets=("Mercury", "Jupiter", "Saturn"),
-        context_keys=("house_lord_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="financial_business",
+        houses=(2, 7, 10, 11), planets=("Mercury", "Jupiter", "Saturn", "Mars"),
+        context_keys=("house_lord_summary", "dasha_window_summary", "career_yoga_summary", "wealth_yoga_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="business_outcome_non_certainty_mandatory",
+        q3_enabled=True,
     ),
+    # Q3 Batch 3 -- ENABLED. `value` stays AI-authored, an ORIENTATION
+    # descriptor (e.g. "Structured, Service-Oriented Tendency") --
+    # deliberately NOT forced into a Job-vs-Business binary (no
+    # deterministic classifier for that exists in this codebase); the
+    # prompt may lean toward one without declaring it categorically.
     "career_report": _standard(
         "career_report",
-        houses=(2, 6, 10, 11), planets=("Sun", "Saturn", "Mercury"),
-        context_keys=("house_lord_summary", "dasha_window_summary", "targeted_aspect_summary"),
+        houses=(2, 6, 10, 11), planets=("Sun", "Saturn", "Mercury", "Jupiter", "Mars"),
+        context_keys=("house_lord_summary", "dasha_window_summary", "career_yoga_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True},
         gemstone="optional", disclaimer="general",
+        q3_enabled=True,
     ),
     # Q3 Batch 1 -- ENABLED. The gemstone recommendation itself is the
     # purchased product; `value` is ALWAYS overwritten with the
@@ -221,11 +283,25 @@ REGISTRY: dict = {
         gemstone="optional", disclaimer="general",
         q3_enabled=True,
     ),
+    # Q3 Batch 3 -- ENABLED. `value` stays AI-authored, PROMPT-
+    # constrained (not backend-enum-validated, same precedent as
+    # delay_in_marriage_report/second_marriage_report in Q3 Batch 2) to
+    # exactly one of Low/Moderate/Elevated. IMPORTANT SEMANTIC (locked
+    # by the Batch 3 spec, stated explicitly in the prompt and tested):
+    # this tier represents financial VOLATILITY/INSTABILITY tendency,
+    # NOT "how stable" -- Low = lower instability tendency, Elevated =
+    # higher instability tendency. Answers RETENTION/STABILITY/
+    # VOLATILITY -- distinct from financial_report's own GENERATING/
+    # BUILDING-wealth question.
     "financial_stability_report": _standard(
         "financial_stability_report",
-        houses=(2, 8, 12), planets=("Saturn",),
-        context_keys=("house_lord_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="financial_business",
+        houses=(2, 8, 12), planets=("Saturn", "Jupiter"),
+        context_keys=("house_lord_summary", "dasha_window_summary", "wealth_yoga_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="financial_advice_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     "jupiter_transit_report": _standard(
         "jupiter_transit_report",

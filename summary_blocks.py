@@ -406,6 +406,99 @@ def _build_foreign_travel_summary(kundali: dict) -> str:
     return " ".join(lines)
 
 
+# Q3 Batch 3 -- deterministic yoga-evidence summaries.
+#
+# full_kundali_api.py already computes all 13 of these yoga evaluators
+# for every order (services/dhan_yog.py, services/kuber_rajyog.py,
+# services/lakshmi_yog.py, services/chandra_mangal.py, services/
+# dharma_karmadhipati.py, services/rajya_sambandh_rajyog.py, services/
+# parashari_rajyog.py, services/panch_mahapurush.py, services/
+# gajakesari.py, services/budh_aditya.py -- see that file's own
+# imports/call sites), but until now that data was never surfaced to
+# any report prompt -- exactly the same "computed but disconnected"
+# gap Q1 originally found and fixed for gemstone_suggestion/sadhesati.
+# Nothing below recalculates or infers a yoga from raw planets; it only
+# reads each evaluator's own already-returned is_active/strength/
+# reasons fields (verified identical field names across all 13
+# evaluators' own source before writing this) and reshapes the ACTIVE
+# ones into plain text -- the same "read an already-computed field,
+# reshape into text" pattern _build_gemstone_summary()/
+# _build_sadhesati_summary() above already established.
+#
+# Fixed, short display labels per key (not each evaluator's own `name`/
+# `heading` field, which is inconsistent in shape across evaluators --
+# e.g. gajakesari_yog's `heading` is a full sentence, not a short
+# label) -- the same convention services/ai_prediction_lab/
+# career_context_builder.py and finance_context_builder.py (a separate,
+# unrelated pipeline) independently already established for this exact
+# same yoga subset, corroborating this is the right domain grouping.
+WEALTH_YOGA_LABELS = {
+    "dhan_yog": "Dhan Yog",
+    "kuber_rajyog": "Kuber Rajyog",
+    "lakshmi_yog": "Lakshmi Yog",
+    "chandra_mangal_yog": "Chandra-Mangal Yog",
+}
+
+CAREER_YOGA_LABELS = {
+    "dharma_karmadhipati_rajyog": "Dharma-Karmadhipati Rajyog",
+    "rajya_sambandh_rajyog": "Rajya Sambandh Rajyog",
+    "parashari_rajyog": "Parashari Rajyog",
+    "panch_mahapurush_yog": "Panch Mahapurush Yog",
+    "gajakesari_yog": "Gajakesari Yog",
+    "budh_aditya_yog": "Budh-Aditya Yog",
+}
+
+
+def _build_yoga_evidence_summary(kundali: dict, yoga_labels: dict, category_word: str) -> str:
+    """Shared reader for both wealth_yoga_summary and
+    career_yoga_summary below. A yoga is surfaced ONLY when its own
+    kundali[key] entry is a dict AND entry["is_active"] is exactly
+    True (not merely truthy) -- any other shape (key missing, not a
+    dict, is_active False/None/missing) is silently skipped, never
+    reported as "yoga absent": these evaluators' own inactive-case
+    reasons are internal diagnostic text, not a customer-facing claim
+    this module is licensed to make, and a missing/malformed entry
+    must never be *converted into* an absence claim it did not
+    actually assert. This function therefore only ever adds POSITIVE
+    evidence, exactly like gemstone_summary/sadhesati_summary's own
+    established pattern -- never a negative one."""
+    lines = []
+    for key, label in yoga_labels.items():
+        entry = kundali.get(key)
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("is_active") is not True:
+            continue
+        strength = entry.get("strength")
+        reasons = entry.get("reasons")
+        reason_text = ""
+        if isinstance(reasons, list):
+            first_reason = next((r for r in reasons if isinstance(r, str) and r.strip()), None)
+            if first_reason:
+                reason_text = f" ({first_reason.strip()})"
+        if isinstance(strength, str) and strength.strip() and strength.strip().lower() != "none":
+            lines.append(f"{label} is active in this chart (strength: {strength.strip()}){reason_text}.")
+        else:
+            lines.append(f"{label} is active in this chart{reason_text}.")
+
+    if not lines:
+        return f"No specific {category_word} yoga is confirmed active from the available deterministic evaluators."
+    return " ".join(lines)
+
+
+def _build_wealth_yoga_summary(kundali: dict) -> str:
+    """Dhan Yog / Kuber Rajyog / Lakshmi Yog / Chandra-Mangal Yog --
+    the wealth-relevant subset. See _build_yoga_evidence_summary()."""
+    return _build_yoga_evidence_summary(kundali, WEALTH_YOGA_LABELS, "wealth")
+
+
+def _build_career_yoga_summary(kundali: dict) -> str:
+    """Dharma-Karmadhipati / Rajya Sambandh / Parashari Rajyog / Panch
+    Mahapurush / Gajakesari / Budh-Aditya Yog -- the career-relevant
+    subset. See _build_yoga_evidence_summary()."""
+    return _build_yoga_evidence_summary(kundali, CAREER_YOGA_LABELS, "career")
+
+
 def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
     planets = kundali.get("planets", [])
     lagna_sign = kundali.get("lagna_sign", "")
@@ -485,6 +578,13 @@ def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
     sadhesati_summary = _build_sadhesati_summary(kundali)
     foreign_travel_summary = _build_foreign_travel_summary(kundali)
 
+    # 8. Q3 Batch 3 NEW -- further additive, deterministic context keys
+    # (see the yoga-summary builders' own comment block above). None of
+    # the pre-Batch-3 prompts reference these; inert via str.format()
+    # until a product's own prompt opts in.
+    wealth_yoga_summary = _build_wealth_yoga_summary(kundali)
+    career_yoga_summary = _build_career_yoga_summary(kundali)
+
     return {
         "birth_chart_summary": birth_chart_summary,
         "aspect_summary": aspect_summary,
@@ -498,4 +598,6 @@ def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
         "targeted_aspect_summary": targeted_aspect_summary,
         "sadhesati_summary": sadhesati_summary,
         "foreign_travel_summary": foreign_travel_summary,
+        "wealth_yoga_summary": wealth_yoga_summary,
+        "career_yoga_summary": career_yoga_summary,
     }

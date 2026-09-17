@@ -546,7 +546,12 @@ with app.app_context():
     # =================================================================
     print("\n=== 13: legacy (non-Q3-enabled) product is completely unaffected ===")
     # =================================================================
-    order_legacy = _make_order(product="startup_suggestion_report")
+    # property_report is used here rather than a product from a
+    # thematically-adjacent later batch, precisely so this fixed
+    # example does not go stale again the next time a batch enables 6
+    # more products (this is exactly what happened to the previous
+    # choice, startup_suggestion_report, once Q3 Batch 3 enabled it).
+    order_legacy = _make_order(product="property_report")
     try:
         with patch("tasks.generate_report_completion", return_value=_fake_completion(
             "**Your Birth Chart & Planets**\nPlain narrative, no META/REPORT markers, exactly like pre-Batch-0.\n\n**Summary**\nDone."

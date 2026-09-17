@@ -85,7 +85,7 @@ def _fake_completion(content, model="gpt-5.6-luna", input_tokens=100, output_tok
 def _make_order(**overrides):
     values = dict(
         name="Q3 Batch0 Test", email="q3batch0test@example.com",
-        product="startup_suggestion_report", dob="1990-06-15", tob="10:30", pob="Delhi, India",
+        product="property_report", dob="1990-06-15", tob="10:30", pob="Delhi, India",
         status="PAID", payment_status="PAID", report_stage="Pending",
         latitude="28.6139", longitude="77.2090", language="en",
     )
@@ -164,11 +164,17 @@ with app.app_context():
     # =============================================================
     print("\n=== H: non-Q3-enabled product continues narrative-only behavior, unchanged ===")
     # =============================================================
-    order_h = _make_order(product="startup_suggestion_report")
+    order_h = _make_order(product="property_report")
     try:
         # No patch on get_product_intelligence -- uses the REAL registry,
-        # where startup_suggestion_report is genuinely q3_enabled=False
-        # today. Only the AI call itself is mocked (no real Luna call).
+        # where property_report is genuinely q3_enabled=False today
+        # (property_report is used here, rather than a product from a
+        # thematically-adjacent later batch, precisely so this fixed
+        # example does not go stale again the next time a batch enables
+        # more products -- this is exactly what happened to the
+        # previous choice, startup_suggestion_report, once Q3 Batch 3
+        # enabled it). Only the AI call itself is mocked (no real Luna
+        # call).
         with patch("tasks.generate_report_completion", return_value=_fake_completion(
             "**Business Orientation**\nA full narrative report with no structured metadata at all, "
             "exactly like every real report generated before Q3 Batch 0.\n\n**Summary**\nConclusion text."
@@ -190,7 +196,7 @@ with app.app_context():
     print("\n=== M: no PII/prompt/response content in observability properties ===")
     # =============================================================
     order_m = _make_order(
-        product="startup_suggestion_report",
+        product="property_report",
         name="Sensitive Name M", email="sensitive.pii.m@example.com",
         dob="1985-01-01", tob="09:15", pob="Sensitive City, India",
     )

@@ -10,10 +10,10 @@ tasks.py's own core function to avoid growing that one function with a
 4th large per-product special-case block.
 
 DISCLAIMER_TEXT/get_mandatory_disclaimer() below are generic and
-shared -- Q3 Batch 2 (modules/payments/report_q3_batch2.py) reuses
-them unchanged for its own 2 mandatory disclaimer types rather than
-duplicating the mechanism; module name is historical, not a scope
-boundary.
+shared -- Q3 Batch 2 and Q3 Batch 3 (modules/payments/
+report_q3_batch2.py, report_q3_batch3.py) both reuse them unchanged
+for their own mandatory disclaimer types rather than duplicating the
+mechanism; module name is historical, not a scope boundary.
 
 Does NOT redesign Batch 0's architecture: everything here is either a
 thin, product-specific deterministic-value computation feeding
@@ -116,6 +116,63 @@ DISCLAIMER_TEXT = {
             "और न ही यह किसी वर्तमान विवाह के परिणाम या समाप्ति के बारे में "
             "कोई कथन है। व्यक्तिगत और कानूनी निर्णय आपकी वास्तविक "
             "परिस्थितियों पर आधारित होने चाहिए।"
+        ),
+    },
+    # Q3 Batch 3 -- financial_report / financial_stability_report.
+    # Never financial/investment/tax advice, never a profit/wealth
+    # guarantee, never a specific investment/security recommendation.
+    "financial_advice_non_certainty_mandatory": {
+        "en": (
+            "This is an astrology-based view of financial tendencies, "
+            "not financial, investment, or tax advice, and not a "
+            "guarantee of profit, income, or wealth. It does not "
+            "recommend any specific investment or security. Important "
+            "financial decisions should be based on your real "
+            "circumstances and, where needed, a qualified financial "
+            "advisor."
+        ),
+        "hi": (
+            "यह रिपोर्ट वित्तीय प्रवृत्तियों का ज्योतिष-आधारित आकलन है, "
+            "यह वित्तीय, निवेश या कर संबंधी सलाह नहीं है, और न ही यह आय, "
+            "लाभ या धन-संपत्ति की कोई गारंटी है। यह किसी विशेष निवेश या "
+            "सिक्योरिटी की सिफारिश नहीं करती। महत्वपूर्ण वित्तीय निर्णय "
+            "आपकी वास्तविक परिस्थितियों और आवश्यकता होने पर किसी योग्य "
+            "वित्तीय सलाहकार की सलाह के आधार पर लिए जाने चाहिए।"
+        ),
+    },
+    # Q3 Batch 3 -- government_job_report. Never a prediction/guarantee
+    # of exam success, selection, or appointment.
+    "government_job_selection_non_certainty_mandatory": {
+        "en": (
+            "This report describes astrological tendencies related to "
+            "government or public-sector work, not a prediction or "
+            "guarantee of exam success, selection, or appointment. "
+            "Outcomes depend on your preparation, eligibility, and the "
+            "actual selection process."
+        ),
+        "hi": (
+            "यह रिपोर्ट सरकारी या सार्वजनिक क्षेत्र से जुड़ी ज्योतिषीय "
+            "प्रवृत्तियों का वर्णन करती है। यह परीक्षा में सफलता, चयन या "
+            "नियुक्ति की भविष्यवाणी या गारंटी नहीं है। परिणाम आपकी "
+            "तैयारी, पात्रता और वास्तविक चयन प्रक्रिया पर निर्भर करते हैं।"
+        ),
+    },
+    # Q3 Batch 3 -- business_report / startup_suggestion_report. Never
+    # a guarantee of business success, revenue, funding, or
+    # profitability.
+    "business_outcome_non_certainty_mandatory": {
+        "en": (
+            "This is an astrology-based view of business and "
+            "entrepreneurial tendencies, not a guarantee of business "
+            "success, revenue, funding, or profitability. Do not make "
+            "high-stakes business or financial decisions based on this "
+            "report alone."
+        ),
+        "hi": (
+            "यह रिपोर्ट व्यवसाय और उद्यमिता से जुड़ी प्रवृत्तियों का "
+            "ज्योतिष-आधारित आकलन है। यह व्यावसायिक सफलता, राजस्व, फंडिंग "
+            "या लाभ की कोई गारंटी नहीं है। केवल इस रिपोर्ट के आधार पर "
+            "कोई बड़ा व्यावसायिक या वित्तीय निर्णय न लें।"
         ),
     },
 }

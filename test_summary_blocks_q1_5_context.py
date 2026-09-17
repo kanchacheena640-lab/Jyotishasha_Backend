@@ -291,11 +291,16 @@ Q1_KEYS = {
     "current_transit_summary", "dasha_window_summary", "transit_facts_summary", "gemstone_summary",
 }
 Q1_5_KEYS = {"house_lord_summary", "targeted_aspect_summary", "sadhesati_summary", "foreign_travel_summary"}
+# Q3 Batch 3 -- two new additive, deterministic yoga-evidence keys
+# (see summary_blocks.py's own comment block above
+# _build_yoga_evidence_summary()). Purely additive: every pre-existing
+# Q1/Q1.5 key above is untouched, still present, still the same shape.
+Q3_BATCH3_KEYS = {"wealth_yoga_summary", "career_yoga_summary"}
 
 check("E: every Q1 key preserved", Q1_KEYS.issubset(blocks.keys()))
 check("E: every Q1.5 key present", Q1_5_KEYS.issubset(blocks.keys()))
-check("E: exactly 12 keys total (8 Q1 + 4 Q1.5, no accidental extra/renamed key)",
-      set(blocks.keys()) == Q1_KEYS | Q1_5_KEYS)
+check("E: exactly 14 keys total (8 Q1 + 4 Q1.5 + 2 Q3 Batch 3, no accidental extra/renamed key)",
+      set(blocks.keys()) == Q1_KEYS | Q1_5_KEYS | Q3_BATCH3_KEYS)
 check("E: every value is a plain string (str.format()-safe)",
       all(isinstance(v, str) for v in blocks.values()))
 
@@ -345,8 +350,8 @@ try:
     from transit_engine import get_current_positions
     real_transit = get_current_positions()
     real_blocks = sb.build_summary_blocks_with_transit(real_kundali, real_transit)
-    check("G: full real pipeline produces all 12 expected keys with no crash",
-          set(real_blocks.keys()) == Q1_KEYS | Q1_5_KEYS)
+    check("G: full real pipeline produces all 14 expected keys (Q1+Q1.5+Q3 Batch 3) with no crash",
+          set(real_blocks.keys()) == Q1_KEYS | Q1_5_KEYS | Q3_BATCH3_KEYS)
     check("G: full real pipeline's house_lord_summary mentions all 12 houses",
           all(f"House {n} (" in real_blocks["house_lord_summary"] for n in range(1, 13)))
 except Exception as exc:
