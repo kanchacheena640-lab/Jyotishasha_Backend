@@ -1,8 +1,8 @@
-# Path: modules/love/love_prompt_builder.py
-# Jyotishasha — Love Premium Prompt Builder (FINAL | LOCKED)
-
+"""Live bilingual Q3 prompt for the dedicated two-person report."""
 from __future__ import annotations
-from typing import Dict, Any
+import json
+from typing import Any, Dict
+from modules.payments.report_q3_batch1 import get_mandatory_disclaimer
 
 
 class LovePromptBuilderError(Exception):
@@ -12,164 +12,65 @@ class LovePromptBuilderError(Exception):
 def build_love_premium_prompt(love_payload: Dict[str, Any]) -> str:
     if not isinstance(love_payload, dict):
         raise LovePromptBuilderError("Invalid love_payload")
-
-    language = love_payload.get("language", "en")
-    language = "hi" if language == "hi" else "en"
-
-    compiled = love_payload.get("compiled_report")
-    compatibility = love_payload.get("compatibility")
-    astro = love_payload.get("astro_facts")
-
-    if not isinstance(compiled, dict):
-        raise LovePromptBuilderError("compiled_report missing")
-    if not isinstance(compatibility, dict):
-        raise LovePromptBuilderError("compatibility missing")
-    if not isinstance(astro, dict):
-        raise LovePromptBuilderError(
-            "astro_facts missing — premium narration requires astrological grounding"
-        )
-
-    verdict = compiled.get("verdict", {})
-    sections = compiled.get("sections", [])
-    disclaimers = compiled.get("disclaimers", [])
-
-    # ================= HEADER =================
+    for key in ("compiled_report", "compatibility", "astro_facts"):
+        if not isinstance(love_payload.get(key), dict):
+            raise LovePromptBuilderError(f"{key} missing")
+    language = "hi" if love_payload.get("language") == "hi" else "en"
+    compatibility = love_payload["compatibility"]
+    # Allowlist excludes legacy compiler sections/signals and fallback scores.
+    evidence = {
+        "partner_data_mode": compatibility.get("case"),
+        "ashtakoot": compatibility.get("ashtakoot") or {},
+        "user_house_lord_facts": love_payload.get("user_house_lord_facts", []),
+        "user_dasha_context": love_payload.get("user_dasha_context") or {},
+    }
     if language == "hi":
-        header = (
-            "आप एक अनुभवी, व्यावहारिक और ईमानदार वैदिक ज्योतिषी हैं।\n"
-            "नीचे दिए गए *केवल* संरचित ज्योतिषीय तथ्यों के आधार पर "
-            "एक गहन, grounded और non-generic Love → Marriage Life Report लिखें।\n\n"
-            "कड़े नियम:\n"
-            "- केवल दिए गए ग्रह, भाव, दशा और आपसी संबंधों पर आधारित निष्कर्ष दें\n"
-            "- कोई अनुमान, डर या गारंटी नहीं\n"
-            "- हर सेक्शन स्पष्ट ज्योतिषीय कारणों से जुड़ा हो\n"
-            "- रिपोर्ट ₹299 की प्रीमियम रिपोर्ट जैसी लगे\n"
-            "- यदि किसी बिंदु का डेटा न हो, तो neutral और सीमित भाषा रखें\n\n"
-        )
+        instructions = """खरीदा गया प्रश्न: हमारे उपलब्ध जन्म विवरण और वास्तविक अनुकूलता प्रमाण हमारे संबंध की संभावनाओं, खूबियों, चुनौतियों और व्यावहारिक मार्गदर्शन के बारे में क्या संकेत देते हैं?
+पूरी रिपोर्ट स्वाभाविक हिंदी में लिखें; JSON कुंजियाँ और hero का label Relationship Outlook ही रखें। value शांत, गुणात्मक आकलन हो; कोई प्रतिशत, अंक या निश्चित भविष्यवाणी नहीं।
+प्रमाण का क्रम: वास्तविक अष्टकूट परिणाम, फिर उपयोगकर्ता के पाँचवें/सातवें भाव के तथ्य, फिर उपलब्ध वास्तविक दशा संदर्भ। अष्टकूट का वास्तविक कुल /36 केवल सहायक प्रमाण है, hero value नहीं। उपलब्ध कूटों के वास्तविक अंक और विवरण ही इस्तेमाल करें; गायब कूट या तथ्य न बनाएँ। प्रतिशत में न बदलें।
+A_FULL_DUAL में साथी के पूर्ण जन्म विवरण उपलब्ध हैं। B_DOB_ONLY_HYBRID में साथी की केवल जन्मतिथि उपलब्ध है: चंद्र-आधारित आकलन की सीमा बताएँ, साथी का लग्न, भाव, जन्म समय या स्थान न गढ़ें। मोड उपलब्ध न हो तो अनुमान न लगाएँ।
+खाली पाँचवाँ/सातवाँ भाव भी राशि, स्वामी और स्वामी की स्थिति से समझाएँ; ग्रहों की उपस्थिति द्वितीयक है। ये उपयोगकर्ता के भाव हैं, साथी के नहीं। केवल उपलब्ध दृष्टियों का प्रयोग करें।
+दशा केवल व्याख्यात्मक संदर्भ है; संबंध बनने, विवाह, पुनर्मिलन या अलगाव की निश्चित तारीख, वर्ष या उम्र न बताएँ। वास्तविक उपलब्ध तारीखें DD/MM/YYYY में रखें।
+किसी के निजी विचार, भावनाएँ, इरादे, निष्ठा या भविष्य का व्यवहार जानने का दावा न करें। धोखे, बेवफाई, विश्वासघात, साथी के छोड़ने या संबंध-विच्छेद की भविष्यवाणी न करें। अवसाद/चिंता का निदान या आघात का दावा न करें। संबंध खत्म करने की सलाह न दें। विवाह या पुनर्मिलन की गारंटी न दें। रत्न की सलाह न दें।
+हर खंड में निष्कर्ष, उपलब्ध ज्योतिषीय आधार और व्यावहारिक अर्थ दें। गहराई वास्तविक दो-व्यक्ति अष्टकूट प्रमाण से आए, अनावश्यक विस्तार से नहीं। नीचे के ठीक दस क्रमांकित खंड रखें:
+1. संबंध की संभावनाएँ
+2. अनुकूलता का सार — वास्तविक कुल /36 और साथी के विवरण की सीमा
+3. कूटवार अनुकूलता प्रमाण — प्रत्येक उपलब्ध कूट का वास्तविक परिणाम
+4. भावनात्मक और संबंध संबंधी गतिशीलता — प्रमाण से व्याख्या, मन पढ़ने का दावा नहीं
+5. पाँचवें और सातवें भाव का संदर्भ — उपयोगकर्ता की राशि, स्वामी, स्वामी की स्थिति
+6. संबंध की खूबियाँ
+7. ध्यान देने योग्य क्षेत्र
+8. वर्तमान दशा का संदर्भ
+9. संबंध के लिए व्यावहारिक मार्गदर्शन
+10. सारांश
+नीचे दिया अस्वीकरण backend जोड़ेगा; मुख्य विवरण में उसे दोहराएँ नहीं। कोई बिक्री संदेश न जोड़ें; अंतिम ऐप डाउनलोड घटक रेंडरर जोड़ेगा।"""
     else:
-        header = (
-            "You are an experienced, grounded Vedic astrologer.\n"
-            "Using ONLY the structured astrological facts below, "
-            "write a deep, non-generic Love → Marriage Life Report.\n\n"
-            "Strict rules:\n"
-            "- Conclusions must be tied to provided planets, houses, dashas, links\n"
-            "- No fear-based language or guarantees\n"
-            "- Every section must cite clear astrological reasons\n"
-            "- Must feel worth a ₹299 premium report\n"
-            "- If data is missing, remain neutral (do not generalize)\n\n"
-        )
-
-    body: list[str] = []
-
-    # ================= OVERALL VERDICT =================
-    body.append("# OVERALL RELATIONSHIP VERDICT")
-    body.append(
-        f"Compatibility Level: {verdict.get('level')}\n"
-        f"Verdict Basis: {verdict.get('reason_line')}"
-    )
-
-    # ================= CORE COMPATIBILITY =================
-    body.append("\n# CORE COMPATIBILITY (ASHTAKOOT)")
-    body.append(
-        "Analyse emotional bonding, mental alignment, physical harmony, "
-        "and marriage stability strictly using the following Ashtakoot data:\n"
-        f"{compatibility}"
-    )
-
-    # ================= LOVE → MARRIAGE FLOW =================
-    lf = astro.get("love_flow", {})
-    body.append("\n# LOVE → MARRIAGE FLOW")
-    body.append(
-        f"""
-5th House Lord: {lf.get('lord_5')}
-5th Lord Position (House/Sign): {lf.get('lord_5_position')}
-
-7th House Lord: {lf.get('lord_7')}
-7th Lord Position (House/Sign): {lf.get('lord_7_position')}
-
-Planets in 5th House: {lf.get('planets_in_5')}
-Planets in 7th House: {lf.get('planets_in_7')}
-
-5–7 House Connection / Aspect: {lf.get('connection_5_7')}
-Current Dasha Related to 5th/7th Lord: {lf.get('current_dasha_related')}
-
-Explain how love initiates, deepens, faces obstacles, and converts (or delays) into marriage.
-Every statement must be justified from the above facts.
+        instructions = """Purchased question: What do our available birth details and real compatibility evidence indicate about our relationship outlook, strengths, challenges and practical guidance?
+Write in English. Keep hero label exactly Relationship Outlook. Its value is a calm qualitative synthesis, never a percentage, score, or deterministic future prediction.
+Evidence hierarchy: real Ashtakoot evidence first, USER 5th/7th house facts second, real available Dasha context third. Use the actual Ashtakoot total /36 as supporting evidence only, never the hero value. Use actual koota scores and details; never fabricate missing kootas or convert the total to a percentage.
+A_FULL_DUAL means full partner birth details. B_DOB_ONLY_HYBRID means DOB-only partner data: clearly explain the Moon-based limitation; never invent partner ascendant, houses, time or place. If the mode is unavailable, say so.
+An empty 5th/7th house remains analyzable through sign, lord and lord placement. Occupants are secondary. These are USER house facts, not partner houses. Use aspects only where supplied.
+Dasha is interpretive context only. No exact relationship event timing: never predict a meeting, marriage, reconciliation, separation or breakup date/year/age. Format real supplied dates DD/MM/YYYY.
+No private-thought inference: do not infer another person's thoughts, feelings, intentions, fidelity or future actions. No cheating/betrayal certainty, partner-will-leave claim, breakup prediction, depression/anxiety diagnosis or trauma claim. Do not advise ending a relationship. Do not guarantee marriage or reconciliation. No gemstone recommendations.
+For each section give the finding, supplied astrological basis and practical meaning. Depth must come from real two-person compatibility evidence, not filler. Use exactly these ten numbered sections:
+1. Relationship Outlook
+2. Compatibility Snapshot — actual total /36 and partner data completeness
+3. Koota-Wise Compatibility Evidence — actual results for each available koota
+4. Emotional & Relationship Dynamics — evidence-based interpretation, no mind-reading
+5. 5th & 7th House Context — USER sign, lord and lord placement
+6. Strengths in the Connection
+7. Areas Requiring Attention
+8. Current Dasha Context
+9. Practical Relationship Guidance
+10. Summary
+The backend renders the exact disclaimer below; do not repeat it in the narrative. No sales CTA; the renderer supplies the final app-download component."""
+    wire = """
+Return exactly this machine-readable format. No Markdown fences.
+===META===
+{"hero":{"label":"Relationship Outlook","value":"<qualitative synthesis>","interpretation":"<evidence-grounded sentence>","evidence":["<actual supplied fact>"],"action_items":["<practical guidance>"]}}
+===REPORT===
+<full ten-section narrative>
+Only the listed hero fields are allowed. Do not emit compatibility percentages or heuristic scores in metadata or narrative.
 """
-    )
-
-    # ================= LOVE vs ARRANGED =================
-    lva = astro.get("love_vs_arranged", {})
-    body.append("\n# LOVE vs ARRANGED MARRIAGE PROBABILITY")
-    body.append(
-        f"""
-Rahu in 5th or 7th House: {lva.get('rahu_in_5_or_7')}
-Venus Involvement (placement/support): {lva.get('venus_involved')}
-Direct 5–7 Lord Connection: {lva.get('direct_5_7_link')}
-Family House Support (2/7/11): {lva.get('family_house_support')}
-
-Clearly conclude whether love marriage, arranged marriage,
-or a mixed path is more likely — with reasons.
-"""
-    )
-
-    # ================= STRENGTHS & RISKS =================
-    sr = astro.get("strength_risk", {})
-    body.append("\n# STRENGTHS & RISKS")
-    body.append(
-        f"""
-Benefic Planetary Support: {sr.get('benefic_support')}
-Malefic Afflictions: {sr.get('malefic_affliction')}
-Manglik Presence: {sr.get('manglik')}
-Overall Relationship Verdict Level: {sr.get('verdict_level')}
-
-Highlight genuine strengths and practical risks without exaggeration.
-"""
-    )
-
-    # ================= REMEDIES & GUIDANCE =================
-    rm = astro.get("remedies", {})
-    body.append("\n# REMEDIES & GUIDANCE")
-    body.append(
-        f"""
-Weak House (if any): {rm.get('weak_house')}
-Weak Lord (if any): {rm.get('weak_lord')}
-Current Mahadasha / Antardasha: {rm.get('current_dasha')}
-
-Suggest only relevant, practical Vedic remedies.
-Avoid superstition or generic advice.
-"""
-    )
-
-    # ================= EXTRA INSIGHTS (FROM COMPILER) =================
-    if sections:
-        body.append("\n# ADDITIONAL ASTROLOGICAL INSIGHTS")
-        for sec in sections:
-            body.append(f"\n## {sec.get('title')}")
-            body.append(f"Context: {sec.get('summary')}")
-            for b in (sec.get("bullets") or []):
-                body.append(f"- {b}")
-
-    # ================= DISCLAIMERS =================
-    if disclaimers:
-        body.append("\n# IMPORTANT NOTES")
-        for d in disclaimers:
-            body.append(f"- {d.get('text')}")
-
-    # ================= FOOTER =================
-    if language == "hi":
-        footer = (
-            "\n\nअब ऊपर दिए गए सभी ज्योतिषीय तथ्यों को जोड़कर "
-            "एक साफ़, flowing और भरोसेमंद रिपोर्ट लिखें।\n"
-            "हर सेक्शन के लिए स्पष्ट heading रखें।\n"
-            "Raw data, JSON या technical शब्द न दिखाएँ।\n"
-            "यह एक final paid astrology report है।"
-        )
-    else:
-        footer = (
-            "\n\nNow combine everything above into a clear, flowing, reader-friendly report.\n"
-            "Use proper headings. Do not expose raw data or technical terms.\n"
-            "This is a final paid astrology report."
-        )
-
-    return header + "\n".join(body) + footer
+    disclaimer = get_mandatory_disclaimer("relationship_future_non_certainty_mandatory", language)
+    return instructions + wire + "\nDisclaimer:\n" + disclaimer + "\nDeterministic evidence:\n" + json.dumps(evidence, ensure_ascii=False)

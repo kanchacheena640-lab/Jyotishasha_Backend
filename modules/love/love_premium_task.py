@@ -38,16 +38,17 @@ from modules.activity_events.service import record_event
 # anymore.
 from modules.payments.report_ai_client import generate_report_completion
 from modules.payments.report_product_intelligence import get_product_intelligence
+from modules.payments.report_q3_batch1 import get_mandatory_disclaimer
+from modules.payments.report_i18n_labels import get_label
+from app_config import JYOTISHASHA_PLAY_STORE_URL, JYOTISHASHA_APP_STORE_URL
 from modules.payments.report_structured_output import (
+    ReportMetadataError,
     parse_structured_response,
     validate_required_hero_fields,
     assemble_answer_hero,
-    assemble_gemstone_component,
 )
-# ReportMetadataError is deliberately not imported/caught here -- a
-# Q3-enabled product's invalid structured metadata must propagate to
-# this function's own existing `except Exception` below unchanged (see
-# report_structured_output.py's own docstring for why).
+# Invalid Q3 metadata propagates to the existing Failed/recovery path;
+# it never silently degrades to a narrative-only delivered report.
 
 load_dotenv()
 
@@ -149,7 +150,7 @@ def _emit_report_event(
 def generate_love_premium_report(order_id: int):
     """
     END-TO-END Love Premium Report Generator
-    (₹299 / ₹399 product)
+    Dedicated relationship product; pricing remains owned by ReportProduct.
     """
     # Phase 4C -- captured once, the moment this invocation's own first
     # report_stage="Processing" commit succeeds (below). See tasks.py's
@@ -245,18 +246,18 @@ def generate_love_premium_report(order_id: int):
             # already was before this change.
             completion = generate_report_completion(final_prompt)
 
-            # Q3 Batch 0 -- product-intelligence lookup. relationship_
-            # future_report's own registry entry has q3_enabled=False
-            # at Batch 0 (its own prompt builder has not been extended
-            # for the structured-output contract yet), so the `if`
-            # branch below is currently unreachable -- it exists, and
-            # is fully tested, so a later batch's only change is
-            # flipping this one product's registry entry.
+            # Q3 Batch 4: dedicated structured relationship contract.
             product_intel = get_product_intelligence("relationship_future_report")
             answer_hero = None
-            gemstone_component = None
             structured_metadata_valid = None  # None = not attempted
 
+            disclaimer_text = get_mandatory_disclaimer(product_intel.disclaimer_type, language)
+            app_download_component = {
+                "heading": get_label("app_download_heading", language),
+                "benefit_text": get_label("app_download_body", language),
+                "play_store_url": JYOTISHASHA_PLAY_STORE_URL,
+                "app_store_url": JYOTISHASHA_APP_STORE_URL,
+            }
             if product_intel.q3_enabled:
                 # Q3 Batch 0 correction #1 (LOCKED): missing/malformed
                 # structured metadata for a Q3-enabled product is a
@@ -265,14 +266,28 @@ def generate_love_premium_report(order_id: int):
                 # report_stage="Failed" (F2-recoverable), never a
                 # silent narrative-only degrade.
                 metadata, report_text = parse_structured_response(completion.content)
+                # The premium wire contract names this object "hero"; adapt
+                # locally to the shared parser/validator's answer_hero contract.
+                if isinstance(metadata, dict) and "hero" in metadata:
+                    metadata = {"answer_hero": metadata["hero"]}
                 hero = validate_required_hero_fields(metadata, product_intel.required_hero_fields)
+                hero["label"] = product_intel.hero_label
+                if any(char.isdigit() or char == "%" for char in hero["value"]):
+                    raise ReportMetadataError("Relationship Outlook must be qualitative, not a score or percentage.")
+                # The engine owns the supporting total; never trust Luna's
+                # reproduction of it. Other chart evidence stays interpretive.
+                hero["evidence"] = [
+                    item for item in hero["evidence"]
+                    if "ashtakoot" not in item.lower() and "अष्टकूट" not in item
+                ]
+                score = (love_payload["compatibility"].get("ashtakoot") or {}).get("total_score")
+                if isinstance(score, (int, float)) and not isinstance(score, bool) and 0 <= score <= 36:
+                    score_label = "अष्टकूट अनुकूलता" if language == "hi" else "Ashtakoot compatibility"
+                    hero["evidence"].insert(0, f"{score_label}: {score:g}/36")
+                if not hero["evidence"]:
+                    raise ReportMetadataError("Relationship Outlook supporting evidence unavailable.")
                 answer_hero = assemble_answer_hero(hero)
                 structured_metadata_valid = True
-                if product_intel.gemstone_policy != "disabled":
-                    gemstone_component = assemble_gemstone_component(
-                        kundali.get("gemstone_suggestion"),
-                        ai_reason=metadata.get("gemstone_reason"),
-                    )
             else:
                 # Not yet migrated to Q3 structured output -- entire
                 # response is narrative, byte-for-byte the same
@@ -326,11 +341,12 @@ def generate_love_premium_report(order_id: int):
                 # (see `language` above) through to the PDF's own
                 # typography choice.
                 language=language,
-                # Q3 Batch 0 -- both None today (q3_enabled=False for
-                # relationship_future_report in the registry); inert
-                # until a later batch enables it.
                 answer_hero=answer_hero,
-                gemstone=gemstone_component,
+                gemstone=None,
+                disclaimer=disclaimer_text,
+                app_download=app_download_component,
+                action_list={"heading": get_label("suggested_next_steps", language),
+                             "items": answer_hero.get("action_items", [])} if answer_hero else None,
             )
 
             del kundali_drawing

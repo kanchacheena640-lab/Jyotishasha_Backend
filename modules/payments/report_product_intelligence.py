@@ -13,17 +13,18 @@ versioned with the code that consumes it, not admin-editable runtime
 business data (price/active-status, which already live in
 ReportProduct, untouched by this file).
 
-CRITICAL scope rule, updated for Q3 Batch 3: at Batch 0 every one of
+CRITICAL scope rule, updated for Q3 Batch 4: at Batch 0 every one of
 the 25 entries had q3_enabled=False. Batch 1 flipped 4 -- gemstone_
 consultation, saturn_transit_report, mood_mental_health_report,
 divorce_possibility_report. Batch 2 flipped 4 more -- marriage_report,
 delay_in_marriage_report, problem_in_marriage_report, second_marriage_
 report. Batch 3 flips 6 more -- financial_report, financial_stability_
 report, career_report, government_job_report, business_report,
-startup_suggestion_report -- for a total of 14 q3_enabled=True out of
-25. Each flip happens only together with that product's own prompt
+startup_suggestion_report. Batch 4 adds the 4 love/relationship products,
+for a total of 18 q3_enabled=True out of 25. Each flip happens only
+together with that product's own prompt
 rewrite for the structured-output contract, never before. The
-remaining 11 products stay q3_enabled=False and byte-for-byte
+remaining 7 products stay q3_enabled=False and byte-for-byte
 unaffected; flipping any of them on is a later batch's job. tasks.py/
 modules/love/love_premium_task.py both check this flag before ever
 calling report_structured_output.py's parser/validator -- a product
@@ -73,6 +74,7 @@ class ProductIntelligence:
     components_enabled: dict
     gemstone_policy: str
     disclaimer_type: str
+    hero_label: str = ""
 
 
 def _standard(
@@ -87,6 +89,7 @@ def _standard(
     gemstone="optional",
     disclaimer="general",
     q3_enabled=False,
+    hero_label="",
 ):
     return ProductIntelligence(
         report_slug=slug,
@@ -100,6 +103,7 @@ def _standard(
         components_enabled=components or {"answer_hero": True, "timeline": True, "gemstone": gemstone != "disabled"},
         gemstone_policy=gemstone,
         disclaimer_type=disclaimer,
+        hero_label=hero_label,
     )
 
 
@@ -137,10 +141,14 @@ REGISTRY: dict = {
     ),
     "love_relationship_report": _standard(
         "love_relationship_report",
-        houses=(5, 7), planets=("Venus", "Moon"),
-        context_keys=("house_lord_summary", "aspect_summary", "targeted_aspect_summary"),
-        hero_value_source="ai", required_hero_fields=("label", "interpretation", "evidence"),
-        gemstone="optional", disclaimer="relationship_privacy",
+        hero_label="Relationship Pattern",
+        houses=(5, 7), planets=("Venus", "Moon", "Mars"),
+        context_keys=("house_lord_summary", "dasha_window_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="relationship_pattern_general",
+        q3_enabled=True,
     ),
     # Q3 Batch 2 -- ENABLED. `value` stays AI-authored (a qualitative
     # outlook descriptor, e.g. "Supportive, With Steady Effort" -- never
@@ -181,9 +189,14 @@ REGISTRY: dict = {
     ),
     "love_marriage_report": _standard(
         "love_marriage_report",
-        houses=(5, 7), planets=("Venus", "Moon"),
-        context_keys=("house_lord_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="relationship_privacy",
+        hero_label="Love-Marriage Tendency",
+        houses=(5, 7), planets=("Venus", "Mars", "Jupiter"),
+        context_keys=("house_lord_summary", "targeted_aspect_summary", "dasha_window_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="relationship_pattern_general",
+        q3_enabled=True,
     ),
     # Q3 Batch 3 -- ENABLED. `value` stays AI-authored, PROMPT-
     # constrained (not backend-enum-validated, same precedent as
@@ -319,9 +332,14 @@ REGISTRY: dict = {
     ),
     "love_disappointment_report": _standard(
         "love_disappointment_report",
-        houses=(5, 7), planets=("Venus", "Moon"),
-        context_keys=("house_lord_summary", "aspect_summary", "targeted_aspect_summary"),
-        gemstone="optional", disclaimer="relationship_privacy",
+        hero_label="Emotional Relationship Pattern",
+        houses=(5, 7, 8, 12), planets=("Venus", "Moon", "Saturn", "Rahu", "Ketu"),
+        context_keys=("house_lord_summary", "targeted_aspect_summary", "dasha_window_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": False, "action_list": True, "disclaimer": True},
+        gemstone="disabled", disclaimer="love_disappointment_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     # Q3 Batch 2 -- ENABLED. `value` stays AI-authored, a calm
     # qualitative descriptor (e.g. "Manageable With Communication") --
@@ -453,15 +471,16 @@ REGISTRY: dict = {
     ),
     "relationship_future_report": ProductIntelligence(
         report_slug="relationship_future_report",
+        hero_label="Relationship Outlook",
         generator="love_premium_v1",
-        q3_enabled=False,
-        hero_value_source="deterministic:love_data_collector.verdict",
-        required_hero_fields=("label", "interpretation"),
+        q3_enabled=True,
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
         relevant_houses=(), relevant_planets=(),
         required_context_keys=(),  # separate pipeline -- love_data_collector.py, not summary_blocks.py
-        components_enabled={"answer_hero": True, "table": True, "gemstone": False},
+        components_enabled={"answer_hero": True, "timeline": False, "gemstone": False, "action_list": True, "disclaimer": True},
         gemstone_policy="disabled",
-        disclaimer_type="relationship_privacy",
+        disclaimer_type="relationship_future_non_certainty_mandatory",
     ),
 }
 

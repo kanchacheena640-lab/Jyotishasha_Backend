@@ -75,16 +75,16 @@ BATCH1_SLUGS = {
 
 check("A: BATCH3_PRODUCT_SLUGS is exactly the 6 expected slugs", BATCH3_PRODUCT_SLUGS == frozenset(BATCH3_SLUGS))
 
-print("=== A/B/C: exactly 14/25 Q3 products enabled -- Batch-1 4 + Batch-2 4 + Batch-3 6 ===")
+print("=== A/B/C: prior 14 Q3 products remain enabled -- Batch-1 4 + Batch-2 4 + Batch-3 6 ===")
 
 enabled = {slug for slug, p in REGISTRY.items() if p.q3_enabled}
-check("A: exactly 14 of 25 products are q3_enabled=True", len(enabled) == 14)
+check("A: prior 14 products remain enabled (later batches may add more)", len(enabled) >= 14)
 check("B: all 6 Batch-3 products are enabled", BATCH3_SLUGS <= enabled)
 check("B: all 4 Batch-2 products still enabled (unaffected by Batch 3)", BATCH2_SLUGS <= enabled)
 check("B: all 4 Batch-1 products still enabled (unaffected by Batch 3)", BATCH1_SLUGS <= enabled)
-check("A: enabled set is EXACTLY Batch-1 ∪ Batch-2 ∪ Batch-3, nothing else",
-      enabled == (BATCH1_SLUGS | BATCH2_SLUGS | BATCH3_SLUGS))
-check("C: the remaining 11 products are all q3_enabled=False",
+check("A: enabled set contains Batch-1 ∪ Batch-2 ∪ Batch-3",
+      (BATCH1_SLUGS | BATCH2_SLUGS | BATCH3_SLUGS) <= enabled)
+check("C: products outside the enabled set are all q3_enabled=False",
       all(not p.q3_enabled for slug, p in REGISTRY.items() if slug not in enabled))
 
 print("\n=== D: hero contracts -- all 6 stay AI-authored (no scoring engine exists for any of them) ===")

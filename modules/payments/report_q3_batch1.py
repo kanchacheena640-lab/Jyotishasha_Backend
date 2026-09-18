@@ -175,6 +175,53 @@ DISCLAIMER_TEXT = {
             "कोई बड़ा व्यावसायिक या वित्तीय निर्णय न लें।"
         ),
     },
+    # Q3 Batch 4: backend-controlled relationship disclaimers.
+    "relationship_pattern_general": {
+        "en": (
+            "This is an astrology-based interpretation of relationship tendencies, not a "
+            "prediction of another person's thoughts, feelings, intentions, fidelity, or "
+            "future actions. Relationship outcomes depend on the people involved and their "
+            "real circumstances."
+        ),
+        "hi": (
+            "यह संबंधों से जुड़ी प्रवृत्तियों का ज्योतिष-आधारित आकलन है। यह किसी अन्य "
+            "व्यक्ति के विचारों, भावनाओं, इरादों, निष्ठा या भविष्य के व्यवहार की भविष्यवाणी "
+            "नहीं करता। संबंधों के परिणाम संबंधित लोगों और उनकी वास्तविक परिस्थितियों पर "
+            "निर्भर करते हैं।"
+        ),
+    },
+    "love_disappointment_non_certainty_mandatory": {
+        "en": (
+            "This is an astrology-based view of emotional and relationship patterns, not a "
+            "mental-health diagnosis and not a prediction of betrayal, cheating, breakup, "
+            "or another person's private thoughts or intentions. Important relationship "
+            "decisions should be based on your real circumstances."
+        ),
+        "hi": (
+            "यह भावनात्मक और संबंधों से जुड़ी प्रवृत्तियों का ज्योतिष-आधारित आकलन है। यह "
+            "मानसिक स्वास्थ्य का निदान नहीं है और न ही विश्वासघात, बेवफाई, संबंध-विच्छेद या "
+            "किसी अन्य व्यक्ति के निजी विचारों या इरादों की भविष्यवाणी करता है। महत्वपूर्ण "
+            "संबंध निर्णय आपकी वास्तविक परिस्थितियों के आधार पर लिए जाने चाहिए।"
+        ),
+    },
+    "relationship_future_non_certainty_mandatory": {
+        "en": (
+            "This report combines astrology-based compatibility evidence with interpretive "
+            "relationship guidance. It does not reveal or predict another person's private "
+            "thoughts, feelings, intentions, fidelity, or future actions, and it does not "
+            "guarantee marriage, reconciliation, separation, or breakup. Important "
+            "relationship decisions should be based on your real circumstances and "
+            "communication with the person involved."
+        ),
+        "hi": (
+            "यह रिपोर्ट ज्योतिष-आधारित अनुकूलता प्रमाणों को संबंध संबंधी व्याख्यात्मक "
+            "मार्गदर्शन के साथ प्रस्तुत करती है। यह किसी अन्य व्यक्ति के निजी विचारों, "
+            "भावनाओं, इरादों, निष्ठा या भविष्य के व्यवहार को जानने या उनकी भविष्यवाणी करने "
+            "का दावा नहीं करती, और न ही विवाह, पुनर्मिलन, अलगाव या संबंध-विच्छेद की गारंटी "
+            "देती है। महत्वपूर्ण संबंध निर्णय आपकी वास्तविक परिस्थितियों और संबंधित व्यक्ति "
+            "के साथ संवाद के आधार पर लिए जाने चाहिए।"
+        ),
+    },
 }
 
 

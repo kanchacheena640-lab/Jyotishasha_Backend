@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from modules.love.service_love import run_love_compatibility, LoveServiceError
 from modules.love.love_report_compiler import compile_love_report
+from summary_blocks import build_house_lord_facts, _build_dasha_window_summary
 
 
 class LoveCollectorError(Exception):
@@ -230,4 +231,19 @@ def collect_love_report_data(
         "compatibility": compat,
         "compiled_report": compiled,
         "astro_facts": astro_facts,
+        # Q3: all houses, including empty houses, use existing Q1.5 authority.
+        "user_house_lord_facts": [
+            fact for fact in build_house_lord_facts({
+                **user_kundali,
+                "planets": [{**planet, "name": name} for name, planet in planets.items()],
+            })
+            if fact["house"] in (5, 7)
+        ],
+        "user_dasha_context": {
+            "existing_dasha": dasha,
+            "window_summary": _build_dasha_window_summary(
+                user_kundali, user_kundali.get("current_mahadasha") or {},
+                user_kundali.get("current_antardasha") or {},
+            ),
+        },
     }

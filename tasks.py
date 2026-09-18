@@ -56,6 +56,7 @@ from modules.payments.report_q3_batch2 import compute_dasha_window_timeline
 # report_q3_batch3.py's own docstring for why this batch needs no
 # compute_*_hero() function of its own.
 from modules.payments.report_q3_batch3 import BATCH3_PRODUCT_SLUGS
+from modules.payments.report_q3_batch4 import STANDARD_BATCH4_PRODUCT_SLUGS
 
 # Q3 Batch 1 (visual QA correction round) -- shared, renderer-level
 # label localization (see report_i18n_labels.py's own docstring) and
@@ -345,6 +346,10 @@ def _generate_and_send_report_core(order_id):
                 # purchased question, or the report is not delivered.
                 metadata, gpt_content = parse_structured_response(completion.content)
                 hero = validate_required_hero_fields(metadata, product_intel.required_hero_fields)
+                if product_intel.hero_label:
+                    hero["label"] = product_intel.hero_label
+                if product_slug == "love_marriage_report" and hero["value"] not in {"Low", "Moderate", "Elevated"}:
+                    raise ReportMetadataError("Love-Marriage Tendency must be Low, Moderate, or Elevated.")
 
                 # Q3 Batch 1 -- product-specific deterministic
                 # value/timing overrides. AI's own value/timing is
@@ -381,14 +386,11 @@ def _generate_and_send_report_core(order_id):
                     # Dasha-window dates only, never a guessed marriage
                     # date -- see report_q3_batch2.py's own docstring.
                     timeline_component = compute_dasha_window_timeline(kundali, language=language)
-                elif product_slug in BATCH3_PRODUCT_SLUGS:
-                    # Q3 Batch 3 -- all 6 career/money/business products
-                    # declare timeline=True; hero value stays AI-
-                    # authored for all 6 (no financial/career/business
-                    # scoring engine exists to source a deterministic
-                    # value from -- see report_q3_batch3.py's own
-                    # docstring). Same Dasha-window helper as Batch 2,
-                    # reused unchanged, never duplicated.
+                elif product_slug in BATCH3_PRODUCT_SLUGS | STANDARD_BATCH4_PRODUCT_SLUGS:
+                    # Q3 Batches 3/4: real Dasha windows, unchanged from
+                    # Batch 2. Relationship dates describe Dasha context,
+                    # never meeting, marriage or breakup event predictions.
+                    # Hero values remain AI synthesis, not backend scores.
                     timeline_component = compute_dasha_window_timeline(kundali, language=language)
 
                 answer_hero = assemble_answer_hero(
