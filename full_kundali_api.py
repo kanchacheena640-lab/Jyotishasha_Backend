@@ -1,6 +1,14 @@
 from flask import Flask, request, jsonify
 import swisseph as swe
 from datetime import datetime, timedelta
+# T3 -- canonical birthplace-local -> UTC conversion (Foreign Birth
+# Timezone Correctness project). Replaces the hardcoded IST (-05:30)
+# assumption previously used directly in this file. See
+# services/birth_timezone_resolver.py for the full contract; this file
+# never catches BirthTimezoneError -- an unresolvable/ambiguous/
+# nonexistent birth local time propagates uncaught rather than
+# silently falling back to IST.
+from services.birth_timezone_resolver import resolve_birth_utc_datetime
 from services.zodiac_service import get_zodiac_traits  # already imported
 from services.grah_dasha_finder import get_grah_dasha_block
 from services.planet_overview_logic import get_planet_overview
@@ -80,10 +88,17 @@ def get_nakshatra_pada(degree):
     return NAKSHATRAS[nak_index], pada
 
 def calculate_planet_positions(dob, tob, lat, lon):
-    year, month, day = map(int, dob.split('-'))
-    hour, minute = map(int, tob.split(':'))
-    local_time = datetime(year, month, day, hour, minute)
-    utc_time = local_time - timedelta(hours=5, minutes=30)
+    # T3 -- dob/tob are interpreted as LOCAL CIVIL TIME AT THE
+    # BIRTHPLACE (resolved from lat/lon), not IST. utc_time is
+    # timezone-aware (tzinfo=UTC); its own .year/.month/.day/.hour/
+    # .minute already reflect the correct UTC calendar date -- which
+    # may legitimately differ from dob's calendar date (UTC rollover)
+    # for many foreign birthplaces. lat/lon are used here ONLY to
+    # resolve the historical birth timezone; they are passed to
+    # swe.houses() below UNCHANGED for the Ascendant/house calculation
+    # -- timezone correction changes the astronomical instant, never
+    # the customer's own birth coordinates.
+    utc_time = resolve_birth_utc_datetime(dob, tob, lat, lon)
 
     jd_ut = swe.julday(utc_time.year, utc_time.month, utc_time.day,
                        utc_time.hour + utc_time.minute / 60.0)
@@ -223,10 +238,12 @@ def calculate_shadbala_for_planets(planets):
     return shadbala_data
 
 def get_moon_longitude_lahiri(dob, tob, lat, lon):
-    year, month, day = map(int, dob.split('-'))
-    hour, minute = map(int, tob.split(':'))
-    local_dt = datetime(year, month, day, hour, minute)
-    utc_dt = local_dt - timedelta(hours=5, minutes=30)
+    # T3 -- same canonical birthplace-local -> UTC conversion as
+    # calculate_planet_positions() above (the single shared resolver,
+    # never a second independent timezone implementation). utc_dt is
+    # timezone-aware (tzinfo=UTC); Julian Day is built from its own
+    # UTC calendar fields, correctly handling UTC date rollover.
+    utc_dt = resolve_birth_utc_datetime(dob, tob, lat, lon)
     jd_ut = swe.julday(utc_dt.year, utc_dt.month, utc_dt.day,
                        utc_dt.hour + utc_dt.minute / 60.0)
     moon_long = swe.calc_ut(jd_ut, swe.MOON)[0][0]
