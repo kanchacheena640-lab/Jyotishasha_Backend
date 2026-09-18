@@ -13,23 +13,26 @@ versioned with the code that consumes it, not admin-editable runtime
 business data (price/active-status, which already live in
 ReportProduct, untouched by this file).
 
-CRITICAL scope rule, updated for Q3 Batch 4: at Batch 0 every one of
-the 25 entries had q3_enabled=False. Batch 1 flipped 4 -- gemstone_
-consultation, saturn_transit_report, mood_mental_health_report,
+CRITICAL scope rule, updated for Q3 Batch 5 (FINAL): at Batch 0 every
+one of the 25 entries had q3_enabled=False. Batch 1 flipped 4 --
+gemstone_consultation, saturn_transit_report, mood_mental_health_report,
 divorce_possibility_report. Batch 2 flipped 4 more -- marriage_report,
 delay_in_marriage_report, problem_in_marriage_report, second_marriage_
-report. Batch 3 flips 6 more -- financial_report, financial_stability_
+report. Batch 3 flipped 6 more -- financial_report, financial_stability_
 report, career_report, government_job_report, business_report,
-startup_suggestion_report. Batch 4 adds the 4 love/relationship products,
-for a total of 18 q3_enabled=True out of 25. Each flip happens only
-together with that product's own prompt
-rewrite for the structured-output contract, never before. The
-remaining 7 products stay q3_enabled=False and byte-for-byte
-unaffected; flipping any of them on is a later batch's job. tasks.py/
-modules/love/love_premium_task.py both check this flag before ever
-calling report_structured_output.py's parser/validator -- a product
-with q3_enabled=False is completely unaffected by anything in this
-file beyond being looked up.
+startup_suggestion_report. Batch 4 flipped 4 more -- love_relationship_
+report, love_marriage_report, love_disappointment_report,
+relationship_future_report -- for a total of 18 q3_enabled=True out of
+25. Batch 5 flips the LAST 7 -- sadhesati_report, foreign_travel_report,
+children_parenting_report, jupiter_transit_report, lifestyle_analysis_
+report, property_report, legal_disputes_report -- for a final total of
+25 q3_enabled=True out of 25 (0 remaining disabled). Each flip happens
+only together with that product's own prompt rewrite for the
+structured-output contract, never before. tasks.py/modules/love/
+love_premium_task.py both check this flag before ever calling
+report_structured_output.py's parser/validator -- a product with
+q3_enabled=False is completely unaffected by anything in this file
+beyond being looked up.
 
 Fields per entry:
   generator            "standard_v1" | "love_premium_v1"
@@ -111,13 +114,33 @@ def _standard(
 # rulings, condensed. See the Q3A/Q3B conversation for the full
 # per-product reasoning behind each choice below -- not re-derived here.
 REGISTRY: dict = {
+    # Q3 Batch 5 (FINAL) -- ENABLED. `value` is ALWAYS overwritten with
+    # the deterministic Sade Sati status/phase from kundali["sadhesati"]
+    # (report_q3_batch5.py::compute_sadhesati_hero(), reusing
+    # summary_blocks.py's own phase-date-key mapping -- no new
+    # astrology calculation, and NOT the underlying engine's own
+    # (buggy) internal date lookup). Real Sade Sati phase dates only,
+    # never a guessed negative life event -- see the mandatory
+    # disclaimer. gemstone_policy stays "substone_only" (unchanged
+    # label from Batch 0); the shared assembler has no distinct
+    # substone-only rendering mode (confirmed in the Q3 Final-7 audit),
+    # so this resolves through the SAME deterministic gemstone path
+    # every other non-disabled product uses -- planet/gemstone/
+    # substone are still 100% backend-sourced, Luna still never
+    # chooses one, only the visual "substone-only" framing is
+    # currently unenforced. Known, documented limitation -- not a
+    # safety gap.
     "sadhesati_report": _standard(
         "sadhesati_report",
-        context_keys=("sadhesati_summary",),
+        hero_label="Sade Sati Status",
+        houses=(), planets=("Saturn", "Moon"),
+        context_keys=("sadhesati_summary", "dasha_window_summary"),
         hero_value_source="deterministic:sadhesati_summary",
-        required_hero_fields=("label", "interpretation"),
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
         gemstone="substone_only",
-        disclaimer="none",
+        disclaimer="sadhesati_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     # Q3 Batch 3 -- ENABLED. `value` stays AI-authored (a qualitative
     # wealth-growth descriptor, e.g. "Building Momentum" -- no numeric
@@ -217,12 +240,25 @@ REGISTRY: dict = {
         gemstone="optional", disclaimer="government_job_selection_non_certainty_mandatory",
         q3_enabled=True,
     ),
+    # Q3 Batch 5 (FINAL) -- ENABLED. `value` stays AI-authored,
+    # PROMPT-constrained (not backend-enum-validated, same precedent as
+    # delay_in_marriage_report/government_job_report) to exactly one of
+    # Low/Moderate/Elevated -- a general foreign-travel TENDENCY signal
+    # only. No sub-category (tourism/education/work/settlement) is ever
+    # claimed: services/foreign_travel.py's own deterministic evaluator
+    # has no concept of these categories (confirmed in the Q3 Final-7
+    # audit), only a general positive/negative signal from 9th/12th
+    # house+lord+planet+aspect facts.
     "foreign_travel_report": _standard(
         "foreign_travel_report",
+        hero_label="Foreign Travel Potential",
         houses=(9, 12), planets=("Rahu", "Moon", "Jupiter"),
-        context_keys=("foreign_travel_summary",),
-        hero_value_source="ai", required_hero_fields=("label", "interpretation", "evidence"),
+        context_keys=("foreign_travel_summary", "dasha_window_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": False, "action_list": True},
         gemstone="disabled", disclaimer="general",
+        q3_enabled=True,
     ),
     # Q3 Batch 3 -- ENABLED. `value` stays AI-authored, ONGOING-CAPACITY
     # framed (e.g. "Naturally Suited, With Steady Discipline") --
@@ -273,11 +309,24 @@ REGISTRY: dict = {
         gemstone="required", disclaimer="none",
         q3_enabled=True,
     ),
+    # Q3 Batch 5 (FINAL) -- ENABLED. `value` stays AI-authored, a
+    # qualitative PARENTING descriptor only (never a tier, never a
+    # fertility/pregnancy score -- no such classifier exists anywhere
+    # in this codebase). Reframed to answer PARENTING TENDENCIES/
+    # PARENT-CHILD DYNAMICS specifically -- never fertility, pregnancy,
+    # conception timing, a child's health, or a child's sex (see the
+    # mandatory disclaimer and the rewritten prompt's own explicit
+    # prohibitions).
     "children_parenting_report": _standard(
         "children_parenting_report",
+        hero_label="Parenting Pattern",
         houses=(5,), planets=("Jupiter", "Moon"),
-        context_keys=("house_lord_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="sensitive_topic",
+        context_keys=("house_lord_summary", "dasha_window_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="children_parenting_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     # Q3 Batch 2 -- ENABLED. `value` stays AI-authored but is
     # PROMPT-CONSTRAINED (not backend-enum-validated -- same established
@@ -316,19 +365,46 @@ REGISTRY: dict = {
         gemstone="optional", disclaimer="financial_advice_non_certainty_mandatory",
         q3_enabled=True,
     ),
+    # Q3 Batch 5 (FINAL) -- ENABLED. `value` is ALWAYS overwritten with
+    # Jupiter's real, deterministic Lagna-relative transit house
+    # (report_q3_batch5.py::compute_jupiter_transit_hero(), reusing
+    # summary_blocks.py's own sign-offset math and the SAME planet-
+    # generic smart_transit_engine.get_current_sign_residency() call
+    # saturn_transit_report already uses -- no new engine). `timing`
+    # is best-effort real dates from that same call, never a guessed
+    # life event. gemstone_policy is "disabled" (changed from Batch
+    # 0's "optional") -- mirrors saturn_transit_report's own Batch-1
+    # visual-QA correction: a deterministic gemstone existing is not
+    # itself a reason to show one on a transit-timing product.
     "jupiter_transit_report": _standard(
         "jupiter_transit_report",
+        hero_label="Jupiter Transit Focus",
         houses=(), planets=("Jupiter",),
         context_keys=("transit_facts_summary", "house_lord_summary"),
         hero_value_source="deterministic:transit_facts_summary",
-        required_hero_fields=("label", "interpretation"),
-        gemstone="optional", disclaimer="general",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": False, "action_list": True},
+        gemstone="disabled", disclaimer="general",
+        q3_enabled=True,
     ),
+    # Q3 Batch 5 (FINAL) -- ENABLED. `value` stays AI-authored, a
+    # qualitative descriptor of daily-habit/routine/discipline balance
+    # only -- distinct from mood_mental_health_report's own EMOTIONAL/
+    # MOOD framing (4th/12th house + Moon) by house set (6th house)
+    # and by question (habits/routine, never emotional tendency). No
+    # medical/diagnostic authority exists anywhere in this codebase --
+    # the mandatory disclaimer and rewritten prompt both explicitly
+    # forbid diagnosis, treatment, or guaranteed health outcomes.
     "lifestyle_analysis_report": _standard(
         "lifestyle_analysis_report",
+        hero_label="Lifestyle Balance Pattern",
         houses=(6,), planets=("Moon", "Saturn"),
-        context_keys=("house_lord_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="general",
+        context_keys=("house_lord_summary", "dasha_window_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="lifestyle_health_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     "love_disappointment_report": _standard(
         "love_disappointment_report",
@@ -386,11 +462,24 @@ REGISTRY: dict = {
         gemstone="disabled", disclaimer="mental_health_mandatory",
         q3_enabled=True,
     ),
+    # Q3 Batch 5 (FINAL) -- ENABLED. `value` stays AI-authored,
+    # PROMPT-constrained (not backend-enum-validated, same precedent as
+    # delay_in_marriage_report) to exactly one of Low/Moderate/Elevated
+    # -- a property-acquisition TENDENCY signal only. No price/
+    # valuation/legal-title-verification engine exists anywhere in
+    # this codebase; the mandatory disclaimer and rewritten prompt
+    # both explicitly forbid guaranteed purchase, price appreciation,
+    # investment return, or legal-title-outcome claims.
     "property_report": _standard(
         "property_report",
+        hero_label="Property Acquisition Tendency",
         houses=(4,), planets=("Mars", "Saturn"),
-        context_keys=("house_lord_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="legal_financial",
+        context_keys=("house_lord_summary", "dasha_window_summary", "gemstone_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="property_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     # Q3 Batch 1 -- ENABLED. `value` is ALWAYS overwritten with Saturn's
     # real, deterministic Lagna-relative transit house (report_q3_
@@ -463,11 +552,30 @@ REGISTRY: dict = {
         gemstone="disabled", disclaimer="divorce_non_certainty_mandatory",
         q3_enabled=True,
     ),
+    # Q3 Batch 5 (FINAL) -- ENABLED, HIGHEST safety scrutiny of the
+    # final 7. `value` stays AI-authored, PROMPT-constrained to exactly
+    # one of Low/Moderate/Elevated -- an astrological DISPUTE-PRESSURE
+    # tendency signal only, never a legal-outcome score. No court-
+    # result/arrest/conviction/acquittal-prediction capability exists
+    # anywhere in this codebase, and this product must never provide
+    # legal advice (see the mandatory disclaimer and the fully
+    # rewritten -- not merely re-translated -- EN+HI prompts, which
+    # remove the prior Hindi prompt's "victory" (विजय) framing
+    # entirely). targeted_aspect_summary is deliberately DROPPED from
+    # this product's context keys -- that summary is hardcoded to the
+    # 7th house + Saturn/Venus/Moon only (a marriage-relationship-
+    # oriented fact), a poor evidentiary fit for a 6th/7th/8th/12th-
+    # house legal-dispute product (confirmed in the Q3 Final-7 audit).
     "legal_disputes_report": _standard(
         "legal_disputes_report",
+        hero_label="Legal Dispute Pressure",
         houses=(6, 7, 8, 12), planets=("Saturn", "Rahu", "Ketu", "Mars"),
-        context_keys=("house_lord_summary", "targeted_aspect_summary", "dasha_window_summary"),
-        gemstone="optional", disclaimer="legal_mandatory",
+        context_keys=("house_lord_summary", "dasha_window_summary"),
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": True, "gemstone": True, "action_list": True, "disclaimer": True},
+        gemstone="optional", disclaimer="legal_dispute_non_certainty_mandatory",
+        q3_enabled=True,
     ),
     "relationship_future_report": ProductIntelligence(
         report_slug="relationship_future_report",

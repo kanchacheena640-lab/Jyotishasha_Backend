@@ -95,12 +95,18 @@ def boot_local_app():
 
 class ContractTests(unittest.TestCase):
     def test_registry_exact_migration(self):
+        # Exact registry-wide total/tally is test_report_product_
+        # intelligence.py's own job, not this file's -- it grows with
+        # each later batch (Q3 Batch 5 enabled the final 7, reaching
+        # 25/25). This file only asserts that ITS OWN 4 Batch-4
+        # products (plus everything already enabled before Batch 4)
+        # are, and remain, enabled -- never that the registry-wide
+        # total stays frozen at 18.
         prior = set("gemstone_consultation saturn_transit_report mood_mental_health_report divorce_possibility_report marriage_report delay_in_marriage_report problem_in_marriage_report second_marriage_report financial_report financial_stability_report career_report government_job_report business_report startup_suggestion_report".split())
         enabled = {s for s, p in REGISTRY.items() if p.q3_enabled}
         self.assertEqual(len(REGISTRY), 25)
-        self.assertEqual(enabled, prior | set(LABELS))
-        self.assertEqual(len(enabled), 18)
-        self.assertEqual(len(set(REGISTRY) - enabled), 7)
+        self.assertTrue((prior | set(LABELS)) <= enabled)
+        self.assertGreaterEqual(len(enabled), 18)
         self.assertEqual(STANDARD_BATCH4_PRODUCT_SLUGS, set(LABELS) - {LOVE})
 
     def test_registry_components_and_sources(self):

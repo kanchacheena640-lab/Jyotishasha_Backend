@@ -10,10 +10,11 @@ tasks.py's own core function to avoid growing that one function with a
 4th large per-product special-case block.
 
 DISCLAIMER_TEXT/get_mandatory_disclaimer() below are generic and
-shared -- Q3 Batch 2 and Q3 Batch 3 (modules/payments/
-report_q3_batch2.py, report_q3_batch3.py) both reuse them unchanged
-for their own mandatory disclaimer types rather than duplicating the
-mechanism; module name is historical, not a scope boundary.
+shared -- Q3 Batches 2, 3, 4 and 5 (modules/payments/
+report_q3_batch2.py, report_q3_batch3.py, report_q3_batch4.py,
+report_q3_batch5.py) all reuse them unchanged for their own mandatory
+disclaimer types rather than duplicating the mechanism; module name is
+historical, not a scope boundary.
 
 Does NOT redesign Batch 0's architecture: everything here is either a
 thin, product-specific deterministic-value computation feeding
@@ -220,6 +221,79 @@ DISCLAIMER_TEXT = {
             "का दावा नहीं करती, और न ही विवाह, पुनर्मिलन, अलगाव या संबंध-विच्छेद की गारंटी "
             "देती है। महत्वपूर्ण संबंध निर्णय आपकी वास्तविक परिस्थितियों और संबंधित व्यक्ति "
             "के साथ संवाद के आधार पर लिए जाने चाहिए।"
+        ),
+    },
+    # Q3 Batch 5 (FINAL) -- the last 5 mandatory disclaimers: sadhesati_
+    # report, children_parenting_report, lifestyle_analysis_report,
+    # property_report, legal_disputes_report. Reuses this exact same
+    # generic mechanism unchanged -- no new disclaimer framework.
+    "sadhesati_non_certainty_mandatory": {
+        "en": (
+            "This report describes astrology-based Saturn transit themes and periods, "
+            "not a prediction or guarantee of hardship, illness, job loss, financial "
+            "loss, or any other negative event. Its purpose is awareness and "
+            "preparation, not fear."
+        ),
+        "hi": (
+            "यह रिपोर्ट ज्योतिष-आधारित शनि गोचर की प्रवृत्तियों और अवधियों का वर्णन करती "
+            "है। यह कठिनाई, बीमारी, नौकरी छूटने, आर्थिक हानि या किसी अन्य नकारात्मक घटना "
+            "की भविष्यवाणी या गारंटी नहीं है। इसका उद्देश्य जागरूकता और तैयारी है, भय नहीं।"
+        ),
+    },
+    "children_parenting_non_certainty_mandatory": {
+        "en": (
+            "This is an astrology-based view of parenting tendencies and parent-child "
+            "dynamics. It is not a prediction or guarantee about fertility, pregnancy, "
+            "conception timing, a child's health, or a child's sex, and it is not "
+            "medical advice."
+        ),
+        "hi": (
+            "यह पालन-पोषण की प्रवृत्तियों और माता-पिता-बच्चे के संबंधों का ज्योतिष-आधारित "
+            "आकलन है। यह प्रजनन क्षमता, गर्भधारण, गर्भधारण के समय, बच्चे के स्वास्थ्य या "
+            "बच्चे के लिंग की भविष्यवाणी या गारंटी नहीं है, और न ही यह चिकित्सीय सलाह है।"
+        ),
+    },
+    "lifestyle_health_non_certainty_mandatory": {
+        "en": (
+            "This report describes astrology-based lifestyle and habit tendencies. It "
+            "is not a medical diagnosis, not a treatment recommendation, and does not "
+            "guarantee any health or longevity outcome. For health concerns, consult a "
+            "qualified healthcare professional."
+        ),
+        "hi": (
+            "यह रिपोर्ट ज्योतिष-आधारित जीवनशैली और आदतों की प्रवृत्तियों का वर्णन करती "
+            "है। यह कोई चिकित्सीय निदान या उपचार सुझाव नहीं है, और न ही यह किसी स्वास्थ्य "
+            "या दीर्घायु परिणाम की गारंटी देती है। स्वास्थ्य संबंधी चिंताओं के लिए किसी "
+            "योग्य स्वास्थ्य विशेषज्ञ से परामर्श करें।"
+        ),
+    },
+    "property_non_certainty_mandatory": {
+        "en": (
+            "This is an astrology-based view of property-related tendencies, not a "
+            "guarantee of purchase, price appreciation, investment return, or legal "
+            "title outcome. Important property and legal decisions should be based on "
+            "your real circumstances and, where needed, qualified legal and financial "
+            "advice."
+        ),
+        "hi": (
+            "यह संपत्ति से जुड़ी प्रवृत्तियों का ज्योतिष-आधारित आकलन है, यह खरीद, मूल्य "
+            "वृद्धि, निवेश लाभ या कानूनी स्वामित्व परिणाम की गारंटी नहीं है। महत्वपूर्ण "
+            "संपत्ति और कानूनी निर्णय आपकी वास्तविक परिस्थितियों और आवश्यकता होने पर योग्य "
+            "कानूनी एवं वित्तीय सलाह के आधार पर लिए जाने चाहिए।"
+        ),
+    },
+    "legal_dispute_non_certainty_mandatory": {
+        "en": (
+            "This is an astrology-based view of dispute-pressure tendencies, not a "
+            "prediction or guarantee of court victory, defeat, arrest, conviction, or "
+            "acquittal, and not legal advice. Important legal decisions should be based "
+            "on your real circumstances and a qualified legal professional."
+        ),
+        "hi": (
+            "यह विवाद-दबाव की प्रवृत्तियों का ज्योतिष-आधारित आकलन है, यह अदालती जीत, "
+            "हार, गिरफ्तारी, दोषसिद्धि या दोषमुक्ति की भविष्यवाणी या गारंटी नहीं है, और न "
+            "ही यह कानूनी सलाह है। महत्वपूर्ण कानूनी निर्णय आपकी वास्तविक परिस्थितियों और "
+            "किसी योग्य कानूनी विशेषज्ञ की सलाह के आधार पर लिए जाने चाहिए।"
         ),
     },
 }

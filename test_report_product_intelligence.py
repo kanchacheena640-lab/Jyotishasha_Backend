@@ -74,7 +74,7 @@ check("A: REGISTRY keys are exactly the 25 trusted report_slugs (no typo, none m
       set(REGISTRY.keys()) == EXPECTED_SLUGS)
 
 # =================================================================
-print("\n=== B: CRITICAL -- exactly the 18 Q3 Batch 1 + Batch 2 + Batch 3 + Batch 4 products are enabled ===")
+print("\n=== B: CRITICAL -- exactly ALL 25 products are enabled (Q3 Batches 1-5, FINAL) ===")
 # =================================================================
 EXPECTED_Q3_ENABLED = {
     # Q3 Batch 1
@@ -89,12 +89,18 @@ EXPECTED_Q3_ENABLED = {
     # Q3 Batch 4
     "love_relationship_report", "love_marriage_report",
     "love_disappointment_report", "relationship_future_report",
+    # Q3 Batch 5 (FINAL)
+    "sadhesati_report", "foreign_travel_report", "children_parenting_report",
+    "jupiter_transit_report", "lifestyle_analysis_report", "property_report",
+    "legal_disputes_report",
 }
 actually_enabled = {slug for slug, p in REGISTRY.items() if p.q3_enabled}
-check("B: exactly these 18 products have q3_enabled=True (Q3 Batch 1 + Batch 2 + Batch 3 + Batch 4)",
+check("B: exactly these 25 products have q3_enabled=True (Q3 Batches 1-5, FINAL migration)",
       actually_enabled == EXPECTED_Q3_ENABLED)
-check("B: the remaining 7 products all have q3_enabled=False (staged migration safety)",
-      all(not p.q3_enabled for slug, p in REGISTRY.items() if slug not in EXPECTED_Q3_ENABLED))
+check("B: EXPECTED_Q3_ENABLED covers the entire 25-product registry -- 0 remain disabled",
+      EXPECTED_Q3_ENABLED == set(REGISTRY.keys()))
+check("B: 0 products have q3_enabled=False (staged migration COMPLETE)",
+      all(p.q3_enabled for p in REGISTRY.values()))
 
 # =================================================================
 print("\n=== C: get_product_intelligence() never raises, never returns None ===")

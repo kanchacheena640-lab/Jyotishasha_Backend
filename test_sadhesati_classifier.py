@@ -234,16 +234,26 @@ def main():
     print("\n=== 10: generate_sadhesati_report() product-compatibility -- refactor preserves external behavior ===")
     # ==========================================================
     def run_report(moon_sign, saturn_rashi):
-        original_pos, original_prev, original_next = sg.get_planet_position_on, sg.get_prev_transits, sg.get_next_transits
-        sg.get_planet_position_on = lambda date_str, planet: {
-            "planet": planet, "date": date_str, "rashi": saturn_rashi, "degree": 15.0, "motion": "Direct",
+        # Timezone-correctness fix (post-U4C) -- generate_sadhesati_
+        # report() no longer calls get_planet_position_on() at all (that
+        # was the naive-datetime.now()-vulnerable path); it now sources
+        # the current Saturn sign from get_current_sign_residency(),
+        # the same canonical, timezone-aware function Saturn Transit
+        # already uses. This mock target follows that change so this
+        # PRE-EXISTING product-compatibility test keeps forcing a
+        # specific Saturn sign through the function's ACTUAL current
+        # dependency, not a now-unused one.
+        original_residency, original_prev, original_next = sg.get_current_sign_residency, sg.get_prev_transits, sg.get_next_transits
+        sg.get_current_sign_residency = lambda planet, as_of=None: {
+            "planet": planet, "from_rashi": "N/A", "to_rashi": saturn_rashi,
+            "entering_date": "2000-01-01", "exit_date": "2000-12-31", "motion": "Direct",
         }
         sg.get_prev_transits = lambda planet, count=12: []
         sg.get_next_transits = lambda planet, count=12: []
         try:
             return sg.generate_sadhesati_report({"moon_sign": moon_sign, "language": "en"})
         finally:
-            sg.get_planet_position_on, sg.get_prev_transits, sg.get_next_transits = original_pos, original_prev, original_next
+            sg.get_current_sign_residency, sg.get_prev_transits, sg.get_next_transits = original_residency, original_prev, original_next
 
     # BEFORE/EXPECTED behavior (U4B.0's own audit, and the original
     # pre-refactor code): Active/1st,2nd,3rd Phase for 12th/natal/2nd
@@ -274,6 +284,109 @@ def main():
     check("[report] output keys unchanged by the refactor",
           set(r_shape.keys()) == {"status", "moon_rashi", "saturn_rashi", "phase", "phase_dates",
                                    "short_description", "report_paragraphs", "summary_block", "explanation"})
+
+    # ==========================================================
+    print("\n=== 11: timezone-correctness fix -- Sade Sati no longer depends on a naive host-clock read ===")
+    # ==========================================================
+    # Root cause (pre-fix): generate_sadhesati_report() derived "today"
+    # via a NAIVE datetime.now() read, then fed that string to
+    # get_planet_position_on(), which blindly assumes a naive value is
+    # already Asia/Kolkata civil time -- silently wrong on a host whose
+    # OS clock is not itself IST (e.g. a UTC-clocked cloud server), on
+    # the rare day Saturn genuinely crosses a sign boundary. The fix
+    # sources the current Saturn sign from get_current_sign_residency()
+    # instead -- the SAME canonical, Asia/Kolkata-timezone-aware
+    # function (transit_engine.py, reached via smart_transit_engine's
+    # forwarder) the already-verified-correct Saturn Transit report
+    # uses, which is immune to the host OS's own naive-clock timezone
+    # by construction (it asks for `datetime.now(pytz.timezone(...))`
+    # explicitly, never interprets an unlabelled naive value).
+    import inspect as _inspect
+
+    gen_source = _inspect.getsource(sg)
+    # Checked against live (non-comment) code lines only -- this
+    # function's own explanatory comments legitimately NAME the OLD
+    # datetime.now()/get_planet_position_on() call to document what was
+    # removed and why; that prose must not itself trip a "still present"
+    # false positive (same established convention this codebase already
+    # uses elsewhere, e.g. the "gpt-4o-mini only in a comment" checks).
+    gen_code_lines = [line for line in gen_source.splitlines() if not line.strip().startswith("#")]
+    gen_code_only = "\n".join(gen_code_lines)
+    check("11a: services/sadhesati_report_generator.py no longer calls datetime.now() anywhere in live code",
+          "datetime.now()" not in gen_code_only)
+    check("11a: services/sadhesati_report_generator.py no longer imports/uses get_planet_position_on in live code",
+          "get_planet_position_on" not in gen_code_only)
+    check("11a: services/sadhesati_report_generator.py no longer imports the stdlib datetime module at all",
+          "import datetime" not in gen_code_only and "from datetime" not in gen_code_only)
+    check("11a: services/sadhesati_report_generator.py DOES use the canonical get_current_sign_residency",
+          "get_current_sign_residency" in gen_code_only)
+
+    # Behavioral proof -- the REAL (unmocked) function's saturn_rashi
+    # output always equals the canonical transit authority's own live
+    # answer for the same instant.
+    from transit_engine import get_current_sign_residency as canonical_residency
+    live_canonical = canonical_residency("Saturn")
+    live_report = sg.generate_sadhesati_report({"moon_sign": "Aquarius", "language": "en"})
+    check("11b: generate_sadhesati_report()'s saturn_rashi matches the canonical "
+          "transit_engine.get_current_sign_residency('Saturn')['to_rashi'] for the SAME live instant",
+          live_report["saturn_rashi"] == live_canonical["to_rashi"])
+
+    # Immunity proof -- even if the OLD vulnerable function is broken
+    # (simulating "a UTC-host would have silently misread this"), the
+    # product is completely unaffected, because it no longer calls it.
+    import smart_transit_engine
+
+    def _boom(*a, **kw):
+        raise RuntimeError("simulated naive-clock/UTC-host misread -- must never reach here")
+
+    original_broken_fn = smart_transit_engine.get_planet_position_on
+    smart_transit_engine.get_planet_position_on = _boom
+    try:
+        immune_result = sg.generate_sadhesati_report({"moon_sign": "Aquarius", "language": "en"})
+        immunity_held = immune_result["status"] in ("Active", "Inactive")
+    except RuntimeError:
+        immunity_held = False
+    finally:
+        smart_transit_engine.get_planet_position_on = original_broken_fn
+    check("11c: simulating a UTC-host environment (breaking the OLD naive-clock-dependent function entirely) "
+          "cannot shift or fail Sade Sati classification -- it is structurally unreachable from this code path",
+          immunity_held)
+
+    # Known real Saturn ingress boundary (independently verified against
+    # raw Swiss Ephemeris in the pre-commit forensic audit): Aquarius ->
+    # Pisces around 29/03/2025 IST. Confirms the canonical residency
+    # function -- now Sade Sati's sole current-Saturn-sign source --
+    # places this exact real-world boundary correctly, and that it
+    # drives the classical Phase rule correctly on both sides.
+    import datetime as _dt
+    import pytz as _pytz
+    _ist = _pytz.timezone("Asia/Kolkata")
+    before_boundary = canonical_residency("Saturn", as_of=_ist.localize(_dt.datetime(2025, 3, 28, 12, 0)))
+    after_boundary = canonical_residency("Saturn", as_of=_ist.localize(_dt.datetime(2025, 3, 30, 12, 0)))
+    check("11d: known boundary -- 28/03/2025 (before) resolves to Aquarius", before_boundary["to_rashi"] == "Aquarius")
+    check("11d: known boundary -- 30/03/2025 (after) resolves to Pisces", after_boundary["to_rashi"] == "Pisces")
+    check("11d: the Pisces-side residency's own entering_date is 2025-03-29 (the true ingress date)",
+          after_boundary["entering_date"] == "2025-03-29")
+
+    # Classical Phase 1/2/3 rule re-exercised end-to-end (classifier +
+    # canonical residency together) for a Moon sign where each side of
+    # this real boundary maps to a DIFFERENT phase -- Capricorn's natal
+    # triplet is (12th=Sagittarius, natal=Capricorn, 2nd=Aquarius), so
+    # Aquarius (before the boundary) is already its own 2nd-sign/3rd-
+    # Phase case; Pisces (after) is Inactive for this Moon sign -- a
+    # real, non-synthetic before/after phase flip across a real boundary.
+    check("11e: Phase rule via real boundary -- Aquarius (Saturn) for Capricorn Moon (2nd sign) -> Active/3rd Phase",
+          classify_sade_sati("Capricorn", before_boundary["to_rashi"])
+          == {"state": STATE_ACTIVE, "active": True, "phase": PHASE_THIRD})
+    check("11e: Phase rule via real boundary -- Pisces (Saturn) for Capricorn Moon (neither 12th/natal/2nd) -> Inactive",
+          classify_sade_sati("Capricorn", after_boundary["to_rashi"])
+          == {"state": STATE_INACTIVE, "active": False, "phase": None})
+    # And the classical rule for THIS boundary's own natural pairing --
+    # Pisces natal Moon: Saturn now in Pisces itself (after the
+    # boundary) is the natal-sign case -> Active/2nd Phase.
+    check("11e: Phase rule via real boundary -- Pisces (Saturn, after) for Pisces Moon (natal sign) -> Active/2nd Phase",
+          classify_sade_sati("Pisces", after_boundary["to_rashi"])
+          == {"state": STATE_ACTIVE, "active": True, "phase": PHASE_SECOND})
 
     print(f"\n{'='*70}\nRESULTS: {passed} passed, {failed} failed\n{'='*70}")
     return failed == 0

@@ -166,16 +166,27 @@ with app.app_context():
     # =============================================================
     order_h = _make_order(product="property_report")
     try:
-        # No patch on get_product_intelligence -- uses the REAL registry,
-        # where property_report is genuinely q3_enabled=False today
-        # (property_report is used here, rather than a product from a
-        # thematically-adjacent later batch, precisely so this fixed
-        # example does not go stale again the next time a batch enables
-        # more products -- this is exactly what happened to the
-        # previous choice, startup_suggestion_report, once Q3 Batch 3
-        # enabled it). Only the AI call itself is mocked (no real Luna
-        # call).
-        with patch("tasks.generate_report_completion", return_value=_fake_completion(
+        # Q3 Batch 5 (FINAL) completed the migration -- ALL 25 products
+        # are now genuinely q3_enabled=True, so no real product can
+        # demonstrate the legacy narrative-only path anymore. This
+        # simulates a hypothetical q3_enabled=False product the same
+        # way tests G/G2 above already simulate a hypothetical
+        # q3_enabled=True one -- proving the legacy code path itself
+        # still exists and still works, permanently immune to any
+        # future batch enabling more products (this is exactly the
+        # staleness that hit the previous two choices, startup_
+        # suggestion_report then property_report, as each was enabled
+        # by a later batch).
+        fake_intel_legacy = ProductIntelligence(
+            report_slug="property_report", generator="standard_v1",
+            q3_enabled=False,  # simulated -- every real product is enabled today
+            hero_value_source="ai",
+            required_hero_fields=("label", "value", "interpretation", "evidence"),
+            relevant_houses=(), relevant_planets=(), required_context_keys=(),
+            components_enabled={}, gemstone_policy="optional", disclaimer_type="general",
+        )
+        with patch("tasks.get_product_intelligence", return_value=fake_intel_legacy), \
+             patch("tasks.generate_report_completion", return_value=_fake_completion(
             "**Business Orientation**\nA full narrative report with no structured metadata at all, "
             "exactly like every real report generated before Q3 Batch 0.\n\n**Summary**\nConclusion text."
         )):
@@ -209,7 +220,21 @@ with app.app_context():
         secret_prompt_text = "SECRET_PROMPT_MARKER_Sensitive Name M was born on 1985-01-01"
         secret_response_text = "**Business Orientation**\nSECRET_RESPONSE_MARKER narrative for Sensitive Name M."
 
-        with patch("tasks.generate_report_completion", return_value=_fake_completion(secret_response_text)), \
+        # Same simulated-legacy-product pattern as test H above (Q3
+        # Batch 5 completed the migration -- no real product is
+        # q3_enabled=False anymore) -- this response has no ===META===/
+        # ===REPORT=== markers at all, matching the legacy narrative-
+        # only contract this test is actually about.
+        fake_intel_legacy_m = ProductIntelligence(
+            report_slug="property_report", generator="standard_v1",
+            q3_enabled=False,
+            hero_value_source="ai",
+            required_hero_fields=("label", "value", "interpretation", "evidence"),
+            relevant_houses=(), relevant_planets=(), required_context_keys=(),
+            components_enabled={}, gemstone_policy="optional", disclaimer_type="general",
+        )
+        with patch("tasks.get_product_intelligence", return_value=fake_intel_legacy_m), \
+             patch("tasks.generate_report_completion", return_value=_fake_completion(secret_response_text)), \
              patch("tasks.record_event", side_effect=_capture_record_event):
             tasks._generate_and_send_report_core(order_m.id)
 

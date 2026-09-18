@@ -1,16 +1,25 @@
 import os
 import json
-from datetime import datetime
 from smart_transit_engine import (
-    get_planet_position_on,
     get_next_transits,
-    get_prev_transits
+    get_prev_transits,
+    get_current_sign_residency,
+)
+# U4B.1 -- the core 12th/natal/2nd-sign -> 1st/2nd/3rd-Phase rule now
+# lives in exactly ONE place, services/sadhesati_classifier.py (U4B.0
+# proved this exact rule correct for all 144 Moon x Saturn sign
+# combinations). SATURN_RASHIS below is kept as a name-compatible alias
+# to SADE_SATI_SIGN_ORDER (nothing outside this file ever imported
+# SATURN_RASHIS directly, verified by repo-wide search, but the alias
+# costs nothing and removes any risk for a future importer).
+from services.sadhesati_classifier import (
+    SADE_SATI_SIGN_ORDER,
+    classify_sade_sati,
+    STATE_NOT_CALCULATED,
+    STATE_SATURN_UNAVAILABLE,
 )
 
-SATURN_RASHIS = [
-    "Capricorn", "Aquarius", "Pisces", "Aries", "Taurus", "Gemini",
-    "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius"
-]
+SATURN_RASHIS = SADE_SATI_SIGN_ORDER
 
 def load_template(language):
     file_path = f"data/sadhesati_report_{language}.json"
@@ -24,32 +33,54 @@ def generate_sadhesati_report(kundali_data: dict) -> dict:
     moon_sign = kundali_data.get("moon_sign") or kundali_data.get("rashi")
     language = kundali_data.get("language", "en")
 
-    today_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-    current_saturn_pos = get_planet_position_on(today_str, "Saturn")
-    saturn_rashi = current_saturn_pos["rashi"]
+    # Timezone-correctness fix -- the current Saturn sign now comes
+    # from the SAME canonical, timezone-aware transit authority
+    # (transit_engine.py's Asia/Kolkata-based get_current_sign_
+    # residency(), reached here via smart_transit_engine's forwarder)
+    # the verified-correct Saturn Transit report already uses, instead
+    # of this function's former get_planet_position_on(today_str, ...)
+    # call, whose `today_str` came from a NAIVE datetime.now() read --
+    # silently assumed to already be IST civil time regardless of the
+    # host OS clock's own timezone (a real, previously-documented risk
+    # on a UTC-clocked server; see services/current_saturn_resolver.py's
+    # own module docstring). Never invents a Saturn sign: if the
+    # canonical function cannot resolve a residency (its own documented
+    # "should not happen in practice" case), saturn_rashi is left None,
+    # which classify_sade_sati() below already turns into the EXISTING
+    # STATE_SATURN_UNAVAILABLE -> "Error"/"Invalid Rashi" response --
+    # no new failure path introduced.
+    #
+    # Reusing this ONE residency read for the active phase's own
+    # phase_dates further down (instead of calling get_current_sign_
+    # residency("Saturn") a second time) also removes a second,
+    # separate live-clock read from this function entirely -- one
+    # canonical instant, used consistently throughout.
+    current_saturn_residency = get_current_sign_residency("Saturn")
+    saturn_rashi = current_saturn_residency["to_rashi"] if current_saturn_residency else None
 
-    try:
-        moon_index = SATURN_RASHIS.index(moon_sign)
-        saturn_index = SATURN_RASHIS.index(saturn_rashi)
-    except:
+    # U4B.1 -- status/phase now come from the ONE shared pure classifier
+    # (services/sadhesati_classifier.py) instead of this function's own
+    # former inline delta computation. classify_sade_sati() returns the
+    # SAME "invalid sign" outcome (as two distinguishable states) for
+    # what this function's original bare `except:` treated as one
+    # generic case -- both are mapped back to the EXACT SAME "Error"/
+    # "Invalid Rashi" output below, so external behavior for this
+    # function is unchanged for identical inputs.
+    classification = classify_sade_sati(moon_sign, saturn_rashi)
+    if classification["state"] in (STATE_NOT_CALCULATED, STATE_SATURN_UNAVAILABLE):
         return {
             "status": "Error",
             "heading": "Invalid Rashi",
             "explanation": "Moon sign or Saturn sign could not be matched."
         }
 
-    delta = (saturn_index - moon_index) % 12
-    phase = None
-    status = "Inactive"
-    if delta == 11:
-        phase = "1st Phase"
-        status = "Active"
-    elif delta == 0:
-        phase = "2nd Phase"
-        status = "Active"
-    elif delta == 1:
-        phase = "3rd Phase"
-        status = "Active"
+    status = "Active" if classification["active"] else "Inactive"
+    phase = classification["phase"]
+
+    # moon_index is still needed below (rashi_sequence) -- safe to
+    # index directly here since classify_sade_sati() already confirmed
+    # both signs are valid members of this exact list.
+    moon_index = SATURN_RASHIS.index(moon_sign)
 
     prev_transits = get_prev_transits("Saturn", 12)
     next_transits = get_next_transits("Saturn", 12)
@@ -63,6 +94,28 @@ def generate_sadhesati_report(kundali_data: dict) -> dict:
     combined = sorted(prev_transits + next_transits, key=lambda x: x["entering_date"])
     phase_dates = {}
     for i, label in enumerate(["first_phase", "second_phase", "third_phase"]):
+        # U4C.1A -- the phase whose sign equals Saturn's CURRENT live
+        # sign (saturn_rashi) is, by definition, the one presently in
+        # progress -- it must use the CURRENT residency (the boundary
+        # segment actually containing "now"), never a sign-name search
+        # over `combined`. `combined` only ever contains COMPLETED past
+        # segments (from get_prev_transits) and NOT-YET-STARTED future
+        # segments (from get_next_transits) -- the segment in progress
+        # right now never appears there as a "to_rashi" match, so the
+        # old code fell through to the next FUTURE re-entry of the same
+        # sign (e.g. a retrograde Aries->Pisces re-entry years away)
+        # and reported that as if it were the user's current period.
+        # See U4C.1A report Sec.1/2 for the reproduced bug and the
+        # canonical fix (transit_engine.get_current_sign_residency()).
+        if rashi_sequence[i] == saturn_rashi:
+            # Reuses the SAME residency instant already captured above
+            # (see the timezone-correctness fix comment near the top of
+            # this function) -- no second live-clock read.
+            phase_dates[label] = {
+                "start": current_saturn_residency["entering_date"],
+                "end": current_saturn_residency["exit_date"],
+            }
+            continue
         for t in combined:
             if t["to_rashi"] == rashi_sequence[i]:
                 phase_dates[label] = {

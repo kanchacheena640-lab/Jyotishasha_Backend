@@ -58,6 +58,16 @@ from modules.payments.report_q3_batch2 import compute_dasha_window_timeline
 from modules.payments.report_q3_batch3 import BATCH3_PRODUCT_SLUGS
 from modules.payments.report_q3_batch4 import STANDARD_BATCH4_PRODUCT_SLUGS
 
+# Q3 Batch 5 (FINAL) -- the last 7 products. Only 2 of the 7
+# (sadhesati_report, jupiter_transit_report) have a genuine
+# deterministic answer_hero value to source -- see report_q3_batch5.py's
+# own docstring for why the other 5 need no compute_*_hero() function.
+from modules.payments.report_q3_batch5 import (
+    BATCH5_PRODUCT_SLUGS,
+    compute_sadhesati_hero,
+    compute_jupiter_transit_hero,
+)
+
 # Q3 Batch 1 (visual QA correction round) -- shared, renderer-level
 # label localization (see report_i18n_labels.py's own docstring) and
 # the Q2.1 app-download CTA's verified store URL(s) (see app_config.py
@@ -391,6 +401,38 @@ def _generate_and_send_report_core(order_id):
                     # Batch 2. Relationship dates describe Dasha context,
                     # never meeting, marriage or breakup event predictions.
                     # Hero values remain AI synthesis, not backend scores.
+                    timeline_component = compute_dasha_window_timeline(kundali, language=language)
+                elif product_slug == "sadhesati_report":
+                    # Q3 Batch 5 (FINAL) -- Sade Sati status/phase IS the
+                    # purchased answer; ALWAYS deterministic, never
+                    # AI-authored (see report_q3_batch5.py's own
+                    # docstring for why this reads kundali["sadhesati"]
+                    # via the same correct phase-date mapping summary_
+                    # blocks.py already uses, not the underlying
+                    # engine's own buggy internal lookup).
+                    sadhesati_hero = compute_sadhesati_hero(kundali, language=language)
+                    deterministic_value = sadhesati_hero["value"]
+                    deterministic_timing = sadhesati_hero["timing"]
+                    timeline_component = sadhesati_hero["timeline"]
+                elif product_slug == "jupiter_transit_report":
+                    # Q3 Batch 5 (FINAL) -- mirrors saturn_transit_report
+                    # exactly, parameterized for Jupiter. Real Lagna-
+                    # relative transit house, never AI-authored.
+                    jupiter_hero = compute_jupiter_transit_hero(kundali, language=language)
+                    deterministic_value = jupiter_hero["value"]
+                    deterministic_timing = jupiter_hero["timing"]
+                    timeline_component = jupiter_hero["timeline"]
+                elif product_slug in BATCH5_PRODUCT_SLUGS:
+                    # Q3 Batch 5 (FINAL) -- the remaining 5 products
+                    # (foreign_travel_report, children_parenting_report,
+                    # lifestyle_analysis_report, property_report,
+                    # legal_disputes_report) declare timeline=True; hero
+                    # value stays AI-authored for all 5 (no travel/
+                    # parenting/lifestyle/property/legal-outcome scoring
+                    # engine exists anywhere in this codebase -- see
+                    # report_q3_batch5.py's own docstring). Same Dasha-
+                    # window helper as every prior batch, reused
+                    # unchanged, never duplicated.
                     timeline_component = compute_dasha_window_timeline(kundali, language=language)
 
                 answer_hero = assemble_answer_hero(

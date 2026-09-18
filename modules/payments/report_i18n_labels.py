@@ -46,6 +46,17 @@ LABELS = {
         "en": "Current Saturn Transit Window",
         "hi": "वर्तमान शनि गोचर अवधि",
     },
+    # Q3 Batch 5 -- sadhesati_report/jupiter_transit_report's own
+    # deterministic timeline headings, same convention as
+    # saturn_transit_window above.
+    "sadhesati_window": {
+        "en": "Sade Sati Phase Window",
+        "hi": "साढ़ेसाती चरण अवधि",
+    },
+    "jupiter_transit_window": {
+        "en": "Current Jupiter Transit Window",
+        "hi": "वर्तमान बृहस्पति गोचर अवधि",
+    },
     # Q3 Batch 2 -- shared Dasha-window timeline component (marriage_
     # report, delay_in_marriage_report), see report_q3_batch2.py.
     "dasha_timeline_heading": {

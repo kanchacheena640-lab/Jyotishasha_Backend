@@ -64,7 +64,7 @@ from modules.payments.report_q3_batch1 import (  # noqa: E402
     compute_saturn_transit_hero,
 )
 from modules.payments.report_structured_output import ReportMetadataError  # noqa: E402
-from modules.payments.report_product_intelligence import REGISTRY  # noqa: E402
+from modules.payments.report_product_intelligence import REGISTRY, ProductIntelligence  # noqa: E402
 
 print("=== 1: get_mandatory_disclaimer() -- backend-controlled, never AI-sourced ===")
 
@@ -546,14 +546,26 @@ with app.app_context():
     # =================================================================
     print("\n=== 13: legacy (non-Q3-enabled) product is completely unaffected ===")
     # =================================================================
-    # property_report is used here rather than a product from a
-    # thematically-adjacent later batch, precisely so this fixed
-    # example does not go stale again the next time a batch enables 6
-    # more products (this is exactly what happened to the previous
-    # choice, startup_suggestion_report, once Q3 Batch 3 enabled it).
+    # Q3 Batch 5 (FINAL) completed the migration -- ALL 25 products are
+    # now genuinely q3_enabled=True, so no real product can demonstrate
+    # the legacy narrative-only path anymore (this is exactly the
+    # staleness that hit the two previous fixed choices in turn,
+    # startup_suggestion_report then property_report, as each was
+    # enabled by a later batch). This simulates a hypothetical
+    # q3_enabled=False product instead -- permanently immune to any
+    # future registry change, since the registry is now fully migrated.
+    fake_intel_legacy = ProductIntelligence(
+        report_slug="property_report", generator="standard_v1",
+        q3_enabled=False,  # simulated -- every real product is enabled today
+        hero_value_source="ai",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        relevant_houses=(), relevant_planets=(), required_context_keys=(),
+        components_enabled={}, gemstone_policy="optional", disclaimer_type="general",
+    )
     order_legacy = _make_order(product="property_report")
     try:
-        with patch("tasks.generate_report_completion", return_value=_fake_completion(
+        with patch("tasks.get_product_intelligence", return_value=fake_intel_legacy), \
+             patch("tasks.generate_report_completion", return_value=_fake_completion(
             "**Your Birth Chart & Planets**\nPlain narrative, no META/REPORT markers, exactly like pre-Batch-0.\n\n**Summary**\nDone."
         )):
             captured = _run_capturing_pdf(order_legacy.id)
@@ -563,7 +575,7 @@ with app.app_context():
         check("13: legacy product gets no disclaimer", captured.get("disclaimer") is None)
         check("13: legacy product gets no action_list", captured.get("action_list") is None)
         check("13: legacy product gets no timeline", captured.get("timeline") is None)
-        check("13: legacy product gets no gemstone (unchanged Q3 gating -- this product's own registry is untouched)",
+        check("13: legacy product gets no gemstone (unchanged Q3 gating for a q3_enabled=False product)",
               captured.get("gemstone") is None)
         check("13: (human visual QA correction, P0) even a legacy/non-Q3 product gets the app_download CTA -- "
               "it is a Q2.1 GLOBAL requirement, not Q3-specific",
