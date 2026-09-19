@@ -58,7 +58,10 @@ _NUMBERED_HEADING_TEXT = re.compile(r"^(\d{1,2})\s*[.)](?:\s+\S|(?=[^\d\s]))")
 # LIST inside a section is never promoted. A plain colon-terminated short line
 # after a blank line is a lead-in label.
 _PLAIN_NUMBERED_HEADING = re.compile(r"^(\d{1,2})[.)]\s+(\S.{0,99})$")
-_SENTENCE_END = re.compile(r"[।.!?:;,]$")
+# A trailing "?" is NOT sentence punctuation here: 7 Hindi prompts prescribe
+# question-style headings ("1. Business में आपकी Suitability कैसी है?"), and a
+# rejected first heading would also reject every later one via the sequence rule.
+_SENTENCE_END = re.compile(r"[।.!:;,]$")
 _PLAIN_LEAD_IN = re.compile(r"^[^\s\d*#•\-][^।!?*]{0,58}:$")
 
 # A line made only of markdown marker characters is never content: with 3+

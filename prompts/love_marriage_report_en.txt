@@ -22,7 +22,12 @@ targeted_aspect_summary:
 gemstone_summary:
 {gemstone_summary}
 
-OUTPUT FORMAT: valid JSON, no comments or Markdown fences. Keep JSON keys and label exactly as shown.
+==================================================
+OUTPUT FORMAT -- STRICT, MACHINE-PARSED
+==================================================
+
+Return your entire response in exactly this shape, with these two literal markers on their own lines. Do NOT return a single standalone JSON object and do NOT use Markdown fences: the JSON goes only inside the META block, and the report itself follows the second marker as plain text:
+
 ===META===
 {{
   "answer_hero": {{
@@ -39,6 +44,18 @@ OUTPUT FORMAT: valid JSON, no comments or Markdown fences. Keep JSON keys and la
   "gemstone_reason": "<optional reason only if supported; otherwise empty string>"
 }}
 ===REPORT===
+<the full narrative report as plain text, following the section structure below>
+
+Rules for the META block:
+- It must be valid JSON -- no comments, no trailing commas, no text before "{{" or after "}}".
+- Keep the JSON keys and the answer_hero "label" exactly as shown.
+- "value" must be exactly one of Low / Moderate / Elevated -- never any other word, never a number or percentage.
+- Every evidence item must be a real fact from the data above -- never invented.
+
+==================================================
+NARRATIVE REPORT -- STRICT SECTION STRUCTURE
+==================================================
+
 Write the full report using exactly these numbered sections:
 **1. Love-Marriage Tendency**
 

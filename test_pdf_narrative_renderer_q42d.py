@@ -294,6 +294,67 @@ check("plain: a long colon-terminated sentence is NOT a lead-in",
 check("plain: English plain-text numbered headings work too",
       headings(convert_headings("1. Career Direction\n\nYou are drawn to analytical work.\n\n2. Summary\n\nSteady effort wins.")) == ["1. Career Direction", "2. Summary"])
 
+print("\n=== Q4.3A: plain numbered headings that END IN '?' are still section headings ===")
+# Q4.3 found that a trailing '?' disqualified a valid plain-text heading, and the
+# 1,2,3 sequence rule then rejected every later heading (7 Hindi prompts prescribe
+# question-style headings).
+Q_HEAD = "1. Business में आपकी Suitability कैसी है?"
+out = convert_headings(f"{Q_HEAD}\n\nसीधी बात: आप Business के लिए suitable हैं।\n")
+check("Q4.3A-1: '1. Business में आपकी Suitability कैसी है?' is a heading", headings(out) == [Q_HEAD])
+QSEQ = (
+    "1. Business में आपकी Suitability कैसी है?\n\nपहली body line।\n\n"
+    "2. Career के लिए कौन-से संकेत मजबूत हैं?\n\nदूसरी body line।\n\n"
+    "3. Current Dasha अभी क्या कहती है?\n\nतीसरी body line।\n\n"
+    "4. Practical Guidance\n\nचौथी body line।\n\n"
+    "5. Summary\n\nपाँचवीं body line।\n"
+)
+out = convert_headings(QSEQ)
+check("Q4.3A-2: three sequential question headings are all headings", headings(out)[:3] == ["1. Business में आपकी Suitability कैसी है?", "2. Career के लिए कौन-से संकेत मजबूत हैं?", "3. Current Dasha अभी क्या कहती है?"])
+check("Q4.3A-3: after a question heading the sequence continues (4 and 5 non-question headings still recognised)", len(headings(out)) == 5 and headings(out)[3:] == ["4. Practical Guidance", "5. Summary"])
+check("Q4.3A-3: one non-empty card per heading, no lead-in/heading leakage", len(cards(out)) == 5 and all("<p" in c for c in cards(out)))
+out = convert_headings("1. Career Direction\n\nBody.\n\n2. Practical Guidance\n\nBody.\n\n3. आपको आगे क्या करना चाहिए?\n\nBody.\n\n4. Summary\n\nBody.\n")
+check("Q4.3A-3: a question heading in the MIDDLE of the sequence does not break later headings", len(headings(out)) == 4)
+check("Q4.3A-3: bold-markdown question heading still works (unchanged path)", headings(convert_headings("**1. Business में आपकी Suitability कैसी है?**\nBody."))[0].endswith("कैसी है?"))
+check("Q4.3A-3: '## N. ...?' question heading still works (unchanged path)", headings(convert_headings("## 1. Business में आपकी Suitability कैसी है?\nBody.")) == ["1. Business में आपकी Suitability कैसी है?"])
+# ---- 4: protections stay in force; a '?' does not make prose a heading -------
+out = convert_headings("1. Career Direction\n\nBody.\n\nQuestions to ask:\n1. Did you review the terms?\n2. Did you ask for a written summary?\n3. Did you keep a copy?\n")
+check("Q4.3A-4: consecutive numbered list items ending in '?' are NOT promoted", headings(out) == ["1. Career Direction"])
+out = convert_headings("1. Career Direction\n\nBody.\n\n5. क्या यह sequence का अगला heading है?\n\nMore body.")
+check("Q4.3A-4: a question that does not continue the sequence is NOT a heading", headings(out) == ["1. Career Direction"])
+out = convert_headings("Intro paragraph.\n\n2. क्या यह पहला heading है?\n\nBody.")
+check("Q4.3A-4: numbering must still start at 1 for a question line", "<h2" not in out)
+out = convert_headings("1. क्या यह heading है?\n2. यह अगली line बिना blank line के है?\nBody.")
+check("Q4.3A-4: question lines with no blank lines around them are NOT headings", headings(out) == [])
+LONG_Q = "1. " + ("क्या आप जानते हैं कि यह बहुत लंबा सवाल एक section heading नहीं बल्कि पूरा paragraph है " * 3) + "?"
+check("Q4.3A-4: a long prose question (over the heading length limit) is NOT a heading", headings(convert_headings(f"{LONG_Q}\n\nBody.")) == [])
+for punct in (".", "।", "!", ":", ";", ","):
+    check(f"Q4.3A-4: a trailing {punct!r} still disqualifies a plain numbered line", headings(convert_headings(f"1. आपका Career Pattern{punct}\n\nBody.")) == [])
+check("Q4.3A-4: an un-numbered question line is never a heading", "<h2" not in convert_headings("क्या आप तैयार हैं?\n\nBody."))
+# ---- 5/6/7: existing behaviour, EN and HI --------------------------------------
+check("Q4.3A-5: existing plain numbered heading (no '?') unchanged", headings(convert_headings("1. Career Direction\n\nBody.\n\n2. Summary\n\nBody.")) == ["1. Career Direction", "2. Summary"])
+check("Q4.3A-6: English question-style plain headings work too", headings(convert_headings("1. What does your chart say about Career?\n\nBody.\n\n2. Summary\n\nBody.")) == ["1. What does your chart say about Career?", "2. Summary"])
+check("Q4.3A-7: Hindi plain lead-ins under a question heading stay lead-ins, not headings",
+      convert_headings("1. Business में आपकी Suitability कैसी है?\n\nसीधी बात:  \nText।\n\nAstrology क्या कहती है:  \nText।\n").count("<p class='lead-in'>") == 2)
+
+print("\n=== Q4.3A: EVERY standard prompt's own heading list survives the plain-text path (all 24 x EN/HI) ===")
+from modules.payments.report_product_intelligence import REGISTRY  # noqa: E402
+_std = sorted(s for s, p in REGISTRY.items() if p.generator == "standard_v1")
+check("Q4.3A: registry has 24 standard_v1 products", len(_std) == 24)
+_bad = []
+_q_prompts = []
+for _slug in _std:
+    for _lang in ("en", "hi"):
+        _txt = open(os.path.join(BASE_DIR, "prompts", f"{_slug}_{_lang}.txt"), encoding="utf-8").read()
+        _heads = re.findall(r"^\*\*(\d+\..*?)\*\*\s*$", _txt, re.M)
+        if any(h.endswith("?") for h in _heads):
+            _q_prompts.append(f"{_slug}_{_lang}")
+        _plain = "\n\n".join(f"{h}\n\nSection body for {i}." for i, h in enumerate(_heads, 1))
+        _got = headings(convert_headings(_plain))
+        if _got != _heads:
+            _bad.append((f"{_slug}_{_lang}", len(_got), len(_heads)))
+check(f"Q4.3A: all 48 standard prompts' prescribed headings render as headings in plain-text form (bad: {_bad})", not _bad)
+check(f"Q4.3A: the question-heading prompts are exercised (found {len(_q_prompts)})", len(_q_prompts) >= 7)
+
 print("\n=== pagination structure: lead-ins keep with their text (template) ===")
 tpl = open(os.path.join(BASE_DIR, "templates", "report_template.html"), encoding="utf-8").read()
 check("template: .lead-in is kept with the paragraph that follows it (break-after: avoid)",

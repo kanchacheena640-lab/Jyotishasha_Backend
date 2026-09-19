@@ -43,7 +43,12 @@ dasha_window_summary:
 gemstone_summary:
 {gemstone_summary}
 
-OUTPUT FORMAT: valid JSON, no comments or Markdown fences. Keep JSON keys and label exactly as shown.
+==================================================
+आउटपुट फॉर्मेट -- सख्त, मशीन-पठनीय
+==================================================
+
+अपना पूरा उत्तर बिल्कुल इसी संरचना में दें, इन दो मार्करों के साथ अपनी-अपनी अलग पंक्ति में। पूरा उत्तर एक अकेले JSON object की तरह न दें और Markdown fences न लगाएँ: JSON सिर्फ META block के अंदर रहे, और report दूसरे marker के बाद सादे text में हो:
+
 ===META===
 {{
   "answer_hero": {{
@@ -60,6 +65,18 @@ OUTPUT FORMAT: valid JSON, no comments or Markdown fences. Keep JSON keys and la
   "gemstone_reason": "<optional reason only if supported; otherwise empty string>"
 }}
 ===REPORT===
+<नीचे दी गई संरचना के अनुसार पूरी report सादे text में>
+
+META block के नियम:
+- यह valid JSON होना चाहिए -- कोई comment नहीं, कोई extra comma नहीं, "{{" से पहले या "}}" के बाद कोई text नहीं।
+- JSON की keys और answer_hero का "label" ठीक वैसा ही रखें जैसा ऊपर दिया है।
+- "value" एक शांत, गुणात्मक descriptor होना चाहिए -- कभी संख्या, score या risk percentage नहीं।
+- हर evidence ऊपर दिए गए डेटा का एक असली तथ्य होना चाहिए -- कभी मनगढ़ंत नहीं।
+
+==================================================
+Report -- सख्त Section Structure
+==================================================
+
 इन numbered sections में पूरी report लिखें:
 **1. आपका Relationship Pattern**
 
