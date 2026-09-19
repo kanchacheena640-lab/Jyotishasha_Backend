@@ -22,7 +22,11 @@ from app import app
 
 # Love-specific modules
 from modules.love.love_data_collector import collect_love_report_data
-from modules.love.love_prompt_builder import build_love_premium_prompt
+from modules.love.love_prompt_builder import (
+    build_love_premium_prompt,
+    find_internal_leaks,
+    normalize_relationship_headings,
+)
 
 # Phase 4C -- the existing, unmodified Phase-2 ledger write path. This
 # import introduces no circular dependency: modules.activity_events.*
@@ -251,6 +255,7 @@ def generate_love_premium_report(order_id: int):
             answer_hero = None
             structured_metadata_valid = None  # None = not attempted
 
+            full_partner_data = (love_payload["compatibility"] or {}).get("case") == "A_FULL_DUAL"
             disclaimer_text = get_mandatory_disclaimer(product_intel.disclaimer_type, language)
             app_download_component = {
                 "heading": get_label("app_download_heading", language),
@@ -279,6 +284,7 @@ def generate_love_premium_report(order_id: int):
                 hero["evidence"] = [
                     item for item in hero["evidence"]
                     if "ashtakoot" not in item.lower() and "अष्टकूट" not in item
+                    and not find_internal_leaks(item, full_data=full_partner_data)
                 ]
                 score = (love_payload["compatibility"].get("ashtakoot") or {}).get("total_score")
                 if isinstance(score, (int, float)) and not isinstance(score, bool) and 0 <= score <= 36:
@@ -294,7 +300,17 @@ def generate_love_premium_report(order_id: int):
                 # behavior as before Batch 0.
                 report_text = completion.content
 
-            report_text = report_text[:18000]
+            report_text = normalize_relationship_headings(report_text, language)[:18000]
+
+            # Internal identifiers / engine labels must never reach the customer: fail closed (recoverable "Failed"
+            # stage) rather than deliver a report that exposes them.
+            visible = [report_text]
+            if answer_hero:
+                visible += [answer_hero.get("value"), answer_hero.get("interpretation")]
+                visible += list(answer_hero.get("evidence") or []) + list(answer_hero.get("action_items") or [])
+            leaked = sorted({leak for text in visible for leak in find_internal_leaks(text or "", full_data=full_partner_data)})
+            if leaked:
+                raise ReportMetadataError("Customer-facing report text exposed internal terminology: " + ", ".join(leaked))
 
             # Payment Hardening Blocker 02.1 (Progress Heartbeat): same
             # reasoning as tasks.py -- GPT's own legitimate worst-case
@@ -347,6 +363,7 @@ def generate_love_premium_report(order_id: int):
                 app_download=app_download_component,
                 action_list={"heading": get_label("suggested_next_steps", language),
                              "items": answer_hero.get("action_items", [])} if answer_hero else None,
+                partner_info=(love_payload.get("identity") or {}).get("partner"),
             )
 
             del kundali_drawing

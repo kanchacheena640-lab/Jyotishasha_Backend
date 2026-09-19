@@ -213,7 +213,8 @@ class ContractTests(unittest.TestCase):
                         self.assertNotIn(forbidden, prompt)
                     data = json.loads(prompt.split("Deterministic evidence:\n")[1])
                     self.assertEqual(data["ashtakoot"]["total_score"], 27)
-                    self.assertEqual(data["partner_data_mode"], "A_FULL_DUAL" if case == "A" else "B_DOB_ONLY_HYBRID")
+                    # Q4.4B: internal mode names are never sent to the model; completeness is described in plain words.
+                    self.assertEqual(data["partner_birth_data"]["completeness"], "full" if case == "A" else "partial")
                     self.assertEqual(len(data["user_house_lord_facts"]), 2)
                     self.assertIn(get_mandatory_disclaimer(REGISTRY[LOVE].disclaimer_type, language), prompt)
                     for token in (["thoughts", "feelings", "intentions", "fidelity", "breakup", "exact relationship event timing"] if language == "en" else ["विचार", "भावनाएँ", "इरादे", "निष्ठा", "संबंध-विच्छेद", "निश्चित तारीख"]):

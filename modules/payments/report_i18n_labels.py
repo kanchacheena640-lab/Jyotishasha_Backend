@@ -128,6 +128,23 @@ LABELS = {
         "en": "Su = Sun &nbsp; Mo = Moon &nbsp; Ma = Mars &nbsp; Me = Mercury &nbsp; Ju = Jupiter &nbsp; Ve = Venus &nbsp; Sa = Saturn &nbsp; Ra = Rahu &nbsp; Ke = Ketu",
         "hi": "Su = Sun (Surya) &nbsp; Mo = Moon (Chandra) &nbsp; Ma = Mars (Mangal) &nbsp; Me = Mercury (Budh) &nbsp; Ju = Jupiter (Guru) &nbsp; Ve = Venus (Shukra) &nbsp; Sa = Saturn (Shani) &nbsp; Ra = Rahu &nbsp; Ke = Ketu",
     },
+    # Q4.4B -- relationship_future_report's "who this report is for" block.
+    "people_heading": {
+        "en": "This Report Is For",
+        "hi": "यह Report इनके लिए है",
+    },
+    "birth_date_label": {
+        "en": "Date of Birth",
+        "hi": "Date of Birth",
+    },
+    "birth_time_label": {
+        "en": "Time of Birth",
+        "hi": "Time of Birth",
+    },
+    "birth_place_label": {
+        "en": "Place of Birth",
+        "hi": "Place of Birth",
+    },
     "google_play": {
         "en": "Google Play",
         "hi": "Google Play",

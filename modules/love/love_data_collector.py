@@ -38,6 +38,20 @@ def _with_engine_coordinates(partner: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+_IDENTITY_FIELDS = ("name", "dob", "tob", "pob")
+
+
+def _identity(source: Dict[str, Any]) -> Dict[str, str]:
+    """Customer-facing identity only: never coordinates, timezone, ids or mode fields."""
+    identity = {}
+    for key in _IDENTITY_FIELDS:
+        value = source.get(key)
+        text = "" if value is None else str(value).strip()
+        if text:
+            identity[key] = text
+    return identity
+
+
 def _pick_partner(order: Dict[str, Any]) -> Dict[str, Any]:
     partner = order.get("partner")
     if isinstance(partner, dict) and partner:
@@ -255,6 +269,10 @@ def collect_love_report_data(
         "language": lang,
         "client": user,
         "partner": partner,
+        "identity": {
+            "primary": _identity({**user, "pob": order.get("pob")}),
+            "partner": _identity(partner),
+        },
         "compatibility": compat,
         "compiled_report": compiled,
         "astro_facts": astro_facts,

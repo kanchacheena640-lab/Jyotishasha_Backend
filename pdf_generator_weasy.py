@@ -306,6 +306,7 @@ def generate_pdf_report_weasy(
     gemstone: dict | None = None,         # Q2.1 -- {planet, gemstone, substone, reason, caution}
     disclaimer: str | None = None,
     app_download: dict | None = None,     # Q2.1 -- {heading, benefit_text, play_store_url, app_store_url}
+    partner_info: dict | None = None,     # Q4.4B -- relationship_future_report only: {name, dob, tob, pob}
 ):
     # Ensure folders exist
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -329,6 +330,12 @@ def generate_pdf_report_weasy(
     display_user_info = dict(user_info or {})
     if display_user_info.get("dob"):
         display_user_info["dob"] = format_customer_date(display_user_info["dob"])
+    # Whitelist only: coordinates, timezone, ids or mode fields can never reach the customer's PDF.
+    display_partner_info = None
+    if isinstance(partner_info, dict) and str(partner_info.get("name") or "").strip():
+        display_partner_info = {k: partner_info[k] for k in ("name", "dob", "tob", "pob") if partner_info.get(k)}
+        if display_partner_info.get("dob"):
+            display_partner_info["dob"] = format_customer_date(display_partner_info["dob"])
 
     ctx = {
         "report_title": product.replace("_", " ").title(),
@@ -338,6 +345,7 @@ def generate_pdf_report_weasy(
         "lang": language,
         "today_str": today_str,
         "user_info": display_user_info,
+        "partner_info": display_partner_info,
         "kundali_img_src": kundali_rel,
         "logo_src": logo_src,
         "fonts_dir_rel": FONTS_REL,

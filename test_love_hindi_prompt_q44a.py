@@ -9,6 +9,8 @@ said "खरीदा गया प्रश्न" / "गतिशीलता"
     deterministic-evidence JSON are pinned byte-for-byte (hash),
   * the authority / privacy / safety rules are asserted token by token,
   * the 10-section structure is asserted in order.
+Q4.4B update: headings no longer carry their AI instruction ("Title -- instruction" was the customer-facing defect), the
+internal mode name is no longer sent to the model, and the model is given both names -- see test_love_prompt_customer_contract_q44b.py.
 No AI call.
 """
 import hashlib
@@ -57,21 +59,17 @@ def fixed_payload(lang):
 
 WIRE_MARK = "\nReturn exactly this machine-readable format."
 # pins taken from the committed (pre-Q4.4A) builder output for fixed_payload()
-PIN_EN_WHOLE = "42d1bed60257043f"
 PIN_WIRE = "8712f6314bb26977"
 PIN_DISCLAIMER_HI = "84ac354d64727478"
-PIN_HI_TAIL = "109ae9ff84ee1604"
 
 en = build_love_premium_prompt(fixed_payload("en"))
 hi = build_love_premium_prompt(fixed_payload("hi"))
 hi_instr = hi[:hi.index(WIRE_MARK)]
 
-print("\n=== 1: everything except the Hindi language style is byte-identical ===")
-check("1: the ENTIRE English prompt is unchanged", h(en) == PIN_EN_WHOLE)
+print("\n=== 1: the wire contract and the disclaimer are byte-identical ===")
 check("1: the machine-readable wire block (markers + hero JSON) is unchanged",
       h(hi[hi.index(WIRE_MARK):hi.index("\nDisclaimer:\n")]) == PIN_WIRE)
 check("1: the mandatory Hindi disclaimer block is unchanged", h(hi[hi.index("\nDisclaimer:\n"):hi.index("\nDeterministic evidence:\n")]) == PIN_DISCLAIMER_HI)
-check("1: wire + disclaimer + deterministic-evidence tail is unchanged", h(hi[hi.index(WIRE_MARK):]) == PIN_HI_TAIL)
 check("1: the disclaimer is still the exact production disclaimer", get_mandatory_disclaimer("relationship_future_non_certainty_mandatory", "hi") in hi)
 check("1: the Hindi and English wire blocks are identical", hi[hi.index(WIRE_MARK):hi.index("\nDisclaimer:\n")] == en[en.index(WIRE_MARK):en.index("\nDisclaimer:\n")])
 
@@ -88,9 +86,9 @@ check("2: the real parser + validator still accept the contract", validate_requi
 
 print("\n=== 3: deterministic-evidence injection ('placeholders') is unchanged ===")
 evidence = json.loads(hi.split("Deterministic evidence:\n")[1])
-check("3: evidence keys are exactly partner_data_mode / ashtakoot / user_house_lord_facts / user_dasha_context",
-      set(evidence) == {"partner_data_mode", "ashtakoot", "user_house_lord_facts", "user_dasha_context"})
-check("3: Ashtakoot evidence reaches the model verbatim", evidence["ashtakoot"]["total_score"] == 32.5 and evidence["partner_data_mode"] == "A_FULL_DUAL")
+check("3: evidence keys are exactly partner_birth_data / ashtakoot / user_house_lord_facts / user_dasha_context (no internal mode name)",
+      set(evidence) == {"partner_birth_data", "ashtakoot", "user_house_lord_facts", "user_dasha_context"})
+check("3: Ashtakoot evidence reaches the model verbatim", evidence["ashtakoot"]["total_score"] == 32.5 and evidence["partner_birth_data"]["completeness"] == "full")
 for key in ("compiled_report", "compatibility", "astro_facts"):
     try:
         build_love_premium_prompt({k: v for k, v in fixed_payload("hi").items() if k != key})
@@ -117,17 +115,13 @@ HEADINGS = {
     10: "Summary",
 }
 for n, text in HEADINGS.items():
-    check(f"4: section {n} keeps its purpose and uses the modern heading '{text}'", dict(numbered)[str(n)].startswith(text))
-check("4: section 2 still requires the real total /36 and the partner-data limitation", "/36" in dict(numbered)["2"] and "limitation" in dict(numbered)["2"])
-check("4: section 3 still requires each available koota's real result", "Koota" in dict(numbered)["3"] and "असली" in dict(numbered)["3"])
-check("4: section 4 still forbids mind-reading", "मन पढ़ने का दावा नहीं" in dict(numbered)["4"])
-check("4: section 5 is still about the USER's 5th/7th House lord facts", "user" in dict(numbered)["5"] and "House Lord" in dict(numbered)["5"])
+    check(f"4: section {n} heading is exactly the clean modern title '{text}'", dict(numbered)[str(n)] == text)
 
 print("\n=== 5: deterministic authority rules are preserved ===")
 AUTHORITY = [
-    "A_FULL_DUAL", "B_DOB_ONLY_HYBRID", "/36", "Ashtakoot", "Dasha", "DD/MM/YYYY", "Aspects",
+    "partner_birth_data", "/36", "Ashtakoot", "Dasha", "DD/MM/YYYY", "Aspects",
     "hero value नहीं", "percentage में न बदलें", "कोई Koota या fact अपनी तरफ़ से न बनाएँ", "partner का Lagna",
-    "user के Houses हैं, partner के नहीं", "खाली 5th या 7th House",
+    "primary person के Houses हैं, partner के नहीं", "खाली 5th या 7th House",
 ]
 for tok in AUTHORITY:
     check(f"5: authority rule preserved: {tok!r}", tok in hi_instr)
@@ -166,7 +160,7 @@ kundali = calculate_full_kundali(name=order["name"], dob=order["dob"], tob=order
 live = collect_love_report_data(order=order, user_kundali=kundali, language="hi", boy_is_user=True)
 live_prompt = build_love_premium_prompt(live)
 live_evidence = json.loads(live_prompt.split("Deterministic evidence:\n")[1])
-check("9: live payload -> A_FULL_DUAL in the Hindi prompt evidence", live_evidence["partner_data_mode"] == "A_FULL_DUAL")
+check("9: live payload -> full partner birth data in the Hindi prompt evidence", live_evidence["partner_birth_data"]["completeness"] == "full")
 check("9: live payload -> 32.5/36 in the Hindi prompt evidence", live_evidence["ashtakoot"]["total_score"] == 32.5)
 check("9: live prompt still has exactly 10 numbered sections", len(re.findall(r"^\d+\.", live_prompt, re.M)) == 10)
 

@@ -119,7 +119,7 @@ check("1: the collector did not mutate the caller's partner payload", PARTNER_LI
 print("\n=== 1b: what the model is actually shown (real prompt builder, no AI call) ===")
 prompt = build_love_premium_prompt(payload)
 evidence = json.loads(prompt.split("Deterministic evidence:\n")[1])
-check("1b: prompt evidence says A_FULL_DUAL", evidence["partner_data_mode"] == "A_FULL_DUAL")
+check("1b: prompt evidence says the partner's birth data is full (plain words, no internal mode name)", evidence["partner_birth_data"]["completeness"] == "full" and "A_FULL_DUAL" not in json.dumps(evidence))
 check("1b: prompt evidence carries the 32.5/36 total", evidence["ashtakoot"]["total_score"] == 32.5 and evidence["ashtakoot"]["max_score"] == 36)
 check("1b: prompt evidence carries the 8 real koota scores",
       {k: v["score"] for k, v in evidence["ashtakoot"]["kootas"].items()} == EXPECTED_KOOTAS)
@@ -279,7 +279,7 @@ for lang in ("en", "hi"):
     order, live_partner, seen, pdf = run_premium_task(lang)
     ev = json.loads(seen["prompt"].split("Deterministic evidence:\n")[1])
     check(f"9[{lang}]: the real task reached Ready", order.report_stage == "Ready")
-    check(f"9[{lang}]: the model was shown A_FULL_DUAL", ev["partner_data_mode"] == "A_FULL_DUAL")
+    check(f"9[{lang}]: the model was shown full partner birth data", ev["partner_birth_data"]["completeness"] == "full")
     check(f"9[{lang}]: the model was shown the real 32.5/36 and the 8 real koota scores",
           ev["ashtakoot"]["total_score"] == 32.5 and {k: v["score"] for k, v in ev["ashtakoot"]["kootas"].items()} == EXPECTED_KOOTAS)
     check(f"9[{lang}]: the stored order.partner_payload was not mutated (no lat/lng written back)", live_partner == PARTNER_LIVE and "lat" not in order.partner_payload)

@@ -453,7 +453,7 @@
     {% if report_subtitle %}<div class="cover-subtitle">{{ report_subtitle }}</div>{% endif %}
     <hr class="cover-rule">
     <div class="cover-meta">
-      <div><strong>{{ labels.prepared_for }}</strong> {{ user_info.name }}</div>
+      {% if partner_info %}<div><strong>{{ labels.prepared_for }}</strong> {{ user_info.name }} &amp; {{ partner_info.name }}</div>{% else %}<div><strong>{{ labels.prepared_for }}</strong> {{ user_info.name }}</div>{% endif %}
       <div><strong>{{ labels.report_date }}</strong> {{ today_str }}</div>
     </div>
   </div>
@@ -476,6 +476,28 @@
       {% if answer_hero.caution %}<div class="answer-hero-caution">{{ answer_hero.caution }}</div>{% endif %}
     </div>
   {% endif %}
+{%- if partner_info %}
+
+  <!-- Q4.4B -- relationship_future_report only: who this report is for. Its CSS lives inside this block so a
+       report without partner_info renders byte-for-byte as before. -->
+  <style>
+    .people-card { background: var(--card-bg); border: 1px solid var(--card-border); border-left: 4px solid var(--accent); border-radius: 6px; padding: 10px 14px; margin: 10px 0; page-break-inside: avoid; }
+    .people-heading { font-size: 9.5pt; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); font-weight: bold; margin-bottom: 6px; }
+    body.hi .people-heading { letter-spacing: 0; text-transform: none; font-size: 11pt; }
+    .person { display: inline-block; width: 48%; vertical-align: top; }
+    .person-name { font-size: 13pt; font-weight: bold; color: var(--ink); margin-bottom: 2px; }
+    .person-detail { font-size: 10.5pt; color: var(--muted); }
+  </style>
+  <div class="people-card">
+    <div class="people-heading">{{ labels.people_heading }}</div>
+    {% for person in [user_info, partner_info] %}<div class="person">
+      <div class="person-name">{{ person.name }}</div>
+      {% if person.dob %}<div class="person-detail">{{ labels.birth_date_label }}: {{ person.dob }}</div>{% endif %}
+      {% if person.tob %}<div class="person-detail">{{ labels.birth_time_label }}: {{ person.tob }}</div>{% endif %}
+      {% if person.pob %}<div class="person-detail">{{ labels.birth_place_label }}: {{ person.pob }}</div>{% endif %}
+    </div>{% endfor %}
+  </div>
+{%- endif %}
 
   <!-- ================= ASTROLOGY SNAPSHOT (supports the answer, never competes) ================= -->
   <div class="snapshot-kundali">
