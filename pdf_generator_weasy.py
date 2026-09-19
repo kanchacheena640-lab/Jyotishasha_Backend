@@ -32,38 +32,47 @@ def _to_html(text: str | None) -> str:
     return "<br/>".join([line.strip() for line in text.split("\n") if line.strip()])
 
 # ✅ NEW: Convert GPT plain numbered text to HTML-formatted headings + paragraphs
-# Q2 -- a line that is ENTIRELY one bold span (nothing before/after the
-# **...** pair once stripped) is the standard_v1 prompt family's own
-# established section-heading convention (every one of the 24 standard
-# prompts instructs the model to emit **Heading Name** on its own line,
-# confirmed by direct inspection of all 25 prompts/*.txt files before
-# this change) -- it was previously demoted to a bold PARAGRAPH by the
-# generic "STAR BOLD FORMAT" rule below, which is the concrete,
-# structural root cause of "weak information hierarchy" for all 24
-# standard reports (their own real section headings never became real
-# heading elements). Matched and rendered as a section heading BEFORE
-# the generic star-bold fallback runs. relationship_future_report's own
-# prompt (love_prompt_builder.py) explicitly instructs the model NOT to
-# use ** at all (it uses #/##/###/@@ instead), so this new rule has
-# nothing to match there and changes nothing for that pipeline.
-_WHOLE_LINE_BOLD_HEADING = re.compile(r"^\*\*(.+?)\*\*$")
+# Line classification (Q2 / Q2.1 / Q4.2D). Every pattern below is applied to
+# a single already-stripped line.
+#
+# A line that is ENTIRELY one bold span is one of two different things:
+#   * a NUMBERED report-section heading -- "**3. Career Challenges**", the
+#     structure every standard_v1 prompt (EN and HI, 208/208 headings)
+#     prescribes -> a real <h2>;
+#   * anything else ("**मुख्य बात:**", "**Astrology क्या कहती है:**",
+#     "**Elevated**") -> a bold LEAD-IN paragraph, never a heading. Q2
+#     promoted every whole-line bold span to <h2>, which turned each
+#     lead-in into a full-size heading (Q4.2C visual defect).
+# The inner text must not itself contain "**", so "**a** and **b**" is never
+# mistaken for one whole-line span.
+_WHOLE_LINE_BOLD = re.compile(r"^\*\*((?:(?!\*\*).)+?)\*\*(\s*:)?$")
+# "N." / "N)" then a title. "3.5 points" is not a number (a digit follows the
+# dot directly), while a title that itself starts with a digit is ("3. 4th House").
+_NUMBERED_HEADING_TEXT = re.compile(r"^(\d{1,2})\s*[.)](?:\s+\S|(?=[^\d\s]))")
 
-# Q2.1 -- Visual Polish. Root cause of the "three empty bullets before
-# Business Orientation" QA finding: convert_headings() had NO markdown
-# bullet-list handling at all before this fix. A GPT response line that
-# is only a bare list marker (-, *, or a literal • with nothing else,
-# or only whitespace after it -- a known LLM stray-formatting artifact)
-# fell through every existing rule straight to the generic "Normal
-# paragraph" branch and was rendered verbatim as its own <p>-</p> (or
-# <p>*</p>/<p>•</p>). This is a STRUCTURAL parser fix, not a per-report
-# CSS hide: a marker line with no real content after it is now dropped
-# entirely (never rendered as an empty <li>), and -- the other half of
-# the same fix -- a marker line that DOES have real content is now
-# rendered as a genuine <li> inside a real <ul>, instead of a flat
-# "<p>- some text</p>" paragraph (which is itself the correct answer to
-# the general question of "does convert_headings() support markdown
-# bullet lists at all" -- previously, no).
-_BULLET_LINE = re.compile(r"^[-*•]\s*(.*)$")
+# The prompts say "report सादे text में", and the model sometimes emits NO
+# markdown: numbered headings as plain "N. Title" lines and lead-ins as plain
+# "Label:" lines (Q4.2D, Children). A plain numbered line is a heading only if
+# it is title-like (short, no sentence punctuation), stands alone between
+# blank lines and continues the 1, 2, 3... section sequence -- so a numbered
+# LIST inside a section is never promoted. A plain colon-terminated short line
+# after a blank line is a lead-in label.
+_PLAIN_NUMBERED_HEADING = re.compile(r"^(\d{1,2})[.)]\s+(\S.{0,99})$")
+_SENTENCE_END = re.compile(r"[।.!?:;,]$")
+_PLAIN_LEAD_IN = re.compile(r"^[^\s\d*#•\-][^।!?*]{0,58}:$")
+
+# A line made only of markdown marker characters is never content: with 3+
+# marker characters it is a horizontal rule ("---", "***", "___", "- - -");
+# with fewer it is a bare list marker (-, *, •). Neither may reach bullet or
+# paragraph parsing (Q4.2D: "---" used to match the bullet rule and render
+# as "• --").
+_MARKER_ONLY_LINE = re.compile(r"^[-*_•\s]+$")
+
+# A real bullet is a marker FOLLOWED BY whitespace (or the • glyph). The Q2.1
+# pattern accepted a marker with no space, so any line starting with "**"
+# ("**सीधी बात:** text") matched as a bullet whose text began with a stray
+# "*" (Q4.2D), and "-5 degrees" lost its sign.
+_BULLET_LINE = re.compile(r"^(?:[-*]\s+|•\s*)(.+)$")
 
 
 def _inline_bold(text: str) -> str:
@@ -81,12 +90,18 @@ def convert_headings(text: str, narrative_style: str = "card") -> str:
     #  Heading           -> H1
     ## Heading           -> H2
     ### Heading          -> H3
-    **Whole line bold**  -> H2 (Q2 -- see _WHOLE_LINE_BOLD_HEADING above)
+    **N. Heading**       -> H2 (numbered report section)
+    **Label:** (whole line) -> bold lead-in <p class='lead-in'>, NOT a heading
     - / * / • Text        -> real <li> in a <ul> (Q2.1); an EMPTY
                              marker line (nothing after it) renders
                              nothing at all, never an empty <li>.
+    ---  ***  ___          -> horizontal rule: dropped, never a bullet
     @@Label: body         -> bold inline highlight
     **inline** bold        -> <strong> mid-sentence
+
+    A heading never opens a content card by itself: the card is opened by
+    the first content line under it, so a heading with no content (or one
+    directly followed by another heading) emits no empty card.
 
     narrative_style (Q2.1, optional, default "card" -- preserves every
     existing caller's exact prior visual output byte-for-byte):
@@ -102,10 +117,18 @@ def convert_headings(text: str, narrative_style: str = "card") -> str:
 
     use_card = narrative_style != "plain"
 
-    lines = [l.rstrip() for l in text.split("\n") if l.strip()]
+    # Each non-blank line with whether a blank line (or the text edge) sits
+    # directly before / after it -- plain-text headings and lead-ins are only
+    # recognised as standalone lines.
+    raw = [l.rstrip() for l in text.split("\n")]
+    entries = [
+        (l, i == 0 or not raw[i - 1].strip(), i == len(raw) - 1 or not raw[i + 1].strip())
+        for i, l in enumerate(raw) if l.strip()
+    ]
     html = []
     in_card = False
     in_list = False
+    last_heading_no = 0
 
     def open_card():
         nonlocal in_card
@@ -125,8 +148,14 @@ def convert_headings(text: str, narrative_style: str = "card") -> str:
             html.append("</ul>")
             in_list = False
 
-    for line in lines:
+    for line, blank_before, blank_after in entries:
         stripped = line.strip()
+
+        # ---------- MARKER-ONLY LINE: horizontal rule / bare bullet ----------
+        if _MARKER_ONLY_LINE.match(stripped):
+            if len(re.sub(r"\s", "", stripped)) >= 3:
+                close_list()  # a horizontal rule ends any open list
+            continue
 
         # ---------- H1 ----------
         if line.startswith("# ") and not line.startswith("##"):
@@ -141,10 +170,13 @@ def convert_headings(text: str, narrative_style: str = "card") -> str:
         if line.startswith("## ") and not line.startswith("###"):
             close_list()
             close_card()
+            heading_text = line[3:].strip()
+            num = _NUMBERED_HEADING_TEXT.match(heading_text)
+            if num:
+                last_heading_no = int(num.group(1))
             html.append(
-                f"<h2 class='section-heading'>{line[3:].strip()}</h2>"
+                f"<h2 class='section-heading'>{heading_text}</h2>"
             )
-            open_card()
             continue
 
         # ---------- H3 ----------
@@ -154,34 +186,50 @@ def convert_headings(text: str, narrative_style: str = "card") -> str:
             html.append(
                 f"<h3 class='sub-heading'>{line[4:].strip()}</h3>"
             )
-            open_card()
             continue
 
-        # ---------- WHOLE-LINE BOLD HEADING (Q2) ----------
-        # **Business Orientation** on its own line, nothing else.
-        whole_line_match = _WHOLE_LINE_BOLD_HEADING.match(stripped)
+        # ---------- WHOLE-LINE BOLD: numbered heading or lead-in ----------
+        whole_line_match = _WHOLE_LINE_BOLD.match(stripped)
         if whole_line_match:
+            inner = whole_line_match.group(1).strip()
+            if whole_line_match.group(2):
+                inner += ":"
+            close_list()
+            num = _NUMBERED_HEADING_TEXT.match(inner)
+            if num:
+                last_heading_no = int(num.group(1))
+                close_card()
+                html.append(f"<h2 class='section-heading'>{inner}</h2>")
+            else:
+                open_card()
+                html.append(f"<p class='lead-in'><strong>{inner}</strong></p>")
+            continue
+
+        # ---------- PLAIN-TEXT NUMBERED HEADING / LEAD-IN ----------
+        plain_heading = _PLAIN_NUMBERED_HEADING.match(stripped)
+        if (plain_heading and blank_before and blank_after
+                and int(plain_heading.group(1)) == last_heading_no + 1
+                and not _SENTENCE_END.search(stripped)):
+            last_heading_no = int(plain_heading.group(1))
             close_list()
             close_card()
-            html.append(
-                f"<h2 class='section-heading'>{whole_line_match.group(1).strip()}</h2>"
-            )
+            html.append(f"<h2 class='section-heading'>{stripped}</h2>")
+            continue
+
+        if blank_before and _PLAIN_LEAD_IN.match(stripped):
+            close_list()
             open_card()
+            html.append(f"<p class='lead-in'><strong>{stripped}</strong></p>")
             continue
 
         # ---------- BULLET LIST ITEM (Q2.1) ----------
         bullet_match = _BULLET_LINE.match(stripped)
         if bullet_match:
-            content = bullet_match.group(1).strip()
-            if not content:
-                # A bare "-"/"*"/"•" with nothing real after it -- the
-                # exact shape of the reported artifact. Render nothing.
-                continue
             open_card()
             if not in_list:
                 html.append("<ul class='body-list'>")
                 in_list = True
-            html.append(f"<li>{_inline_bold(content)}</li>")
+            html.append(f"<li>{_inline_bold(bullet_match.group(1).strip())}</li>")
             continue
         else:
             close_list()

@@ -186,10 +186,10 @@ print("\n=== 4c: shared Hindi component labels -- localized, never separate busi
 
 from modules.payments.report_i18n_labels import get_label, labels_for_language, LABELS  # noqa: E402
 
-check("4c: recommended_gemstone (hi) is real Devanagari text, not English", get_label("recommended_gemstone", "hi") == "अनुशंसित रत्न")
-check("4c: alternative_substone (hi) is real Devanagari text", get_label("alternative_substone", "hi") == "उपरत्न (विकल्प)")
-check("4c: supporting_planet (hi) is real Devanagari text", get_label("supporting_planet", "hi") == "सहायक ग्रह")
-check("4c: suggested_next_steps (hi) is real Devanagari text", get_label("suggested_next_steps", "hi") == "सुझाए गए अगले कदम")
+check("4c: recommended_gemstone (hi) is the modern Hinglish label (Q4.2A), not the plain English label", get_label("recommended_gemstone", "hi") == "आपके लिए Recommended Gemstone")
+check("4c: alternative_substone (hi) is the modern Hinglish label (Q4.2A)", get_label("alternative_substone", "hi") == "Alternative Sub-stone")
+check("4c: supporting_planet (hi) is the modern Hinglish label (Q4.2A)", get_label("supporting_planet", "hi") == "Supporting Planet")
+check("4c: suggested_next_steps (hi) is the modern Hinglish label (Q4.2A)", get_label("suggested_next_steps", "hi") == "आपके लिए Next Steps")
 check("4c: EN labels stay in English", get_label("recommended_gemstone", "en") == "Recommended Gemstone")
 check("4c: unrecognized language falls back to English, never raises", get_label("recommended_gemstone", "fr") == "Recommended Gemstone")
 check("4c: unrecognized key returns '' , never raises/None", get_label("not_a_real_key", "hi") == "")
@@ -530,12 +530,12 @@ with app.app_context():
               captured.get("answer_hero", {}).get("value") != "गलत रत्न नाम")
         check("12: PDF language kwarg is 'hi'", captured.get("language") == "hi")
         check("12: (human visual QA correction) action_list.heading is the localized Hindi label, not the English literal",
-              (captured.get("action_list") or {}).get("heading") == "सुझाए गए अगले कदम")
+              (captured.get("action_list") or {}).get("heading") == "आपके लिए Next Steps")
         check("12: (human visual QA correction) app_download heading is the localized Hindi copy",
               (captured.get("app_download") or {}).get("heading") == "अपनी ज्योतिष यात्रा जारी रखें")
         check("12: (human visual QA correction) app_download body is the localized Hindi copy",
               (captured.get("app_download") or {}).get("benefit_text")
-              == "Jyotishasha ऐप में पाएं अपनी व्यक्तिगत ज्योतिष जानकारी, दैनिक मार्गदर्शन और भी बहुत कुछ।")
+              == "Jyotishasha App में पाएं अपनी Personalized Astrology Insights, Daily Guidance और बहुत कुछ।")
         check("12: Hindi report still carries the owner-confirmed Play Store URL",
               (captured.get("app_download") or {}).get("play_store_url") == "https://play.google.com/store/apps/details?id=com.jyotishasha.app&pcampaignid=web_share")
     finally:

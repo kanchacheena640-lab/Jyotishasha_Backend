@@ -311,8 +311,8 @@ _startup_en_headings = re.findall(r"^\*\*(\d+)\. ", _prompt_text["startup_sugges
 _startup_hi_headings = re.findall(r"^\*\*(\d+)\. ", _startup_hi, re.MULTILINE)
 check("Q: startup_suggestion_report_hi.txt has exactly 8 numbered section headings, matching EN's own count",
       len(_startup_hi_headings) == 8 and _startup_hi_headings == _startup_en_headings == [str(i) for i in range(1, 9)])
-check("Q: startup_suggestion_report_hi.txt's closing section is plain 'सारांश' (Summary), NOT the old divergent 'सारांश और प्रेरणा' (Summary and Motivation)",
-      "सारांश और प्रेरणा" not in _startup_hi and "**8. सारांश**" in _startup_hi)
+check("Q: startup_suggestion_report_hi.txt's closing section is plain 'Summary' (Q4.2B modern-Hindi heading), NOT the old divergent 'सारांश और प्रेरणा' (Summary and Motivation)",
+      "सारांश और प्रेरणा" not in _startup_hi and "**8. Summary**" in _startup_hi)
 check("Q: startup_suggestion_report_hi.txt does not reuse 'व्यवसाय' framing as its own opening heading (must not read as business_report)",
       "**1. व्यवसाय" not in _startup_hi)
 check("Q: startup_suggestion_report_hi.txt uses all 5 expected context placeholders",

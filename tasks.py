@@ -9,7 +9,7 @@ from extensions import db
 from models import Order
 from email_utils import send_email
 from modules.payments.report_delivery_service import deliver_generated_report
-from summary_blocks import build_summary_blocks_with_transit
+from summary_blocks import build_summary_blocks_with_transit, build_birth_chart_summary_display
 from full_kundali_api import calculate_full_kundali
 from transit_engine import get_current_positions
 from kundali_chart_generator import generate_kundali_drawing
@@ -536,6 +536,11 @@ def _generate_and_send_report_core(order_id):
                 lagna_rashi=rashi_number
             )
 
+            pdf_summary_blocks = dict(summary_blocks)
+            pdf_summary_blocks["birth_chart_summary"] = build_birth_chart_summary_display(
+                kundali, language, summary_blocks.get("birth_chart_summary", "")
+            )
+
             output_path = f"/home/Jyotishasha/reports/{product_slug}_{safe_name}.pdf"
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
@@ -547,7 +552,11 @@ def _generate_and_send_report_core(order_id):
                     "tob": order["tob"],
                     "pob": order["pob"]
                 },
-                summary_blocks=summary_blocks,
+                # Q4.2A -- a Hindi PDF shows the Birth Chart Summary card in
+                # modern Hinglish instead of the English prompt-feed
+                # sentence; identical content (no change) for every other
+                # language. Prompts above still use the untouched blocks.
+                summary_blocks=pdf_summary_blocks,
                 gpt_response=gpt_content,
                 kundali_drawing=kundali_drawing,
                 used_placeholders=used_placeholders,

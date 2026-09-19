@@ -499,6 +499,34 @@ def _build_career_yoga_summary(kundali: dict) -> str:
     return _build_yoga_evidence_summary(kundali, CAREER_YOGA_LABELS, "career")
 
 
+# Q4.2A -- modern-Hindi DISPLAY text for the PDF's "Birth Chart Summary"
+# card only. The English birth_chart_summary string built below stays the
+# single source of truth fed to every prompt; this is a presentation-layer
+# rewording of the same facts (same lagna, same planets, same houses, same
+# signs) for a Hindi-language PDF, so a Hindi customer does not get an
+# English paragraph in the middle of their report.
+_PLANET_DISPLAY_HI = {
+    "Sun": "Sun (Surya)", "Moon": "Moon (Chandra)", "Mars": "Mars (Mangal)",
+    "Mercury": "Mercury (Budh)", "Jupiter": "Jupiter (Guru)",
+    "Venus": "Venus (Shukra)", "Saturn": "Saturn (Shani)",
+    "Rahu": "Rahu", "Ketu": "Ketu",
+}
+
+
+def build_birth_chart_summary_display(kundali: dict, language: str, english_summary: str) -> str:
+    """Returns `english_summary` unchanged for every language except "hi"."""
+    if language != "hi":
+        return english_summary
+    planets = kundali.get("planets", [])
+    lagna_sign = kundali.get("lagna_sign", "")
+    lines = [f"आपका Lagna {lagna_sign} है।"]
+    for p in planets:
+        if p["name"] != "Ascendant (Lagna)":
+            name = _PLANET_DISPLAY_HI.get(p["name"], p["name"])
+            lines.append(f"{name} {_ordinal(p['house'])} House में है ({p['sign']} राशि)।")
+    return " ".join(lines)
+
+
 def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
     planets = kundali.get("planets", [])
     lagna_sign = kundali.get("lagna_sign", "")

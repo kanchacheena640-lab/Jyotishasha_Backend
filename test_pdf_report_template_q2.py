@@ -338,16 +338,21 @@ except Exception as exc:
 # =================================================================
 print("\n=== G: Hindi/Unicode ===")
 # =================================================================
-hindi_html = render(is_hindi=True, lang="hi", gpt_response_html=convert_headings("**करियर अभिविन्यास**\nसामग्री यहाँ है।"))
+hindi_html = render(is_hindi=True, lang="hi", gpt_response_html=convert_headings("**1. करियर अभिविन्यास**\nसामग्री यहाँ है।"))
 check("G: body carries the hi class when Hindi is requested", 'class="hi"' in hindi_html)
-check("G: Devanagari whole-line bold becomes a real H2 heading", "करियर अभिविन्यास</h2>" in hindi_html)
+# Q4.2D -- only a NUMBERED whole-line bold is a heading now (an un-numbered
+# one is a bold lead-in), so the Devanagari heading fixture carries its number.
+check("G: Devanagari numbered whole-line bold becomes a real H2 heading", "1. करियर अभिविन्यास</h2>" in hindi_html)
 english_html = render(is_hindi=False, lang="en")
 check("G: body does NOT carry the hi class for English", "<body class=\"\">" in english_html)
 
 # =================================================================
 print("\n=== H: convert_headings() -- heading hierarchy + Q2.1 bullet fix ===")
 # =================================================================
-check("H: a whole-line **Heading** becomes a real <h2>", "<h2 class='section-heading'>Business Orientation</h2>" in convert_headings("**Business Orientation**\nBody text."))
+# Q4.2D -- a whole-line **N. Heading** is the section-heading structure; an
+# un-numbered whole-line bold ("**Business Orientation**") is a lead-in.
+check("H: a whole-line numbered **N. Heading** becomes a real <h2>", "<h2 class='section-heading'>1. Business Orientation</h2>" in convert_headings("**1. Business Orientation**\nBody text."))
+check("H: an un-numbered whole-line bold is NOT promoted to a heading", "<h2" not in convert_headings("**Business Orientation**\nBody text."))
 check("H: inline **bold** mid-sentence is still just emphasis", "<p>This is <strong>important</strong> mid sentence.</p>" in convert_headings("This is **important** mid sentence."))
 check("H: relationship's own # H1 convention is unaffected", "<h1 class='section-heading'>Main</h1>" in convert_headings("# Main\nBody."))
 check("H: relationship's own ## H2 convention is unaffected", "<h2 class='section-heading'>Sub</h2>" in convert_headings("## Sub\nBody."))
@@ -356,11 +361,11 @@ check("H: cards do not hardcode the 'hi' class", "<div class='card'>" in convert
 
 # Q2.1 -- the exact reported artifact: bare bullet markers with no
 # content, immediately before a real heading.
-empty_bullets_text = "-\n-\n-\n\n**Business Orientation**\nReal content."
+empty_bullets_text = "-\n-\n-\n\n**1. Business Orientation**\nReal content."
 converted = convert_headings(empty_bullets_text)
 check("H: bare '-' marker lines with no content render NOTHING (no empty <li>, no stray <p>-</p>)",
       "<li></li>" not in converted and "<p>-</p>" not in converted)
-check("H: the real heading that follows the stray markers still renders correctly", "<h2 class='section-heading'>Business Orientation</h2>" in converted)
+check("H: the real heading that follows the stray markers still renders correctly", "<h2 class='section-heading'>1. Business Orientation</h2>" in converted)
 
 for marker in ("-", "*", "•"):
     stray = f"{marker}\n{marker}   \n\nReal paragraph."
@@ -377,9 +382,9 @@ check("H: real bullet content is no longer flattened into '<p>- text</p>' paragr
       "<p>- First point</p>" not in real_bullets)
 
 # narrative_style="plain" skips the card shell entirely.
-plain = convert_headings("**Heading**\nBody paragraph.", narrative_style="plain")
-check("H: narrative_style='plain' renders the heading but no card shell", "<h2 class='section-heading'>Heading</h2>" in plain and "<div class='card'>" not in plain)
-default_style = convert_headings("**Heading**\nBody paragraph.")
+plain = convert_headings("**1. Heading**\nBody paragraph.", narrative_style="plain")
+check("H: narrative_style='plain' renders the heading but no card shell", "<h2 class='section-heading'>1. Heading</h2>" in plain and "<div class='card'>" not in plain)
+default_style = convert_headings("**1. Heading**\nBody paragraph.")
 check("H: default narrative_style is unchanged ('card') -- legacy callers see identical output to before", "<div class='card'>" in default_style)
 
 # =================================================================

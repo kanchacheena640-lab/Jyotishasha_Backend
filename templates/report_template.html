@@ -130,6 +130,20 @@
       page-break-inside: avoid;
     }
     .card p:last-child { margin-bottom: 0; }
+    /* Q4.2D -- bold lead-in labels inside a section card (e.g. a whole-line
+       "**Label:**"). Body-size text, not a heading. Only the Regular
+       Devanagari face is bundled, so bold alone would not stand out in
+       Hindi -- the accent colour carries the emphasis in both languages.
+       page-break-after keeps the label with the paragraph it introduces. */
+    .card .lead-in { margin: 12px 0 3px 0; color: var(--accent); page-break-after: avoid; }
+    .card .lead-in:first-child { margin-top: 0; }
+    /* Q4.2A -- page flow (Hindi only). Devanagari sections are taller, and
+       "avoid" on a whole section card pushed the first narrative section
+       to a new page, leaving the Dasha page mostly blank. Allowing the
+       card to split (paragraph orphans/widows still apply) removes the
+       gap. Scoped to body.hi so English pagination is byte-for-byte
+       unchanged. */
+    body.hi .card { page-break-inside: auto; }
     .body-list { margin: 4px 0 8px 0; }
     .body-list li { font-size: 11pt; }
 
@@ -164,6 +178,9 @@
       border-radius: 999px;
       text-transform: uppercase;
     }
+    /* Q4.2A -- Hindi: letter-spacing/uppercase are Latin-script styling
+       and would pull apart Devanagari conjuncts. */
+    body.hi .cover-sample-badge { letter-spacing: 0; text-transform: none; font-size: 11pt; }
 
     .cover-eyebrow {
       font-size: 10.5pt;
@@ -430,14 +447,14 @@
   <!-- ================= 1. COVER (Page 1 -- clean, restrained) ================= -->
   <div class="cover-page">
     {% if logo_src %}<img class="cover-logo" src="{{ logo_src }}">{% endif %}
-    {% if is_sample %}<div class="cover-sample-badge">Sample Report</div>{% endif %}
+    {% if is_sample %}<div class="cover-sample-badge">{{ labels.sample_badge }}</div>{% endif %}
     <div class="cover-eyebrow">Jyotishasha Premium Astrology Report</div>
     <div class="cover-title">{{ report_title }}</div>
     {% if report_subtitle %}<div class="cover-subtitle">{{ report_subtitle }}</div>{% endif %}
     <hr class="cover-rule">
     <div class="cover-meta">
-      <div><strong>Prepared for:</strong> {{ user_info.name }}</div>
-      <div><strong>Report Date:</strong> {{ today_str }}</div>
+      <div><strong>{{ labels.prepared_for }}</strong> {{ user_info.name }}</div>
+      <div><strong>{{ labels.report_date }}</strong> {{ today_str }}</div>
     </div>
   </div>
 
@@ -467,27 +484,27 @@
       {{ user_info.name }} | DOB: {{ user_info.dob }} | TOB: {{ user_info.tob }} | POB: {{ user_info.pob }}
     </div>
     {% if kundali_img_src %}
-      <div class="snapshot-legend">Su = Sun &nbsp; Mo = Moon &nbsp; Ma = Mars &nbsp; Me = Mercury &nbsp; Ju = Jupiter &nbsp; Ve = Venus &nbsp; Sa = Saturn &nbsp; Ra = Rahu &nbsp; Ke = Ketu</div>
+      <div class="snapshot-legend">{{ labels.chart_legend | safe }}</div>
     {% endif %}
   </div>
 
   {% if birth_chart_summary %}
     <div class="fact-card">
-      <h3 class="sub-heading">Birth Chart Summary</h3>
+      <h3 class="sub-heading">{{ labels.birth_chart_summary_heading }}</h3>
       <p>{{ birth_chart_summary | safe }}</p>
     </div>
   {% endif %}
 
   {% if mahadasha_summary %}
     <div class="fact-card">
-      <h3 class="sub-heading">Mahadasha Summary</h3>
+      <h3 class="sub-heading">{{ labels.mahadasha_summary_heading }}</h3>
       <p>{{ mahadasha_summary | safe }}</p>
     </div>
   {% endif %}
 
   {% if current_transit_summary %}
     <div class="fact-card">
-      <h3 class="sub-heading">Current Transit Summary</h3>
+      <h3 class="sub-heading">{{ labels.current_transit_summary_heading }}</h3>
       <p>{{ current_transit_summary | safe }}</p>
     </div>
   {% endif %}

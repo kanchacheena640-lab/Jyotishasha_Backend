@@ -381,7 +381,7 @@ def compute_saturn_transit_hero(kundali: dict, language: str = "en") -> dict:
             "entries": [{
                 "label": f"Saturn in {residency.get('to_rashi', saturn_rashi)}",
                 "date_range": timing,
-                "note": "Current transit sign residency",
+                "note": get_label("current_transit_note", language),
                 "current": True,
             }],
         }

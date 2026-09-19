@@ -191,8 +191,8 @@ _english_heading_lines = [
 ]
 check("L: no whole-line-bold heading in delay_in_marriage_report_hi.txt starts with a Latin letter",
       _english_heading_lines == [])
-check("L: delay_in_marriage_report_hi.txt uses natural Hindi heading text (e.g. 'देरी संकेत')",
-      "देरी संकेत" in _prompt_text["delay_in_marriage_report_hi.txt"])
+check("L: delay_in_marriage_report_hi.txt uses natural modern Hindi/Hinglish heading text (Q4.2B: 'देरी के संकेत')",
+      "देरी के संकेत" in _prompt_text["delay_in_marriage_report_hi.txt"])
 
 print("\n=== M/N/O: deterministic Dasha timeline -- real dates only, DD/MM/YYYY, never invented ===")
 
@@ -217,7 +217,7 @@ check("O: compute_dasha_window_timeline() returns None (never a guessed timeline
 _timeline_hi = compute_dasha_window_timeline(_kundali_for_timeline, language="hi")
 check("N (HI): Hindi timeline also produces DD/MM/YYYY dates, same underlying data",
       _timeline_hi is not None and _timeline_hi["entries"][0]["date_range"] == timeline["entries"][0]["date_range"])
-check("N (HI): Hindi timeline heading/notes are localized", _timeline_hi["heading"] == "वर्तमान एवं आगामी दशा अवधि")
+check("N (HI): Hindi timeline heading/notes are localized", _timeline_hi["heading"] == "अभी और आगे की Dasha Periods")
 
 print("\n=== P: gemstone policies -- optional / optional / disabled / disabled ===")
 

@@ -104,7 +104,7 @@ def compute_sadhesati_hero(kundali: dict, language: str = "en") -> dict:
         window = phase_dates.get(window_key) if window_key else None
         current = True
         entry_label = f"{phase} of Sade Sati" if phase else "Current Sade Sati phase"
-        entry_note = "Current Sade Sati phase"
+        entry_note = get_label("current_sadhesati_phase_note", language)
     else:
         value = "Inactive"
         window = phase_dates.get("first_phase")
@@ -173,7 +173,7 @@ def compute_jupiter_transit_hero(kundali: dict, language: str = "en") -> dict:
             "entries": [{
                 "label": f"Jupiter in {residency.get('to_rashi', jupiter_rashi)}",
                 "date_range": timing,
-                "note": "Current transit sign residency",
+                "note": get_label("current_transit_note", language),
                 "current": True,
             }],
         }
