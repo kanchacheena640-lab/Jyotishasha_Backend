@@ -1,6 +1,7 @@
 # Path: modules/love/love_data_collector.py
 from __future__ import annotations
-from typing import Any, Dict
+import math
+from typing import Any, Dict, Optional
 
 from modules.love.service_love import run_love_compatibility, LoveServiceError
 from modules.love.love_report_compiler import compile_love_report
@@ -11,10 +12,36 @@ class LoveCollectorError(Exception):
     pass
 
 
+def _coordinate(value: Any, bound: float) -> Optional[float]:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) and abs(number) <= bound else None
+
+
+def _with_engine_coordinates(partner: Dict[str, Any]) -> Dict[str, Any]:
+    """Live orders store partner coordinates as latitude/longitude; the compatibility engine reads lat/lng."""
+    normalized = dict(partner)
+    lat = _coordinate(partner.get("latitude"), 90)
+    lng = _coordinate(partner.get("longitude"), 180)
+    # (0, 0) is the order form's "no place picked" default, not a birthplace.
+    if lat is not None and lng is not None and not (lat == 0 and lng == 0):
+        normalized["lat"] = partner["latitude"]
+        normalized["lng"] = partner["longitude"]
+    return normalized
+
+
 def _pick_partner(order: Dict[str, Any]) -> Dict[str, Any]:
     partner = order.get("partner")
     if isinstance(partner, dict) and partner:
-        return partner
+        return _with_engine_coordinates(partner)
 
     p = {
         "name": order.get("partner_name"),
