@@ -166,7 +166,8 @@ check("6: policy states modern conversational Hindi + bans Sanskritized/academic
 check("6: policy keeps familiar modern terms in English", all(w in hi_prompt for w in ("Career", "Opportunity", "Planning", "Communication")))
 check("6: policy gives bilingual planet names", all(w in hi_prompt for w in ("Sun (Surya)", "Moon (Chandra)", "Saturn (Shani)", "Mercury (Budh)")))
 check("6: policy shows the BAD/GOOD example for the 10th House Lord", "आपके 10th House का Lord Moon है" in hi_prompt)
-check("6: policy requires DD/MM/YYYY dates", "DD/MM/YYYY" in hi_prompt)
+check("6: policy requires dates copied exactly as given (no numeric reformatting; the retired DD/MM/YYYY contract is gone)",
+      "बिल्कुल वैसे ही (exactly as given) लिखें" in hi_prompt and "DD/MM/YYYY" not in hi_prompt)
 check("6: no-guarantee rule preserved", "गारंटी कभी न दें" in hi_prompt)
 
 print("\n=== 7: Q4.2B -- modern-Hindi policy rolled out to all 23 remaining standard_v1 prompts ===")
@@ -206,7 +207,7 @@ check("7: registry has exactly 24 standard_v1 products (career_report + the 23 r
 check("7: the 23 contract entries are exactly the registry's standard_v1 products minus career_report",
       sorted(_STD_CONTRACT) == sorted(sl for sl in _std_slugs if sl != "career_report"))
 
-_POLICY_INVARIANT = ("Modern Conversational Hindi", "क्लिष्ट, संस्कृतनिष्ठ, academic", "DD/MM/YYYY format में लिखें",
+_POLICY_INVARIANT = ("Modern Conversational Hindi", "क्लिष्ट, संस्कृतनिष्ठ, academic", "बिल्कुल वैसे ही (exactly as given) लिखें",
                      "Sun (Surya), Moon (Chandra), Mars (Mangal), Mercury (Budh), Jupiter (Guru), Venus (Shukra), Saturn (Shani), Rahu, Ketu")
 for slug in _std_slugs:
     text = open(os.path.join(ROOT, "prompts", f"{slug}_hi.txt"), encoding="utf-8").read()

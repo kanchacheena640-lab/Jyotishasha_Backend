@@ -194,7 +194,7 @@ check("L: no whole-line-bold heading in delay_in_marriage_report_hi.txt starts w
 check("L: delay_in_marriage_report_hi.txt uses natural modern Hindi/Hinglish heading text (Q4.2B: 'देरी के संकेत')",
       "देरी के संकेत" in _prompt_text["delay_in_marriage_report_hi.txt"])
 
-print("\n=== M/N/O: deterministic Dasha timeline -- real dates only, DD/MM/YYYY, never invented ===")
+print("\n=== M/N/O: deterministic Dasha timeline -- real dates only, word-month dates, never invented ===")
 
 from full_kundali_api import calculate_full_kundali  # noqa: E402
 
@@ -207,16 +207,18 @@ check("M: a real timeline component was built from real Dasha data", timeline is
 if timeline:
     check("M: timeline has at least 1 entry (the current window)", len(timeline["entries"]) >= 1)
     check("M: the first entry is marked current=True", timeline["entries"][0]["current"] is True)
-    check("N: every entry's date_range is DD/MM/YYYY-shaped",
-          all(re.match(r"^\d{2}/\d{2}/\d{4} . \d{2}/\d{2}/\d{4}$", e["date_range"]) for e in timeline["entries"]))
+    check("N: every entry's date_range is word-month-shaped",
+          all(re.match(r"^\d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$", e["date_range"]) for e in timeline["entries"]))
     check("O: entry labels name real Mahadasha/Antardasha lords from the actual chart, never a placeholder",
           all("Mahadasha" in e["label"] and "Antardasha" in e["label"] for e in timeline["entries"]))
 check("O: compute_dasha_window_timeline() returns None (never a guessed timeline) when current window can't be located",
       compute_dasha_window_timeline({"current_mahadasha": {}, "current_antardasha": {}, "Mahadasha": []}, language="en") is None)
 
 _timeline_hi = compute_dasha_window_timeline(_kundali_for_timeline, language="hi")
-check("N (HI): Hindi timeline also produces DD/MM/YYYY dates, same underlying data",
-      _timeline_hi is not None and _timeline_hi["entries"][0]["date_range"] == timeline["entries"][0]["date_range"])
+check("N (HI): Hindi timeline produces Hindi-month dates from the same underlying data (different presentation, same dates)",
+      _timeline_hi is not None
+      and re.match(r"^\d{1,2} [\u0900-\u097F]+ \d{4} से \d{1,2} [\u0900-\u097F]+ \d{4}$", _timeline_hi["entries"][0]["date_range"]) is not None
+      and _timeline_hi["entries"][0]["date_range"] != timeline["entries"][0]["date_range"])
 check("N (HI): Hindi timeline heading/notes are localized", _timeline_hi["heading"] == "अभी और आगे की Dasha Periods")
 
 print("\n=== P: gemstone policies -- optional / optional / disabled / disabled ===")
@@ -366,8 +368,8 @@ with app.app_context():
               captured.get("answer_hero", {}).get("value") == "Supportive, With Steady Effort")
         check("1: real Dasha-window timeline component was built", captured.get("timeline") is not None)
         if captured.get("timeline"):
-            check("1: timeline entries are DD/MM/YYYY-shaped",
-                  all(re.match(r"^\d{2}/\d{2}/\d{4} . \d{2}/\d{2}/\d{4}$", e["date_range"]) for e in captured["timeline"]["entries"]))
+            check("1: timeline entries are word-month-shaped",
+                  all(re.match(r"^\d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$", e["date_range"]) for e in captured["timeline"]["entries"]))
         check("1: gemstone component built (deterministic, policy='optional')", captured.get("gemstone") is not None)
         if captured.get("gemstone"):
             check("1: gemstone.reason is AI-authored, planet/gemstone/substone are deterministic",

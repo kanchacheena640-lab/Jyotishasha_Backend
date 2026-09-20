@@ -367,7 +367,7 @@ def compute_saturn_transit_hero(kundali: dict, language: str = "en") -> dict:
         residency = None
 
     # Q3 Batch 1 (visual QA correction) -- customer-facing dates use the
-    # shared DD/MM/YYYY formatter; the raw ISO dates from
+    # shared word-month formatter in the report language (Q5.6B); the raw ISO dates from
     # get_current_sign_residency() are never displayed directly. The
     # timeline heading is looked up via the same renderer-level label
     # system tasks.py/pdf_generator_weasy.py use -- no separate Hindi
@@ -375,7 +375,7 @@ def compute_saturn_transit_hero(kundali: dict, language: str = "en") -> dict:
     timing = None
     timeline = None
     if residency and residency.get("entering_date") and residency.get("exit_date"):
-        timing = format_customer_date_range(residency["entering_date"], residency["exit_date"])
+        timing = format_customer_date_range(residency["entering_date"], residency["exit_date"], language)
         timeline = {
             "heading": get_label("saturn_transit_window", language),
             "entries": [{

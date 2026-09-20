@@ -18,7 +18,7 @@
 गलत: "अष्टम भाव के स्वामी शनि द्वादश भाव में स्थित हैं।" -- सही: "आपके 8th House का Lord Saturn है, जो 12th House में है।"
 गलत: "वित्तीय अनुशासन मार्गदर्शन" -- सही: "Practical Financial Discipline Guidance"
 
-- कोई भी तारीख हमेशा DD/MM/YYYY format में लिखें (जैसे 01/07/2025)। डेटा में जो तारीख YYYY-MM-DD में दी है, उसे इसी format में बदलकर लिखें।
+- तारीखें: डेटा में जो तारीख YYYY-MM-DD में दी है, उसे बिल्कुल वैसे ही (exactly as given) लिखें। उसे किसी दूसरे numeric format में न बदलें और कोई नई तारीख न बनाएँ। तारीख को पढ़ने लायक शब्दों में system खुद दिखाएगा।
 - भाषा आसान करें, Astrology की गहराई कम न करें। सारे facts -- House, Sign, Planet की स्थिति, Yog, Dasha की तारीखें -- नीचे दिए गए डेटा के अनुसार ही रखें। कोई नया fact न जोड़ें, और डेटा में जो fact पहले से दिया है उसे खुद calculate या बदलें नहीं।
 - Tone encouraging और constructive रखें, जहाँ chart इसे support करे। डराने वाली या बढ़ा-चढ़ाकर बात न करें। Challenges को भी practical और सुलझाने लायक तरीके से बताएँ। कोई नकली positive बात न लिखें।
 - नीचे डेटा में जो English वाक्य हैं (जैसे "Saturn is placed in 4th house"), उन्हें ऊपर के नियमों के हिसाब से natural Hindi-English मिलाकर अपने शब्दों में लिखें।

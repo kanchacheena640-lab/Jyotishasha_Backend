@@ -298,7 +298,7 @@ for lang in ("en", "hi"):
     meta, narrative = parse_structured_response('===META===\n{"hero":{"label":"Relationship Outlook","value":"v","interpretation":"i","evidence":["e"],"action_items":["a"]}}\n===REPORT===\n1. Relationship Outlook\nBody')
     check(f"8[{lang}]: the unchanged parser still accepts the contract", meta["hero"]["label"] == "Relationship Outlook" and narrative.startswith("1. Relationship Outlook"))
 hi_prompt = prompts[("hi", "full")]
-for tok in ("Modern Conversational Hindi", "क्लिष्ट, संस्कृतनिष्ठ, academic", "DD/MM/YYYY format में लिखें", "छोटे और सीधे वाक्य", "जाने-पहचाने modern शब्द English में ही रखें"):
+for tok in ("Modern Conversational Hindi", "क्लिष्ट, संस्कृतनिष्ठ, academic", "बिल्कुल वैसे ही (exactly as given) लिखें", "छोटे और सीधे वाक्य", "जाने-पहचाने modern शब्द English में ही रखें"):
     check(f"8[hi]: modern-Hindi policy marker present: {tok!r}", tok in hi_prompt)
 check("8[hi]: no formal/Sanskritized wording regressed into the Hindi prompt",
       not any(w in instructions_of(hi_prompt) for w in ("खरीदा गया प्रश्न", "गतिशीलता", "कूटवार", "अनुकूलता का सार", "पाँचवें", "सातवें", "व्यावहारिक", "अस्वीकरण", "उपयोगकर्ता")))

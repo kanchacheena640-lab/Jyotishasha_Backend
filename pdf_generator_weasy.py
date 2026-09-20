@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from datetime import datetime
@@ -5,13 +6,21 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from weasyprint import HTML
 from reportlab.graphics import renderSVG
 
-# Q3 Batch 1 (visual QA correction round) -- shared presentation-layer
-# date formatter (DD/MM/YYYY for every customer-facing date) and
-# shared component-label localization (EN/HI), reused by tasks.py/
-# modules/payments/report_q3_batch1.py too so the SAME rules apply
-# everywhere a date or a shared component label reaches a customer.
-from modules.payments.report_date_format import format_customer_date
+# Shared presentation-layer date formatting (customer-facing dates are
+# written in words -- "31 March 1985" / "31 मार्च 1985" -- never as
+# ambiguous numeric formats) and shared component-label localization
+# (EN/HI), reused by tasks.py/modules/payments/report_q3_batch1/2/5.py
+# too so the SAME rules apply everywhere a date or a shared component
+# label reaches a customer (Q5.6B).
+from modules.payments.report_date_format import (
+    format_customer_date,
+    normalize_customer_dates,
+    normalize_customer_payload,
+    numeric_slash_date_fields,
+)
 from modules.payments.report_i18n_labels import labels_for_language
+
+_logger = logging.getLogger(__name__)
 
 # Base paths
 BASE_DIR = os.path.dirname(__file__)
@@ -321,21 +330,56 @@ def generate_pdf_report_weasy(
         renderSVG.drawToFile(kundali_drawing, kundali_abs)
 
     # ✅ Step 2: Context for Jinja template
-    # Q3 Batch 1 (visual QA correction) -- ALL customer-facing dates use
-    # the shared DD/MM/YYYY presentation formatter; canonical/internal
-    # date storage (Order.dob's own ISO "YYYY-MM-DD" column, kundali/
-    # dasha/transit calculation) is completely untouched -- only how a
-    # date STRING is displayed here changes.
-    today_str = format_customer_date(datetime.now())
+    # ALL customer-facing dates use the shared word-month presentation
+    # formatter in the REPORT language (Q5.6B); canonical/internal date
+    # storage (Order.dob's own ISO "YYYY-MM-DD" column, kundali/dasha/
+    # transit calculation) is completely untouched -- only how a date
+    # STRING is displayed here changes. The Report Date keeps its existing
+    # source (the server clock's date); only its display format changes.
+    today_str = format_customer_date(datetime.now(), language)
     display_user_info = dict(user_info or {})
     if display_user_info.get("dob"):
-        display_user_info["dob"] = format_customer_date(display_user_info["dob"])
+        display_user_info["dob"] = format_customer_date(display_user_info["dob"], language)
     # Whitelist only: coordinates, timezone, ids or mode fields can never reach the customer's PDF.
     display_partner_info = None
     if isinstance(partner_info, dict) and str(partner_info.get("name") or "").strip():
         display_partner_info = {k: partner_info[k] for k in ("name", "dob", "tob", "pob") if partner_info.get(k)}
         if display_partner_info.get("dob"):
-            display_partner_info["dob"] = format_customer_date(display_partner_info["dob"])
+            display_partner_info["dob"] = format_customer_date(display_partner_info["dob"], language)
+
+    # Q5.6B -- ISO IN, HUMAN OUT at the ONE presentation boundary shared by
+    # every paid report (standard_v1 AND love_premium_v1): every
+    # customer-visible text field is normalized so a standalone ISO date
+    # written anywhere -- Luna's narrative, the hero JSON, component text --
+    # is shown in words. Copies only; the caller's objects are never
+    # mutated. app_download (URLs) is deliberately NOT part of this.
+    gpt_response = normalize_customer_dates(gpt_response, language)
+    answer_hero = normalize_customer_payload(answer_hero, language)
+    result_cards = normalize_customer_payload(result_cards, language)
+    fact_cards = normalize_customer_payload(fact_cards, language)
+    timeline = normalize_customer_payload(timeline, language)
+    tables = normalize_customer_payload(tables, language)
+    action_list = normalize_customer_payload(action_list, language)
+    notices = normalize_customer_payload(notices, language)
+    highlights = normalize_customer_payload(highlights, language)
+    gemstone = normalize_customer_payload(gemstone, language)
+    disclaimer = normalize_customer_dates(disclaimer, language)
+    report_subtitle = normalize_customer_dates(report_subtitle, language)
+    summary_blocks = normalize_customer_payload(summary_blocks or {}, language)
+
+    # Non-fatal diagnostic: numeric slash dates (03/04/2025) are ambiguous and
+    # are deliberately never reinterpreted -- only reported. Field names and
+    # counts only (no customer text/dates are logged); never blocks the PDF.
+    leftover = numeric_slash_date_fields({
+        "gpt_response": gpt_response, "answer_hero": answer_hero, "result_cards": result_cards,
+        "fact_cards": fact_cards, "timeline": timeline, "tables": tables, "action_list": action_list,
+        "notices": notices, "highlights": highlights, "gemstone": gemstone, "disclaimer": disclaimer,
+    })
+    if leftover:
+        _logger.warning(
+            "customer-facing report payload still contains numeric slash date(s) after date "
+            "normalization (product=%s, language=%s, fields=%s)", product, language, leftover,
+        )
 
     ctx = {
         "report_title": product.replace("_", " ").title(),

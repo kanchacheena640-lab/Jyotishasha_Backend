@@ -126,7 +126,7 @@ check("H: Active status with real phase_dates produces the correct deterministic
       _h["value"] == "Active -- 2nd Phase")
 check("H: Active status timing reads phase_dates via the CORRECT key mapping (second_phase), "
       "not the underlying engine's own buggy internal lookup",
-      _h["timing"] == "01/01/2022 – 15/06/2023")
+      _h["timing"] == "1 January 2022 to 15 June 2023")
 check("I: no AI-generated Sade Sati status -- compute_sadhesati_hero() is a pure function of "
       "kundali['sadhesati'] only, no AI/Luna call anywhere in its own source",
       "generate_report_completion" not in compute_sadhesati_hero.__code__.co_names
@@ -141,7 +141,7 @@ _inactive_fixture = {
 _hi = compute_sadhesati_hero(_inactive_fixture, language="en")
 check("H: Inactive status produces the correct deterministic value", _hi["value"] == "Inactive")
 check("H: Inactive status with an upcoming window reads it correctly",
-      _hi["timing"] == "01/01/2030 – 01/06/2032")
+      _hi["timing"] == "1 January 2030 to 1 June 2032")
 
 _missing_fixture = {"sadhesati": {"status": "Error"}}
 try:
@@ -638,7 +638,7 @@ with app.app_context():
             _cleanup(order_bad)
 
     # =================================================================
-    print("\n=== 9 (AY/BD): Hindi-language generation uses the same code path, DD/MM/YYYY, EN/HI parity ===")
+    print("\n=== 9 (AY/BD): Hindi-language generation uses the same code path, word-month dates, EN/HI parity ===")
     # =================================================================
     order_hi = _make_order(product="property_report", language="hi")
     try:
@@ -662,7 +662,7 @@ with app.app_context():
         _cleanup(order_hi)
 
     # =================================================================
-    print("\n=== 10 (AY): Sade Sati and Jupiter timeline dates are real and DD/MM/YYYY-shaped ===")
+    print("\n=== 10 (AY): Sade Sati and Jupiter timeline dates are real and word-month-shaped ===")
     # =================================================================
     order_sade = _make_order(product="sadhesati_report")
     try:
@@ -672,8 +672,8 @@ with app.app_context():
         db.session.refresh(order_sade)
         check("10: sadhesati_report reaches 'Ready'", order_sade.report_stage == "Ready")
         if captured.get("timeline"):
-            check("10: Sade Sati timeline entries are DD/MM/YYYY-shaped",
-                  all(re.match(r"^\d{2}/\d{2}/\d{4} . \d{2}/\d{2}/\d{4}$", e["date_range"]) for e in captured["timeline"]["entries"]))
+            check("10: Sade Sati timeline entries are word-month-shaped",
+                  all(re.match(r"^\d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$", e["date_range"]) for e in captured["timeline"]["entries"]))
     finally:
         if order_sade.pdf_url and os.path.exists(order_sade.pdf_url):
             os.remove(order_sade.pdf_url)
@@ -687,8 +687,8 @@ with app.app_context():
         db.session.refresh(order_jup)
         check("10: jupiter_transit_report reaches 'Ready'", order_jup.report_stage == "Ready")
         if captured.get("timeline"):
-            check("10: Jupiter transit timeline entries are DD/MM/YYYY-shaped",
-                  all(re.match(r"^\d{2}/\d{2}/\d{4} . \d{2}/\d{2}/\d{4}$", e["date_range"]) for e in captured["timeline"]["entries"]))
+            check("10: Jupiter transit timeline entries are word-month-shaped",
+                  all(re.match(r"^\d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$", e["date_range"]) for e in captured["timeline"]["entries"]))
     finally:
         if order_jup.pdf_url and os.path.exists(order_jup.pdf_url):
             os.remove(order_jup.pdf_url)

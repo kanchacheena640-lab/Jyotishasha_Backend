@@ -56,9 +56,9 @@ def compute_dasha_window_timeline(kundali: dict, language: str = "en") -> Option
     data summary_blocks.py's own dasha_window_summary sentence already
     walks (kundali["current_mahadasha"]/["current_antardasha"]/
     ["Mahadasha"], all already computed by calculate_full_kundali() for
-    every order). Dates are formatted via the shared DD/MM/YYYY
-    presentation formatter -- the underlying ISO dates are never
-    touched. Mahadasha/Antardasha lord names stay in their existing
+    every order). Dates are formatted via the shared word-month
+    presentation formatter in the report language (Q5.6B) -- the
+    underlying ISO dates are never touched. Mahadasha/Antardasha lord names stay in their existing
     backend representation (English planet names) in both languages,
     matching the established convention for deterministic data
     throughout this codebase -- only the fixed heading/note labels
@@ -86,7 +86,7 @@ def compute_dasha_window_timeline(kundali: dict, language: str = "en") -> Option
 
     entries = [{
         "label": f"{maha_lord} Mahadasha – {antar_lord} Antardasha",
-        "date_range": format_customer_date_range(antar_start, antar_end),
+        "date_range": format_customer_date_range(antar_start, antar_end, language),
         "note": get_label("current_dasha_window", language),
         "current": True,
     }]
@@ -95,7 +95,7 @@ def compute_dasha_window_timeline(kundali: dict, language: str = "en") -> Option
         for window in flat[current_index + 1: current_index + 3]:
             entries.append({
                 "label": f"{window['mahadasha']} Mahadasha – {window['planet']} Antardasha",
-                "date_range": format_customer_date_range(window["start"], window["end"]),
+                "date_range": format_customer_date_range(window["start"], window["end"], language),
                 "note": get_label("upcoming_dasha_window", language),
                 "current": False,
             })

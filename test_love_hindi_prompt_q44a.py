@@ -119,7 +119,7 @@ for n, text in HEADINGS.items():
 
 print("\n=== 5: deterministic authority rules are preserved ===")
 AUTHORITY = [
-    "partner_birth_data", "/36", "Ashtakoot", "Dasha", "DD/MM/YYYY", "Aspects",
+    "partner_birth_data", "/36", "Ashtakoot", "Dasha", "exactly as given", "Aspects",
     "hero value नहीं", "percentage में न बदलें", "कोई Koota या fact अपनी तरफ़ से न बनाएँ", "partner का Lagna",
     "primary person के Houses हैं, partner के नहीं", "खाली 5th या 7th House",
 ]
@@ -138,7 +138,7 @@ for tok in SAFETY:
 check("6: 'no exact timing' rule still forbids marriage/reunion/separation dates", "Marriage" in hi_instr and "दोबारा मिलने" in hi_instr and "अलग होने" in hi_instr)
 
 print("\n=== 7: the modern conversational Hindi policy is present (same markers as the 24 standard prompts) ===")
-POLICY = ["Modern Conversational Hindi", "क्लिष्ट, संस्कृतनिष्ठ, academic", "DD/MM/YYYY format में लिखें",
+POLICY = ["Modern Conversational Hindi", "क्लिष्ट, संस्कृतनिष्ठ, academic", "बिल्कुल वैसे ही (exactly as given) लिखें",
           "Sun (Surya), Moon (Chandra), Mars (Mangal), Mercury (Budh), Jupiter (Guru), Venus (Shukra), Saturn (Shani), Rahu, Ketu",
           "छोटे और सीधे वाक्य", "जाने-पहचाने modern शब्द English में ही रखें"]
 for tok in POLICY:

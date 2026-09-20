@@ -77,21 +77,21 @@ META_KEYS = {"love_disappointment_report": {"answer_hero", "action_items"},
              "love_relationship_report": {"answer_hero", "action_items", "gemstone_reason"}}
 N_SECTIONS = {"love_disappointment_report": 9, "love_marriage_report": 8, "love_relationship_report": 9}
 PINS = {
-    "love_disappointment_report_en": dict(prefix="97a2edc99886d7e4", meta="10a29fb095ca80e9", sections="4b0dd5045768115e"),
-    "love_disappointment_report_hi": dict(prefix="ebf3be251b81aad2", meta="10a29fb095ca80e9", sections="7515cc610c7eaf2d"),
-    "love_marriage_report_en": dict(prefix="e9b121f537f3244d", meta="e12c62496e57cc4a", sections="0313f58fc2bf01c2"),
-    "love_marriage_report_hi": dict(prefix="a3de30def074c1aa", meta="e12c62496e57cc4a", sections="c0965d3acae55fd8"),
-    "love_relationship_report_en": dict(prefix="59dca2e75b01bdb2", meta="582c5e2f55fb8cd9", sections="ba2e8ac7525fa1e1"),
-    "love_relationship_report_hi": dict(prefix="cb4587e5464e9c5a", meta="582c5e2f55fb8cd9", sections="5a3bf1d37ee0e541"),
+    "love_disappointment_report_en": dict(prefix="98c044b5b3393a69", meta="10a29fb095ca80e9", sections="4b0dd5045768115e"),
+    "love_disappointment_report_hi": dict(prefix="a089813be0d0e12a", meta="10a29fb095ca80e9", sections="7515cc610c7eaf2d"),
+    "love_marriage_report_en": dict(prefix="3de2d386fadbeabb", meta="e12c62496e57cc4a", sections="0313f58fc2bf01c2"),
+    "love_marriage_report_hi": dict(prefix="bfd0941491ae26a9", meta="e12c62496e57cc4a", sections="c0965d3acae55fd8"),
+    "love_relationship_report_en": dict(prefix="469e67eef41d2fc8", meta="582c5e2f55fb8cd9", sections="ba2e8ac7525fa1e1"),
+    "love_relationship_report_hi": dict(prefix="95be3933a1535536", meta="582c5e2f55fb8cd9", sections="5a3bf1d37ee0e541"),
 }
 SAFETY = {
     "en": ["private thoughts", "feelings", "intentions", "fidelity", "cheating", "betrayal", "breakup", "depression", "anxiety",
            "trauma", "ending a relationship", "Never say you will meet someone", "No exact marriage date/year/age",
-           "DD/MM/YYYY", "Explicitly acknowledge missing evidence", "Do not add sales copy", "Do not invent facts"],
+           "copy each supplied date exactly as given", "Explicitly acknowledge missing evidence", "Do not add sales copy", "Do not invent facts"],
     "hi": ["निजी विचार", "भावनाएँ", "इरादे", "निष्ठा", "बेवफाई", "विश्वासघात", "संबंध-विच्छेद", "अवसाद", "चिंता", "आघात", "संबंध खत्म",
-           "DD/MM/YYYY", "प्रमाण उपलब्ध न हो", "sales message न जोड़ें", "कोई तथ्य न गढ़ें"],
+           "बिल्कुल वैसे ही (exactly as given)", "प्रमाण उपलब्ध न हो", "sales message न जोड़ें", "कोई तथ्य न गढ़ें"],
 }
-HI_POLICY = ("Modern Conversational Hindi", "क्लिष्ट, संस्कृतनिष्ठ, academic", "DD/MM/YYYY format में लिखें",
+HI_POLICY = ("Modern Conversational Hindi", "क्लिष्ट, संस्कृतनिष्ठ, academic", "बिल्कुल वैसे ही (exactly as given) लिखें",
              "Sun (Surya), Moon (Chandra), Mars (Mangal), Mercury (Budh), Jupiter (Guru), Venus (Shukra), Saturn (Shani), Rahu, Ketu")
 FILLER = {p: "X" for s in PLACEHOLDERS.values() for p in s}
 

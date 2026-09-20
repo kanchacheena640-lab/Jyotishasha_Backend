@@ -160,8 +160,9 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(facts[7]["occupying_planets"], [])
         for lang in ("en", "hi"):
             timeline = compute_dasha_window_timeline(KUNDALI, lang)
-            self.assertIn("01/01/2026", timeline["entries"][0]["date_range"])
-            self.assertIn("01/01/2027", timeline["entries"][0]["date_range"])
+            first, last = ("1 January 2026", "1 January 2027") if lang == "en" else ("1 जनवरी 2026", "1 जनवरी 2027")
+            self.assertIn(first, timeline["entries"][0]["date_range"])
+            self.assertIn(last, timeline["entries"][0]["date_range"])
             self.assertIsNone(compute_dasha_window_timeline({}, lang))
 
     def test_disclaimers_exact_supplied_text(self):
@@ -187,7 +188,8 @@ class ContractTests(unittest.TestCase):
                     self.assertEqual(len(re.findall(r"^\*\*\d+\.", body, re.M)), 8 if slug == "love_marriage_report" else 9)
                     for key in REGISTRY[slug].required_context_keys:
                         self.assertIn("{" + key + "}", source)
-                    self.assertIn("DD/MM/YYYY", source)
+                    self.assertNotIn("DD/MM/YYYY", source)   # Q5.6B: the retired numeric date contract must be gone
+                    self.assertIn("exactly as given", source)
                     for token in (["private thoughts", "feelings", "intentions", "cheating", "betrayal", "breakup", "depression", "anxiety", "trauma", "ending a relationship"] if lang == "en" else ["निजी विचार", "भावनाएँ", "इरादे", "बेवफाई", "विश्वासघात", "संबंध-विच्छेद", "अवसाद", "चिंता", "आघात", "संबंध खत्म"]):
                         self.assertIn(token, source)
                     if slug == "love_disappointment_report":

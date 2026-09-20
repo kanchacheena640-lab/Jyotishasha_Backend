@@ -115,7 +115,7 @@ def compute_sadhesati_hero(kundali: dict, language: str = "en") -> dict:
     timing = None
     timeline = None
     if window and window.get("start") and window.get("end"):
-        timing = format_customer_date_range(window["start"], window["end"])
+        timing = format_customer_date_range(window["start"], window["end"], language)
         timeline = {
             "heading": get_label("sadhesati_window", language),
             "entries": [{
@@ -167,7 +167,7 @@ def compute_jupiter_transit_hero(kundali: dict, language: str = "en") -> dict:
     timing = None
     timeline = None
     if residency and residency.get("entering_date") and residency.get("exit_date"):
-        timing = format_customer_date_range(residency["entering_date"], residency["exit_date"])
+        timing = format_customer_date_range(residency["entering_date"], residency["exit_date"], language)
         timeline = {
             "heading": get_label("jupiter_transit_window", language),
             "entries": [{

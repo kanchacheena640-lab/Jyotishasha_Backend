@@ -224,9 +224,10 @@ for lang in ("en", "hi"):
     html = render_html(lang, partner_info=dirty_partner)
     txt = text_of(html)
     check(f"6[{lang}]: the block is rendered", 'class="people-card"' in html)
-    check(f"6[{lang}]: both names, DOBs (DD/MM/YYYY), times and places are printed",
-          all(v in txt for v in ("Rohan Mehta", "Kavya Nair", "03/11/1988", "14/02/1991", "07:20", "18:05", "Mumbai, Maharashtra, India", "Chennai, Tamil Nadu, India")))
-    check(f"6[{lang}]: the raw ISO dates are not printed", "1988-11-03" not in txt and "1991-02-14" not in txt)
+    dobs = ("3 November 1988", "14 February 1991") if lang == "en" else ("3 नवंबर 1988", "14 फ़रवरी 1991")
+    check(f"6[{lang}]: both names, DOBs (word-month, {lang}), times and places are printed",
+          all(v in txt for v in ("Rohan Mehta", "Kavya Nair", *dobs, "07:20", "18:05", "Mumbai, Maharashtra, India", "Chennai, Tamil Nadu, India")))
+    check(f"6[{lang}]: the raw ISO and numeric dates are not printed", not any(x in txt for x in ("1988-11-03", "1991-02-14", "03/11/1988", "14/02/1991")))
     check(f"6[{lang}]: the cover line names both people", "Rohan Mehta &amp; Kavya Nair" in html)
     check(f"6[{lang}]: coordinates / timezone / order id / mode identifiers never reach the PDF HTML",
           not any(c in html for c in ("13.0827", "80.2707", "19.076", "Asia/Kolkata", "515151", "A_FULL_DUAL", "partner_data_mode", "x@example.invalid", "5.5")))

@@ -117,8 +117,8 @@ check("3: value names the Saturn rashi", "Pisces" in saturn_hero["value"])
 check("3: timing/timeline are either both present or both None together (never half-built)",
       (saturn_hero["timing"] is None) == (saturn_hero["timeline"] is None))
 if saturn_hero["timing"] is not None:
-    check("3: (human visual QA correction) timing, when present, is customer-facing DD/MM/YYYY, not raw ISO",
-          bool(re.match(r"^\d{2}/\d{2}/\d{4} . \d{2}/\d{2}/\d{4}$", saturn_hero["timing"])))
+    check("3: (human visual QA correction) timing, when present, is customer-facing 'D Month YYYY to D Month YYYY', not raw ISO",
+          bool(re.match(r"^\d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$", saturn_hero["timing"])))
     check("3: timeline, when present, is a well-shaped {heading, entries:[{label, date_range, note, current}]} dict",
           isinstance(saturn_hero["timeline"], dict)
           and "entries" in saturn_hero["timeline"]
@@ -167,17 +167,17 @@ check("4a: components_enabled['gemstone'] agrees with gemstone_policy for all 4 
       and REGISTRY["mood_mental_health_report"].components_enabled.get("gemstone") is False
       and REGISTRY["divorce_possibility_report"].components_enabled.get("gemstone") is False)
 
-print("\n=== 4b: shared date formatter -- DD/MM/YYYY, internal ISO format untouched ===")
+print("\n=== 4b: shared date formatter -- word-month dates (EN/HI), internal ISO format untouched ===")
 
 from modules.payments.report_date_format import format_customer_date, format_customer_date_range  # noqa: E402
 
-check("4b: canonical 'YYYY-MM-DD' -> 'DD/MM/YYYY'", format_customer_date("1990-06-15") == "15/06/1990")
-check("4b: another calendar date formats correctly", format_customer_date("2025-03-29") == "29/03/2025")
-check("4b: a datetime object formats correctly", format_customer_date(__import__("datetime").datetime(2026, 9, 17)) == "17/09/2026")
+check("4b: canonical 'YYYY-MM-DD' -> 'D Month YYYY'", format_customer_date("1990-06-15") == "15 June 1990")
+check("4b: another calendar date formats correctly", format_customer_date("2025-03-29") == "29 March 2025")
+check("4b: a datetime object formats correctly", format_customer_date(__import__("datetime").datetime(2026, 9, 17)) == "17 September 2026")
 check("4b: an unparseable string is returned unchanged, never raises", format_customer_date("not-a-date") == "not-a-date")
 check("4b: None is returned as an empty string, never raises", format_customer_date(None) == "")
-check("4b: date range formats both ends and joins with an en-dash",
-      format_customer_date_range("2025-03-29", "2027-06-02") == "29/03/2025 – 02/06/2027")
+check("4b: date range formats both ends and joins with 'to'",
+      format_customer_date_range("2025-03-29", "2027-06-02") == "29 March 2025 to 2 June 2027")
 check("4b: date range with both ends falsy returns None (nothing to show)", format_customer_date_range(None, None) is None)
 check("4b: the underlying ISO source strings are never mutated by formatting (still 'YYYY-MM-DD' internally)",
       re.fullmatch(r"\d{4}-\d{2}-\d{2}", "2025-03-29") is not None)
@@ -395,13 +395,13 @@ with app.app_context():
               "aspects your" not in str(captured).lower() and "aspecting your" not in str(captured).lower())
         check("7: report is distinct from Sade Sati -- no report_subtitle/product mislabeling", captured.get("product") == "saturn_transit_report")
         if captured.get("answer_hero", {}).get("timing"):
-            check("7: (human visual QA correction) Saturn timing is DD/MM/YYYY, not the raw ISO shape",
-                  bool(re.match(r"^\d{2}/\d{2}/\d{4} . \d{2}/\d{2}/\d{4}$", captured["answer_hero"]["timing"])))
+            check("7: (human visual QA correction) Saturn timing is 'D Month YYYY to D Month YYYY', not the raw ISO shape",
+                  bool(re.match(r"^\d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$", captured["answer_hero"]["timing"])))
         if captured.get("timeline"):
             check("7: (human visual QA correction) Saturn timeline heading is localized (EN)", captured["timeline"]["heading"] == "Current Saturn Transit Window")
             entry = captured["timeline"]["entries"][0]
-            check("7: (human visual QA correction) Saturn timeline date_range is DD/MM/YYYY, not the raw ISO shape",
-                  bool(re.match(r"^\d{2}/\d{2}/\d{4} . \d{2}/\d{2}/\d{4}$", entry["date_range"])))
+            check("7: (human visual QA correction) Saturn timeline date_range is 'D Month YYYY to D Month YYYY', not the raw ISO shape",
+                  bool(re.match(r"^\d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$", entry["date_range"])))
         check("7: app_download CTA present for saturn_transit_report too", captured.get("app_download") is not None)
     finally:
         if order7.pdf_url and os.path.exists(order7.pdf_url):
@@ -586,7 +586,7 @@ with app.app_context():
         _cleanup(order_legacy)
 
     # =================================================================
-    print("\n=== 14: DOB and Report Date render as DD/MM/YYYY in the actual generated HTML ===")
+    print("\n=== 14: DOB and Report Date render as word-month dates in the actual generated HTML ===")
     # =================================================================
     # A direct, no-Order unit call against the REAL generate_pdf_report_
     # weasy() -- proves the formatter is actually applied inside that
@@ -613,10 +613,10 @@ with app.app_context():
         )
 
     html = captured_html.get("html", "")
-    check("14: (human visual QA correction) DOB renders as DD/MM/YYYY in the generated HTML, not raw ISO 'YYYY-MM-DD'",
-          "15/06/1990" in html and "1990-06-15" not in html)
-    check("14: (human visual QA correction) Report Date is DD/MM/YYYY-shaped in the generated HTML",
-          bool(re.search(r"Report Date:</strong>\s*\d{2}/\d{2}/\d{4}", html)))
+    check("14: (human visual QA correction) DOB renders as '15 June 1990' in the generated HTML, not raw ISO 'YYYY-MM-DD'",
+          "15 June 1990" in html and "1990-06-15" not in html and "15/06/1990" not in html)
+    check("14: (human visual QA correction) Report Date is word-month-shaped in the generated HTML",
+          bool(re.search(r"Report Date:</strong>\s*\d{1,2} [A-Z][a-z]+ \d{4}", html)))
 
     print("\n" + "=" * 50)
     print(f"TOTAL: {passed} passed, {failed} failed")

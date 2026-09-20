@@ -210,7 +210,7 @@ def build_love_premium_prompt(love_payload: Dict[str, Any]) -> str:
 - Astrology के शब्द भी आसान रखें: Lagna, Rashi, Moon, Nakshatra, Ashtakoot, Koota, Manglik, House, House Lord, 5th House, 7th House, Planet, Dasha, Mahadasha, Antardasha, Transit, Yog. "दशम भाव", "स्वामी", "स्थित", "अभिविन्यास", "प्रवृत्तियाँ" जैसे भारी शब्द न लिखें।
 - Planet के नाम इस तरह लिखें: Sun (Surya), Moon (Chandra), Mars (Mangal), Mercury (Budh), Jupiter (Guru), Venus (Shukra), Saturn (Shani), Rahu, Ketu. पहली बार दोनों नाम दे सकते हैं, उसके बाद जहाँ natural लगे सिर्फ एक नाम रखें।
 - House को "5th House", "7th House" की तरह लिखें। Sign के साथ "Aquarius राशि" लिखें। Dasha को "Mercury Mahadasha – Mercury Antardasha" की तरह लिखें और फिर आसान Hindi में मतलब समझाएँ।
-- कोई भी तारीख हमेशा DD/MM/YYYY format में लिखें (जैसे 01/07/2025)। डेटा में जो तारीख YYYY-MM-DD में दी है, उसे इसी format में बदलकर लिखें।
+- तारीखें: डेटा में जो तारीख YYYY-MM-DD में दी है, उसे बिल्कुल वैसे ही (exactly as given) लिखें। उसे किसी दूसरे numeric format में न बदलें और कोई नई तारीख न बनाएँ। तारीख को पढ़ने लायक शब्दों में system खुद दिखाएगा।
 - भाषा आसान करें, Astrology की गहराई कम न करें। सारे facts -- Ashtakoot के अंक, House, Sign, Dasha की तारीखें -- नीचे दिए गए डेटा के अनुसार ही रखें। कोई नया fact न जोड़ें और डेटा में दिए fact को खुद calculate या बदलें नहीं।
 - Tone encouraging और constructive रखें, जहाँ chart इसे support करे। डराने वाली या बढ़ा-चढ़ाकर बात न करें। Challenges को भी practical और सुलझाने लायक तरीके से बताएँ। कोई नकली positive बात न लिखें।
 उदाहरण:
@@ -227,7 +227,7 @@ Customer के लिए नियम (सबसे ज़रूरी):
 JSON की keys और hero का label "Relationship Outlook" वैसा ही रखें, उसे Hindi में न बदलें। hero का value एक शांत, गुणात्मक वर्णन हो; कोई percentage, अंक (number) या पक्की भविष्यवाणी नहीं।
 Evidence का क्रम: पहले असली Ashtakoot का result, फिर primary person के 5th/7th House के facts, फिर उपलब्ध असली Dasha का context। Ashtakoot का असली कुल score /36 सिर्फ supporting evidence है, hero value नहीं। जो Kootas उपलब्ध हैं, उनके असली अंक और details ही इस्तेमाल करें; कोई Koota या fact अपनी तरफ़ से न बनाएँ। total को percentage में न बदलें।
 खाली 5th या 7th House को भी उसकी Rashi, House Lord और Lord की position से समझाएँ; Planets की मौजूदगी दूसरे नंबर पर है। ये primary person के Houses हैं, partner के नहीं। सिर्फ उपलब्ध Aspects का इस्तेमाल करें।
-Dasha सिर्फ समझाने के लिए context है; Relationship शुरू होने, Marriage, दोबारा मिलने या अलग होने की कोई निश्चित तारीख, साल या उम्र न बताएँ। असली उपलब्ध तारीखें DD/MM/YYYY में रखें।
+Dasha सिर्फ समझाने के लिए context है; Relationship शुरू होने, Marriage, दोबारा मिलने या अलग होने की कोई निश्चित तारीख, साल या उम्र न बताएँ। असली उपलब्ध तारीखें डेटा में दिए गए रूप (YYYY-MM-DD) में ही रखें।
 किसी के निजी विचार, भावनाएँ, इरादे, निष्ठा या आगे के व्यवहार को जानने का दावा न करें। धोखे, बेवफाई, विश्वासघात, partner के छोड़ने या संबंध-विच्छेद की भविष्यवाणी न करें। अवसाद या चिंता का diagnosis न करें, आघात (trauma) का दावा न करें। Relationship खत्म करने की सलाह न दें। Marriage या दोबारा मिलने की गारंटी न दें। कोई gemstone या रत्न की सलाह न दें।
 हर section में निष्कर्ष, उपलब्ध astrology का आधार और Practical मतलब दें। Depth असली दो-लोगों वाले Ashtakoot evidence से आए, बेवजह की लंबाई से नहीं।
 नीचे ठीक 10 numbered sections हैं। हर numbered line customer के लिए heading है: उसे बिल्कुल वैसा ही, अपनी अलग line में, बिना कुछ जोड़े लिखें। उसके नीचे bracket वाली lines सिर्फ आपके लिए private instructions हैं: उन्हें follow करें, लेकिन उन्हें कभी न लिखें, न दोहराएँ और न किसी heading के साथ जोड़ें:
@@ -247,7 +247,7 @@ CUSTOMER-FACING CONTRACT (highest priority)
 - Never state or imply anything that is not in the supplied evidence (for example a Manglik status).
 
 An empty 5th/7th house remains analyzable through sign, lord and lord placement. Occupants are secondary. These are the primary person's house facts, not the partner's. Use aspects only where supplied.
-Dasha is interpretive context only. No exact relationship event timing: never predict a meeting, marriage, reconciliation, separation or breakup date/year/age. Format real supplied dates DD/MM/YYYY.
+Dasha is interpretive context only. No exact relationship event timing: never predict a meeting, marriage, reconciliation, separation or breakup date/year/age. Copy real supplied dates exactly as given (YYYY-MM-DD); never convert them to another numeric format.
 No private-thought inference: do not infer another person's thoughts, feelings, intentions, fidelity or future actions. No cheating/betrayal certainty, partner-will-leave claim, breakup prediction, depression/anxiety diagnosis or trauma claim. Do not advise ending a relationship. Do not guarantee marriage or reconciliation. No gemstone recommendations.
 For each section give the finding, supplied astrological basis and practical meaning. Depth must come from real two-person compatibility evidence, not filler.
 Use exactly these ten numbered sections. Each numbered line is the CUSTOMER HEADING: copy it exactly, on its own line, with nothing added. The bracketed lines beneath are PRIVATE INSTRUCTIONS for you: follow them, but never print, paraphrase or attach them to a heading:

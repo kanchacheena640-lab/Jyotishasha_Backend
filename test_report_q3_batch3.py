@@ -212,8 +212,8 @@ _timeline = compute_dasha_window_timeline(_kundali_live, language="en")
 check("J: a real timeline component was built for a Batch-3 chart", _timeline is not None)
 if _timeline:
     check("J: timeline has at least 1 entry (the current window)", len(_timeline["entries"]) >= 1)
-    check("J: every entry's date_range is DD/MM/YYYY-shaped",
-          all(re.match(r"^\d{2}/\d{2}/\d{4} . \d{2}/\d{2}/\d{4}$", e["date_range"]) for e in _timeline["entries"]))
+    check("J: every entry's date_range is word-month-shaped",
+          all(re.match(r"^\d{1,2} [A-Z][a-z]+ \d{4} to \d{1,2} [A-Z][a-z]+ \d{4}$", e["date_range"]) for e in _timeline["entries"]))
 check("J: compute_dasha_window_timeline() returns None (never a guessed timeline) when current window can't be located",
       compute_dasha_window_timeline({"current_mahadasha": {}, "current_antardasha": {}, "Mahadasha": []}, language="en") is None)
 check("J: report_q3_batch3.py does not re-export/duplicate compute_dasha_window_timeline",
