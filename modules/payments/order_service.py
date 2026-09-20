@@ -44,6 +44,7 @@ additive:
 
 from __future__ import annotations
 
+import math
 import threading
 import re
 from dataclasses import dataclass
@@ -159,6 +160,45 @@ def _validate_dob(value: Any, field: str) -> None:
         raise OrderValidationError(f"{field} must be a valid YYYY-MM-DD calendar date.") from exc
 
 
+def _coordinate_number(value: Any, bound: float) -> Optional[float]:
+    """The numeric value of a birth coordinate, or None if it is not one:
+    accepts a number or a numeric string, never a bool, and only a FINITE
+    value within +/-bound. Presentation-agnostic and side-effect free -- it
+    never changes what is stored (coordinates are still persisted verbatim)."""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return number if math.isfinite(number) and abs(number) <= bound else None
+
+
+def _validate_birth_coordinates(source: Any, prefix: str = "") -> None:
+    """A paid relationship order must carry real birth-place coordinates for
+    the person it names (Q5.9). A single coordinate equal to 0 is a real
+    place (lat 0 / lon 30), but the PAIR (0, 0) is the order form's "no place
+    was picked" default (Null Island), never a birthplace -- a report computed
+    from it would silently be wrong, so it is rejected here, BEFORE any
+    Order row or Razorpay order exists."""
+    lat = _coordinate_number(source.get("latitude") if isinstance(source, dict) else None, 90)
+    lng = _coordinate_number(source.get("longitude") if isinstance(source, dict) else None, 180)
+    if lat is None or lng is None:
+        raise OrderValidationError(
+            f"{prefix}latitude/longitude must be valid birth-place coordinates "
+            "(latitude -90..90, longitude -180..180). Please select the birth place from the suggestions."
+        )
+    if lat == 0 and lng == 0:
+        raise OrderValidationError(
+            f"{prefix}latitude/longitude (0, 0) is not a valid birth place. "
+            "Please select the birth place from the suggestions."
+        )
+
+
 @dataclass
 class CreatedReportOrder:
     order_id: int
@@ -236,8 +276,9 @@ class OrderService:
 
         Raises OrderValidationError (never creates a row) for: a
         missing report_slug/product, an unknown product, an inactive
-        product, or any missing required field for that product's
-        generator.
+        product, any missing required field for that product's
+        generator, or (love_premium_v1 only) unusable / (0, 0) birth
+        coordinates for the primary person or the partner.
         """
         raw_slug = payload.get("report_slug") or payload.get("product")
         if not _has_value(raw_slug) or not isinstance(raw_slug, str):
@@ -259,6 +300,7 @@ class OrderService:
             if missing:
                 raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
             _validate_dob(payload.get("dob"), "dob")
+            _validate_birth_coordinates(payload)
 
             partner_payload = payload.get("partner")
             if not isinstance(partner_payload, dict) or not partner_payload:
@@ -269,6 +311,11 @@ class OrderService:
                     f"Missing required partner field(s): {', '.join('partner.' + f for f in partner_missing)}"
                 )
             _validate_dob(partner_payload.get("dob"), "partner.dob")
+            # The paid contract above already REQUIRES the partner's full birth data
+            # (tob/pob/latitude/longitude), so its coordinates are enforced the same way.
+            # DOB-only partner analysis is a separate, unpaid/internal capability
+            # (modules/love/love_data_collector.py) and is not affected.
+            _validate_birth_coordinates(partner_payload, "partner.")
         else:
             missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
             if missing:
