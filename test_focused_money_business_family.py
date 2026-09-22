@@ -48,7 +48,7 @@ class MoneyBusinessTests(unittest.TestCase):
 
     def test_registration_and_fail_closed(self):
         self.assertEqual(len(QUESTIONS_MB), 11)
-        self.assertEqual(len(dispatcher.HANDLERS), 61)
+        self.assertEqual(len(dispatcher.HANDLERS), 63)
         unsupported = []
         for q in QUESTIONS:
             if q.category in ("career", "money_business", "marriage", "relationship", "foreign", "education", "property", "life"):

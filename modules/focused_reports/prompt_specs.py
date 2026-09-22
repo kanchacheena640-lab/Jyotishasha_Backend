@@ -16,7 +16,7 @@ from modules.focused_reports.relationship_keys import RELATIONSHIP_QUESTION_KEYS
 from modules.focused_reports.foreign_keys import FOREIGN_HORIZONS
 from modules.focused_reports.education_keys import EDUCATION_HORIZONS
 from modules.focused_reports.property_keys import PROPERTY_HORIZONS
-from modules.focused_reports.life_keys import LIFE_HORIZONS
+from modules.focused_reports.life_keys import LIFE_HORIZONS, DIAGNOSTIC_BIRTH_CURRENT_KEYS
 
 
 TIMING = {
@@ -59,7 +59,17 @@ BOUNDARIES = {
     "property_timing": (DECISION, "Astrology is not financial, legal, mortgage, investment, tax, title or real-estate due-diligence advice. No guaranteed property purchase, ownership, loan approval, registration, possession, price appreciation, investment return, dispute outcome or construction completion. Do not tell the customer to buy a specific property, take a loan, borrow money, invest a specific amount, sign an agreement or ignore legal/title verification. Practical financial/legal verification remains outside the astrology conclusion. No purchase probability, loan probability, property-success percentage or investment-return score."),
     "life_turning_points": ("No fatalism, exact event dates, health diagnoses or guaranteed life events.", LIFE_BOUNDARY),
     "life_direction_and_strengths": ("Describe tendencies, not fixed personality labels, ability scores or a predetermined destiny.", LIFE_BOUNDARY),
+    "kundali_obstacles": ("Identify only 2-4 of the most meaningful obstacles, never an exhaustive negativity list. Never name a "
+        "dosha unless that exact dosha is itself supplied as a fact. No deterministic doom, no guaranteed misfortune. Remedies "
+        "are practical-first; a Jyotish/spiritual remedy only when reasonably tied to the evidence; never an expensive gemstone "
+        "prescription, never medical, legal or financial advice, never a guaranteed remedy outcome.", LIFE_BOUNDARY),
+    "kundali_strengths": ("Identify only 2-4 of the most meaningful strengths, never an exhaustive list. Distinguish durable natal "
+        "strengths from what current Dasha/transit evidence actually activates now; never claim a strength guarantees an outcome.",
+        LIFE_BOUNDARY),
 }
+# The one intent whose reports may include the shared remedy instruction (master_contract.REMEDY_INSTRUCTION).
+# A per-question set, not a per-family default -- remedies are never forced into a report where they make no sense.
+REMEDY_KEYS = frozenset({"major_kundali_obstacles"})
 
 _specs = {}
 
@@ -69,7 +79,9 @@ def _group(intent, evidence, rows):
         q = get_question(key)
         if q.intent_slug != intent or key in _specs:
             raise ValueError(f"Duplicate or inconsistent prompt definition: {key}")
-        archetype = (A.DIAGNOSTIC if q.answer_mode in ("delay_reason", "easing_period") else
+        archetype = (A.OBSTACLES if intent == "kundali_obstacles" else
+                     A.STRENGTHS_NOW if intent == "kundali_strengths" else
+                     A.DIAGNOSTIC if q.answer_mode in ("delay_reason", "easing_period") else
                      A.DIRECTION if q.answer_mode == "guidance" or intent == "life_direction_and_strengths" else
                      A.COMPATIBILITY if q.person_mode == "dual" and q.answer_mode == "overview" else A.TIMING)
         requirements = evidence
@@ -119,16 +131,27 @@ def _group(intent, evidence, rows):
         if key in LIFE_HORIZONS:
             capability = C.IMPLEMENTED
             months = LIFE_HORIZONS[key]
-            requirements = E.NATAL_DIRECTION if months is None else (
-                E.LIFE_TIMING if months > 12 else E.NATAL_DIRECTION + (E.MD_AD, E.JUPITER, E.SATURN))
-            timing = ("Natal tendencies only; no timing evidence is supplied and no dates or future event windows should be invented."
-                      if months is None else
-                      TIMING[q.answer_mode] + f" Use only the supplied {months}-month continuous MD/AD and Jupiter/Saturn coverage; no dates beyond it.")
+            if key in DIAGNOSTIC_BIRTH_CURRENT_KEYS:
+                # Birth + Current diagnostic: the SAME natal/house-lord/career-yoga/wealth-yoga facts every other
+                # intent already reuses, plus the current MD/AD and Jupiter/Saturn/Rahu transit facts every timing
+                # intent already reuses -- proven sufficient (no new calculation) precisely because every one of
+                # these EvidenceRequirement objects already exists and is already used elsewhere in this file.
+                requirements = (E.NATAL, E.HOUSES, E.CAREER, E.WEALTH, E.MD_AD, E.JUPITER, E.SATURN, E.RAHU)
+                timing = ("Distinguish durable birth-chart facts (natal houses, lords and career/wealth yogas) from what the "
+                          f"supplied {months}-month current MD/AD and Jupiter/Saturn/Rahu evidence actively activates right "
+                          "now; no dates beyond the supplied evidence.")
+            else:
+                requirements = E.NATAL_DIRECTION if months is None else (
+                    E.LIFE_TIMING if months > 12 else E.NATAL_DIRECTION + (E.MD_AD, E.JUPITER, E.SATURN))
+                timing = ("Natal tendencies only; no timing evidence is supplied and no dates or future event windows should be invented."
+                          if months is None else
+                          TIMING[q.answer_mode] + f" Use only the supplied {months}-month continuous MD/AD and Jupiter/Saturn coverage; no dates beyond it.")
             if months == 12:
                 timing += " Current context first; upcoming windows are supporting context, not a generic future forecast."
         _specs[key] = PromptSpec(key, intent, q.person_mode, LocalizedText(en, hi), q.question,
             objective, focus, timing, requirements, emphasis,
-            ((DUAL if q.person_mode == "dual" else SELF),) + BOUNDARIES[intent] + QUESTION_BOUNDARIES.get(key, ()), archetype, capability)
+            ((DUAL if q.person_mode == "dual" else SELF),) + BOUNDARIES[intent] + QUESTION_BOUNDARIES.get(key, ()), archetype, capability,
+            remedies=key in REMEDY_KEYS)
 
 
 _group("career_growth_timing", E.CAREER_TIMING, [
@@ -398,6 +421,31 @@ _group("life_direction_and_strengths", E.NATAL_DIRECTION, [
      "Translate supported natal strengths into a small number of practical priorities.",
      "Connect recurring placement and house/lord themes with supplied current MD/AD and Jupiter/Saturn context for practice and balanced development.",
      "Explain what to focus on and why; keep advice linked to the reading rather than generic motivation."),
+])
+# 62 -- Birth + Current obstacle diagnostic. Distinct from career_growth_delay_reason/marriage_delay_reason/etc.
+# (each narrow to one family's own delay) and from life_direction_and_strengths (natal-only, no obstacles at all):
+# this is a whole-chart 2-4-factor obstacle reading, birth-durable vs. currently-activated, with concise remedies.
+_group("kundali_obstacles", E.NATAL_DIRECTION, [
+    ("major_kundali_obstacles", "Major Obstacles in Your Kundali", "आपकी कुंडली की प्रमुख बाधाएँ",
+     "Identify the 2-4 most meaningful obstacles the whole chart supports, separating durable birth-chart challenges "
+     "from what is currently active, then offer concise, relevant remedies.",
+     "Synthesize whole-chart house/lord facts and existing career/wealth yogas for birth-chart challenges; the current "
+     "MD/AD and Jupiter/Saturn/Rahu transits for what is presently activated.",
+     "Prioritized 2-4 obstacles only, clearly split into birth-chart vs. currently-active, followed by concise "
+     "practical-first remedies; never an exhaustive negativity list and never an invented dosha."),
+])
+# 63 -- Birth + Current strength diagnostic. Distinct from natural_strengths (natal-only, "What are my natural
+# strengths according to my birth chart?" -- no current-activation dimension at all): this pairs the SAME kind of
+# durable natal strengths with which of them current Dasha/transit evidence actively supports right now, plus how
+# to use them in this window. natural_strengths/life_direction/focus_to_use_strengths are unchanged.
+_group("kundali_strengths", E.NATAL_DIRECTION, [
+    ("major_kundali_strengths", "Major Strengths in Your Kundali", "आपकी कुंडली की प्रमुख शक्तियाँ",
+     "Identify the 2-4 most meaningful strengths the whole chart supports, separating durable birth-chart strengths "
+     "from what is currently active, then explain how to use them effectively right now.",
+     "Synthesize whole-chart house/lord facts and existing career/wealth yogas for birth-chart strengths; the current "
+     "MD/AD and Jupiter/Saturn/Rahu transits for which of them are presently activated.",
+     "Prioritized 2-4 strengths only, clearly split into birth-chart vs. currently-active, followed by concise, "
+     "practical guidance for using them in the supplied current window; never an exhaustive list."),
 ])
 
 PROMPT_SPECS = MappingProxyType(_specs)

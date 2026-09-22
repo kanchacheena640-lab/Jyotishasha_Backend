@@ -48,7 +48,7 @@ class PropertyTests(unittest.TestCase):
     def test_exact_keys_count_and_fail_closed(self):
         self.assertEqual(set(PROPERTY_HORIZONS), {q.question_key for q in QUESTIONS if q.category == "property"})
         self.assertEqual(len(PROPERTY_HORIZONS), 5)
-        self.assertEqual(len(dispatcher.HANDLERS), 61)
+        self.assertEqual(len(dispatcher.HANDLERS), 63)
         remaining = [q for q in QUESTIONS if q.question_key not in dispatcher.HANDLERS]
         self.assertEqual(len(remaining), 0)
         self.assertEqual(Counter(q.category for q in remaining), {})

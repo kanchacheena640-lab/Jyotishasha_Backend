@@ -41,7 +41,12 @@ APPROVED_INTENTS = {
     "career_growth_timing", "job_change_timing", "money_improvement_timing", "business_timing", "marriage_timing",
     "relationship_marriage_potential", "relationship_strengths_and_challenges", "foreign_move_timing",
     "study_exam_timing", "property_timing", "life_turning_points", "life_direction_and_strengths",
+    "kundali_obstacles", "kundali_strengths",
 }
+# kundali_obstacles/kundali_strengths are each a single, exact-titled Birth + Current diagnostic question
+# (report #62/#63) rather than an umbrella over several customer wordings; they are the only 2 intents
+# exempt from the >=3-questions "no orphan intents" rule below.
+SINGLE_QUESTION_INTENTS = {"kundali_obstacles", "kundali_strengths"}
 FROZEN_25 = {
     **{slug: 51 for slug in (
         "marriage_report", "career_report", "love_relationship_report", "foreign_travel_report",
@@ -62,24 +67,24 @@ def _existing_disclaimer_types():
 
 
 class RegistryTests(unittest.TestCase):
-    def test_registry_loads_with_exactly_the_12_approved_core_intents(self):
-        self.assertEqual(len(INTENT_SLUGS), 12)
+    def test_registry_loads_with_exactly_the_14_approved_core_intents(self):
+        self.assertEqual(len(INTENT_SLUGS), 14)
         self.assertEqual(set(INTENT_SLUGS), APPROVED_INTENTS)
-        self.assertEqual(len(set(INTENT_SLUGS)), 12, "intent slugs are unique")
+        self.assertEqual(len(set(INTENT_SLUGS)), 14, "intent slugs are unique")
         self.assertEqual(set(INTENT_REGISTRY), APPROVED_INTENTS)
-        self.assertEqual(len(list_intents()), 12)
+        self.assertEqual(len(list_intents()), 14)
 
     def test_person_modes_and_categories(self):
         modes = {slug: c.person_mode for slug, c in INTENT_REGISTRY.items()}
         self.assertEqual({s for s, m in modes.items() if m == "dual"},
                          {"relationship_marriage_potential", "relationship_strengths_and_challenges"})
-        self.assertEqual(sum(1 for m in modes.values() if m == "single"), 10)
+        self.assertEqual(sum(1 for m in modes.values() if m == "single"), 12)
         counts = {}
         for contract in INTENT_REGISTRY.values():
             counts[contract.category] = counts.get(contract.category, 0) + 1
             self.assertIn(contract.category, ic.CATEGORY_IDS)
         self.assertEqual(counts, {"career": 2, "money_business": 2, "marriage": 1, "relationship": 2, "foreign": 1,
-                                  "education": 1, "property": 1, "life": 2})
+                                  "education": 1, "property": 1, "life": 4})
         self.assertEqual(set(counts), set(ic.CATEGORY_IDS), "no empty category")
 
     def test_every_intent_is_rs_51_inactive_and_not_purchasable(self):
@@ -97,8 +102,8 @@ class RegistryTests(unittest.TestCase):
 
     def test_no_intent_or_question_is_held_or_conditional(self):
         # life_direction_and_strengths was CONDITIONAL_NOT_READY/HELD_CONDITIONAL before its evidence
-        # collector, handler, PromptSpec and dispatcher registration existed; all 61 catalog keys
-        # (including its 3) are now implemented and audited, so no intent or question is held anymore.
+        # collector, handler, PromptSpec and dispatcher registration existed; all 63 catalog keys
+        # are now implemented and audited, so no intent or question is held anymore.
         conditional = [s for s, c in INTENT_REGISTRY.items() if c.readiness == ic.Readiness.CONDITIONAL_NOT_READY]
         self.assertEqual(conditional, [])
         self.assertTrue(all(c.readiness == ic.Readiness.CONTRACT_DRAFT for c in INTENT_REGISTRY.values()))
@@ -151,7 +156,8 @@ class RegistryTests(unittest.TestCase):
                 self.assertEqual(seed.houses, tuple(FROZEN[seed.report_slug].relevant_houses))
                 self.assertEqual(seed.planets, tuple(FROZEN[seed.report_slug].relevant_planets))
         self.assertEqual(seeded, 9)
-        for slug in ("study_exam_timing", "life_turning_points", "life_direction_and_strengths"):
+        for slug in ("study_exam_timing", "life_turning_points", "life_direction_and_strengths",
+                     "kundali_obstacles", "kundali_strengths"):
             self.assertIsNone(INTENT_REGISTRY[slug].houses.seed, f"{slug} has no existing report to seed from")
 
     def test_dual_intents_require_both_people_and_the_dual_pack(self):
@@ -213,8 +219,8 @@ class QuestionCatalogTests(unittest.TestCase):
         for q in QUESTIONS:
             by_category[q.category] = by_category.get(q.category, 0) + 1
         self.assertEqual(by_category, {"career": 12, "money_business": 11, "marriage": 6, "relationship": 9,
-                                       "foreign": 6, "education": 4, "property": 5, "life": 8})
-        self.assertEqual(sum(1 for q in QUESTIONS if q.person_mode == "single"), 52)
+                                       "foreign": 6, "education": 4, "property": 5, "life": 10})
+        self.assertEqual(sum(1 for q in QUESTIONS if q.person_mode == "single"), 54)
         self.assertEqual(sum(1 for q in QUESTIONS if q.person_mode == "dual"), 9)
         self.assertGreater(len(QUESTIONS), 4 * len(INTENT_SLUGS), "many questions share each core intent")
 
@@ -247,7 +253,10 @@ class QuestionCatalogTests(unittest.TestCase):
 
     def test_no_orphan_intents(self):
         for slug in INTENT_SLUGS:
-            self.assertGreaterEqual(len(questions_for_intent(slug)), 3, slug)
+            if slug in SINGLE_QUESTION_INTENTS:
+                self.assertEqual(len(questions_for_intent(slug)), 1, slug)
+            else:
+                self.assertGreaterEqual(len(questions_for_intent(slug)), 3, slug)
 
     def test_no_duplicate_normalized_wording(self):
         english = [normalize_question_text(q.question_en) for q in QUESTIONS]

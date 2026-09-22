@@ -12,7 +12,10 @@ from test_focused_report_dispatch import response
 from scripts.generate_focused_promotion_samples import PERSONA
 from modules.intents.question_catalog import QUESTIONS, UnknownQuestionError
 from modules.focused_reports import life_evidence as collector, dispatcher, pdf_adapter
-from modules.focused_reports.life_keys import LIFE_HORIZONS, LIFE_HOUSES, LIFE_NATAL_PLANETS
+from modules.focused_reports.life_keys import (
+    LIFE_HORIZONS, LIFE_HOUSES, LIFE_NATAL_PLANETS, DIAGNOSTIC_BIRTH_CURRENT_KEYS,
+    LIFE_TRANSIT_PLANETS_DEFAULT, LIFE_TRANSIT_PLANET_OVERRIDES,
+)
 from modules.focused_reports.life_reports import build_life_report_prompt
 from modules.focused_reports.prompt_specs import get_prompt_spec, PROMPT_SPECS
 from modules.focused_reports.prompt_contract import Capability, EvidenceRequirement
@@ -27,9 +30,13 @@ class LifeTests(unittest.TestCase):
         cls.kundali = fixture_kundali()
         with frozen_clock():
             cls.snapshot = collector.get_current_positions()
+            # The 12-month fixture also carries Rahu (a superset), since major_kundali_obstacles/strengths
+            # (both 12-month horizons) additionally require it; the mock below returns the same fixture
+            # regardless of which selected_planets the production code actually requests, so the other,
+            # narrower 12-month keys simply ignore the extra Rahu entry.
             cls.transits = {m: collector.build_promotion_transit_evidence(
                 cls.kundali["lagna_sign"], horizon_months=m,
-                selected_planets=("Jupiter", "Saturn")) for m in (12, 36, 60)}
+                selected_planets=("Jupiter", "Saturn", "Rahu") if m == 12 else ("Jupiter", "Saturn")) for m in (12, 36, 60)}
 
     def setUp(self):
         for target, kwargs in (
@@ -41,10 +48,10 @@ class LifeTests(unittest.TestCase):
             p.start()
             self.addCleanup(p.stop)
 
-    def test_final_61_catalog_integrity_and_unknown_keys(self):
+    def test_final_63_catalog_integrity_and_unknown_keys(self):
         keys = [q.question_key for q in QUESTIONS]
-        self.assertEqual(len(keys), 61)
-        self.assertEqual(len(set(keys)), 61)
+        self.assertEqual(len(keys), 63)
+        self.assertEqual(len(set(keys)), 63)
         self.assertEqual(set(keys), set(dispatcher.HANDLERS))
         self.assertEqual(set(keys), set(PROMPT_SPECS))
         registrations = [key for group in (
@@ -52,10 +59,10 @@ class LifeTests(unittest.TestCase):
             dispatcher.MARRIAGE_QUESTION_KEYS, dispatcher.RELATIONSHIP_QUESTION_KEYS,
             dispatcher.FOREIGN_QUESTION_KEYS, dispatcher.EDUCATION_QUESTION_KEYS,
             dispatcher.PROPERTY_QUESTION_KEYS, dispatcher.LIFE_QUESTION_KEYS) for key in group]
-        self.assertEqual(len(registrations), 61)
-        self.assertEqual(len(set(registrations)), 61)
+        self.assertEqual(len(registrations), 63)
+        self.assertEqual(len(set(registrations)), 63)
         self.assertEqual(set(LIFE_HORIZONS), {q.question_key for q in QUESTIONS if q.category == "life"})
-        self.assertEqual(len(LIFE_HORIZONS), 8)
+        self.assertEqual(len(LIFE_HORIZONS), 10)
         with patch("modules.payments.report_ai_client.generate_report_completion") as ai:
             for q in QUESTIONS:
                 selection, handler = dispatcher.resolve_focused_handler(q.question_key)
@@ -77,13 +84,23 @@ class LifeTests(unittest.TestCase):
         for key, months in LIFE_HORIZONS.items():
             spec = get_prompt_spec(key)
             objectives.add(spec.analysis_objective)
+            diagnostic = key in DIAGNOSTIC_BIRTH_CURRENT_KEYS
+            transit_planets = LIFE_TRANSIT_PLANET_OVERRIDES.get(key, LIFE_TRANSIT_PLANETS_DEFAULT)
             for lang in ("en", "hi"):
                 collector.get_current_positions.reset_mock()
                 collector.build_promotion_transit_evidence.reset_mock()
                 built = build_life_report_prompt(key, self.kundali, lang)
                 prompts.add(built.prompt)
                 expected = {"birth_chart_summary", "house_lord_summary"}
-                if months:
+                if diagnostic:
+                    # major_kundali_obstacles/major_kundali_strengths: the same existing NATAL/HOUSES/CAREER/
+                    # WEALTH/MD_AD/JUPITER/SATURN/RAHU EvidenceRequirement objects every other focused report
+                    # already uses -- no new evidence calculation.
+                    expected |= {"career_yoga_summary", "wealth_yoga_summary", "dasha_window_summary"} | set(transit_planets)
+                    self.assertEqual(built.evidence.horizon_end, "2027-09-21")
+                    collector.build_promotion_transit_evidence.assert_called_once_with(
+                        self.kundali["lagna_sign"], horizon_months=months, selected_planets=transit_planets)
+                elif months:
                     expected |= {"Jupiter", "Saturn", "dasha_sequence" if months > 12 else "dasha_window_summary"}
                     self.assertEqual(built.evidence.horizon_end, {12: "2027-09-21", 36: "2029-09-21", 60: "2031-09-21"}[months])
                     collector.build_promotion_transit_evidence.assert_called_once_with(
@@ -103,8 +120,8 @@ class LifeTests(unittest.TestCase):
                     self.assertNotIn(banned, built.prompt.lower())
                 self.assertNotRegex(built.prompt.lower(), r"\bd-?(9|10)\b")
                 self.assertNotRegex(built.prompt, r"\d{4}-\d{2}-\d{2}")
-        self.assertEqual(len(prompts), 16)
-        self.assertEqual(len(objectives), 8)
+        self.assertEqual(len(prompts), 20)
+        self.assertEqual(len(objectives), 10)
 
     def test_natal_reports_work_without_dasha_and_exclude_unrelated_facts(self):
         for key in ("natural_strengths", "life_direction"):
@@ -142,7 +159,7 @@ class LifeTests(unittest.TestCase):
                     with self.assertRaises(MissingEvidenceError):
                         dispatcher.generate_focused_report(key, self.kundali)
                 blocks = collector.build_summary_blocks_with_transit(self.kundali, self.snapshot)
-                for field in ("birth_chart_summary", "dasha_window_summary"):
+                for field in ("birth_chart_summary", "dasha_window_summary", "career_yoga_summary", "wealth_yoga_summary"):
                     if field not in {r.key for r in get_prompt_spec(key).evidence_requirements}:
                         continue
                     with patch.object(collector, "build_summary_blocks_with_transit", return_value={**blocks, field: "unavailable"}):
@@ -155,7 +172,8 @@ class LifeTests(unittest.TestCase):
                     {"planet": "Sun", "start": "2027-01-01", "end": "2032-01-01"}]}]):
                     with self.assertRaises(MissingEvidenceError):
                         dispatcher.generate_focused_report(key, {**self.kundali, "Mahadasha": timeline})
-                for name in ("Jupiter", "Saturn"):
+                # Diagnostic reports (#62/#63) also require current Jupiter/Saturn/Rahu transit evidence.
+                for name in LIFE_TRANSIT_PLANET_OVERRIDES.get(key, LIFE_TRANSIT_PLANETS_DEFAULT):
                     bad = copy.deepcopy(self.transits[months])
                     bad["planets"] = [p for p in bad["planets"] if p["planet"] != name]
                     with patch.object(collector, "build_promotion_transit_evidence", return_value=bad):

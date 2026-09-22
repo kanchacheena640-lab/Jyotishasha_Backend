@@ -11,6 +11,7 @@ from modules.focused_reports import prompt_specs
 from modules.focused_reports.dispatcher import HANDLERS, FocusedReportNotImplementedError, resolve_focused_handler
 from modules.focused_reports.prompt_contract import Archetype, Capability, EvidenceRequirement
 from modules.focused_reports.prompt_assembler import build_focused_prompt, MissingEvidenceError, PromptAssemblyError
+from modules.focused_reports.master_contract import REMEDY_INSTRUCTION
 
 ROOT = Path(__file__).resolve().parent
 
@@ -182,6 +183,82 @@ class PromptAssemblyTests(unittest.TestCase):
             self.assertNotIn(secret, prompt)
         self.assertIn("Review after 15 October 2026", prompt)
         self.assertEqual(context["situation"], "Review after 2026-10-15")
+
+
+class NewDiagnosticReportsTests(unittest.TestCase):
+    """Reports #62/#63 (major_kundali_obstacles/major_kundali_strengths) and their shared, conditional
+    obstacle/remedy/timing-overlap architecture -- catalog=63, no live Luna call."""
+
+    def test_report_62_obstacles_is_wired_bilingually(self):
+        q = get_question("major_kundali_obstacles")
+        self.assertEqual(q.question_en, "What are the major obstacles in my birth chart, what is affecting me "
+                                        "currently, and what remedies can help?")
+        self.assertEqual(q.question_hi, "मेरी जन्म कुंडली में प्रमुख बाधाएँ क्या हैं, वर्तमान समय में कौन-सी बाधाएँ "
+                                        "सक्रिय हैं और उनके लिए क्या उपाय किए जा सकते हैं?")
+        self.assertEqual(q.category, "life")
+        self.assertEqual(q.person_mode, "single")
+        spec = prompt_specs.get_prompt_spec("major_kundali_obstacles")
+        self.assertEqual(spec.title.en, "Major Obstacles in Your Kundali")
+        self.assertEqual(spec.title.hi, "आपकी कुंडली की प्रमुख बाधाएँ")
+        self.assertEqual(spec.archetype, Archetype.OBSTACLES)
+        self.assertEqual(spec.capability, Capability.IMPLEMENTED)
+        self.assertTrue(spec.remedies)
+        keys = {r.key for r in spec.evidence_requirements}
+        self.assertEqual(keys, {"birth_chart_summary", "house_lord_summary", "career_yoga_summary",
+                                "wealth_yoga_summary", "dasha_window_summary", "Jupiter", "Saturn", "Rahu"})
+
+    def test_report_63_strengths_is_wired_bilingually(self):
+        q = get_question("major_kundali_strengths")
+        self.assertEqual(q.question_en, "What are the strongest areas of my birth chart, which strengths are "
+                                        "active now, and how can I use them effectively?")
+        self.assertEqual(q.question_hi, "मेरी जन्म कुंडली की प्रमुख शक्तियाँ क्या हैं, वर्तमान समय में कौन-सी "
+                                        "शक्तियाँ सक्रिय हैं और उनका सर्वोत्तम उपयोग कैसे करूँ?")
+        self.assertEqual(q.category, "life")
+        self.assertEqual(q.person_mode, "single")
+        spec = prompt_specs.get_prompt_spec("major_kundali_strengths")
+        self.assertEqual(spec.title.en, "Major Strengths in Your Kundali")
+        self.assertEqual(spec.title.hi, "आपकी कुंडली की प्रमुख शक्तियाँ")
+        self.assertEqual(spec.archetype, Archetype.STRENGTHS_NOW)
+        self.assertEqual(spec.capability, Capability.IMPLEMENTED)
+        self.assertFalse(spec.remedies)
+        keys = {r.key for r in spec.evidence_requirements}
+        self.assertEqual(keys, {"birth_chart_summary", "house_lord_summary", "career_yoga_summary",
+                                "wealth_yoga_summary", "dasha_window_summary", "Jupiter", "Saturn", "Rahu"})
+
+    def test_natural_strengths_remains_distinct_from_major_kundali_strengths(self):
+        natural = prompt_specs.get_prompt_spec("natural_strengths")
+        current = prompt_specs.get_prompt_spec("major_kundali_strengths")
+        self.assertNotEqual(natural.question_key, current.question_key)
+        self.assertNotEqual(natural.intent_slug, current.intent_slug)
+        self.assertNotEqual(natural.archetype, current.archetype)
+        self.assertEqual(natural.archetype, Archetype.DIRECTION)
+        self.assertNotEqual({r.key for r in natural.evidence_requirements}, {r.key for r in current.evidence_requirements})
+        self.assertNotIn("Jupiter", {r.key for r in natural.evidence_requirements}, "natural_strengths stays natal-only")
+        self.assertEqual(natural.question.en, "What are my natural strengths?")
+        self.assertEqual(natural.title.en, "Natural Strengths")
+
+    def test_remedies_flag_is_conditional_not_global(self):
+        with_remedies = {s.question_key for s in prompt_specs.PROMPT_SPECS.values() if s.remedies}
+        self.assertEqual(with_remedies, {"major_kundali_obstacles"})
+        with patch("modules.payments.report_ai_client.generate_report_completion", side_effect=AssertionError("No AI allowed")):
+            for spec in prompt_specs.PROMPT_SPECS.values():
+                for language in ("en", "hi"):
+                    prompt = build_focused_prompt(spec.question_key, language, evidence_for(spec))
+                    if spec.remedies:
+                        self.assertIn(REMEDY_INSTRUCTION[language], prompt)
+                    else:
+                        self.assertNotIn(REMEDY_INSTRUCTION[language], prompt)
+
+    def test_timing_overlap_clarity_instruction_present_in_master_contract(self):
+        from modules.focused_reports.master_contract import master_contract
+        en, hi = master_contract("en"), master_contract("hi")
+        self.assertIn("retrograde sub-period", en)
+        self.assertIn("direct portion as the stronger", en)
+        self.assertIn("Retrograde का कोई हिस्सा", hi)
+        # Same obstacle-guardrail sentence (requirement B) also lives in the shared master, not per-question.
+        self.assertIn("2-3 most meaningful ones", en)
+        self.assertIn('never call a placement a "dosha"', en.lower())
+        self.assertIn("2-3 सबसे ज़्यादा मायने रखने वाले", hi)
 
 
 if __name__ == "__main__":

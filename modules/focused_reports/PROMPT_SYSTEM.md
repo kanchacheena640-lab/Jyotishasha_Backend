@@ -121,5 +121,83 @@ prohibit commands to proceed; partnership prohibits reliability/success promises
 All handlers use the shared Luna client, structured validation and Q5.6 dates.
 The shared PDF adapter selects the existing financial/business disclaimer and
 rejects leaked wealth-summary identifiers. There is no payment, delivery or
-route integration. Unsupported categories remain Marriage (6), Relationship
-(9), Foreign (6), Education (4), Property (5) and Life (8).
+route integration. Other categories are Marriage (6), Relationship (9),
+Foreign (6), Education (4), Property (5) and Life (10).
+
+63 focused reports, 8 categories, SELF 54 / DUAL 9
+-------------------------------------------------
+
+The catalog is 63 questions across 14 core intents (12 single-question-per-
+family style intents plus the 2 dual-relationship intents already documented
+above). SELF 54 / DUAL 9, unchanged in composition from the original 52/9 --
+the 2 new questions are both SELF.
+
+Obstacle/remedy semantics (shared, not duplicated)
+---------------------------------------------------
+
+`prompt_contract.Archetype` gained two shared archetypes, `OBSTACLES` and
+`STRENGTHS_NOW`, each with its own fixed EN/HI heading set in
+`master_contract.SECTIONS` -- the same one-archetype-many-questions pattern
+every other archetype already uses, not a new mechanism.
+
+Obstacle/challenge interpretation itself was never new: `DIAGNOSTIC` (delay/
+easing questions) and `TIMING`'s own optional "Slower or Watch Period" section
+already asked Luna to interpret challenging evidence. What changed is a short,
+always-active master-contract guardrail (both languages): prefer 2-3 of the
+most meaningful factors over an exhaustive list, and never name a "dosha"
+unless that exact dosha is itself one of the supplied facts (no dosha fact is
+supplied to any focused report today, so none can be named). This applies
+everywhere a report happens to touch challenges; it is never a forced section.
+
+`PromptSpec.remedies` (bool, default False) is the one new per-question flag.
+When True, `prompt_assembler.build_focused_prompt()` appends ONE shared
+instruction block, `master_contract.REMEDY_INSTRUCTION` (EN/HI), to the
+prompt -- practical guidance preferred, a Jyotish/spiritual remedy only when
+evidence-grounded, never a guaranteed outcome, never a prescribed expensive
+gemstone, never medical/legal/financial advice. Only `major_kundali_obstacles`
+sets `remedies=True` today; the flag exists so a future question can opt in
+without duplicating the instruction text.
+
+Timing-overlap clarity: the existing master-contract paragraph that already
+separates "Sign residence" from "Motion" (no new transit calculation) gained
+one more sentence, in both languages, asking Luna to narrate a retrograde
+sub-period INSIDE a broader supportive residence window as two distinct
+halves (a stronger direct portion, a slower review portion) rather than as
+one contradictory block.
+
+New diagnostic Birth + Current reports (#62/#63)
+--------------------------------------------------
+
+`kundali_obstacles`/`major_kundali_obstacles` and `kundali_strengths`/
+`major_kundali_strengths` are 2 new core intents (Life Direction, SELF),
+each a single question. Both are whole-chart diagnostics, deliberately
+distinct from the other 8 Life-family questions: `life_direction_and_strengths`
+(natal-only, no current-activation dimension -- unchanged, still natal-only)
+and `life_turning_points` (timing of phase changes, not an obstacle/strength
+inventory). `natural_strengths` itself is untouched.
+
+Evidence is entirely reused, not invented: the SAME `NATAL`/`HOUSES`/`CAREER`/
+`WEALTH`/`MD_AD`/`JUPITER`/`SATURN`/`RAHU` `EvidenceRequirement` objects every
+other focused report already uses, composed as one Birth base (natal, all 12
+houses unfiltered, career + wealth yoga) plus one Current layer (12-month
+MD/AD, Jupiter/Saturn/Rahu). `life_evidence.py` gained two small, per-question
+overrides -- which natal planets and which transit planets to surface -- so
+these 2 whole-chart questions can include Mars/Venus/Rahu/Ketu and Rahu
+transit (facts `calculate_full_kundali` already computes); the other 8
+Life questions keep their exact original planet/transit selection.
+
+App download CTA
+-----------------
+
+The focused PDF adapter now always passes `app_download` (heading, benefit
+text, `app_config.JYOTISHASHA_PLAY_STORE_URL`, `JYOTISHASHA_APP_STORE_URL`) --
+the SAME component, labels and URL every one of the 25 standard paid reports
+already renders via the shared template's own fixed, final section (after
+all analysis and the disclaimer). `templates/report_template.html` renders
+the Play Store URL as a real `<a href="{{ app_download.play_store_url }}">`
+anchor around the same visible text as before, so WeasyPrint preserves it as
+a clickable PDF URI annotation pointing at the canonical
+`app_config.JYOTISHASHA_PLAY_STORE_URL` -- no second or invented URL. Every
+report that already used this shared template and component (the 25
+standard paid reports, the relationship report, and now focused reports)
+inherits this same clickable link with no per-report change.

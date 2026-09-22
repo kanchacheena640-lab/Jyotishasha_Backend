@@ -10,6 +10,7 @@ from weasyprint import HTML
 
 from modules.focused_reports import pdf_adapter as adapter
 from scripts.generate_focused_promotion_samples import PERSONA, sample_result
+from app_config import JYOTISHASHA_PLAY_STORE_URL, JYOTISHASHA_APP_STORE_URL
 
 
 class FocusedPdfTests(unittest.TestCase):
@@ -46,6 +47,18 @@ class FocusedPdfTests(unittest.TestCase):
             self.assertIsNone(args["kundali_drawing"])
             self.assertEqual(set(args["user_info"]), {"name", "dob", "tob", "pob"})
             self.assertEqual(args["narrative_style"], "plain")
+            # The one closing App CTA: the SAME component, labels and canonical Play Store URL every one
+            # of the 25 standard paid reports already uses (app_config.JYOTISHASHA_PLAY_STORE_URL); no
+            # invented URL, and app_store_url stays None exactly like every other existing report.
+            self.assertEqual(args["app_download"], {
+                "heading": "Continue Your Astrology Journey" if language == "en" else "अपनी ज्योतिष यात्रा जारी रखें",
+                "benefit_text": ("Get your personalized astrology insights, daily guidance and more in the "
+                                 "Jyotishasha App." if language == "en" else
+                                 "Jyotishasha App में पाएं अपनी Personalized Astrology Insights, Daily Guidance और बहुत कुछ।"),
+                "play_store_url": JYOTISHASHA_PLAY_STORE_URL,
+                "app_store_url": JYOTISHASHA_APP_STORE_URL,
+            })
+            self.assertIsNone(JYOTISHASHA_APP_STORE_URL, "nothing invented for the App Store")
 
     def test_bilingual_title_question_identity_and_dates(self):
         for lang, dob, timing in (("en", "15 June 1990", "15 October 2026 to 20 April 2027"),
@@ -105,6 +118,55 @@ class FocusedPdfTests(unittest.TestCase):
                     adapter.render_focused_report_pdf(sample_result("en"), PERSONA, path)
             self.assertEqual(path.read_bytes(), b"original")
             self.assertEqual(list(Path(folder).iterdir()), [path])
+
+    def test_app_download_cta_is_the_single_closing_section_bilingual(self):
+        for lang, heading, bottom_line_heading in (
+            ("en", "Continue Your Astrology Journey", "Bottom Line"),
+            ("hi", "अपनी ज्योतिष यात्रा जारी रखें", "सीधी बात"),
+        ):
+            path, html, text, _, _ = self.outputs[lang]
+            # Exactly one CTA box, placed strictly after all analysis -- the shared template's own fixed,
+            # final section (templates/report_template.html) -- never a second promo and never inserted
+            # between analysis sections.
+            self.assertEqual(html.count('class="app-download-box"'), 1)
+            cta_index = html.index('class="app-download-box"')
+            self.assertGreater(cta_index, html.rindex(bottom_line_heading))
+            self.assertLess(cta_index, html.index("</body>"))
+            self.assertIn(heading, html)
+            # The Play Store URL renders as the SAME visible text as before (Jinja auto-escapes "&" to
+            # "&amp;"), now wrapped in exactly one real <a href> anchor -- matching the shared template's
+            # behaviour for every one of the 25 standard paid reports and the relationship report, all of
+            # which share this template. The anchor targets ONLY the canonical, non-invented URL.
+            escaped_url = JYOTISHASHA_PLAY_STORE_URL.replace("&", "&amp;")
+            self.assertIn(escaped_url, html)
+            self.assertEqual(html.count('<a class="app-download-anchor"'), 1)
+            self.assertIn(f'href="{escaped_url}"', html)
+            # The CTA is also the last readable content in the extracted PDF text, strictly after the
+            # report's own final analysis heading (English only: pypdf cannot faithfully reconstruct
+            # shaped Hindi ligatures, as already noted above for the timing-range assertion).
+            if lang == "en":
+                self.assertGreater(text.index(heading), text.index(bottom_line_heading))
+            else:
+                self.assertIn("Jyotishasha", text.split(bottom_line_heading, 1)[1])
+
+    @staticmethod
+    def _link_uris(pdf_path):
+        uris = []
+        for page in PdfReader(pdf_path, strict=True).pages:
+            for annot in page.get("/Annots") or []:
+                obj = annot.get_object()
+                if obj.get("/Subtype") == "/Link" and "/A" in obj and "/URI" in obj["/A"]:
+                    uris.append(str(obj["/A"]["/URI"]))
+        return uris
+
+    def test_app_download_link_is_a_real_clickable_pdf_annotation_bilingual(self):
+        for lang in ("en", "hi"):
+            path = self.outputs[lang][0]
+            uris = self._link_uris(path)
+            # A long anchor line can legitimately wrap into more than one visual fragment (one Link
+            # annotation per fragment, same URI) -- that is still one clickable link, not a second CTA.
+            self.assertGreaterEqual(len(uris), 1)
+            self.assertEqual(set(uris), {JYOTISHASHA_PLAY_STORE_URL}, "no invented or second URL")
 
     def test_strict_validation_rejects_empty_fake_and_truncated_files(self):
         path = Path(self.folder.name) / "invalid.pdf"

@@ -4,7 +4,7 @@ import re
 
 from modules.intents.question_catalog import resolve_selection
 from modules.focused_reports.prompt_specs import get_prompt_spec
-from modules.focused_reports.master_contract import PROMPT_DIR, master_contract, output_contract
+from modules.focused_reports.master_contract import PROMPT_DIR, REMEDY_INSTRUCTION, master_contract, output_contract
 from modules.payments.report_date_format import normalize_customer_dates
 
 
@@ -77,6 +77,8 @@ def build_focused_prompt(question_key, language, evidence, customer_context=None
     ))
     if question_key == "promotion_timing":
         instructions += "\n" + (PROMPT_DIR / f"promotion_next_12_months_{lang}.txt").read_text(encoding="utf-8")
+    if spec.remedies:
+        instructions += "\n" + REMEDY_INSTRUCTION[lang]
     return "\n\n".join((master_contract(lang), 'Customer question: "' + selection.display(lang) + '"',
                           "\n".join(context_parts), instructions,
                           "Authoritative backend evidence:\n" + "\n\n".join(blocks), output_contract(spec, lang)))

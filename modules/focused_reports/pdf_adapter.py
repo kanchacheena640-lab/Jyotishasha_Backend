@@ -13,7 +13,9 @@ from modules.intents.question_catalog import QUESTIONS
 from modules.payments.report_product_intelligence import REGISTRY
 from modules.payments.report_q3_batch1 import get_mandatory_disclaimer
 from modules.payments.report_structured_output import validate_required_hero_fields
+from modules.payments.report_i18n_labels import get_label
 from pdf_generator_weasy import generate_pdf_report_weasy
+from app_config import JYOTISHASHA_PLAY_STORE_URL, JYOTISHASHA_APP_STORE_URL
 
 
 # Backward-compatible Promotion alias; every adapter call uses its own spec.
@@ -72,11 +74,20 @@ def focused_pdf_arguments(result: dict, customer: dict, *, is_sample: bool = Fal
               "relationship_strengths_and_challenges": "marriage_report"}.get(
         selection.intent_slug, "career_report")
     disclaimer = get_mandatory_disclaimer(REGISTRY[policy].disclaimer_type if policy else "general", language)
+    # ONE closing App CTA, after all analysis and the disclaimer (the shared renderer's own fixed section order --
+    # see templates/report_template.html). Same existing component, labels and Play Store URL every one of the 25
+    # paid reports already uses (app_config.JYOTISHASHA_PLAY_STORE_URL); no new URL, no second CTA, no new template.
+    app_download = {
+        "heading": get_label("app_download_heading", language),
+        "benefit_text": get_label("app_download_body", language),
+        "play_store_url": JYOTISHASHA_PLAY_STORE_URL,
+        "app_store_url": JYOTISHASHA_APP_STORE_URL,
+    }
     return dict(
         user_info=identity, summary_blocks={}, gpt_response=narrative,
         kundali_drawing=None, used_placeholders=[], product=spec.title.get(language),
         report_subtitle=selection.display(language), language=language,
-        narrative_style="plain", is_sample=is_sample, disclaimer=disclaimer,
+        narrative_style="plain", is_sample=is_sample, disclaimer=disclaimer, app_download=app_download,
         **dual_context,
     )
 

@@ -50,7 +50,7 @@ class MarriageTests(unittest.TestCase):
     def test_exact_registration_and_remaining_fail_closed_before_ai(self):
         self.assertEqual(set(MARRIAGE_QUESTION_KEYS), {q.question_key for q in QUESTIONS if q.category == "marriage"})
         self.assertEqual(len(MARRIAGE_QUESTION_KEYS), 6)
-        self.assertEqual(len(dispatcher.HANDLERS), 61)
+        self.assertEqual(len(dispatcher.HANDLERS), 63)
         unsupported = [q for q in QUESTIONS if q.question_key not in dispatcher.HANDLERS]
         self.assertEqual(len(unsupported), 0)
         with patch("modules.payments.report_ai_client.generate_report_completion") as ai:

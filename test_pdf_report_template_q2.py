@@ -225,6 +225,50 @@ check("C: optional Play Store URL renders when supplied", "play.google.com/store
 app_no_urls = render(app_download={"heading": "Get the App"})
 b = body_of(app_no_urls)
 check("C: NO fake/invented store link appears when URLs are not supplied", "play.google.com" not in b and "apps.apple.com" not in b)
+check("C: no anchor tag when no store URL is supplied", 'class="app-download-anchor"' not in b)
+
+# Q4 (CTA fix) -- the store line is now a real <a href>, not plain text, so WeasyPrint
+# preserves it as a clickable PDF link annotation. Reuses ONLY the existing canonical
+# app_config.JYOTISHASHA_PLAY_STORE_URL; nothing invented, no second CTA/link.
+from app_config import JYOTISHASHA_PLAY_STORE_URL, JYOTISHASHA_APP_STORE_URL
+b = body_of(app_with_urls)
+check("C: the Play Store line is wrapped in exactly one real <a href> anchor",
+      b.count('<a class="app-download-anchor"') == 1)
+check("C: the anchor's href is exactly the supplied URL (no truncation/rewrite)",
+      'href="https://play.google.com/store/apps/details?id=com.jyotishasha.app"' in b)
+
+app_canonical = render(app_download={
+    "heading": "Continue Your Astrology Journey",
+    "benefit_text": "Get your personalized astrology insights, daily guidance and more in the Jyotishasha App.",
+    "play_store_url": JYOTISHASHA_PLAY_STORE_URL,
+    "app_store_url": JYOTISHASHA_APP_STORE_URL,
+})
+b = body_of(app_canonical)
+check("C: the canonical app_config URL (with its '&') renders escaped inside the href, unmodified otherwise",
+      f'href="{JYOTISHASHA_PLAY_STORE_URL.replace("&", "&amp;")}"' in b)
+check("C: app_store_url stays None (no invented Apple link) so no second anchor renders",
+      b.count('class="app-download-anchor"') == 1)
+
+# A genuine end-to-end WeasyPrint PDF render (no Luna, no DB, no order) of the standard
+# paid-report path this template also serves, proving the canonical URL survives as an
+# actual clickable PDF link annotation, not just as HTML text.
+import tempfile as _tempfile
+from pypdf import PdfReader as _PdfReader
+with _tempfile.TemporaryDirectory() as _folder:
+    _std_pdf = os.path.join(_folder, "standard_fixture.pdf")
+    HTML(string=app_canonical, base_url=BASE_DIR).write_pdf(_std_pdf)
+    _reader = _PdfReader(_std_pdf, strict=True)
+    check("C: the real standard-report PDF fixture parses with content",
+          len(_reader.pages) > 0 and all(p.extract_text().strip() for p in _reader.pages))
+    _uris = []
+    for _page in _reader.pages:
+        for _annot in _page.get("/Annots") or []:
+            _obj = _annot.get_object()
+            if _obj.get("/Subtype") == "/Link" and "/A" in _obj and "/URI" in _obj["/A"]:
+                _uris.append(str(_obj["/A"]["/URI"]))
+    check("C: the rendered PDF carries a real clickable link annotation", len(_uris) >= 1)
+    check("C: every link annotation targets ONLY the canonical Play Store URL (no invented second URL)",
+          set(_uris) == {JYOTISHASHA_PLAY_STORE_URL})
 
 # generate_pdf_report_weasy() no longer accepts `cta` as a parameter at all.
 import inspect

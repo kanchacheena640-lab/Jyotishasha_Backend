@@ -22,6 +22,32 @@ SECTIONS = {
         ("Direct Answer", "सीधा जवाब"), ("Where Your Charts Support Each Other", "चार्ट में तालमेल के संकेत"),
         ("Differences That Need Care", "किन फर्कों पर ध्यान दें"), ("Practical Relationship Focus", "रिश्ते के लिए उपयोगी ध्यान"),
         ("Bottom Line", "सीधी बात")),
+    Archetype.OBSTACLES: (
+        ("Direct Answer", "सीधा जवाब"), ("Birth Chart Obstacles", "कुंडली की जन्मजात बाधाएँ"),
+        ("Current Active Obstacles", "अभी सक्रिय बाधाएँ"), ("Remedies and What Helps", "उपाय और क्या मदद करता है"),
+        ("Bottom Line", "सीधी बात")),
+    Archetype.STRENGTHS_NOW: (
+        ("Direct Answer", "सीधा जवाब"), ("Birth Chart Strengths", "कुंडली की जन्मजात शक्तियाँ"),
+        ("Currently Active Strengths", "अभी सक्रिय शक्तियाँ"), ("How To Use Them Now", "अभी इनका इस्तेमाल कैसे करें"),
+        ("Bottom Line", "सीधी बात")),
+}
+
+# Shared, conditional -- appended to the prompt only when a PromptSpec sets remedies=True (currently only
+# kundali_obstacles/major_kundali_obstacles). ONE instruction block, never duplicated per question.
+REMEDY_INSTRUCTION = {
+    "en": (
+        "Remedies: since this report identifies genuine challenges, add a few concise, practical remedies grounded "
+        "in the supplied evidence. Prefer everyday practical or behavioural guidance; a simple Jyotish or spiritual "
+        "practice (for example a specific mantra, a fasting day, or a modest charitable act tied to the relevant "
+        "planet) may be added only when it is reasonably supported by the evidence. Never guarantee an outcome from "
+        "a remedy, never prescribe a specific expensive gemstone, and never give medical, legal or financial advice."
+    ),
+    "hi": (
+        "उपाय: यह report असली challenges बताती है, इसलिए ऊपर के प्रमाण से जुड़े कुछ संक्षिप्त, practical उपाय भी दें। रोज़मर्रा के "
+        "practical या व्यवहार से जुड़े उपायों को प्राथमिकता दें; कोई साधारण Jyotish या spiritual उपाय (जैसे कोई खास mantra, कोई "
+        "fasting day, या संबंधित planet से जुड़ा छोटा दान) सिर्फ तभी जोड़ें जब वह प्रमाण से सच में जुड़ा हो। किसी उपाय से पक्का "
+        "नतीजा मिलने की गारंटी न दें, कोई महँगा gemstone prescribe न करें, और medical, legal या financial सलाह कभी न दें।"
+    ),
 }
 
 

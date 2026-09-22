@@ -6,7 +6,7 @@ question_catalog.py -- Intent-Based Micro Reports, foundation phase.
 The ONE authoritative bilingual catalog of customer-facing questions. Many
 questions map to the SAME core intent (wording differs, the astrology
 analysis is shared -- a new backend intent is never created merely because
-the wording differs). Catalog questions map to 12 core intents.
+the wording differs). Catalog questions map to 14 core intents.
 
 THE SELECTED QUESTION SURVIVES THE MAPPING
   resolve_selection(question_key) returns an IntentSelection carrying BOTH the
@@ -242,6 +242,22 @@ _QUESTION_LIST += _group("life_direction_and_strengths", CATEGORY_LIFE, PERSON_S
      "मेरे लिए जीवन की कौन-सी दिशा सबसे सही रहेगी?", AM.OVERVIEW),
     ("focus_to_use_strengths", "What should I focus on to make the most of my strengths?",
      "अपनी ताकतों का पूरा फायदा उठाने के लिए मुझे किस पर ध्यान देना चाहिए?", AM.GUIDANCE),
+])
+
+# 62/63 -- a Birth + CURRENT diagnostic pair, each its own core intent (kundali_obstacles/kundali_strengths).
+# See modules/intents/intent_registry.py for why these are deliberately separate from life_direction_and_strengths
+# (natal-only) and life_turning_points (timing of phase changes, not an obstacle/strength inventory).
+_QUESTION_LIST += _group("kundali_obstacles", CATEGORY_LIFE, PERSON_SINGLE, [
+    ("major_kundali_obstacles",
+     "What are the major obstacles in my birth chart, what is affecting me currently, and what remedies can help?",
+     "मेरी जन्म कुंडली में प्रमुख बाधाएँ क्या हैं, वर्तमान समय में कौन-सी बाधाएँ सक्रिय हैं और उनके लिए क्या उपाय किए जा सकते हैं?",
+     AM.OVERVIEW),
+])
+_QUESTION_LIST += _group("kundali_strengths", CATEGORY_LIFE, PERSON_SINGLE, [
+    ("major_kundali_strengths",
+     "What are the strongest areas of my birth chart, which strengths are active now, and how can I use them effectively?",
+     "मेरी जन्म कुंडली की प्रमुख शक्तियाँ क्या हैं, वर्तमान समय में कौन-सी शक्तियाँ सक्रिय हैं और उनका सर्वोत्तम उपयोग कैसे करूँ?",
+     AM.OVERVIEW),
 ])
 
 QUESTIONS: Tuple[IntentQuestion, ...] = tuple(_QUESTION_LIST)

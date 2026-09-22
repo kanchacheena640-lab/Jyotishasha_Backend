@@ -3,8 +3,8 @@
 """
 intent_registry.py -- Intent-Based Micro Reports, foundation phase.
 
-The CODE-BASED registry of the 12 approved CORE intent contracts (no DB
-table). 10 are SINGLE person, 2 are DUAL person. Every one is INACTIVE and
+The CODE-BASED registry of the 14 approved CORE intent contracts (no DB
+table). 12 are SINGLE person, 2 are DUAL person. Every one is INACTIVE and
 nothing here is purchasable; wiring to the order/payment/dispatcher flow,
 evidence packs, Luna and PDF generation are later phases.
 
@@ -385,6 +385,39 @@ _CONTRACTS: Tuple[IntentContract, ...] = (
         notes="Natal-only (no structured dignity/karaka data, no Navamsa); modules/focused_reports/life_evidence.py "
               "synthesizes tendencies from existing house/lord and placement facts only, deliberately never a "
               "numeric strength ranking. Implemented and part of the 61-question catalog like every other intent.",
+    ),
+    # 62/63 -- a Birth + CURRENT diagnostic pair, deliberately separate from life_direction_and_strengths (natal-only,
+    # no current-activation dimension) and from life_turning_points (timing of phase changes, not an obstacle/strength
+    # inventory). Evidence is the same natal + house/lord + career/wealth yoga + current MD/AD + Jupiter/Saturn/Rahu
+    # transit facts already used elsewhere in this registry -- no new calculation, no dosha engine, no Shadbala.
+    _contract(
+        "kundali_obstacles", CATEGORY_LIFE, PERSON_SINGLE,
+        "What are the major obstacles in my birth chart, what is affecting me currently, and what remedies can help?",
+        "मेरी जन्म कुंडली में प्रमुख बाधाएँ क्या हैं, वर्तमान समय में कौन-सी बाधाएँ सक्रिय हैं और उनके लिए क्या उपाय किए जा सकते हैं?",
+        houses=_houses(),
+        packs=(PACK_NATAL, PACK_DASHA, PACK_TRANSIT),
+        sections=_sections("your_question", "holding_back_factors", "areas_to_watch", "why_chart_shows",
+                           "practical_guidance"),
+        disclaimer_type=_LIFE_DISCLAIMER, disclaimer_status=DisclaimerStatus.PENDING_TEXT,
+        upsell_slug=None,
+        notes="Identifies only the 2-4 most meaningful natal + currently-activated challenges from existing "
+              "house/lord, career/wealth-yoga, MD/AD and Jupiter/Saturn/Rahu evidence; never labels a placement a "
+              "dosha (no dosha fact is supplied to this intent), never an exhaustive negativity list. Remedies are "
+              "concise, practical-first, never a guaranteed outcome, never a prescribed expensive gemstone.",
+    ),
+    _contract(
+        "kundali_strengths", CATEGORY_LIFE, PERSON_SINGLE,
+        "What are the strongest areas of my birth chart, which strengths are active now, and how can I use them effectively?",
+        "मेरी जन्म कुंडली की प्रमुख शक्तियाँ क्या हैं, वर्तमान समय में कौन-सी शक्तियाँ सक्रिय हैं और उनका सर्वोत्तम उपयोग कैसे करूँ?",
+        houses=_houses(),
+        packs=(PACK_NATAL, PACK_DASHA, PACK_TRANSIT),
+        sections=_sections("your_question", "natural_strengths", "current_period_view", "why_chart_shows",
+                           "practical_guidance"),
+        disclaimer_type=_LIFE_DISCLAIMER, disclaimer_status=DisclaimerStatus.PENDING_TEXT,
+        upsell_slug=None,
+        notes="Distinct from life_direction_and_strengths/natural_strengths (natal-only, no current dimension): this "
+              "pairs durable natal strengths with which of them current MD/AD and Jupiter/Saturn/Rahu evidence "
+              "actually activates right now, plus concise practical guidance for using them in this window.",
     ),
 )
 

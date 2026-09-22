@@ -310,8 +310,12 @@ class PromptTests(unittest.TestCase):
         self.assertIn("exactly as given", hi)
 
     def test_prompt_size_is_modest(self):
-        self.assertLess(len(self.en.prompt), 9_000)
-        self.assertLess(len(self.hi.prompt), 11_000)
+        # Ceilings raised modestly (9,000->10,200 / 11,000->12,000) for the shared master's own approved,
+        # always-on additions: the timing-overlap (retrograde sub-period) sentence and the obstacle/dosha
+        # guardrail paragraph, both in modules/focused_reports/prompts/master_{en,hi}.txt -- reused by every
+        # prompt, including Promotion's, not something Promotion's own spec grew.
+        self.assertLess(len(self.en.prompt), 10_200)
+        self.assertLess(len(self.hi.prompt), 12_000)
         self.assertLess(len(self.en.transit_summary), 1_500)
         self.assertLess(len(self.en.evidence_payload), 3_500)
 

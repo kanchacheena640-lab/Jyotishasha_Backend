@@ -16,6 +16,8 @@ class Archetype(str, Enum):
     DIAGNOSTIC = "DIAGNOSTIC"
     DIRECTION = "DIRECTION"
     COMPATIBILITY = "COMPATIBILITY"
+    OBSTACLES = "OBSTACLES"        # Birth + Current obstacle diagnostic (report #62 only)
+    STRENGTHS_NOW = "STRENGTHS_NOW"  # Birth + Current strength diagnostic (report #63 only)
 
 
 @dataclass(frozen=True)
@@ -47,6 +49,7 @@ class PromptSpec:
     boundaries: tuple[str, ...]
     archetype: Archetype
     capability: Capability
+    remedies: bool = False  # shared remedy instruction (master_contract.REMEDY_INSTRUCTION) appended when True
 
     def __post_init__(self):
         if self.person_mode not in PERSON_MODES:

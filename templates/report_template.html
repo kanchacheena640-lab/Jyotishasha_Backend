@@ -438,6 +438,7 @@
     .app-download-text { font-size: 10.5pt; color: var(--ink); margin-bottom: 6px; }
     .app-download-action { font-size: 11pt; font-weight: bold; color: var(--accent); margin-bottom: 4px; }
     .app-download-link { font-size: 9.5pt; color: var(--muted); }
+    .app-download-link a.app-download-anchor { color: inherit; text-decoration: none; }
 
   </style>
 </head>
@@ -653,14 +654,18 @@
 
   <!-- ================= 6/8. APP DOWNLOAD CLOSING CTA (optional) =================
        LOCKED RULE: the only shared closing CTA. No fake store links --
-       a URL renders only when actually supplied. -->
+       a URL renders only when actually supplied. The store line is wrapped in a
+       real <a href> (WeasyPrint turns an absolute-URL anchor into a clickable
+       PDF link annotation) so the existing, unchanged visible text becomes a
+       working link; .app-download-anchor only resets link color/underline so
+       the printed appearance is unchanged. -->
   {% if app_download %}
     <div class="app-download-box">
       <div class="app-download-heading">{{ app_download.heading or labels.app_download_heading }}</div>
       {% if app_download.benefit_text %}<div class="app-download-text">{{ app_download.benefit_text }}</div>{% endif %}
       <div class="app-download-action">{{ labels.app_download_action }}</div>
-      {% if app_download.play_store_url %}<div class="app-download-link">{{ labels.google_play }}: {{ app_download.play_store_url }}</div>{% endif %}
-      {% if app_download.app_store_url %}<div class="app-download-link">{{ labels.app_store }}: {{ app_download.app_store_url }}</div>{% endif %}
+      {% if app_download.play_store_url %}<div class="app-download-link"><a class="app-download-anchor" href="{{ app_download.play_store_url }}">{{ labels.google_play }}: {{ app_download.play_store_url }}</a></div>{% endif %}
+      {% if app_download.app_store_url %}<div class="app-download-link"><a class="app-download-anchor" href="{{ app_download.app_store_url }}">{{ labels.app_store }}: {{ app_download.app_store_url }}</a></div>{% endif %}
     </div>
   {% endif %}
 

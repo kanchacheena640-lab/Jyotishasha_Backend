@@ -50,7 +50,7 @@ class RelationshipTests(unittest.TestCase):
     def test_exact_registry_and_fail_closed(self):
         self.assertEqual(set(KEYS), {q.question_key for q in QUESTIONS if q.category == "relationship"})
         self.assertEqual(len(KEYS), 9)
-        self.assertEqual(len(dispatcher.HANDLERS), 61)
+        self.assertEqual(len(dispatcher.HANDLERS), 63)
         remaining = [q for q in QUESTIONS if q.question_key not in dispatcher.HANDLERS]
         self.assertEqual(Counter(q.category for q in remaining), {})
         with patch("modules.payments.report_ai_client.generate_report_completion") as ai:
