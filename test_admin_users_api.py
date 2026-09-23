@@ -393,7 +393,34 @@ def main():
             body6 = resp6.get_json()
             check("4: page_size respected (<=3 rows returned)", len(body6["users"]) <= 3)
             check("4: pagination.page_size reflects request", body6["pagination"]["page_size"] == 3)
+            for requested_size in (8, 25, 50, 100, 200, 300, 301, 1000):
+                response = client.get(f"/admin/api/users?page=1&page_size={requested_size}", headers=headers_admin)
+                payload = response.get_json()
+                expected_size = min(requested_size, 300)
+                check(f"4: page_size={requested_size} succeeds", response.status_code == 200)
+                check(f"4: page_size={requested_size} capped correctly", payload["pagination"]["page_size"] == expected_size)
+                check(f"4: page_size={requested_size} row bound", len(payload["users"]) <= expected_size)
             check("4: pagination.total_count >= number of test users seeded", body6["pagination"]["total_count"] >= len(ALL_TEST_UIDS) - 1)
+            # Rollback-only fixtures prove the SQL row cap, not just response metadata.
+            from sqlalchemy import func
+            from modules.services.admin_users_service import list_users
+            from time import perf_counter
+            with db.session.begin_nested() as bulk_fixture:
+                first_id = (db.session.query(func.max(User.id)).scalar() or 0) + 1
+                db.session.add_all([
+                    make_user(first_id + i, name="UsersBulkPageSizeFixture") for i in range(305)
+                ])
+                db.session.flush()
+                started = perf_counter()
+                bulk = list_users(search="UsersBulkPageSizeFixture", page=1, page_size=1000)
+                elapsed_ms = (perf_counter() - started) * 1000
+                check("4: >300 matching users still returns exactly 300", len(bulk["users"]) == 300)
+                check("4: capped pagination retains all 305 matches", bulk["pagination"]["total_count"] == 305)
+                tail = list_users(search="UsersBulkPageSizeFixture", page=2, page_size=300)
+                check("4: second page returns remaining five users", len(tail["users"]) == 5)
+                check("4: 300-row pages do not overlap", not ({u["id"] for u in bulk["users"]} & {u["id"] for u in tail["users"]}))
+                print(f"  Local 300-row service query: {elapsed_ms:.1f} ms (synthetic fixtures)")
+                bulk_fixture.rollback()
 
             # ==========================================================
             print("\n=== 5: search ===")

@@ -254,7 +254,7 @@ ACTIVE_EVENT_NAME = "session_start"
 # style garbage, free text) is treated as "no usable DOB", never guessed.
 _DOB_SHAPE_RE = r"^\d{4}-\d{2}-\d{2}$"
 
-MAX_PAGE_SIZE = 200
+MAX_PAGE_SIZE = 300
 
 # U3A -- the exact, canonical set of values app_users.moon_sign/lagna
 # (12 signs) and app_users.nakshatra (27 nakshatras) can ever legally
