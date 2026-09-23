@@ -125,6 +125,20 @@ STANDARD_REQUIRED_FIELDS = (
 # itself would never have allowed to reach payment in the first place.
 LOVE_PREMIUM_PRODUCT_SLUG = "relationship_future_report"
 LOVE_PREMIUM_GENERATOR = "love_premium_v1"
+
+# P0.3 -- Focused Reports ₹51 Payment Bridge. Two generator values (not
+# one) because the branch below selects required-field/coordinate-
+# validation shape purely from `generator` -- exactly the existing
+# mechanism for LOVE_PREMIUM_GENERATOR -- and 54 SELF vs. 9 DUAL focused
+# products need different shapes. FOCUSED_DUAL_GENERATOR reuses the
+# LOVE_PREMIUM_* required-field sets and _validate_birth_coordinates()
+# verbatim below (same dual contract already proven for
+# relationship_future_report); FOCUSED_GENERATOR reuses
+# STANDARD_REQUIRED_FIELDS. Both route to the same dispatch entry point
+# (modules/payments/report_generation_dispatcher.py) -- no new Celery
+# task is introduced.
+FOCUSED_GENERATOR = "focused_v1"
+FOCUSED_DUAL_GENERATOR = "focused_dual_v1"
 LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS = (
     "name", "email", "dob", "tob", "pob", "latitude", "longitude",
 )
@@ -277,8 +291,10 @@ class OrderService:
         Raises OrderValidationError (never creates a row) for: a
         missing report_slug/product, an unknown product, an inactive
         product, any missing required field for that product's
-        generator, or (love_premium_v1 only) unusable / (0, 0) birth
-        coordinates for the primary person or the partner.
+        generator, or (love_premium_v1 / focused_v1 / focused_dual_v1
+        only -- P0.3; standard_v1 unchanged) unusable / (0, 0) birth
+        coordinates for the primary person and, where applicable, the
+        partner.
         """
         raw_slug = payload.get("report_slug") or payload.get("product")
         if not _has_value(raw_slug) or not isinstance(raw_slug, str):
@@ -295,7 +311,12 @@ class OrderService:
 
         partner_payload: Optional[Dict[str, Any]] = None
 
-        if product.generator == LOVE_PREMIUM_GENERATOR:
+        if product.generator in (LOVE_PREMIUM_GENERATOR, FOCUSED_DUAL_GENERATOR):
+            # P0.3 -- focused_dual_v1 (9 relationship-family focused products)
+            # shares this branch verbatim with love_premium_v1: same primary/
+            # partner required-field sets, same _validate_birth_coordinates()
+            # calls, same error-message shape. Nothing below was changed to
+            # accommodate it.
             missing = _missing_fields(payload, LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS)
             if missing:
                 raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
@@ -316,6 +337,23 @@ class OrderService:
             # DOB-only partner analysis is a separate, unpaid/internal capability
             # (modules/love/love_data_collector.py) and is not affected.
             _validate_birth_coordinates(partner_payload, "partner.")
+        elif product.generator == FOCUSED_GENERATOR:
+            # P0.3 -- focused_v1 (54 SELF focused products). Same required-field
+            # set as every standard report (STANDARD_REQUIRED_FIELDS, unchanged),
+            # PLUS a birth-coordinate check the standard_v1 branch below has never
+            # enforced at this layer -- a deliberate, additive safety choice for
+            # this new product family only; standard_v1's own existing behavior
+            # (final `else` below) is left byte-for-byte unchanged.
+            missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
+            if missing:
+                raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
+            _validate_dob(payload.get("dob"), "dob")
+            _validate_birth_coordinates(payload)
+            candidate_partner = payload.get("partner")
+            if isinstance(candidate_partner, dict):
+                partner_payload = candidate_partner
+                if "dob" in partner_payload:
+                    _validate_dob(partner_payload.get("dob"), "partner.dob")
         else:
             missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
             if missing:

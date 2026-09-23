@@ -139,7 +139,17 @@ from modules.payments.report_product_registry import ReportProduct
 # resolve to the SAME underlying call). A registry row with any other
 # `generator` value is rejected as UNKNOWN_GENERATOR -- never guessed,
 # never silently dispatched anyway.
-KNOWN_GENERATORS = frozenset({"standard_v1", "love_premium_v1"})
+#
+# P0.3 -- "focused_v1" (54 SELF) / "focused_dual_v1" (9 DUAL) added.
+# Both also resolve to the SAME _start_generation() call below: no new
+# Celery task is registered for them, exactly the same reasoning as
+# why "standard_v1"/"love_premium_v1" already share one entry point --
+# tasks.py::_generate_and_send_report_core() is where the actual
+# focused-vs-standard-vs-relationship branch happens (see that
+# function's own P0.3 addition), not here. This dispatcher's job stays
+# "validate the product is active and its generator is known," never
+# "pick a different Python callable."
+KNOWN_GENERATORS = frozenset({"standard_v1", "love_premium_v1", "focused_v1", "focused_dual_v1"})
 
 
 class ReportGenerationDispatchStatus:

@@ -9,6 +9,11 @@ from extensions import db
 from models import Order
 from email_utils import send_email
 from modules.payments.report_delivery_service import deliver_generated_report
+# P0.3 -- Focused Reports Rs51 Payment Bridge. Static, in-memory set of all
+# 63 question_keys (zero DB access) used only to decide whether an Order's
+# product belongs to the focused-report family at all; the actual trusted
+# generator lookup happens inside paid_report_router, not here.
+from modules.focused_reports.dispatcher import HANDLERS as FOCUSED_QUESTION_KEYS
 from summary_blocks import build_summary_blocks_with_transit, build_birth_chart_summary_display
 from full_kundali_api import calculate_full_kundali
 from transit_engine import get_current_positions
@@ -250,6 +255,21 @@ def _generate_and_send_report_core(order_id):
             product = order.get("product")
             if product == "relationship_future_report":
                 routed = route_report_generation(order_id, product)
+                return
+
+            # P0.3 -- Focused Reports Rs51 Payment Bridge. A pure, in-memory
+            # membership check (modules.focused_reports.dispatcher.HANDLERS,
+            # a static dict of all 63 question_keys -- zero DB access, same
+            # cost as the string-equality check just above it) so every
+            # standard/relationship Order's routing decision here stays as
+            # DB-free as it already was; the ReportProduct registry lookup
+            # (the actual trusted generator) happens INSIDE the router,
+            # reached only for a genuine focused product. Covers all 63
+            # current and any future focused product without enumerating
+            # them here.
+            if product in FOCUSED_QUESTION_KEYS:
+                from modules.focused_reports.paid_report_router import route_focused_report_generation
+                route_focused_report_generation(order_id)
                 return
             # ⬆️ YAHAN TAK
 
