@@ -305,9 +305,12 @@ def main():
                 "product": STANDARD_SLUG, "name": "Purchase Test User", "email": f"{MARKER}-{_unique('s')}@example.com", "phone": "9876543210",
                 "dob": "1994-01-26", "tob": "08:40", "pob": "Sindhnur Rural", "latitude": "15.6167", "longitude": "76.6833", "language": "en"})
             rs, _ = pay(client, standard)
-            check("18a: an ORIGINAL (non-focused) paid report is out of scope -> success response unchanged, NO purchase_measurement",
-                  rs.status_code == 200 and rs.get_json()["status"] == "success" and "purchase_measurement" not in rs.get_json())
-            check("18b: ...and it is PAID exactly as before", standard.payment_status == "PAID" and pm.build_purchase_measurement(standard.id) is None)
+            # P0.2A supersedes the original P0.2 scope: original reports are now measured too
+            # (full coverage of all 88 products is proven in test_reports_ads_p02a_original_reports_measurement.py).
+            check("18a: (P0.2A) a paid ORIGINAL standard report now carries the canonical purchase_measurement (original_report / standard)",
+                  rs.status_code == 200 and rs.get_json()["status"] == "success"
+                  and rs.get_json()["purchase_measurement"]["product_family"] == "original_report" and rs.get_json()["purchase_measurement"]["report_type"] == "standard")
+            check("18b: ...the focused objects above are unchanged (family focused_report)", m["product_family"] == "focused_report" and dm["product_family"] == "focused_report")
 
             broken_order = create_order(client, self_payload())
             with patch.object(pm.db.session, "get", side_effect=RuntimeError("boom")):
