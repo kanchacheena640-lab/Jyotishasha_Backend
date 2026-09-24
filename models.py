@@ -99,6 +99,70 @@ class Order(db.Model):
     # against a payment's own captured amount.
     amount_paise = db.Column(db.Integer, nullable=True)
 
+
+class OrderAttribution(db.Model):
+    """Reports Ads P0.1 -- advertising attribution persisted 1:1 against
+    the internal Order, at order-creation time (before payment).
+
+    Financial truth stays the Order; this row is CONTEXT only. It never
+    holds customer data: no name/email/phone/birth details, no session or
+    user identifier -- only the sanitized campaign/click fields below plus
+    a non-PII consent snapshot. Written by
+    modules/payments/order_attribution.py::record_order_attribution()
+    (best-effort: its failure never fails an order or a payment). The
+    Razorpay notes / payment_verified `campaign_context` path is
+    unchanged and remains a temporary, compatible duplicate of the
+    utm_source/medium/campaign/referrer subset.
+
+    `attribution_type`: which touch the flat columns describe --
+    'latest_click' (a campaign signal was recorded; flat columns = that
+    click, `first_touch` keeps the original first visit), 'first_touch'
+    (only the first visit had a signal), or 'none' (the browser reported
+    attribution but found no campaign signal -- distinct from NO ROW,
+    which means an older client that sent nothing).
+
+    Consent: `consent_analytics` / `consent_advertising` NULL means "no
+    explicit, readable choice" -- never a guessed value.
+    """
+    __tablename__ = "order_attributions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(
+        db.Integer,
+        db.ForeignKey("orders.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    attribution_type = db.Column(db.String(20), nullable=False, default="none")
+
+    utm_source = db.Column(db.String(256), nullable=True)
+    utm_medium = db.Column(db.String(256), nullable=True)
+    utm_campaign = db.Column(db.String(256), nullable=True)
+    utm_content = db.Column(db.String(256), nullable=True)
+    utm_term = db.Column(db.String(256), nullable=True)
+
+    gclid = db.Column(db.String(256), nullable=True)
+    gbraid = db.Column(db.String(256), nullable=True)
+    wbraid = db.Column(db.String(256), nullable=True)
+    fbclid = db.Column(db.String(256), nullable=True)
+
+    landing_page = db.Column(db.String(256), nullable=True)
+    referrer = db.Column(db.String(256), nullable=True)
+
+    # Sanitized first-touch snapshot (same allowlisted keys), kept only
+    # when the flat columns describe a different (latest-click) touch.
+    first_touch = db.Column(db.JSON, nullable=True)
+
+    consent_geo_policy = db.Column(db.String(20), nullable=True)
+    consent_analytics = db.Column(db.Boolean, nullable=True)
+    consent_advertising = db.Column(db.Boolean, nullable=True)
+
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, server_default=db.func.now())
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, server_default=db.func.now(), onupdate=db.func.now()
+    )
+
+
 class AstroEvent(db.Model):
     __tablename__ = "astro_events"
 

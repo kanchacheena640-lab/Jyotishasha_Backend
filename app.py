@@ -524,6 +524,16 @@ def create_razorpay_order():
         )
         return jsonify({"error": "invalid_request", "message": str(exc)}), 400
 
+    # Reports Ads P0.1 -- persist the (optional) advertising attribution
+    # snapshot against this INTERNAL Order, before Razorpay is contacted.
+    # Best-effort and isolated: it never raises, never blocks, and an
+    # absent/invalid `attribution` simply persists nothing -- direct and
+    # organic purchases proceed exactly as before. Deliberately NOT added
+    # to Razorpay notes (see modules/payments/order_attribution.py); the
+    # existing campaign_context/notes path below is unchanged.
+    from modules.payments.order_attribution import record_order_attribution
+    record_order_attribution(order.id, data.get("attribution"))
+
     try:
         # Section B.5 -- safe reconciliation metadata ONLY. Deliberately
         # never name/email/dob/tob/pob/latitude/longitude/partner --
