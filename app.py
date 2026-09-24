@@ -206,6 +206,7 @@ def webhook():
     from modules.payments.payment_models import PaymentProviderType, PaymentPurpose, PaymentRequest
     from modules.payments.razorpay_provider import RazorpayProvider
     from modules.payments.campaign_attribution import extract_campaign_context_from_notes
+    from modules.payments.purchase_measurement import build_purchase_measurement
     from modules.payments.payment_finalization_service import (
         PaymentFinalizationService, ReportPaymentFinalizationStatus,
     )
@@ -224,6 +225,19 @@ def webhook():
     finalization_service = PaymentFinalizationService()
     dispatcher = ReportGenerationDispatcher()
 
+    # Reports Ads P0.2 -- the canonical purchase measurement object is
+    # attached ONLY to the responses that already prove the payment is
+    # verified and the Order is PAID (every 200 below). It is derived from
+    # trusted backend state by build_purchase_measurement(), which returns
+    # None (and never raises) for anything that is not a PAID focused web
+    # purchase -- so this can never change a payment outcome or the
+    # response of any other product.
+    def _confirmed(payload, order_id):
+        measurement = build_purchase_measurement(order_id)
+        if measurement is not None:
+            payload["purchase_measurement"] = measurement
+        return jsonify(payload), 200
+
     # ---------------------------------------------------------
     # Section G -- the ONE place a finalization result (plus an optional
     # dispatch attempt) becomes this route's HTTP response. Replaces the
@@ -241,40 +255,40 @@ def webhook():
                 # is delayed pending the existing, separate manual/
                 # automatic recovery mechanisms (report_stage="Failed",
                 # unchanged from R5).
-                return jsonify({
+                return _confirmed({
                     "status": "payment_confirmed_processing_delayed",
                     "message": "Your payment was received. Report generation could not start immediately and will be retried.",
                     "order_id": result.order_id,
-                }), 200
-            return jsonify({
+                }, result.order_id)
+            return _confirmed({
                 "status": "success", "message": "Payment confirmed; report generation started.",
                 "order_id": result.order_id,
-            }), 200
+            }, result.order_id)
 
         if status == ReportPaymentFinalizationStatus.ALREADY_FINALIZED:
             if dispatch_result is not None:
                 if dispatch_result.status == ReportGenerationDispatchStatus.DISPATCHED:
-                    return jsonify({
+                    return _confirmed({
                         "status": "recovered_success",
                         "message": "Payment already confirmed; report generation has now been started.",
                         "order_id": result.order_id,
-                    }), 200
+                    }, result.order_id)
                 if dispatch_result.status == ReportGenerationDispatchStatus.DISPATCH_FAILED:
-                    return jsonify({
+                    return _confirmed({
                         "status": "payment_confirmed_processing_delayed",
                         "message": "Your payment was received. Report generation could not start immediately and will be retried.",
                         "order_id": result.order_id,
-                    }), 200
+                    }, result.order_id)
                 # Any other dispatch outcome here (ALREADY_QUEUED/
                 # PROCESSING/READY/FAILED_REQUIRES_MANUAL_RETRY/etc.)
                 # means the report is already in a known, tracked state
                 # -- still an idempotent success from the payment's
                 # point of view.
-            return jsonify({
+            return _confirmed({
                 "status": "already_processing",
                 "message": "This payment was already confirmed.",
                 "order_id": result.order_id,
-            }), 200
+            }, result.order_id)
 
         # Every remaining status is a genuine, non-2xx rejection --
         # never a fake success, and never implying the CUSTOMER should
