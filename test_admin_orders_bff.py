@@ -177,13 +177,50 @@ def main():
             db.session.refresh(order)
             check("B: rejected PUT (non-admin) changed nothing", order.dob == "1990-01-01")
 
+            # Admin Orders P0 fix: update_order() now rejects a CHANGED pob
+            # that isn't accompanied by a valid lat/long pair (stale-
+            # coordinate guard) -- a real place selection always supplies
+            # BOTH together, so this fixture does too.
             resp = client.put(
-                f"/admin/api/order/{order.id}", json={"dob": "1991-02-02", "pob": "Mumbai"},
+                f"/admin/api/order/{order.id}",
+                json={"dob": "1991-02-02", "pob": "Mumbai", "latitude": "19.076", "longitude": "72.8777"},
                 headers={"Authorization": f"Bearer {token_admin}"},
             )
             check("B: admin JWT -> 200 (unchanged regression path)", resp.status_code == 200)
             db.session.refresh(order)
-            check("B: admin JWT PUT actually persisted dob/pob", order.dob == "1991-02-02" and order.pob == "Mumbai")
+            check(
+                "B: admin JWT PUT actually persisted dob/pob/latitude/longitude",
+                order.dob == "1991-02-02" and order.pob == "Mumbai"
+                and order.latitude == "19.076" and order.longitude == "72.8777",
+            )
+
+            # A changed pob with NO coordinates at all -- exactly the stale-
+            # coordinate mismatch the P0 fix exists to prevent -- is a 400,
+            # and leaves the order completely untouched.
+            resp = client.put(
+                f"/admin/api/order/{order.id}", json={"pob": "Kolkata"},
+                headers={"Authorization": f"Bearer {token_admin}"},
+            )
+            check("B: changed pob with no lat/long -> 400 invalid_place", resp.status_code == 400 and resp.get_json().get("error") == "invalid_place")
+            db.session.refresh(order)
+            check("B: rejected place-only PUT changed nothing", order.pob == "Mumbai" and order.latitude == "19.076")
+
+            # An UNCHANGED pob (identical to what's already stored) is never
+            # blocked by the guard, even with no lat/long in the request.
+            resp = client.put(
+                f"/admin/api/order/{order.id}", json={"dob": "1991-02-03", "pob": "Mumbai"},
+                headers={"Authorization": f"Bearer {token_admin}"},
+            )
+            check("B: unchanged pob (no lat/long in request) -> 200, not blocked", resp.status_code == 200)
+            db.session.refresh(order)
+            check("B: unchanged-pob PUT persisted dob, left latitude untouched", order.dob == "1991-02-03" and order.latitude == "19.076")
+
+            # Reset dob back to the value the rest of this test's B section expects next.
+            resp = client.put(
+                f"/admin/api/order/{order.id}", json={"dob": "1991-02-02"},
+                headers={"Authorization": f"Bearer {token_admin}"},
+            )
+            check("B: dob-only reset for the rest of section B -> 200", resp.status_code == 200)
 
             resp = client.put(
                 f"/admin/api/order/{order.id}", json={"dob": "1992-03-03"},
@@ -203,6 +240,75 @@ def main():
 
             resp = client.put("/admin/api/order/999999999", json={"dob": "2000-01-01"}, headers={"X-Admin-Bridge-Key": BRIDGE_SECRET})
             check("B: nonexistent order_id through bridge -> 404", resp.status_code == 404)
+
+            # ==========================================================
+            print("\n=== B2: NULL/empty/real coordinate preservation on an unchanged place ===")
+            # NULL Coordinate Preservation Fix: OrderList.tsx now omits
+            # latitude/longitude from the PUT body entirely for an
+            # unchanged place, relying on update_order()'s own
+            # data.get("latitude", order.latitude) default to leave
+            # whatever is already stored completely untouched. These three
+            # dedicated fixtures prove the ENDPOINT side of that contract
+            # for each starting representation, independent of the
+            # frontend -- an omitted key must never be coerced into any
+            # other representation.
+            # ==========================================================
+            null_order = make_order(latitude=None, longitude=None)
+            order_ids.append(null_order.id)
+            resp = client.put(
+                f"/admin/api/order/{null_order.id}", json={"dob": "1993-04-04", "pob": null_order.pob},
+                headers={"X-Admin-Bridge-Key": BRIDGE_SECRET},
+            )
+            check("B2: unchanged pob, coordinates OMITTED, starting NULL -> 200", resp.status_code == 200)
+            db.session.refresh(null_order)
+            check("B2: NULL latitude/longitude remain exactly NULL (never coerced to \"\")", null_order.latitude is None and null_order.longitude is None)
+            check("B2: dob still persisted normally alongside the preserved NULL coordinates", null_order.dob == "1993-04-04")
+
+            empty_order = make_order(latitude="", longitude="")
+            order_ids.append(empty_order.id)
+            resp = client.put(
+                f"/admin/api/order/{empty_order.id}", json={"dob": "1993-04-05", "pob": empty_order.pob},
+                headers={"X-Admin-Bridge-Key": BRIDGE_SECRET},
+            )
+            check("B2: unchanged pob, coordinates OMITTED, starting \"\" -> 200", resp.status_code == 200)
+            db.session.refresh(empty_order)
+            check("B2: \"\" latitude/longitude remain exactly \"\" (not normalized to NULL or anything else)", empty_order.latitude == "" and empty_order.longitude == "")
+
+            real_coord_order = make_order(latitude="19.0760", longitude="72.8777")
+            order_ids.append(real_coord_order.id)
+            resp = client.put(
+                f"/admin/api/order/{real_coord_order.id}", json={"dob": "1993-04-06", "pob": real_coord_order.pob},
+                headers={"X-Admin-Bridge-Key": BRIDGE_SECRET},
+            )
+            check("B2: unchanged pob, coordinates OMITTED, starting real values -> 200", resp.status_code == 200)
+            db.session.refresh(real_coord_order)
+            check(
+                "B2: existing real latitude/longitude preserved byte-for-byte (no float round-trip, no re-formatting)",
+                real_coord_order.latitude == "19.0760" and real_coord_order.longitude == "72.8777",
+            )
+
+            # A CHANGED pob with no resolved coordinates must still be
+            # blocked exactly as before -- this fix never weakens that rule.
+            resp = client.put(
+                f"/admin/api/order/{real_coord_order.id}", json={"pob": "A Different City"},
+                headers={"X-Admin-Bridge-Key": BRIDGE_SECRET},
+            )
+            check("B2: changed pob with no coordinates in the payload -> still 400 invalid_place (rule not weakened)", resp.status_code == 400 and resp.get_json().get("error") == "invalid_place")
+            db.session.refresh(real_coord_order)
+            check("B2: rejected changed-pob attempt left the order untouched", real_coord_order.pob != "A Different City" and real_coord_order.latitude == "19.0760")
+
+            # A CHANGED pob WITH freshly-resolved coordinates (the autocomplete path) still works normally.
+            resp = client.put(
+                f"/admin/api/order/{real_coord_order.id}",
+                json={"pob": "Pune, Maharashtra, India", "latitude": "18.5204", "longitude": "73.8567"},
+                headers={"X-Admin-Bridge-Key": BRIDGE_SECRET},
+            )
+            check("B2: changed pob WITH valid new coordinates -> 200 (fresh-selection path unaffected)", resp.status_code == 200)
+            db.session.refresh(real_coord_order)
+            check(
+                "B2: the new place and its freshly-resolved coordinates were persisted together",
+                real_coord_order.pob == "Pune, Maharashtra, India" and real_coord_order.latitude == "18.5204" and real_coord_order.longitude == "73.8567",
+            )
 
             # ==========================================================
             print("\n=== C: POST /admin/api/resend/<id> auth matrix (reconciliation mocked) ===")

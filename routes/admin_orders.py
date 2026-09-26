@@ -40,12 +40,25 @@ def get_all_orders():
             "name": o.name,
             "email": o.email,
             "phone": o.phone,                 # ✅ NEW: phone pass to frontend
-            "report_name": o.product,         # ✅ map: product → report_name            
+            "report_name": o.product,         # ✅ map: product → report_name
             "payment_status": o.status,       # ✅ map: status → payment_status
             "order_time": o.created_at.isoformat() if o.created_at else None,
             "report_stage": o.report_stage or "Pending",        # ✅ placeholder (abhi column nahi)
-            "pdf_url": f"/admin/download/{o.id}" if o.pdf_url else None,                   
-            "language": o.language or "en" 
+            "pdf_url": f"/admin/download/{o.id}" if o.pdf_url else None,
+            "language": o.language or "en",
+            # Admin Orders P0 fixes: the Edit modal needs the order's
+            # EXISTING place/birth data to know what "unchanged" means
+            # (previously these were never returned at all, so the modal
+            # always opened blank and every save silently overwrote real
+            # data with empty strings). email_status is needed to tell
+            # "still generating" apart from "emailed and cleaned up" apart
+            # from "delivery failed" -- report_stage alone can't.
+            "dob": o.dob,
+            "tob": o.tob,
+            "pob": o.pob,
+            "latitude": o.latitude,
+            "longitude": o.longitude,
+            "email_status": o.email_status,
         })
 
     return jsonify(data), 200
@@ -81,6 +94,27 @@ def update_order(order_id):
     data = request.get_json()
     print("[DEBUG] Incoming Data:", data)   # ✅ Add this line to check payload
 
+    # Admin Orders P0 fix: minimum contract-level guard against a stale-
+    # coordinate mismatch -- a request that CHANGES pob must bring a
+    # genuinely valid, non-sentinel latitude/longitude pair with it. An
+    # unchanged pob (or a request that omits pob entirely) is untouched,
+    # exactly as before; this does not redesign the endpoint or its
+    # allowed-field contract.
+    new_pob = data.get("pob")
+    if new_pob is not None and new_pob != order.pob:
+        try:
+            lat_val = float(data.get("latitude"))
+            lng_val = float(data.get("longitude"))
+        except (TypeError, ValueError):
+            return jsonify({
+                "error": "invalid_place",
+                "message": "Changing the place of birth requires a valid latitude/longitude from a genuine place selection.",
+            }), 400
+        if not (-90 <= lat_val <= 90 and -180 <= lng_val <= 180) or (lat_val == 0 and lng_val == 0):
+            return jsonify({
+                "error": "invalid_place",
+                "message": "latitude/longitude are missing or outside valid geographic ranges for the new place.",
+            }), 400
 
     # ✅ update only allowed fields
     order.dob = data.get("dob", order.dob)
