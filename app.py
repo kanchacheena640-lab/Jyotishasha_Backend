@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from config.razorpay_config import razorpay_client
 from routes.admin_orders import admin_orders_bp
+from routes.routes_revenue import routes_revenue
 from routes.routes_reconciliation import routes_reconciliation
 from routes.routes_metrics import routes_metrics
 from summary_api import summary_api
@@ -85,6 +86,7 @@ app.register_blueprint(life_tools_bp)
 # / services/ai_prediction_lab/openai_client.py for the ACTUALLY-used
 # clients, which were converted to lazy singletons instead of removed.)
 app.register_blueprint(admin_orders_bp)
+app.register_blueprint(routes_revenue)
 app.register_blueprint(routes_reconciliation)
 app.register_blueprint(routes_metrics)
 app.register_blueprint(summary_api)
