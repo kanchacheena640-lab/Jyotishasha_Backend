@@ -16,7 +16,6 @@ from routes.admin_orders import admin_orders_bp
 from routes.routes_revenue import routes_revenue
 from routes.routes_reconciliation import routes_reconciliation
 from routes.routes_metrics import routes_metrics
-from summary_api import summary_api
 from routes.daily_horoscope import daily_bp
 from routes.monthly_horoscope import monthly_bp
 from routes.routes_panchang import routes_panchang
@@ -89,7 +88,6 @@ app.register_blueprint(admin_orders_bp)
 app.register_blueprint(routes_revenue)
 app.register_blueprint(routes_reconciliation)
 app.register_blueprint(routes_metrics)
-app.register_blueprint(summary_api)
 app.register_blueprint(daily_bp)
 app.register_blueprint(monthly_bp)
 app.register_blueprint(routes_panchang)

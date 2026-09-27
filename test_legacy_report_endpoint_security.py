@@ -90,17 +90,49 @@ class LegacyReportEndpointSecurityTests(unittest.TestCase):
                 with self.subTest(method=method, path=path):
                     self.assertEqual(client.open(path, method=method).status_code, 404)
 
+    def test_summary_api_route_is_absent_from_production_url_map(self):
+        """Retired legacy summary_api blueprint (POST /api/generate-summary-report):
+        an unauthenticated, unpaid AI/PDF-generation path with no verified
+        runtime consumer anywhere in this repo, the website, or the Flutter
+        app (confirmed by repository-wide search before this test was
+        added). summary_api.py itself is intentionally left in place, only
+        its registration in app.py was removed -- this test proves that
+        removal actually took effect in the real app object, exactly like
+        test_legacy_route_is_absent_from_production_url_map does for the
+        earlier /api/generate-report retirement."""
+        self.assertNotIn("summary_api", self.app.blueprints)
+        self.assertFalse(any(
+            rule.rule.rstrip("/") == "/api/generate-summary-report"
+            for rule in self.app.url_map.iter_rules()
+        ))
+        client = self.app.test_client()
+        for method in ("GET", "POST", "OPTIONS"):
+            for path in ("/api/generate-summary-report", "/api/generate-summary-report/"):
+                with self.subTest(method=method, path=path):
+                    self.assertEqual(client.open(path, method=method).status_code, 404)
+
     def test_canonical_paid_routes_still_resolve_to_real_handlers(self):
+        # /api/razorpay-order and /webhook are the SAME entry points for
+        # every Razorpay-web report purchase regardless of product family
+        # (original standard_v1, the relationship_future_report love_
+        # premium_v1, and the focused_v1/focused_dual_v1 ones alike --
+        # ReportGenerationDispatcher's registry lookup differentiates them
+        # internally by Order.product, never by a separate URL), so
+        # proving these two still resolve after retiring summary_api
+        # covers all three of those flows in one check. The Google Play
+        # report-confirmation route is a separate, distinct entry point
+        # (app/reports/google flow) checked alongside it here.
         adapter = self.app.url_map.bind("localhost")
-        for path, expected in (
-            ("/api/razorpay-order", "create_razorpay_order"),
-            ("/webhook", "webhook"),
+        for path, expected, expected_module in (
+            ("/api/razorpay-order", "create_razorpay_order", "app"),
+            ("/webhook", "webhook", "app"),
+            ("/api/reports/google/confirm", "routes_google_report_confirm.confirm_google_report_purchase", "routes.routes_google_report_confirm"),
         ):
             with self.subTest(path=path):
                 endpoint, arguments = adapter.match(path, method="POST")
                 self.assertEqual(endpoint, expected)
                 self.assertEqual(arguments, {})
-                self.assertEqual(self.app.view_functions[endpoint].__module__, "app")
+                self.assertEqual(self.app.view_functions[endpoint].__module__, expected_module)
 
 
 if __name__ == "__main__":
