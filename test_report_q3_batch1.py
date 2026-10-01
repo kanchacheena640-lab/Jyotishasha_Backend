@@ -342,8 +342,8 @@ with app.app_context():
               captured.get("app_download") is not None)
         if captured.get("app_download"):
             check("5: app_download uses the exact requested heading copy", captured["app_download"]["heading"] == "Continue Your Astrology Journey")
-            check("5: app_download uses the exact requested body copy",
-                  captured["app_download"]["benefit_text"] == "Get your personalized astrology insights, daily guidance and more in the Jyotishasha App.")
+            check("5: app_download's generic body sentence is retired (the template renders the five benefits instead)",
+                  captured["app_download"]["benefit_text"] == "")
             check("5: app_download carries the owner-confirmed Play Store URL", captured["app_download"]["play_store_url"] == "https://play.google.com/store/apps/details?id=com.jyotishasha.app&pcampaignid=web_share")
             check("5: app_download carries NO invented App Store URL", captured["app_download"]["app_store_url"] is None)
     finally:
@@ -533,9 +533,8 @@ with app.app_context():
               (captured.get("action_list") or {}).get("heading") == "आपके लिए Next Steps")
         check("12: (human visual QA correction) app_download heading is the localized Hindi copy",
               (captured.get("app_download") or {}).get("heading") == "अपनी ज्योतिष यात्रा जारी रखें")
-        check("12: (human visual QA correction) app_download body is the localized Hindi copy",
-              (captured.get("app_download") or {}).get("benefit_text")
-              == "Jyotishasha App में पाएं अपनी Personalized Astrology Insights, Daily Guidance और बहुत कुछ।")
+        check("12: Hindi app_download's generic body sentence is retired too (five benefits render instead)",
+              (captured.get("app_download") or {}).get("benefit_text") == "")
         check("12: Hindi report still carries the owner-confirmed Play Store URL",
               (captured.get("app_download") or {}).get("play_store_url") == "https://play.google.com/store/apps/details?id=com.jyotishasha.app&pcampaignid=web_share")
     finally:

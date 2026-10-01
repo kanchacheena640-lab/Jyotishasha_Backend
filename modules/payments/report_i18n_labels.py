@@ -86,9 +86,34 @@ LABELS = {
         "en": "Continue Your Astrology Journey",
         "hi": "अपनी ज्योतिष यात्रा जारी रखें",
     },
+    # Retired (owner-approved CTA update): the generic benefit sentence is replaced by the five
+    # app_download_benefit_* points below, which templates/report_template.html renders inside the CTA.
+    # Kept as an EMPTY entry, not deleted, because tasks.py, modules/love/love_premium_task.py and
+    # modules/focused_reports/pdf_adapter.py still pass get_label("app_download_body") as the CTA's
+    # `benefit_text`; empty means the template's {% if app_download.benefit_text %} line renders nothing.
     "app_download_body": {
-        "en": "Get your personalized astrology insights, daily guidance and more in the Jyotishasha App.",
-        "hi": "Jyotishasha App में पाएं अपनी Personalized Astrology Insights, Daily Guidance और बहुत कुछ।",
+        "en": "",
+        "hi": "",
+    },
+    "app_download_benefit_1": {
+        "en": "Ask 1 Free Question Daily with Ask Now",
+        "hi": "Ask Now में हर दिन 1 सवाल Free पूछें",
+    },
+    "app_download_benefit_2": {
+        "en": "Get Personalized Transit Alerts & Effects",
+        "hi": "पाएं Personalized Transit Alerts और उनके Effects",
+    },
+    "app_download_benefit_3": {
+        "en": "Check your Daily Panchang Updates",
+        "hi": "देखें Daily Panchang Updates",
+    },
+    "app_download_benefit_4": {
+        "en": "Read your Daily Horoscope",
+        "hi": "पढ़ें अपना Daily Horoscope",
+    },
+    "app_download_benefit_5": {
+        "en": "Share Daily Spiritual Cards",
+        "hi": "शेयर करें Daily Spiritual Cards",
     },
     "app_download_action": {
         "en": "Download Jyotishasha App",

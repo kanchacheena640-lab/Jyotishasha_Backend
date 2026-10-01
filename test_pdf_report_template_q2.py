@@ -219,6 +219,36 @@ check("C: app-download renders heading/benefit text", "Discover more with the ap
 # still the one locked action, still app-download only.
 check("C: app-download always states the one locked action", "Download Jyotishasha App" in b)
 
+# Owner-approved CTA update: five benefit points (shared labels, EN/HI) replace the generic body sentence.
+import re
+from app_config import JYOTISHASHA_PLAY_STORE_URL, JYOTISHASHA_APP_STORE_URL
+APP_BENEFITS = {
+    "en": ["Ask 1 Free Question Daily with Ask Now", "Get Personalized Transit Alerts &amp; Effects",
+           "Check your Daily Panchang Updates", "Read your Daily Horoscope", "Share Daily Spiritual Cards"],
+    "hi": ["Ask Now में हर दिन 1 सवाल Free पूछें", "पाएं Personalized Transit Alerts और उनके Effects",
+           "देखें Daily Panchang Updates", "पढ़ें अपना Daily Horoscope", "शेयर करें Daily Spiritual Cards"],
+}
+for _lang, _benefits in APP_BENEFITS.items():
+    _labels = labels_for_language(_lang)
+    _b = body_of(render(language=_lang, labels=_labels, app_download={
+        "heading": _labels["app_download_heading"], "benefit_text": _labels["app_download_body"],
+        "play_store_url": JYOTISHASHA_PLAY_STORE_URL, "app_store_url": JYOTISHASHA_APP_STORE_URL}))
+    _box = _b[_b.index('class="app-download-box"'):]
+    check(f"C ({_lang}): the CTA lists exactly the five benefits, in order, inside the box",
+          _box.count('<ul class="app-download-benefits">') == 1 and _box.count("<li>") == 5
+          and [_box.index(f"<li>{x}</li>") for x in _benefits] == sorted(_box.index(f"<li>{x}</li>") for x in _benefits))
+    check(f"C ({_lang}): the retired generic body sentence no longer renders (no empty text div either)",
+          "app-download-text" not in _box and "Get your personalized astrology insights" not in _box
+          and "Personalized Astrology Insights, Daily Guidance" not in _box)
+    check(f"C ({_lang}): heading, locked button text and Play Store link unchanged",
+          _labels["app_download_heading"] in _box and _labels["app_download_action"] in _box
+          and f'href="{JYOTISHASHA_PLAY_STORE_URL.replace("&", "&amp;")}"' in _box)
+    check(f"C ({_lang}): benefits sit between the heading and the button",
+          _box.index(_labels["app_download_heading"]) < _box.index("app-download-benefits")
+          < _box.index(_labels["app_download_action"]))
+check("C: the CTA box keeps its page-break protection",
+      re.search(r"\.app-download-box \{[^}]*page-break-inside: avoid", open("templates/report_template.html", encoding="utf-8").read()) is not None)
+
 app_with_urls = render(app_download={"play_store_url": "https://play.google.com/store/apps/details?id=com.jyotishasha.app"})
 check("C: optional Play Store URL renders when supplied", "play.google.com/store/apps/details?id=com.jyotishasha.app" in body_of(app_with_urls))
 

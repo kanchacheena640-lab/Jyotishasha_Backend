@@ -52,9 +52,9 @@ class FocusedPdfTests(unittest.TestCase):
             # invented URL, and app_store_url stays None exactly like every other existing report.
             self.assertEqual(args["app_download"], {
                 "heading": "Continue Your Astrology Journey" if language == "en" else "अपनी ज्योतिष यात्रा जारी रखें",
-                "benefit_text": ("Get your personalized astrology insights, daily guidance and more in the "
-                                 "Jyotishasha App." if language == "en" else
-                                 "Jyotishasha App में पाएं अपनी Personalized Astrology Insights, Daily Guidance और बहुत कुछ।"),
+                # The generic benefit sentence is retired (empty); the template renders the five
+                # app_download_benefit_* labels inside the CTA instead.
+                "benefit_text": "",
                 "play_store_url": JYOTISHASHA_PLAY_STORE_URL,
                 "app_store_url": JYOTISHASHA_APP_STORE_URL,
             })
