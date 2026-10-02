@@ -16,12 +16,18 @@ Covers scenarios A-J from the task:
   I. both verification routes (/api/chatpack/verify and
      /api/chat/pack/google/verify) produce equivalent behavior
   J. Google verification failure creates no ChatPack entitlement
+  K. Ask Now P0 HTTP contract on /api/chatpack/verify: 401 without JWT,
+     body user_id mismatch credited to the JWT user only (warning logged),
+     non-2xx for every rejection, 200 only for a grant or idempotent
+     replay, generic 500, authoritative balance
 
 NO REAL GOOGLE PLAY API CALL IS EVER MADE -- GooglePlayProvider is
 monkeypatched at the module level used by chatpack_google_verify.py.
 Uses the LOCAL scratch Postgres DB ONLY.
 """
 
+import contextlib
+import logging
 import os
 import sys
 
@@ -62,7 +68,7 @@ def check(label, condition):
         failed += 1
 
 
-USER_IDS = list(range(984001, 984020))
+USER_IDS = list(range(984001, 984040))
 
 
 def cleanup():
@@ -122,6 +128,146 @@ def not_verified(status, purchase_token, product_id=None, error_message="simulat
         product_id=product_id,
         error_message=error_message,
     )
+
+
+class RaisingGooglePlayProvider:
+    def verify_product_purchase(self, *, purchase_token, product_id, package_name=None):
+        raise RuntimeError("simulated crash SECRET-PROVIDER-DETAIL")
+
+
+def _packs(user_id):
+    return ChatPack.query.filter_by(user_id=user_id).all()
+
+
+class _ListHandler(logging.Handler):
+    def __init__(self):
+        super().__init__(level=logging.DEBUG)
+        self.messages = []
+
+    def emit(self, record):
+        self.messages.append(record.getMessage())
+
+
+@contextlib.contextmanager
+def _capture_logger(name):
+    logger = logging.getLogger(name)
+    handler = _ListHandler()
+    previous_level = logger.level
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    try:
+        yield handler.messages
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(previous_level)
+
+
+def _run_http_contract_section(client):
+    """K -- Ask Now P0 HTTP contract on /api/chatpack/verify (the route the
+    app calls): every rejection is non-2xx, only grant/replay is 2xx +
+    success=true, identity is the JWT's, and no entitlement on failure."""
+    alias = "/api/chatpack/verify"
+    real_provider = verify_module.GooglePlayProvider
+    verify_module.GooglePlayProvider = FakeGooglePlayProvider
+    try:
+        print("\n=== K1: valid JWT + valid asknow10q -> 200, persisted, authoritative balance ===")
+        FakeGooglePlayProvider.results["tok-k1"] = verified("asknow10q", "tok-k1")
+        r = client.post(alias, json={"user_id": 984020, "product_id": "asknow10q", "purchase_token": "tok-k1"},
+                        headers=_auth_headers(984020))
+        body = r.get_json() or {}
+        check("K1: 200", r.status_code == 200)
+        check("K1: success True", body.get("success") is True)
+        check("K1: exactly one ChatPack persisted (10 q, Rs 100)",
+              [(p.questions_total, p.amount) for p in _packs(984020)] == [(10, 100)])
+        check("K1: remaining_tokens == 10", body.get("remaining_tokens") == 10)
+        status = client.get("/api/chat/status", headers=_auth_headers(984020)).get_json() or {}
+        check("K1: verify balance == /api/chat/status balance",
+              status.get("remaining_tokens") == body.get("remaining_tokens"))
+
+        print("\n=== K2: missing JWT -> 401, no entitlement, Google never called ===")
+        FakeGooglePlayProvider.results["tok-k2"] = verified("asknow10q", "tok-k2")
+        calls_before = len(FakeGooglePlayProvider.calls)
+        r = client.post(alias, json={"user_id": 984021, "product_id": "asknow10q", "purchase_token": "tok-k2"})
+        check("K2: 401", r.status_code == 401)
+        check("K2: no ChatPack", _packs(984021) == [])
+        check("K2: Google never called", len(FakeGooglePlayProvider.calls) == calls_before)
+
+        print("\n=== K3: JWT user != body user_id -> verified, credited ONLY to JWT user, warning logged ===")
+        FakeGooglePlayProvider.results["tok-k3"] = verified("asknow10q", "tok-k3")
+        with _capture_logger("chatpack_verify") as k3_logs:
+            r = client.post(alias, json={"user_id": 984023, "product_id": "asknow10q", "purchase_token": "tok-k3"},
+                            headers=_auth_headers(984022))
+        body = r.get_json() or {}
+        check("K3: 200", r.status_code == 200)
+        check("K3: success True", body.get("success") is True)
+        check("K3: exactly one ChatPack credited to JWT user (10 q)",
+              [p.questions_total for p in _packs(984022)] == [10])
+        check("K3: zero ChatPacks for claimed/mismatching user", _packs(984023) == [])
+        check("K3: balance is the JWT user's (10)", body.get("remaining_tokens") == 10)
+        warnings = [m for m in k3_logs if "differs from JWT identity" in m]
+        check("K3: mismatch warning logged once", len(warnings) == 1)
+        check("K3: warning names both ids", warnings and "jwt_user_id=984022" in warnings[0] and "body_user_id=984023" in warnings[0])
+        check("K3: purchase token never logged", all("tok-k3" not in m for m in k3_logs))
+        r_again = client.post(alias, json={"user_id": 984023, "product_id": "asknow10q", "purchase_token": "tok-k3"},
+                              headers=_auth_headers(984022))
+        check("K3: replay 200 already_processed", r_again.status_code == 200 and (r_again.get_json() or {}).get("already_processed") is True)
+        check("K3: no double credit (still one ChatPack for JWT user)", len(_packs(984022)) == 1)
+        check("K3: still zero ChatPacks for claimed user", _packs(984023) == [])
+
+        print("\n=== K4: Play verification rejected -> non-2xx, no entitlement ===")
+        cases = [
+            ("tok-k4-notfound", not_verified(GooglePlayVerificationStatus.NOT_FOUND, "tok-k4-notfound",
+                                             error_message="SECRET-GOOGLE-TEXT"), 422, 984024),
+            ("tok-k4-invalid", not_verified(GooglePlayVerificationStatus.INVALID_TOKEN, "tok-k4-invalid"), 422, 984025),
+            ("tok-k4-network", not_verified(GooglePlayVerificationStatus.NETWORK_ERROR, "tok-k4-network"), 502, 984026),
+            ("tok-k4-auth", not_verified(GooglePlayVerificationStatus.AUTH_ERROR, "tok-k4-auth"), 502, 984027),
+            ("tok-k4-pending", verified("asknow10q", "tok-k4-pending", purchase_state=2), 409, 984028),
+            ("tok-k4-cancel", verified("asknow10q", "tok-k4-cancel", purchase_state=1), 409, 984029),
+        ]
+        for tok, fake, expected, uid in cases:
+            FakeGooglePlayProvider.results[tok] = fake
+            r = client.post(alias, json={"product_id": "asknow10q", "purchase_token": tok}, headers=_auth_headers(uid))
+            b = r.get_json() or {}
+            check(f"K4 {tok}: HTTP {expected}", r.status_code == expected)
+            check(f"K4 {tok}: success False", b.get("success") is False)
+            check(f"K4 {tok}: no ChatPack", _packs(uid) == [])
+            check(f"K4 {tok}: no provider text/token in body",
+                  "SECRET-GOOGLE-TEXT" not in r.get_data(as_text=True) and tok not in r.get_data(as_text=True))
+
+        print("\n=== K5: duplicate/replayed token -> 200 success, no double credit ===")
+        r2 = client.post(alias, json={"product_id": "asknow10q", "purchase_token": "tok-k1"}, headers=_auth_headers(984020))
+        b2 = r2.get_json() or {}
+        check("K5: 200", r2.status_code == 200)
+        check("K5: success True + already_processed", b2.get("success") is True and b2.get("already_processed") is True)
+        check("K5: still exactly one ChatPack", len(_packs(984020)) == 1)
+        check("K5: balance unchanged (10)", b2.get("remaining_tokens") == 10)
+
+        print("\n=== K6: unknown product / missing fields / malformed JSON -> 400 ===")
+        r = client.post(alias, json={"product_id": "asknow_bogus", "purchase_token": "tok-k6"}, headers=_auth_headers(984030))
+        check("K6: unknown product 400", r.status_code == 400 and (r.get_json() or {}).get("error") == "unknown_product")
+        r = client.post(alias, json={"product_id": "asknow10q"}, headers=_auth_headers(984030))
+        check("K6: missing token 400", r.status_code == 400 and (r.get_json() or {}).get("error") == "missing_fields")
+        r = client.post(alias, data="{not json", headers=_auth_headers(984030))
+        check("K6: malformed JSON 400", r.status_code == 400)
+        check("K6: no ChatPack", _packs(984030) == [])
+
+        print("\n=== K7: unexpected server exception -> generic 500, no leak, no entitlement ===")
+        verify_module.GooglePlayProvider = RaisingGooglePlayProvider
+        r = client.post(alias, json={"product_id": "asknow10q", "purchase_token": "tok-k7"}, headers=_auth_headers(984031))
+        check("K7: 500", r.status_code == 500)
+        check("K7: error == internal_error", (r.get_json() or {}).get("error") == "internal_error")
+        check("K7: exception text not leaked", "SECRET-PROVIDER-DETAIL" not in r.get_data(as_text=True))
+        check("K7: no ChatPack", _packs(984031) == [])
+
+        print("\n=== K8: matching body user_id is accepted (current app payload shape) ===")
+        verify_module.GooglePlayProvider = FakeGooglePlayProvider
+        FakeGooglePlayProvider.results["tok-k8"] = verified("asknow10q", "tok-k8")
+        r = client.post(alias, json={"user_id": "984032", "product_id": "asknow10q", "purchase_token": "tok-k8"},
+                        headers=_auth_headers(984032))
+        check("K8: 200 with string-typed matching user_id", r.status_code == 200)
+        check("K8: one ChatPack", len(_packs(984032)) == 1)
+    finally:
+        verify_module.GooglePlayProvider = real_provider
 
 
 def main():
@@ -282,6 +428,8 @@ def main():
             check("I: unknown product rejected equivalently on direct route", resp_direct_bad.get_json().get("error") == "unknown_product")
         finally:
             verify_module.GooglePlayProvider = real_provider
+
+        _run_http_contract_section(app.test_client())
 
         cleanup()
 

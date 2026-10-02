@@ -102,7 +102,10 @@ from datetime import datetime, timezone
 
 from openai import APITimeoutError
 
-from modules.services.chatpack_google_verify import verify_google_chatpack
+from modules.services.chatpack_google_verify import (
+    chatpack_verify_http_status,
+    verify_google_chatpack,
+)
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -665,56 +668,75 @@ def chat_reward():
     return jsonify(result), 200
 
 
-@routes_chat.route("/api/chat/pack/google/verify", methods=["POST"])
-@jwt_required()
-def chatpack_google_verify():
+_chatpack_verify_logger = logging.getLogger("chatpack_verify")
+
+
+def _google_chatpack_verify_response():
+    """Shared body of both Google Play ChatPack verify routes (Ask Now P0).
+
+    - Identity is ALWAYS the JWT's own account (unchanged) -- the ChatPack
+      is only ever credited to that users.id. A body `user_id` (still sent
+      by every app build) is accepted for compatibility but never used;
+      if it differs from the JWT identity it is only logged as a warning
+      for diagnosis, never rejected: the client's cached Firestore
+      backend_user_id can legitimately drift from the live users.id, and
+      rejecting would strand a genuinely paid purchase.
+    - Every rejection is non-2xx (chatpack_verify_http_status); only a
+      genuine grant or an idempotent replay of an already-granted token is
+      200 + success=true. Unexpected errors are a generic 500 -- no
+      exception text, purchase token, or provider response is returned.
+    """
     user_id = _authenticated_user_id()
 
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     product_id = data.get("product_id")
     purchase_token = data.get("purchase_token")
 
     if not product_id or not purchase_token:
         return jsonify({
             "success": False,
-            "error": "Missing required fields"
+            "error": "missing_fields",
+            "message": "Missing required fields",
         }), 400
+
+    claimed_user_id = data.get("user_id")
+    if claimed_user_id is not None and str(claimed_user_id).strip() != str(user_id):
+        # Diagnosis only -- ids are internal integers, never the purchase
+        # token or any other secret.
+        _chatpack_verify_logger.warning(
+            "chatpack verify: body user_id differs from JWT identity; "
+            "crediting JWT user only (jwt_user_id=%s, body_user_id=%s, product_id=%s)",
+            user_id, str(claimed_user_id)[:32], product_id,
+        )
 
     try:
         result = verify_google_chatpack(
             user_id=user_id,
             product_id=product_id,
-            purchase_token=purchase_token
+            purchase_token=purchase_token,
         )
-        return jsonify(result), 200
-
-    except Exception as e:
+    except Exception:
+        db.session.rollback()
+        _chatpack_verify_logger.exception(
+            "chatpack verify: unexpected error (user_id=%s, product_id=%s)", user_id, product_id,
+        )
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": "internal_error",
+            "message": "Verification could not be completed. Please retry.",
         }), 500
 
+    return jsonify(result), chatpack_verify_http_status(result)
 
 
-# 🔁 BACKWARD COMPAT ALIAS (temporary safety net)
+@routes_chat.route("/api/chat/pack/google/verify", methods=["POST"])
+@jwt_required()
+def chatpack_google_verify():
+    return _google_chatpack_verify_response()
+
+
+# 🔁 BACKWARD COMPAT ALIAS (temporary safety net) -- the route the app calls
 @routes_chat.route("/api/chatpack/verify", methods=["POST"])
 @jwt_required()
 def chatpack_verify_alias():
-    user_id = _authenticated_user_id()
-
-    data = request.get_json() or {}
-    product_id = data.get("product_id")
-    purchase_token = data.get("purchase_token")
-
-    if not product_id or not purchase_token:
-        return jsonify({
-            "success": False,
-            "error": "Missing required fields"
-        }), 400
-
-    result = verify_google_chatpack(
-        user_id=user_id,
-        product_id=product_id,
-        purchase_token=purchase_token
-    )
-    return jsonify(result), 200
+    return _google_chatpack_verify_response()

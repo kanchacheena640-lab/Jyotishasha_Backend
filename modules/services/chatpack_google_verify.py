@@ -192,6 +192,48 @@ CHATPACK_PRODUCT_MAP = {
     "asknow10q": {"amount": 100, "questions_total": 10},
 }
 
+# Ask Now P0 -- HTTP status for every rejection this service can return.
+# A rejection must NEVER travel as a 2xx: the Flutter client only ever
+# consumes/completes a Play purchase after a 2xx AND success=true, so a
+# 2xx failure is exactly the shape that could be mistaken for activation.
+# 5xx = Google/our side, safe to retry later; 4xx = this purchase/request
+# will not succeed as-is. Keys are the `error` code (and, for
+# verification_failed, the non-sensitive `reason` enum name).
+_FAILURE_HTTP_STATUS = {
+    "missing_fields": 400,
+    "unknown_product": 400,
+    "purchase_not_completed": 409,
+}
+_VERIFICATION_FAILURE_HTTP_STATUS = {
+    GooglePlayVerificationStatus.INVALID_TOKEN: 422,
+    GooglePlayVerificationStatus.NOT_FOUND: 422,
+    GooglePlayVerificationStatus.AUTH_ERROR: 502,
+    GooglePlayVerificationStatus.NETWORK_ERROR: 502,
+    GooglePlayVerificationStatus.UNKNOWN_ERROR: 502,
+}
+
+
+def chatpack_verify_http_status(result: dict) -> int:
+    """HTTP status for a verify_google_chatpack() result: 200 only for
+    success=True (first-time grant or idempotent replay), never for a
+    rejection. Unrecognized failures fail closed as 500."""
+    if result.get("success") is True:
+        return 200
+    error = result.get("error")
+    if error == "verification_failed":
+        return _VERIFICATION_FAILURE_HTTP_STATUS.get(result.get("reason"), 502)
+    return _FAILURE_HTTP_STATUS.get(error, 500)
+
+
+def _authoritative_remaining(user_id: int) -> int:
+    """The SAME remaining-question figure /api/chat/status reports
+    (chat_pack_service.get_pack_status -- the active pack's remaining),
+    so the client shows one consistent backend balance after verify.
+    Lazy import keeps this module's import graph unchanged."""
+    from modules.services.chat_pack_service import get_pack_status
+
+    return int(get_pack_status(user_id).get("remaining", 0) or 0)
+
 
 def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
     """
@@ -206,6 +248,11 @@ def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
         Rejected (nothing granted -- Flutter must NOT consume the
         purchase in this case):
             {"success": False, "error": "<code>", "message": "..."}
+            (+ "reason" for verification_failed)
+
+    remaining_tokens is the user's authoritative balance -- the same
+    figure /api/chat/status reports. The HTTP routes map every rejection
+    to a non-2xx status via chatpack_verify_http_status().
     """
     if not user_id or not product_id or not purchase_token:
         return {
@@ -241,7 +288,7 @@ def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
         )
         return {
             "success": True,
-            "remaining_tokens": existing.remaining_questions(),
+            "remaining_tokens": _authoritative_remaining(user_id),
             "message": "Purchase already verified -- ChatPack already active",
             "already_processed": True,
         }
@@ -263,13 +310,15 @@ def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
                 verification.verification_status, "unknown",
             ),
         )
+        # Generic message only -- Google's own error text/response is
+        # never echoed to the client. `reason` is the structured
+        # GooglePlayVerificationStatus enum name (non-sensitive), used for
+        # the HTTP status (4xx rejected vs 5xx retryable).
         return {
             "success": False,
             "error": "verification_failed",
-            "message": (
-                verification.error_message
-                or f"Google Play verification failed: {verification.verification_status}"
-            ),
+            "reason": verification.verification_status,
+            "message": "Google Play could not verify this purchase.",
         }
 
     if verification.purchase_state != _PRODUCT_PURCHASED_STATE:
@@ -320,10 +369,8 @@ def verify_google_chatpack(user_id: int, product_id: str, purchase_token: str):
         dedupe_key=f"payment_verified:GOOGLE_PLAY:CHATPACK:{_hash_google_purchase_token(purchase_token)}",
     )
 
-    remaining = pack.questions_total - pack.questions_used
-
     return {
         "success": True,
-        "remaining_tokens": remaining,
+        "remaining_tokens": _authoritative_remaining(user_id),
         "message": "Google Play ChatPack activated",
     }
