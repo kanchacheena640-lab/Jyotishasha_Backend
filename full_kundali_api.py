@@ -152,7 +152,14 @@ def calculate_planet_positions(dob, tob, lat, lon):
             'sign': SIGNS[sign_index],
             'house': house_map[sign_index],
             'nakshatra': nakshatra,
-            'pada': pada
+            'pada': pada,
+            # SNR-2B -- ADDITIVE full-precision sidereal longitude
+            # (0 <= longitude < 360), the same unrounded value `degree`/
+            # `sign` above are derived from. Navamsa (D9) and Darakaraka
+            # need it: the rounded `degree` can misplace a planet that
+            # sits within 0.01 deg of a 3deg20' Navamsa boundary. Every
+            # existing field keeps its exact previous value/meaning.
+            'longitude': degree % 360,
         })
 
     planet_data.append({
@@ -161,7 +168,8 @@ def calculate_planet_positions(dob, tob, lat, lon):
         'sign': asc_sign,
         'house': 1,
         'nakshatra': asc_nak,
-        'pada': asc_pada
+        'pada': asc_pada,
+        'longitude': asc_deg,  # SNR-2B -- additive; asc_deg is already % 360
     })
 
     return sorted(planet_data, key=lambda x: (x['house'], x['name']))
