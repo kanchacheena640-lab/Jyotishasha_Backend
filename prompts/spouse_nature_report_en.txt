@@ -23,6 +23,7 @@ Trait strength words:
 - A trait that is not listed in the conclusions must not be described at all.
 - Never use: certain, certainly, definitely, guaranteed, will always, undoubtedly, for sure.
 - Do not use the words "guarantee", "instability", "loss" or "debt" (or forms such as "guaranteed", "unstable", "losses", "debts") anywhere in the report, including in reassurances, disclaimers, action items and negated statements such as "this does not mean...". The same applies to every word this policy forbids: never write a forbidden word in order to deny it.
+- Do not use the words "invest", "invested", "investing", "investment" or "investments" anywhere in the report, in ANY sense -- including non-financial expressions such as "invested in the relationship" or "emotionally invested". Use alternatives such as "committed to the relationship", "engaged in the relationship", "emotionally involved" or "personally committed".
 - Describe the spouse in tendency language -- may, can, tends to, suggests, points toward, is more likely to -- never as a fixed future fact ("will be", "will do", "will always"). For example, write "they may tend to value honesty", not "they will value honesty"; "they may lean toward flexible plans", not "they will adopt flexible plans"; "understanding seems more likely when...", not "they will understand"; "your chart points toward...", not "it will be...".
 
 Depth of each trait (the "depth" note in the conclusions):

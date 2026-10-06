@@ -574,5 +574,28 @@ check("[2C.4-V] HI certainty examples (bad vs tendency)",
 # [W]/[X] covered above: blocked-word hash [2C.2-E] and raw-label guard [2C.3-D..G] still pass unchanged.
 check("[2C.4-X] raw-label vocabulary unchanged (22 labels)", len(sn.RAW_INTERNAL_LABELS) == 22)
 
+print("\n=== SNR-2C.5: 'invest*' lexical collision -- prompt-only avoidance, validator unchanged ===")
+_tpl5 = {lang: open(f"prompts/spouse_nature_report_{lang}.txt", encoding="utf-8").read() for lang in ("en", "hi")}
+check("[2C.5-A] EN prompt bans invest/invested/investing/investment(s) in ANY sense, incl. relationship idioms",
+      'Do not use the words "invest", "invested", "investing", "investment" or "investments" anywhere in the report, in ANY sense' in _tpl5["en"]
+      and '"invested in the relationship"' in _tpl5["en"] and '"emotionally invested"' in _tpl5["en"]
+      and all(f'"{alt}"' in _tpl5["en"] for alt in ("committed to the relationship", "engaged in the relationship", "emotionally involved", "personally committed")))
+check("[2C.5-B] HI prompt bans the English invest* words in any sense, with natural Hindi alternatives",
+      "अंग्रेज़ी शब्द invest, invested, investing, investment या investments रिपोर्ट में कहीं भी, किसी भी अर्थ में न लिखें" in _tpl5["hi"]
+      and '"invested in the relationship"' in _tpl5["hi"] and '"संबंध के प्रति समर्पित"' in _tpl5["hi"])
+for lang in ("en", "hi"):
+    check(f"[2C.5-A/B] [{lang}] built prompt carries the invest* rule", '"invested in the relationship"' in sn.build_spouse_prompt(BASE, lang))
+_rejected = ("their independence is genuine and may remain important even when they are deeply invested in the relationship.")
+_safe = ("their independence is genuine and may remain important even when they are deeply committed to the relationship.")
+check("[2C.5-C] exact real-run A sentence still rejected by the unchanged validator",
+      rejects(make_response(BASE, bodies={"integrated": SAFE_BODY["en"]["integrated"] + " " + _rejected}), BASE, needle="financial:invested"))
+check("[2C.5-D] safe alternative passes the financial-word check and the whole response is valid",
+      not [h for h in sn._scan(_safe, sn.PROHIBITED) if h.startswith("financial:")]
+      and bool(sn.validate_spouse_response(make_response(BASE, bodies={"integrated": SAFE_BODY["en"]["integrated"] + " " + _safe}), BASE, "en")))
+_blob5 = "|".join(f"{g}:{rx.pattern}:{rx.flags}" for g in sn.PROHIBITED for rx in sn.PROHIBITED[g]) + "||" + \
+         "|".join(f"{rx.pattern}:{rx.flags}" for rx in sn.WEALTH_INSTABILITY)
+check("[2C.5-E] blocked-pattern fingerprint unchanged (8ed84ab3...)",
+      hashlib.sha256(_blob5.encode("utf-8")).hexdigest() == "8ed84ab31d8b18484076b22d835b423f0b54466e43c482823e5dfed37941b531")
+
 print(f"\nRESULTS: {PASSED} passed, {FAILED} failed")
 sys.exit(1 if FAILED else 0)
