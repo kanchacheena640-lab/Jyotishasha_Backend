@@ -266,7 +266,7 @@ def build_evidence_block(evidence: dict) -> tuple:
         ref(f"wealth.{key}", f"{key} ({d['role']}; spouse's house {int(d['spouse_house'])} = your house {int(d['native_house'])}, "
                              f"sign {_require(d['sign'], SIGN_ORDER, 'sign')}): {_require(d['state'], DIM_STATES, 'state')}")
     if w["unconventional_pattern"]:
-        ref("wealth.unconventional_pattern", "unconventional_pattern: TRUE -- non-traditional, changing or unusual channels; NOT instability")
+        ref("wealth.unconventional_pattern", "unconventional_pattern: TRUE -- non-traditional, changing or unusual channels")
     return "\n".join(lines), refs
 
 

@@ -19,6 +19,12 @@ Trait strength words:
 - MIXED: say plainly that the chart shows a combination, e.g. "Your chart shows a combination of...", "Different factors point in different directions...", "This trait may express differently depending on circumstances...". Never collapse a MIXED trait into one side.
 - A trait that is not listed in the evidence must not be described at all.
 - Never use: certain, certainly, definitely, guaranteed, will always, undoubtedly, for sure.
+- Do not use the words "guarantee", "instability", "loss" or "debt" (or forms such as "guaranteed", "unstable", "losses", "debts") anywhere in the report, including in reassurances, disclaimers, action items and negated statements such as "this does not mean...". The same applies to every word this policy forbids: never write a forbidden word in order to deny it.
+
+Trait attribution -- strict:
+- Explain each trait ONLY through the factors listed for that exact trait in the evidence: its "Basis", or, for a MIXED trait, the factors listed under each "Toward".
+- Do not add sign symbolism, planet symbolism, Navamsa symbolism or any other astrological reasoning for a trait unless that factor is listed for that trait. A 7th-house sign may be credited only with the traits whose Basis lists that sign; the sign a planet occupies, the Navamsa 7th sign or the Navamsa 7th lord's sign adds nothing to a trait unless it is listed for it.
+- Chart facts (birth chart, Navamsa, Darakaraka) may be described as facts, but connect a fact to a trait only where that trait lists it.
 
 Navamsa wording:
 - navamsa CONFIRMED: the Navamsa supports or reinforces the birth-chart indication.
@@ -30,7 +36,7 @@ Navamsa wording:
 Health ({health_class}) -- use only this class:
 - SUPPORTIVE: "overall supportive indicators around general wellbeing".
 - MIXED: "mixed indicators suggest that wellbeing may depend more on lifestyle, routine and circumstances".
-- NEEDS_ATTENTION: "some astrological factors suggest that health and wellbeing may need greater attention". This does NOT mean illness.
+- NEEDS_ATTENTION: "some astrological factors suggest that health and wellbeing may need greater attention". Present it only as a reason for more care around wellbeing, rest and routine.
 - Never mention any disease, diagnosis, body part, organ, medicine, treatment, lifespan, death, fertility, pregnancy or mental-health condition.
 
 Financial background ({wealth_class}) -- use only this class:
@@ -38,7 +44,7 @@ Financial background ({wealth_class}) -- use only this class:
 - GROWTH_ORIENTED: "potential for gradual growth in resources or earnings".
 - EFFORT_BUILT: "resources may be built more through sustained effort and persistence".
 - MIXED: "financial indicators are mixed rather than pointing to one simple pattern".
-- If unconventional_pattern appears in the evidence: "the path to earnings or resources may involve non-traditional, changing or unusual channels". It never means unstable, loss, debt or financial problems.
+- If unconventional_pattern appears in the evidence: "the path to earnings or resources may involve non-traditional, changing or unusual channels". Describe it only with neutral, positive ideas such as non-traditional, unconventional, changing channels or an unusual financial path; never attach a negative financial meaning to it.
 - Never mention salary, income figures, net worth, currency amounts, rich, poor, investments or any financial guarantee.
 
 Never include: percentages, probabilities, ages, years or dates, marriage timing, appearance, profession, location or name of the spouse, gemstones, mantras, remedies, Dasha periods, or any disclaimer (fixed disclaimers are added automatically).

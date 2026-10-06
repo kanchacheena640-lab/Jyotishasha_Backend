@@ -188,7 +188,8 @@ for letter, klass in zip("HIJK", ("STEADY", "GROWTH_ORIENTED", "EFFORT_BUILT", "
     check(f"[{letter}] wealth {klass}: contradicting class rejected", rejects(make_response(ev, meta_patch=lambda m: m["classes"].__setitem__(
         "wealth", "STEADY" if klass != "STEADY" else "MIXED")), ev, needle="wealth class"))
 check("[L] unconventional_pattern offered to Luna with its non-negative meaning",
-      "unconventional_pattern: TRUE -- non-traditional, changing or unusual channels; NOT instability" in sn.build_evidence_block(BASE)[0])
+      "unconventional_pattern: TRUE -- non-traditional, changing or unusual channels" in sn.build_evidence_block(BASE)[0]
+      and "NOT instability" not in sn.build_evidence_block(BASE)[0])  # SNR-2C.2: no blocked word fed to Luna
 check("[L] unconventional pattern described as instability is rejected", rejects(make_response(BASE, bodies={
       "wealth": "The unusual pattern points to financial instability and losses."}), BASE, needle="instability"))
 check("[L] Hindi: unconventional pattern described as loss is rejected", rejects(make_response(BASE, "hi", bodies={
@@ -249,6 +250,67 @@ check("generate_spouse_narrative uses the injected completion (no live API) and 
       len(calls) == 1 and calls[0] == sn.build_spouse_prompt(BASE, "en") and out["answer_hero"]["value"])
 check("model is the existing centralised Luna config (not re-declared here)",
       "gpt-5.6-luna" not in open(sn.__file__, encoding="utf-8").read())
+
+print("\n=== SNR-2C.2: no self-contradictory wording, strict trait attribution, validator unchanged ===")
+import hashlib  # noqa: E402
+
+# [A] the digest keeps the unconventional_pattern fact but no longer feeds Luna "NOT instability".
+check("[2C.2-A] fixture has unconventional_pattern TRUE", BASE["wealth"]["unconventional_pattern"] is True)
+_digest, _refs = sn.build_evidence_block(BASE)
+_line = next(l for l in _digest.splitlines() if l.startswith("[wealth.unconventional_pattern]"))
+check("[2C.2-A] digest still states the pattern and its ref", "wealth.unconventional_pattern" in _refs
+      and "non-traditional, changing or unusual channels" in _line)
+check("[2C.2-A] digest no longer contains 'NOT instability' or any wealth-instability word",
+      "NOT instability" not in _digest and not any(rx.search(_digest) for rx in sn.WEALTH_INSTABILITY))
+
+_tpl = {lang: open(f"prompts/spouse_nature_report_{lang}.txt", encoding="utf-8").read() for lang in ("en", "hi")}
+# [B] EN: the reassurances that echoed blocked words are gone; the lexical ban is explicit.
+check("[2C.2-B] EN no longer instructs 'It never means unstable, loss, debt...'", "never means unstable" not in _tpl["en"])
+check("[2C.2-B] EN no longer instructs 'This does NOT mean illness'", "does NOT mean illness" not in _tpl["en"])
+check("[2C.2-B] EN bans guarantee/instability/loss/debt including negated statements",
+      'Do not use the words "guarantee", "instability", "loss" or "debt"' in _tpl["en"]
+      and "negated statements" in _tpl["en"] and "never write a forbidden word in order to deny it" in _tpl["en"])
+check("[2C.2-B] EN unconventional_pattern guidance is positive and narrow",
+      "Describe it only with neutral, positive ideas such as non-traditional, unconventional, changing channels or an unusual financial path" in _tpl["en"])
+# [C] HI: equivalent restriction in natural Hindi, incl. the English words.
+check("[2C.2-C] HI no longer instructs 'इसका अर्थ कभी भी अस्थिरता, नुकसान...'", "अस्थिरता, नुकसान या आर्थिक कठिनाई नहीं है" not in _tpl["hi"])
+check("[2C.2-C] HI no longer instructs 'इसका अर्थ कोई बीमारी नहीं है'", "कोई बीमारी नहीं है" not in _tpl["hi"])
+check("[2C.2-C] HI bans the Hindi words, the English words, and negated use",
+      all(w in _tpl["hi"] for w in ('"गारंटी"', '"अस्थिरता"', '"नुकसान"', '"कर्ज"', "guarantee, instability, loss या debt",
+                                    "नकारात्मक वाक्यों में भी नहीं", "नकारने के लिए भी उसे न लिखें")))
+check("[2C.2-C] HI unconventional_pattern guidance is positive and narrow",
+      "केवल तटस्थ और सकारात्मक अर्थ में समझाएँ" in _tpl["hi"])
+# [F] strict trait attribution in both languages, reaching the real prompt.
+check("[2C.2-F] EN restricts each trait to its listed Basis / Toward factors",
+      'Explain each trait ONLY through the factors listed for that exact trait in the evidence: its "Basis", or, for a MIXED trait, the factors listed under each "Toward".' in _tpl["en"]
+      and "Do not add sign symbolism, planet symbolism, Navamsa symbolism" in _tpl["en"])
+check("[2C.2-F] HI restricts each trait to its listed Basis / Toward factors",
+      "हर गुण को केवल उन्हीं कारकों से समझाएँ जो प्रमाणों में उसी गुण के लिए दिए गए हैं" in _tpl["hi"])
+for lang in ("en", "hi"):
+    _p = sn.build_spouse_prompt(BASE, lang)
+    check(f"[2C.2-F] [{lang}] built prompt carries the attribution rule and no 'NOT instability'",
+          ("Trait attribution -- strict" in _p if lang == "en" else "गुणों का आधार -- सख़्ती से" in _p) and "NOT instability" not in _p)
+
+# [D] the validator still rejects the blocked language -- including the exact negated
+# reassurances the first real Luna run produced.
+check("[2C.2-D] negated 'guarantee' still rejected", rejects(make_response(BASE, bodies={
+    "nature": SAFE_BODY["en"]["nature"] + " The chart describes an orientation, not a guarantee."}), BASE, needle="certainty"))
+check("[2C.2-D] negated 'instability' in wealth still rejected", rejects(make_response(BASE, bodies={
+    "wealth": SAFE_BODY["en"]["wealth"] + " This unconventional pattern does not mean instability, loss, debt or financial problems."}),
+    BASE, needle="instability"))
+check("[2C.2-D] negated 'illness' still rejected", rejects(make_response(BASE, bodies={
+    "health": SAFE_BODY["en"]["health"] + " This does not mean illness."}), BASE, needle="medical"))
+check("[2C.2-D] Hindi negated 'नुकसान' in wealth still rejected", rejects(make_response(BASE, "hi", bodies={
+    "wealth": SAFE_BODY["hi"]["wealth"] + " इसका अर्थ नुकसान नहीं है।"}), BASE, "hi", needle="नुकसान"))
+check("[2C.2-D] Hindi 'गारंटी' still rejected", rejects(make_response(BASE, "hi", bodies={
+    "nature": SAFE_BODY["hi"]["nature"] + " यह कोई गारंटी नहीं है।"}), BASE, "hi", needle="certainty"))
+check("[2C.2-D] 'certainly' still rejected", rejects(make_response(BASE, bodies={
+    "snapshot": "Your partner will certainly be expressive."}), BASE, needle="certainty"))
+# [E] no negation exceptions: the guardrail patterns are byte-identical to SNR-2C's frozen set.
+_blob = "|".join(f"{g}:{rx.pattern}:{rx.flags}" for g in sn.PROHIBITED for rx in sn.PROHIBITED[g]) + "||" + \
+        "|".join(f"{rx.pattern}:{rx.flags}" for rx in sn.WEALTH_INSTABILITY)
+check("[2C.2-E] PROHIBITED + WEALTH_INSTABILITY patterns unchanged (no negation exceptions)",
+      hashlib.sha256(_blob.encode("utf-8")).hexdigest() == "8ed84ab31d8b18484076b22d835b423f0b54466e43c482823e5dfed37941b531")
 
 print(f"\nRESULTS: {PASSED} passed, {FAILED} failed")
 sys.exit(1 if FAILED else 0)
