@@ -202,7 +202,10 @@ _STD_CONTRACT = {
 }
 import json as _json  # noqa: E402
 
-_std_slugs = sorted(sl for sl, pr in REGISTRY.items() if pr.generator == "standard_v1")
+# spouse_nature_report (SNR-2D) is standard_v1 but its prompt is filled from
+# spouse_evidence_v1, not summary_blocks; its EN/HI contract (headings, META,
+# placeholders, Hindi vocabulary) is test_spouse_narrative_contract.py's job.
+_std_slugs = sorted(sl for sl, pr in REGISTRY.items() if pr.generator == "standard_v1" and sl != "spouse_nature_report")
 check("7: registry has exactly 24 standard_v1 products (career_report + the 23 rolled out)", len(_std_slugs) == 24)
 check("7: the 23 contract entries are exactly the registry's standard_v1 products minus career_report",
       sorted(_STD_CONTRACT) == sorted(sl for sl in _std_slugs if sl != "career_report"))

@@ -83,6 +83,18 @@ from modules.payments.report_q3_batch5 import (
 from modules.payments.report_i18n_labels import get_label
 from app_config import JYOTISHASHA_PLAY_STORE_URL, JYOTISHASHA_APP_STORE_URL
 
+# SNR-2D -- Spouse Nature Report (rep_026). The astrology comes from the
+# deterministic spouse_evidence_v1 engine (SNR-2B); prompt, validation,
+# backend hero value, limitations and disclaimers from the SNR-2C contract.
+from modules.payments.spouse_evidence import build_spouse_evidence
+from modules.payments.spouse_narrative import (
+    PRODUCT_SLUG as SPOUSE_PRODUCT_SLUG,
+    LANGUAGES as SPOUSE_LANGUAGES,
+    assemble_spouse_report,
+    build_spouse_prompt,
+    combined_disclaimer as spouse_disclaimer,
+)
+
 # Phase 4C -- the existing, unmodified Phase-2 ledger write path. This
 # import introduces no circular dependency: modules.activity_events.*
 # imports nothing from tasks.py.
@@ -325,17 +337,30 @@ def _generate_and_send_report_core(order_id):
 
             # Step 4: Prompt load
             product_slug = order["product"]
-            template_path = f"prompts/{product_slug}_{language}.txt"
-            try:
-                with open(template_path, encoding="utf-8") as f:
-                    template = f.read()
-            except FileNotFoundError:
-                print(f"[WARN] Template not found: {template_path}. Falling back to EN.")
-                with open(f"prompts/{product_slug}_en.txt", encoding="utf-8") as f:
-                    template = f.read()
+            if product_slug == SPOUSE_PRODUCT_SLUG:
+                # SNR-2D -- deterministic evidence FIRST, from the Kundali
+                # calculated above. Any evidence failure raises here, before
+                # the AI call, and becomes report_stage="Failed" through the
+                # outer except below. Luna never receives the raw Kundali.
+                # "hi" resolves to the Hindi prompt exactly; any other value
+                # uses English, the same convention as the template fallback.
+                spouse_language = language if language in SPOUSE_LANGUAGES else "en"
+                spouse_evidence = build_spouse_evidence(kundali)
+                prompt_final = build_spouse_prompt(spouse_evidence, spouse_language)
+                # Same Birth Chart Summary card the other marriage reports show.
+                used_placeholders = ["birth_chart_summary"]
+            else:
+                template_path = f"prompts/{product_slug}_{language}.txt"
+                try:
+                    with open(template_path, encoding="utf-8") as f:
+                        template = f.read()
+                except FileNotFoundError:
+                    print(f"[WARN] Template not found: {template_path}. Falling back to EN.")
+                    with open(f"prompts/{product_slug}_en.txt", encoding="utf-8") as f:
+                        template = f.read()
 
-            used_placeholders = re.findall(r"{(.*?)}", template)
-            prompt_final = template.format(**summary_blocks)
+                used_placeholders = re.findall(r"{(.*?)}", template)
+                prompt_final = template.format(**summary_blocks)
 
             # Save prompt for debugging
             os.makedirs("debug_prompts", exist_ok=True)
@@ -363,7 +388,19 @@ def _generate_and_send_report_core(order_id):
             timeline_component = None
             structured_metadata_valid = None  # None = not attempted
 
-            if product_intel.q3_enabled:
+            if product_slug == SPOUSE_PRODUCT_SLUG:
+                # SNR-2D -- SNR-2C validation against the evidence (classes,
+                # traits, refs, wording guardrails). A rejection raises
+                # ReportMetadataError -> report_stage="Failed"; nothing is
+                # repaired. The hero VALUE is the backend's own; gemstone
+                # and timeline stay OFF.
+                spouse_report = assemble_spouse_report(completion.content, spouse_evidence, spouse_language)
+                answer_hero = spouse_report["answer_hero"]
+                gpt_content = spouse_report["narrative"]
+                if spouse_report["action_items"]:
+                    action_list_component = {"heading": get_label("suggested_next_steps", language), "items": spouse_report["action_items"]}
+                structured_metadata_valid = True
+            elif product_intel.q3_enabled:
                 # Q3 Batch 0 correction #1 (LOCKED): missing/malformed
                 # structured metadata for a Q3-enabled product is a
                 # HARD FAILURE -- validate_required_hero_fields() raises
@@ -504,6 +541,9 @@ def _generate_and_send_report_core(order_id):
             # ones, so this is inert for all other products/products'
             # existing behavior.
             disclaimer_text = get_mandatory_disclaimer(product_intel.disclaimer_type, language)
+            if product_slug == SPOUSE_PRODUCT_SLUG:
+                # SNR-2D -- the SNR-2C fixed general/health/financial text.
+                disclaimer_text = spouse_disclaimer(spouse_language)
 
             # Q3 Batch 1 (visual QA correction) -- Q2.1's own LOCKED
             # closing CTA. Every paid report (not just the 4 Q3-enabled

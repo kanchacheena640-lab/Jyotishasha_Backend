@@ -150,7 +150,7 @@ def main():
         existing_25 = ReportProduct.query.filter(
             ~ReportProduct.generator.in_(("focused_v1", "focused_dual_v1"))
         ).all()
-        check("A8: existing 25 rows untouched (count)", len(existing_25) == 25)
+        check("A8: existing original rows untouched (count: R2's 25 + SNR-2D spouse_nature_report)", len(existing_25) == 26)
         check("A9: existing 25 rows still all active=True",
               all(p.active is True for p in existing_25))
         check("A10: existing generators unchanged (standard_v1/love_premium_v1 only)",

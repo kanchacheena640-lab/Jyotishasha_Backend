@@ -26,5 +26,6 @@ PRODUCT_PRICES = {
     "second_marriage_report": 51,
     "divorce_possibility_report": 51,
     "relationship_future_report": 199,
+    "spouse_nature_report": 51,
     # Add more here...
 }

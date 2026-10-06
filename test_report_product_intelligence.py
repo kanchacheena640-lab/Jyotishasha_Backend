@@ -48,11 +48,12 @@ def check(label, condition):
         failed += 1
 
 
-# The exact 25 report_slug values, cross-checked against migrations/
+# The exact 26 report_slug values, cross-checked against migrations/
 # versions/65bed70e2520_r2_seed_report_products_from_product_.py's own
 # 24 standard-product list + relationship_future_report (the one
 # love_premium_v1 product) -- the same source of truth Q1's own R2
-# phase used, not re-derived independently here.
+# phase used, not re-derived independently here -- plus SNR-2D's
+# spouse_nature_report (rep_026, migration ec4f2103b154).
 EXPECTED_SLUGS = {
     "sadhesati_report", "financial_report", "love_relationship_report",
     "marriage_report", "startup_suggestion_report", "love_marriage_report",
@@ -64,17 +65,18 @@ EXPECTED_SLUGS = {
     "mood_mental_health_report", "property_report", "saturn_transit_report",
     "second_marriage_report", "divorce_possibility_report",
     "legal_disputes_report", "relationship_future_report",
+    "spouse_nature_report",
 }
 
 # =================================================================
-print("=== A: all 25 report_slug entries exist ===")
+print("=== A: all 26 report_slug entries exist ===")
 # =================================================================
-check("A: exactly 25 entries in REGISTRY", len(REGISTRY) == 25)
-check("A: REGISTRY keys are exactly the 25 trusted report_slugs (no typo, none missing, none extra)",
+check("A: exactly 26 entries in REGISTRY", len(REGISTRY) == 26)
+check("A: REGISTRY keys are exactly the 26 trusted report_slugs (no typo, none missing, none extra)",
       set(REGISTRY.keys()) == EXPECTED_SLUGS)
 
 # =================================================================
-print("\n=== B: CRITICAL -- exactly ALL 25 products are enabled (Q3 Batches 1-5, FINAL) ===")
+print("\n=== B: CRITICAL -- exactly ALL 26 products are enabled (Q3 Batches 1-5 + SNR-2D) ===")
 # =================================================================
 EXPECTED_Q3_ENABLED = {
     # Q3 Batch 1
@@ -93,11 +95,13 @@ EXPECTED_Q3_ENABLED = {
     "sadhesati_report", "foreign_travel_report", "children_parenting_report",
     "jupiter_transit_report", "lifestyle_analysis_report", "property_report",
     "legal_disputes_report",
+    # SNR-2D -- structured from day one (SNR-2C contract)
+    "spouse_nature_report",
 }
 actually_enabled = {slug for slug, p in REGISTRY.items() if p.q3_enabled}
-check("B: exactly these 25 products have q3_enabled=True (Q3 Batches 1-5, FINAL migration)",
+check("B: exactly these 26 products have q3_enabled=True (Q3 Batches 1-5 + SNR-2D)",
       actually_enabled == EXPECTED_Q3_ENABLED)
-check("B: EXPECTED_Q3_ENABLED covers the entire 25-product registry -- 0 remain disabled",
+check("B: EXPECTED_Q3_ENABLED covers the entire 26-product registry -- 0 remain disabled",
       EXPECTED_Q3_ENABLED == set(REGISTRY.keys()))
 check("B: 0 products have q3_enabled=False (staged migration COMPLETE)",
       all(p.q3_enabled for p in REGISTRY.values()))
@@ -158,6 +162,23 @@ check("E: every OTHER product's generator is standard_v1",
       all(p.generator == "standard_v1" for slug, p in REGISTRY.items() if slug != "relationship_future_report"))
 check("E: relationship_future_report's required_context_keys is empty (its own separate love_data_collector.py pipeline, not summary_blocks.py)",
       rel.required_context_keys == ())
+
+# =================================================================
+print("\n=== F: SNR-2D -- spouse_nature_report (rep_026) ===")
+# =================================================================
+sp = REGISTRY["spouse_nature_report"]
+check("F: spouse_nature_report generator is standard_v1", sp.generator == "standard_v1")
+check("F: hero value is deterministic (spouse_evidence_v1), never AI-authored",
+      sp.hero_value_source == "deterministic:spouse_evidence_v1")
+check("F: gemstone is OFF (policy disabled, component off)",
+      sp.gemstone_policy == "disabled" and sp.components_enabled.get("gemstone") is False)
+check("F: marriage timeline is OFF", sp.components_enabled.get("timeline") is False)
+check("F: disclaimer component is ON with the spouse non-certainty type",
+      sp.components_enabled.get("disclaimer") is True and sp.disclaimer_type == "spouse_nature_non_certainty_mandatory")
+check("F: astrology comes from spouse_evidence_v1, not summary_blocks (no context keys)",
+      sp.required_context_keys == ())
+check("F: get_product_intelligence resolves the real entry, not the legacy default",
+      get_product_intelligence("spouse_nature_report") is sp)
 
 print("\n" + "=" * 50)
 print(f"TOTAL: {passed} passed, {failed} failed")

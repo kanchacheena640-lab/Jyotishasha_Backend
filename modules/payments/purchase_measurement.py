@@ -76,7 +76,7 @@ MEASURED_GENERATORS = {
     "love_premium_v1": (ORIGINAL_FAMILY, "relationship"),
 }
 
-# Explicit trusted item_category for EVERY original product (the 24 standard
+# Explicit trusted item_category for EVERY original product (the 25 standard
 # reports and relationship_future_report). It mirrors the category shown in the
 # frontend catalog (app/data/reportsData.ts category.en, lower-cased) so the
 # browser funnel events and the backend purchase carry the same value.
@@ -99,6 +99,7 @@ ORIGINAL_REPORT_CATEGORIES = {
     "delay_in_marriage_report": "marriage",
     "problem_in_marriage_report": "marriage",
     "second_marriage_report": "marriage",
+    "spouse_nature_report": "marriage",
     "government_job_report": "self",
     "foreign_travel_report": "self",
     "business_report": "self",

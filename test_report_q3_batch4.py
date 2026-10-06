@@ -104,7 +104,7 @@ class ContractTests(unittest.TestCase):
         # total stays frozen at 18.
         prior = set("gemstone_consultation saturn_transit_report mood_mental_health_report divorce_possibility_report marriage_report delay_in_marriage_report problem_in_marriage_report second_marriage_report financial_report financial_stability_report career_report government_job_report business_report startup_suggestion_report".split())
         enabled = {s for s, p in REGISTRY.items() if p.q3_enabled}
-        self.assertEqual(len(REGISTRY), 25)
+        self.assertEqual(len(REGISTRY), 26)  # 25 Q3 products + SNR-2D spouse_nature_report
         self.assertTrue((prior | set(LABELS)) <= enabled)
         self.assertGreaterEqual(len(enabled), 18)
         self.assertEqual(STANDARD_BATCH4_PRODUCT_SLUGS, set(LABELS) - {LOVE})

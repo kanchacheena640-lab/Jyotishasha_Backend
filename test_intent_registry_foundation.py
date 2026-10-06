@@ -47,7 +47,7 @@ APPROVED_INTENTS = {
 # (report #62/#63) rather than an umbrella over several customer wordings; they are the only 2 intents
 # exempt from the >=3-questions "no orphan intents" rule below.
 SINGLE_QUESTION_INTENTS = {"kundali_obstacles", "kundali_strengths"}
-FROZEN_25 = {
+FROZEN_ORIGINALS = {
     **{slug: 51 for slug in (
         "marriage_report", "career_report", "love_relationship_report", "foreign_travel_report",
         "government_job_report", "sadhesati_report", "financial_report", "startup_suggestion_report",
@@ -55,7 +55,8 @@ FROZEN_25 = {
         "children_parenting_report", "delay_in_marriage_report", "financial_stability_report",
         "jupiter_transit_report", "lifestyle_analysis_report", "love_disappointment_report",
         "problem_in_marriage_report", "mood_mental_health_report", "property_report", "saturn_transit_report",
-        "second_marriage_report", "divorce_possibility_report")},
+        "second_marriage_report", "divorce_possibility_report",
+        "spouse_nature_report")},  # SNR-2D (rep_026)
     "relationship_future_report": 199,
 }
 
@@ -198,7 +199,7 @@ class RegistryTests(unittest.TestCase):
         for slug, contract in INTENT_REGISTRY.items():
             if contract.upsell_slug is not None:
                 with self.subTest(slug=slug):
-                    self.assertIn(contract.upsell_slug, FROZEN_25)
+                    self.assertIn(contract.upsell_slug, FROZEN_ORIGINALS)
         self.assertIsNone(INTENT_REGISTRY["study_exam_timing"].upsell_slug)
 
     def test_unknown_intent_raises_and_registry_is_read_only(self):
@@ -317,16 +318,16 @@ class QuestionCatalogTests(unittest.TestCase):
 
 
 class FrozenSystemAndIsolationTests(unittest.TestCase):
-    def test_the_25_report_registries_are_unchanged(self):
+    def test_the_original_report_registries_are_unchanged(self):
         from config.pricing import PRODUCT_PRICES
         from modules.payments.report_product_intelligence import REGISTRY
-        self.assertEqual(len(FROZEN_25), 25)
-        self.assertEqual(dict(PRODUCT_PRICES), FROZEN_25)
-        self.assertEqual(set(REGISTRY), set(FROZEN_25))
+        self.assertEqual(len(FROZEN_ORIGINALS), 26)
+        self.assertEqual(dict(PRODUCT_PRICES), FROZEN_ORIGINALS)
+        self.assertEqual(set(REGISTRY), set(FROZEN_ORIGINALS))
         self.assertEqual(PRODUCT_PRICES["relationship_future_report"], 199)
-        self.assertEqual(sum(1 for p in PRODUCT_PRICES.values() if p == 51), 24)
+        self.assertEqual(sum(1 for p in PRODUCT_PRICES.values() if p == 51), 25)
         self.assertEqual(REGISTRY["relationship_future_report"].generator, "love_premium_v1")
-        self.assertEqual(sum(1 for p in REGISTRY.values() if p.generator == "standard_v1"), 24)
+        self.assertEqual(sum(1 for p in REGISTRY.values() if p.generator == "standard_v1"), 25)
         self.assertFalse(set(INTENT_SLUGS) & set(PRODUCT_PRICES))
         self.assertFalse({q.question_key for q in QUESTIONS} & set(PRODUCT_PRICES))
 

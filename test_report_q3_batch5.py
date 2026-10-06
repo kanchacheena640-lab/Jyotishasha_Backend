@@ -86,15 +86,15 @@ AI_HERO_SLUGS = BATCH5_SLUGS - DETERMINISTIC_HERO_SLUGS
 
 check("A: BATCH5_PRODUCT_SLUGS is exactly the 7 expected slugs", BATCH5_PRODUCT_SLUGS == frozenset(BATCH5_SLUGS))
 
-print("=== A/B/C/D: exactly 25/25 Q3 enabled, 0 disabled, previous 18 unchanged, exactly 7 Batch-5 products ===")
+print("=== A/B/C/D: exactly 26/26 Q3 enabled (25 + SNR-2D), 0 disabled, previous 18 unchanged, exactly 7 Batch-5 products ===")
 
 enabled = {slug for slug, p in REGISTRY.items() if p.q3_enabled}
-check("A: exactly 25 of 25 products are q3_enabled=True", len(enabled) == 25)
+check("A: exactly 26 of 26 products are q3_enabled=True (25 + SNR-2D spouse_nature_report)", len(enabled) == 26)
 check("B: exactly 0 products are q3_enabled=False", len(REGISTRY) - len(enabled) == 0)
 check("C: all previous 18 products remain enabled",
       (BATCH1_SLUGS | BATCH2_SLUGS | BATCH3_SLUGS | BATCH4_SLUGS) <= enabled)
 check("D: all 7 Batch-5 products are enabled", BATCH5_SLUGS <= enabled)
-check("A: enabled set is EXACTLY all 25 products, nothing missing",
+check("A: enabled set is EXACTLY all 26 products, nothing missing",
       enabled == set(REGISTRY.keys()))
 
 print("\n=== E/F: all seven standard_v1, no special generator introduced ===")

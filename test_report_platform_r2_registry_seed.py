@@ -84,9 +84,12 @@ def main():
         # scoped to the 25 rows R2 itself is responsible for -- whether some
         # OTHER, later migration also added disjoint rows to the same shared
         # table is out of scope here and covered by that migration's own test.
+        # SNR-2D -- the original catalogue is now 26: R2's 25 rows plus
+        # spouse_nature_report (migration ec4f2103b154), which shares the
+        # same original-report semantics and is part of PRODUCT_PRICES.
         r2_seeded = {slug: p for slug, p in seeded.items() if p.generator not in ("focused_v1", "focused_dual_v1")}
-        check("1: PRODUCT_PRICES has exactly 25 entries (sanity, not assumed)", len(PRODUCT_PRICES) == 25)
-        check("1: report_products has exactly 25 non-focused (R2-owned) rows", len(r2_seeded) == 25)
+        check("1: PRODUCT_PRICES has exactly 26 entries (sanity, not assumed)", len(PRODUCT_PRICES) == 26)
+        check("1: report_products has exactly 26 non-focused rows (R2's 25 + SNR-2D)", len(r2_seeded) == 26)
         check("1: every PRODUCT_PRICES slug has exactly one report_products row", set(PRODUCT_PRICES.keys()) == set(r2_seeded.keys()))
         check("2: no non-focused report_products row exists outside PRODUCT_PRICES's own slugs", set(r2_seeded.keys()) - set(PRODUCT_PRICES.keys()) == set())
 
@@ -179,7 +182,7 @@ def main():
         # assertion to R2's own 25 rows, exactly like checks 1/2/4-8 above.
         restored_all = {p.report_slug: p for p in ReportProduct.query.all()}
         restored = {slug: p for slug, p in restored_all.items() if p.generator not in ("focused_v1", "focused_dual_v1")}
-        check("11: re-upgrade restores exactly R2's own 25 rows", set(restored.keys()) == set(PRODUCT_PRICES.keys()))
+        check("11: re-upgrade restores exactly the 26 original rows (R2's 25 + SNR-2D)", set(restored.keys()) == set(PRODUCT_PRICES.keys()))
         check("11: re-upgrade restores correct prices", all(restored[slug].price == price for slug, price in PRODUCT_PRICES.items()))
 
         cur = run_flask_db("current")

@@ -24,24 +24,39 @@ government_job_report jupiter_transit_report legal_disputes_report
 lifestyle_analysis_report love_disappointment_report love_marriage_report
 love_relationship_report marriage_report mood_mental_health_report
 problem_in_marriage_report property_report sadhesati_report saturn_transit_report
-second_marriage_report startup_suggestion_report relationship_future_report""".split())
+second_marriage_report startup_suggestion_report relationship_future_report
+spouse_nature_report""".split())
 LOVE = "relationship_future_report"
 
 
 class ProductMatrixTests(unittest.TestCase):
-    def test_catalog_seed_prices_and_resources(self):
+    def test_frontend_catalog_parity(self):
+        # Cross-repo parity: the frontend catalogue must list exactly the
+        # backend original catalogue. SNR-2D registers spouse_nature_report
+        # in the backend first, so this stays RED (frontend 25 vs backend 26)
+        # until the frontend registration phase -- never skipped or relaxed.
         frontend = Path("../jyotishasha-frontend/app/data/reportsData.ts").read_text(encoding="utf-8")
         pairs = re.findall(r'slug:\s*"([^"]+)"\s*,\s*price:\s*(\d+)', frontend)
-        self.assertEqual(len(pairs), 25)
+        self.assertEqual(len(pairs), len(EXPECTED))
         prices = {slug: int(price) for slug, price in pairs}
         self.assertEqual(set(prices), EXPECTED)
         self.assertEqual(prices, PRODUCT_PRICES)
+
+    def test_catalog_seed_prices_and_resources(self):
+        prices = dict(PRODUCT_PRICES)
+        self.assertEqual(len(prices), 26)
+        self.assertEqual(set(prices), EXPECTED)
         seed = ast.parse(next(Path("migrations/versions").glob("65bed70e2520*.py")).read_text())
         values = {n.targets[0].id: ast.literal_eval(n.value) for n in seed.body
                   if isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name)
                   and n.targets[0].id in ("_STANDARD_PRODUCTS", "_LOVE_PREMIUM_PRODUCT")}
+        # SNR-2D -- spouse_nature_report is seeded by its own additive migration.
+        snr = ast.parse(next(Path("migrations/versions").glob("ec4f2103b154*.py")).read_text())
+        spouse = next(ast.literal_eval(n.value) for n in snr.body
+                      if isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name)
+                      and n.targets[0].id == "_SPOUSE_NATURE_PRODUCT")
         self.assertEqual({s: p for s, _, p in values["_STANDARD_PRODUCTS"] +
-                          [values["_LOVE_PREMIUM_PRODUCT"]]}, prices)
+                          [values["_LOVE_PREMIUM_PRODUCT"], spouse]}, prices)
         source = Path("tasks.py").read_text(encoding="utf-8")
         loader = next(n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Try)
                       and any(isinstance(h.type, ast.Name) and h.type.id == "FileNotFoundError"
@@ -83,7 +98,7 @@ class ProductMatrixTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(Path("prompts/saturn_transit_report_hi.txt").read_bytes()).hexdigest(),
                          "0c207848eb4c36195385f7f3b230b70840ee564e5dec3ccc96bc044cf7a7914f")
 
-    def test_all_25_pending_orders_prices_and_paid_dispatch(self):
+    def test_all_original_pending_orders_prices_and_paid_dispatch(self):
         for slug in sorted(EXPECTED):
             with self.subTest(product=slug):
                 fixture = incident.SureshWebhookFirstRegression()

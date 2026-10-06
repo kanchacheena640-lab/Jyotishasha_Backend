@@ -2,17 +2,17 @@
 test_reports_ads_p02a_original_reports_measurement.py
 -------------------------------------------------
 Reports Ads P0.2A -- the canonical purchase measurement
-(modules/payments/purchase_measurement.py) now covers ALL 88 paid web reports:
+(modules/payments/purchase_measurement.py) now covers ALL 89 paid web reports:
 
     54 focused SELF   (focused_v1)          product_family focused_report / self
      9 focused DUAL   (focused_dual_v1)     product_family focused_report / dual
-    24 original       (standard_v1)         product_family original_report / standard   (INR 51)
+    25 original       (standard_v1)         product_family original_report / standard   (INR 51)
      1 relationship   (love_premium_v1)     product_family original_report / relationship (INR 199)
 
 Sections:
-  A. the explicit original-report category table: keys == exactly the 25
+  A. the explicit original-report category table: keys == exactly the 26
      original registry products (and the legacy price table); no fallback.
-  B. registry-wide coverage: every one of the 88 registry products yields a
+  B. registry-wide coverage: every one of the 89 registry products yields a
      correct canonical object for a PAID Order and NOTHING for an unpaid one.
   C. real /api/razorpay-order + /webhook flows (Razorpay's network boundary
      mocked) for an original standard report and the relationship report:
@@ -88,13 +88,14 @@ def _unique(prefix):
     return f"{prefix}-{_n['n']}"
 
 
-# The 25 original products, frozen here independently of the code under test.
+# The 26 original products (SNR-2D added spouse_nature_report), frozen here independently of the code under test.
 EXPECTED_ORIGINALS = {
     "business_report", "career_report", "children_parenting_report", "delay_in_marriage_report", "divorce_possibility_report",
     "financial_report", "financial_stability_report", "foreign_travel_report", "gemstone_consultation", "government_job_report",
     "jupiter_transit_report", "legal_disputes_report", "lifestyle_analysis_report", "love_disappointment_report", "love_marriage_report",
     "love_relationship_report", "marriage_report", "mood_mental_health_report", "problem_in_marriage_report", "property_report",
     "sadhesati_report", "saturn_transit_report", "second_marriage_report", "startup_suggestion_report", "relationship_future_report",
+    "spouse_nature_report",
 }
 STANDARD_SLUG = "startup_suggestion_report"      # standard_v1, category finance
 RELATIONSHIP_SLUG = "relationship_future_report"  # love_premium_v1, category love
@@ -186,20 +187,20 @@ def main():
         client = app.test_client()
         try:
             # ==========================================================
-            print("\n=== A. explicit category table for the original 25 ===")
+            print("\n=== A. explicit category table for the original 26 ===")
             # ==========================================================
             originals = {r.report_slug: r for r in ReportProduct.query.filter(ReportProduct.generator.in_(("standard_v1", "love_premium_v1"))).all()}
             mapping = pm.ORIGINAL_REPORT_CATEGORIES
-            check("A1: the registry holds exactly 25 original products (24 standard_v1 + 1 love_premium_v1)",
-                  len(originals) == 25 and sum(1 for r in originals.values() if r.generator == "standard_v1") == 24
+            check("A1: the registry holds exactly 26 original products (25 standard_v1 + 1 love_premium_v1)",
+                  len(originals) == 26 and sum(1 for r in originals.values() if r.generator == "standard_v1") == 25
                   and [r.generator for r in originals.values() if r.report_slug == RELATIONSHIP_SLUG] == ["love_premium_v1"])
-            check("A2: the registry's originals equal the frozen expected 25 slugs", set(originals) == EXPECTED_ORIGINALS)
-            check("A3: COVERAGE -- ORIGINAL_REPORT_CATEGORIES keys equal EXACTLY the 25 original registry products (no missing, no extra)",
-                  set(mapping) == set(originals) == EXPECTED_ORIGINALS and len(mapping) == 25)
-            check("A4: ...and the legacy pricing table covers the same 25", set(PRODUCT_PRICES) == EXPECTED_ORIGINALS)
+            check("A2: the registry's originals equal the frozen expected 26 slugs", set(originals) == EXPECTED_ORIGINALS)
+            check("A3: COVERAGE -- ORIGINAL_REPORT_CATEGORIES keys equal EXACTLY the 26 original registry products (no missing, no extra)",
+                  set(mapping) == set(originals) == EXPECTED_ORIGINALS and len(mapping) == 26)
+            check("A4: ...and the legacy pricing table covers the same 26", set(PRODUCT_PRICES) == EXPECTED_ORIGINALS)
             check("A5: every mapped category is from the approved vocabulary; NONE is the 'other' fallback",
                   set(mapping.values()) <= CATEGORY_VOCAB and pm.UNMAPPED_ORIGINAL_CATEGORY not in mapping.values())
-            check("A6: the registry prices are 51 for the 24 standard reports and 199 for relationship_future_report",
+            check("A6: the registry prices are 51 for the 25 standard reports and 199 for relationship_future_report",
                   all(r.price == 51 for s, r in originals.items() if s != RELATIONSHIP_SLUG) and originals[RELATIONSHIP_SLUG].price == 199
                   and all(r.currency == "INR" for r in originals.values()))
             check("A7: approved naming -- standard_v1 -> original_report/standard, love_premium_v1 -> original_report/relationship",
@@ -207,14 +208,14 @@ def main():
                   and pm.MEASURED_GENERATORS["focused_v1"] == ("focused_report", "self") and pm.MEASURED_GENERATORS["focused_dual_v1"] == ("focused_report", "dual"))
 
             # ==========================================================
-            print("\n=== B. registry-wide coverage: 88 / 88 ===")
+            print("\n=== B. registry-wide coverage: 89 / 89 ===")
             # ==========================================================
             registry = ReportProduct.query.all()
             by_gen = {}
             for r in registry:
                 by_gen.setdefault(r.generator, []).append(r)
-            check("B1: the registry holds exactly 88 paid report products: 54 focused_v1 + 9 focused_dual_v1 + 24 standard_v1 + 1 love_premium_v1",
-                  len(registry) == 88 and {g: len(v) for g, v in by_gen.items()} == {"focused_v1": 54, "focused_dual_v1": 9, "standard_v1": 24, "love_premium_v1": 1})
+            check("B1: the registry holds exactly 89 paid report products: 54 focused_v1 + 9 focused_dual_v1 + 25 standard_v1 + 1 love_premium_v1",
+                  len(registry) == 89 and {g: len(v) for g, v in by_gen.items()} == {"focused_v1": 54, "focused_dual_v1": 9, "standard_v1": 25, "love_premium_v1": 1})
 
             good = 0
             problems = []
@@ -244,14 +245,14 @@ def main():
                 else:
                     problems.append((r.report_slug, m))
             db.session.commit()
-            print(f"  COVERAGE: {good}/88 registry products produce a correct canonical purchase_measurement; breakdown {counts}")
-            check("B2: 88 / 88 -- every registry product yields the correct canonical object for a PAID Order", good == 88 and not problems)
-            check("B3: breakdown is exactly 54 focused SELF + 9 focused DUAL + 24 original standard + 1 original relationship",
-                  counts == {("focused_report", "self"): 54, ("focused_report", "dual"): 9, ("original_report", "standard"): 24, ("original_report", "relationship"): 1})
-            check("B4: an UNPAID Order of every one of the 88 products yields NOTHING", not unpaid_leaks)
-            check("B5: canonical values -- INR 51 for 87 products and INR 199 for relationship_future_report",
-                  sum(1 for r in registry if r.price == 51) == 87 and [r.report_slug for r in registry if r.price == 199] == [RELATIONSHIP_SLUG])
-            check("B6: all 88 transaction ids are distinct and follow ord_<Order.id>", len(seen_tx) == 88)
+            print(f"  COVERAGE: {good}/89 registry products produce a correct canonical purchase_measurement; breakdown {counts}")
+            check("B2: 89 / 89 -- every registry product yields the correct canonical object for a PAID Order", good == 89 and not problems)
+            check("B3: breakdown is exactly 54 focused SELF + 9 focused DUAL + 25 original standard + 1 original relationship",
+                  counts == {("focused_report", "self"): 54, ("focused_report", "dual"): 9, ("original_report", "standard"): 25, ("original_report", "relationship"): 1})
+            check("B4: an UNPAID Order of every one of the 89 products yields NOTHING", not unpaid_leaks)
+            check("B5: canonical values -- INR 51 for 88 products and INR 199 for relationship_future_report",
+                  sum(1 for r in registry if r.price == 51) == 88 and [r.report_slug for r in registry if r.price == 199] == [RELATIONSHIP_SLUG])
+            check("B6: all 89 transaction ids are distinct and follow ord_<Order.id>", len(seen_tx) == 89)
 
             # ==========================================================
             print("\n=== C. real order -> /webhook flows for the original reports ===")

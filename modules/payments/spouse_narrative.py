@@ -27,7 +27,8 @@ prompt follows). The evidence block is rendered only from closed
 vocabularies (sign/planet names, class labels) and every value is checked
 against those vocabularies before interpolation.
 
-Not wired into tasks.py / the product registry yet (later phase).
+Wired into tasks.py for spouse_nature_report (SNR-2D); see that file's
+spouse branch for the evidence -> prompt -> Luna -> validation order.
 """
 
 from __future__ import annotations
@@ -489,6 +490,12 @@ def assemble_spouse_report(raw_text: str, evidence: dict, language: str) -> dict
         "gemstone": None,
         "timeline": None,
     }
+
+
+def combined_disclaimer(language: str) -> str:
+    """The three fixed DISCLAIMERS (general, health, financial) as the single
+    string the existing PDF disclaimer slot renders."""
+    return " ".join(DISCLAIMERS[k][language] for k in ("general", "health", "financial"))
 
 
 def generate_spouse_narrative(evidence: dict, language: str, completion_fn: Optional[Callable] = None) -> dict:

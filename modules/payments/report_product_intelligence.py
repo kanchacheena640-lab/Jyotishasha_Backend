@@ -577,6 +577,24 @@ REGISTRY: dict = {
         gemstone="optional", disclaimer="legal_dispute_non_certainty_mandatory",
         q3_enabled=True,
     ),
+    # SNR-2D -- Spouse Nature Report (rep_026). The astrology is NOT read
+    # from summary_blocks: tasks.py builds the deterministic
+    # spouse_evidence_v1 payload (modules/payments/spouse_evidence.py) and
+    # the SNR-2C narrative contract (modules/payments/spouse_narrative.py)
+    # owns the prompt, validation, backend hero `value`, fixed limitations
+    # and the health/financial/general disclaimers. Gemstone and Dasha
+    # timeline are OFF (no marriage timing, no remedies).
+    "spouse_nature_report": _standard(
+        "spouse_nature_report",
+        hero_label="Future Spouse Snapshot",
+        houses=(7,), planets=("Venus", "Jupiter"),
+        context_keys=(),  # spouse_evidence_v1, not summary_blocks
+        hero_value_source="deterministic:spouse_evidence_v1",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": False, "gemstone": False, "action_list": True, "disclaimer": True},
+        gemstone="disabled", disclaimer="spouse_nature_non_certainty_mandatory",
+        q3_enabled=True,
+    ),
     "relationship_future_report": ProductIntelligence(
         report_slug="relationship_future_report",
         hero_label="Relationship Outlook",
