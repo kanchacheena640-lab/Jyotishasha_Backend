@@ -298,6 +298,7 @@ class GenerationTests(_NoLiveOpenAI):
             self.assertIn(attribution[part], kw["gpt_response"])
         self.assertTrue(kw["action_list"]["items"])
         self.assertEqual(kw["used_placeholders"], ["birth_chart_summary"])
+        self.assertEqual(kw["narrative_style"], "plain")  # spouse-only PDF layout (no keep-together cards)
         run.deliver.assert_called_once()
 
     def test_valid_english_response_continues_to_pdf_and_delivery(self):
@@ -384,7 +385,22 @@ class GenerationTests(_NoLiveOpenAI):
         self.assertEqual(kw["answer_hero"]["value"], "Supportive, With Steady Effort")
         self.assertIsNotNone(kw["timeline"])
         self.assertIsNone(kw["disclaimer"])
+        self.assertNotIn("narrative_style", kw)  # legacy call unchanged: shared default card style
         self.assertIn("birth_chart_summary", kw["used_placeholders"])
+
+
+class RelationshipLayoutUnchangedTests(GenerationTests):
+    def test_love_premium_report_still_routes_to_its_own_pipeline(self):
+        # relationship_future_report (love_premium_v1) never reaches tasks.py's PDF call,
+        # so the spouse-only layout switch cannot touch it.
+        import modules.love.love_report_router as router
+        with patch.object(router, "route_report_generation") as love_route:
+            run = self.run_task(product="relationship_future_report")
+        love_route.assert_called_once()
+        self.assertEqual(love_route.call_args.args[1], "relationship_future_report")
+        run.pdf.assert_not_called()
+        self.assertEqual(run.ai.call_count, 0)
+        self.assertEqual(run.calls, [])
 
 
 if __name__ == "__main__":

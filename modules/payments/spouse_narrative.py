@@ -129,8 +129,8 @@ LIMITATIONS_TEXT = {
         "Astrology describes tendencies, not certainties. Your future spouse is a real person with free "
         "will, and life circumstances, upbringing and personal choices shape who they are.\n"
         "This reading is built from your 7th house, its lord, the planets connected to it, your Navamsa "
-        "chart and your Darakaraka. It deliberately does not use a few specialised techniques -- Upapada "
-        "Lagna, retrograde motion, planetary combustion and Shadbala strength scores -- so it does not "
+        "chart and your Darakaraka. It deliberately does not use a few specialised techniques (Upapada "
+        "Lagna, retrograde motion, planetary combustion and Shadbala strength scores), so it does not "
         "comment on anything that would depend on them.\n"
         "The health section describes broad astrological tendencies only; it is not a medical assessment. "
         "The financial section describes broad tendencies only; it is not financial advice or a prediction "
@@ -140,7 +140,7 @@ LIMITATIONS_TEXT = {
         "ज्योतिष प्रवृत्तियाँ बताता है, निश्चितताएँ नहीं। आपका भावी जीवनसाथी एक वास्तविक व्यक्ति होगा जिसकी अपनी "
         "स्वतंत्र इच्छा है, और जीवन की परिस्थितियाँ, परवरिश तथा व्यक्तिगत निर्णय भी उसके स्वभाव को आकार देते हैं।\n"
         "यह विश्लेषण आपके सप्तम भाव, सप्तमेश, उससे जुड़े ग्रहों, आपकी नवांश कुंडली और दाराकारक पर आधारित है। इसमें "
-        "कुछ विशेष तकनीकों -- उपपद लग्न, वक्री गति, ग्रहों का अस्त होना और षड्बल -- का उपयोग जानबूझकर नहीं किया गया है, "
+        "कुछ विशेष तकनीकों (उपपद लग्न, वक्री गति, ग्रहों का अस्त होना और षड्बल) का उपयोग जानबूझकर नहीं किया गया है, "
         "इसलिए उन पर निर्भर बातों पर यह रिपोर्ट कुछ नहीं कहती।\n"
         "स्वास्थ्य वाला भाग केवल व्यापक ज्योतिषीय प्रवृत्तियाँ बताता है; यह कोई चिकित्सीय आकलन नहीं है। आर्थिक भाग भी "
         "केवल व्यापक प्रवृत्तियाँ बताता है; यह वित्तीय सलाह या आय और संपत्ति की सटीक भविष्यवाणी नहीं है।"
@@ -273,13 +273,13 @@ UI = {
         "dk_only": "supported by the Darakaraka (see the next section)",
         "d9_intro": "Navamsa 7th sign: {sign}. Navamsa 7th lord: {lord}.",
         "d9_occupants": "Planets in the Navamsa 7th house: {planets}.",
-        "confirmed": "{dim} -- {pole}: the Navamsa repeats this direction ({factors}).",
-        "refinement": "{dim} -- {pole}: the Navamsa adds this as a secondary nuance ({factors}).",
+        "confirmed": "{dim} ({pole}): the Navamsa repeats this direction ({factors}).",
+        "refinement": "{dim} ({pole}): the Navamsa adds this as a secondary nuance ({factors}).",
         "contrast": "{dim}: outwardly {outer} in the birth chart; in private life the Navamsa leans {inner} ({factors}).",
         "contrast_both": "{dim}: the birth chart shows both sides outwardly; in private life the Navamsa leans {inner} ({factors}).",
-        "d1_only_with_d9": "{dim}: Navamsa factors -- {parts}; the reading of this trait rests on the birth chart.",
+        "d1_only_with_d9": "{dim}: the Navamsa factors lean toward {parts}; the reading of this trait rests on the birth chart.",
         "no_d9": "The Navamsa does not add a separate emphasis to the traits above.",
-        "dk": "Darakaraka (a supporting indicator only): {planet} -- {leanings}.",
+        "dk": "Darakaraka (a supporting indicator only): {planet}, leaning toward {leanings}.",
         "dk_tie": "Darakaraka (an exact tie; supporting indicators only): {planets}. {parts}",
         "dk_planet_leanings": "{planet} leans toward {leanings}.",
         "dk_planet_none": "{planet} adds no separate emphasis to the traits described here.",
@@ -288,11 +288,11 @@ UI = {
         "navamsa_rule": "The Navamsa confirms or refines the birth-chart picture; the birth chart remains the primary reading.",
         "health_basis": "Chart basis: {items}.",
         "health_none": "Chart basis: no single factor stands out strongly here.",
-        "wealth_item": "{label} -- the spouse's house {spouse_house} (your house {native_house}, {sign}): {state}",
+        "wealth_item": "{label} (the spouse's house {spouse_house}, your house {native_house}, {sign}): {state}",
         "wealth_basis": "Chart basis: {items}.",
-        "hero_line": "{dim} -- {pole}: {factors}",
+        "hero_line": "{dim} ({pole}): {factors}",
         "hero_fallback": "Your 7th house is {sign} and its lord is {lord}.",
-        "join": "; ", "and": " and ",
+        "join": "; ", "and": " and ", "sentence_join": ". ",
     },
     "hi": {
         "birth_chart": "जन्मकुंडली", "navamsa": "नवांश", "toward": "की ओर",
@@ -303,13 +303,13 @@ UI = {
         "dk_only": "दाराकारक से सहायक संकेत (अगला भाग देखें)",
         "d9_intro": "नवांश की सप्तम राशि: {sign}। नवांश सप्तमेश: {lord}।",
         "d9_occupants": "नवांश के सप्तम भाव में ग्रह: {planets}।",
-        "confirmed": "{dim} -- {pole}: नवांश इसी दिशा को दोहराता है ({factors})।",
-        "refinement": "{dim} -- {pole}: नवांश इसे एक अतिरिक्त, सूक्ष्म पहलू के रूप में जोड़ता है ({factors})।",
+        "confirmed": "{dim} ({pole}): नवांश इसी दिशा को दोहराता है ({factors})।",
+        "refinement": "{dim} ({pole}): नवांश इसे एक अतिरिक्त, सूक्ष्म पहलू के रूप में जोड़ता है ({factors})।",
         "contrast": "{dim}: जन्मकुंडली में बाहरी रूप से {outer}; निजी जीवन में नवांश {inner} की ओर झुकता है ({factors})।",
         "contrast_both": "{dim}: जन्मकुंडली में बाहरी रूप से दोनों पक्ष दिखते हैं; निजी जीवन में नवांश {inner} की ओर झुकता है ({factors})।",
-        "d1_only_with_d9": "{dim}: नवांश के कारक -- {parts}; इस गुण का विश्लेषण जन्मकुंडली पर आधारित है।",
+        "d1_only_with_d9": "{dim}: नवांश के कारक {parts} की ओर संकेत करते हैं; इस गुण का विश्लेषण जन्मकुंडली पर आधारित है।",
         "no_d9": "नवांश ऊपर बताए गए गुणों पर अलग से कोई ज़ोर नहीं जोड़ता।",
-        "dk": "दाराकारक (केवल सहायक संकेत): {planet} -- {leanings}।",
+        "dk": "दाराकारक (केवल सहायक संकेत): {planet}, जो {leanings} की ओर संकेत करता है।",
         "dk_tie": "दाराकारक (बराबरी की स्थिति; केवल सहायक संकेत): {planets}। {parts}",
         "dk_planet_leanings": "{planet} {leanings} की ओर संकेत करता है।",
         "dk_planet_none": "{planet} यहाँ बताए गए गुणों पर अलग से कोई ज़ोर नहीं जोड़ता।",
@@ -318,11 +318,11 @@ UI = {
         "navamsa_rule": "नवांश जन्मकुंडली की पुष्टि करता है या उसमें सूक्ष्म पहलू जोड़ता है; मुख्य आधार जन्मकुंडली ही रहती है।",
         "health_basis": "कुंडली का आधार: {items}।",
         "health_none": "कुंडली का आधार: यहाँ कोई एक कारक विशेष रूप से उभरकर नहीं आता।",
-        "wealth_item": "{label} -- जीवनसाथी का भाव {spouse_house} (आपका भाव {native_house}, {sign}): {state}",
+        "wealth_item": "{label} (जीवनसाथी का भाव {spouse_house}, आपका भाव {native_house}, {sign}): {state}",
         "wealth_basis": "कुंडली का आधार: {items}।",
-        "hero_line": "{dim} -- {pole}: {factors}",
+        "hero_line": "{dim} ({pole}): {factors}",
         "hero_fallback": "आपका सप्तम भाव {sign} राशि में है और सप्तमेश {lord} है।",
-        "join": "; ", "and": " और ",
+        "join": "; ", "and": " और ", "sentence_join": "। ",
     },
 }
 
@@ -481,14 +481,14 @@ def render_chart_basis(evidence: dict, language: str) -> str:
             for pole in DIMENSION_POLES[dim]:
                 f = _d1_votes(t, pole)
                 if f:
-                    parts.append(f"{_pole(pole, language)} -- {_join([_factor_text(v, language) for v in f], language)}")
+                    parts.append(f"{_pole(pole, language)}: {_join([_factor_text(v, language) for v in f], language)}")
                 elif _d9_votes(t, pole):
-                    parts.append(f"{_pole(pole, language)} -- {u['navamsa_only']}")
+                    parts.append(f"{_pole(pole, language)}: {u['navamsa_only']}")
                 elif any(_is_dk(v) and v["pole"] == pole for v in t["evidence"]):
-                    parts.append(f"{_pole(pole, language)} -- {u['dk_only']}")
-            body = " | ".join(parts) if parts else u["navamsa_only"]
+                    parts.append(f"{_pole(pole, language)}: {u['dk_only']}")
+            body = u["sentence_join"].join(parts) if parts else u["navamsa_only"]
         else:
-            head = f"- **{_dim(dim, language)} -- {_pole(t['direction'], language)}** ({CLASS_WORDS[language][t['class']]})"
+            head = f"- **{_dim(dim, language)} ({_pole(t['direction'], language)})** ({CLASS_WORDS[language][t['class']]})"
             f = _d1_votes(t, t["direction"])
             body = _join([_factor_text(v, language) for v in f], language) if f else u["navamsa_only"]
         out.append(f"{head}: {body}")
@@ -531,8 +531,8 @@ def render_navamsa(evidence: dict, language: str) -> str:
             trait_lines.append(template.format(dim=_dim(dim, language), outer=_pole(shown[0], language),
                                                inner=_pole(inner, language), factors=factors(_d9_votes(t, inner))))
         elif _d9_votes(t):  # D1_ONLY but Navamsa factors exist: state them, never as support/override.
-            parts = [f"{_pole(p, language)}: {factors(_d9_votes(t, p))}" for p in DIMENSION_POLES[dim] if _d9_votes(t, p)]
-            trait_lines.append(u["d1_only_with_d9"].format(dim=_dim(dim, language), parts=_join(parts, language)))
+            parts = [f"{_pole(p, language)} ({factors(_d9_votes(t, p))})" for p in DIMENSION_POLES[dim] if _d9_votes(t, p)]
+            trait_lines.append(u["d1_only_with_d9"].format(dim=_dim(dim, language), parts=u["and"].join(parts)))
     out += [f"- {line}" for line in trait_lines] or [u["no_d9"]]
     out.append(u["navamsa_rule"])
     dk = evidence["chart_facts"]["darakaraka"]
@@ -558,7 +558,7 @@ def render_health_basis(evidence: dict, language: str) -> str:
         if phrase is None:
             raise ReportMetadataError(f"spouse evidence: unknown health item {item['item']!r}")
         if result != "NONE":
-            items.append(f"{phrase} -- {HEALTH_RESULT_WORDS[language][result]}")
+            items.append(f"{phrase} ({HEALTH_RESULT_WORDS[language][result]})")
     u = UI[language]
     return u["health_basis"].format(items=_join(items, language)) if items else u["health_none"]
 

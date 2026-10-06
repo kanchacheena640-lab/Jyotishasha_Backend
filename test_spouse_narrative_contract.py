@@ -446,19 +446,19 @@ mixed = synthetic(trait("responsibility", "MIXED", None, "D1_ONLY", [
     vote("occupant_7th", "dutiful", planet="Sun"), vote("seventh_sign", "flexible", sign="Sagittarius")]))
 basis = sn.render_chart_basis(mixed, "en")
 check("[2C.4-C] MIXED trait renders both sides with their own factors",
-      "**Responsibility** (both sides appear): Responsible -- Sun placed in the 7th house | Easygoing -- 7th-house sign Sagittarius" in basis)
+      "**Responsibility** (both sides appear): Responsible: Sun placed in the 7th house. Easygoing: 7th-house sign Sagittarius" in basis)
 check("[2C.4-C] real chart B: a Navamsa-only side of a MIXED trait points to section 5",
-      "Steady -- shown through the Navamsa (see the next section)" in sn.render_chart_basis(CHART_B, "en"))
+      "Steady: shown through the Navamsa (see the next section)" in sn.render_chart_basis(CHART_B, "en"))
 
 # [D] every D1/D9 relationship type; [E] outer/inner direction.
 conf = synthetic(trait("temperament", "SUPPORTED", "dynamic", "CONFIRMED", [
     vote("occupant_7th", "dynamic", planet="Mars"), vote("d9_seventh_sign", "dynamic", chart="D9", tier="S", sign="Aries")]))
-check("[2C.4-D] CONFIRMED", "Temperament -- Dynamic: the Navamsa repeats this direction (Navamsa 7th sign Aries)." in sn.render_navamsa(conf, "en"))
+check("[2C.4-D] CONFIRMED", "Temperament (Dynamic): the Navamsa repeats this direction (Navamsa 7th sign Aries)." in sn.render_navamsa(conf, "en"))
 refi = synthetic(trait("temperament", "SUPPORTED", "dynamic", "REFINEMENT", [
     vote("d9_seventh_sign", "dynamic", chart="D9", tier="S", sign="Aries"), vote("d9_seventh_lord", "dynamic", chart="D9", tier="S", planet="Mars")]))
 check("[2C.4-D] REFINEMENT (section 5) and section 4 points to the Navamsa",
-      "Temperament -- Dynamic: the Navamsa adds this as a secondary nuance (Navamsa 7th sign Aries; Mars as the Navamsa 7th lord)." in sn.render_navamsa(refi, "en")
-      and "**Temperament -- Dynamic** (a supported tendency): shown through the Navamsa" in sn.render_chart_basis(refi, "en"))
+      "Temperament (Dynamic): the Navamsa adds this as a secondary nuance (Navamsa 7th sign Aries; Mars as the Navamsa 7th lord)." in sn.render_navamsa(refi, "en")
+      and "**Temperament (Dynamic)** (a supported tendency): shown through the Navamsa" in sn.render_chart_basis(refi, "en"))
 contrast_one = synthetic(trait("temperament", "SUPPORTED", "dynamic", "OUTER_INNER_CONTRAST", [
     vote("occupant_7th", "dynamic", planet="Mars"), vote("d9_seventh_sign", "steady", chart="D9", tier="S", sign="Taurus")]))
 check("[2C.4-D/E] OUTER_INNER_CONTRAST: outer = birth chart, inner = Navamsa",
@@ -486,14 +486,14 @@ d1_only_d9 = synthetic(trait("responsibility", "MIXED", None, "D1_ONLY", [
     vote("occupant_7th", "dutiful", planet="Sun"), vote("seventh_sign", "flexible", sign="Sagittarius"),
     vote("d9_seventh_sign", "dutiful", chart="D9", tier="S", sign="Leo")]))
 check("[2C.4-D] D1_ONLY with Navamsa factors: stated, never as support/override",
-      "Responsibility: Navamsa factors -- Responsible: Navamsa 7th sign Leo; the reading of this trait rests on the birth chart." in sn.render_navamsa(d1_only_d9, "en"))
+      "Responsibility: the Navamsa factors lean toward Responsible (Navamsa 7th sign Leo); the reading of this trait rests on the birth chart." in sn.render_navamsa(d1_only_d9, "en"))
 
 # [F]/[G] Darakaraka: supporting only, never presented as Navamsa; exact tie.
 dk_ev = synthetic(trait("communication", "SUPPORTED", "expressive", "D1_ONLY", [
     vote("occupant_7th", "expressive", planet="Mars"), vote("darakaraka", "expressive", tier="T", planet="Mercury")]))
 nav = sn.render_navamsa(dk_ev, "en")
 check("[2C.4-F] Darakaraka line: supporting indicator only, with its own leanings",
-      "Darakaraka (a supporting indicator only): Mercury -- Expressive (Communication)." in nav)
+      "Darakaraka (a supporting indicator only): Mercury, leaning toward Expressive (Communication)." in nav)
 check("[2C.4-F] Darakaraka is never listed as a Navamsa factor nor in the birth-chart basis",
       "Navamsa factors" not in nav and "Darakaraka" not in sn.render_chart_basis(dk_ev, "en"))
 tie_ev = synthetic(trait("temperament", "SUPPORTED", "dynamic", "D1_ONLY", [
@@ -596,6 +596,47 @@ _blob5 = "|".join(f"{g}:{rx.pattern}:{rx.flags}" for g in sn.PROHIBITED for rx i
          "|".join(f"{rx.pattern}:{rx.flags}" for rx in sn.WEALTH_INSTABILITY)
 check("[2C.5-E] blocked-pattern fingerprint unchanged (8ed84ab3...)",
       hashlib.sha256(_blob5.encode("utf-8")).hexdigest() == "8ed84ab31d8b18484076b22d835b423f0b54466e43c482823e5dfed37941b531")
+
+print("\n=== SNR PDF layout fix: presentation-only separator polish (meaning unchanged) ===")
+for name, ev in (("BASE", BASE), ("B", CHART_B), ("C", CHART_C)):
+    for lang in ("en", "hi"):
+        att = sn.build_attribution(ev, lang)
+        shown = "\n".join([att["chart_basis"], att["navamsa"], att["health_basis"], att["wealth_basis"], *att["hero_evidence"]])
+        check(f"[PDF-D] {name} [{lang}] backend customer text has no '--' or '|' separator syntax",
+              "--" not in shown and "|" not in shown and "--" not in sn.LIMITATIONS_TEXT[lang])
+        # [PDF-E] meaning unchanged: every factor the renderer selects (same SNR-2C.4 selection rule:
+        # birth chart -> the trait's direction, or both directions when MIXED; Navamsa -> by relationship;
+        # Darakaraka -> its own line) is still rendered under its own trait line with its own direction.
+        lines4 = {ln for ln in att["chart_basis"].splitlines() if ln.startswith("- **")}
+        lines5 = att["navamsa"].splitlines()
+        missing = []
+        for t in ev["nature"]["traits"]:
+            if not t["reportable"]:
+                continue
+            dim = sn.DIMENSION_LABELS[lang][t["dimension"]]
+            inner = sn.contrast_poles(t)[1] if t["d1_d9"] == "OUTER_INNER_CONTRAST" else None
+            for v in t["evidence"]:
+                if v["factor"] == "darakaraka":
+                    if not any(sn._planet_name(v["planet"], lang) in l and sn.POLE_LABELS[lang][v["pole"]] in l for l in lines5 if "Darakaraka" in l or "दाराकारक" in l):
+                        missing.append((t["dimension"], v["factor"]))
+                    continue
+                if v["chart"] == "D1":
+                    if t["class"] != "MIXED" and v["pole"] != t["direction"]:
+                        continue  # minority opposite vote of a SUPPORTED/DOMINANT trait: never rendered (unchanged rule)
+                    pool = lines4
+                else:
+                    if t["d1_d9"] in ("CONFIRMED", "REFINEMENT") and v["pole"] != t["direction"]:
+                        continue
+                    if inner is not None and v["pole"] != inner:
+                        continue
+                    pool = lines5
+                if not any(dim in l and sn._factor_text(v, lang) in l and sn.POLE_LABELS[lang][v["pole"]] in l for l in pool):
+                    missing.append((t["dimension"], v["factor"], v.get("planet") or v.get("sign")))
+        check(f"[PDF-E] {name} [{lang}] every evidence factor is still rendered under its own trait and direction", missing == [])
+check("[PDF-E] limitations meaning unchanged (same techniques listed, EN)",
+      all(w in sn.LIMITATIONS_TEXT["en"] for w in ("Upapada Lagna", "retrograde motion", "planetary combustion", "Shadbala strength scores")))
+check("[PDF-E] limitations meaning unchanged (same techniques listed, HI)",
+      all(w in sn.LIMITATIONS_TEXT["hi"] for w in ("उपपद लग्न", "वक्री गति", "ग्रहों का अस्त होना", "षड्बल")))
 
 print(f"\nRESULTS: {PASSED} passed, {FAILED} failed")
 sys.exit(1 if FAILED else 0)

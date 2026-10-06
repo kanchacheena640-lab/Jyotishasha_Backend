@@ -636,6 +636,11 @@ def _generate_and_send_report_core(order_id):
                 timeline=timeline_component,
                 disclaimer=disclaimer_text,
                 app_download=app_download_component,
+                # Spouse Nature Report only: long single-section narratives
+                # render without the keep-together card shell (English cards
+                # avoid page breaks, which stranded section headings). Every
+                # other report passes nothing extra and keeps its card style.
+                **({"narrative_style": "plain"} if product_slug == SPOUSE_PRODUCT_SLUG else {}),
             )
 
             # Step 7: Save + Email
