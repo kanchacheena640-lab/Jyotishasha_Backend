@@ -1,8 +1,13 @@
 from datetime import datetime, timedelta
 import swisseph as swe
 
+from lahiri_mode import ensure_lahiri_mode
+
 # Swiss setup
 swe.set_sid_mode(swe.SIDM_LAHIRI)
+# U4C.2B -- import-time only, NOT sufficient on its own (swe.set_sid_
+# mode() is thread-local, U4C.2A). Both functions below that actually
+# call swe.calc_ut() now call ensure_lahiri_mode() themselves first.
 FLAGS = swe.FLG_SIDEREAL | swe.FLG_SWIEPH
 
 
@@ -23,6 +28,7 @@ def _to_ut_julday(dt_ist):
 # Core Longitudes
 # -------------------------------------------------
 def _sidereal_longitudes(dt_ist):
+    ensure_lahiri_mode()  # U4C.2B -- safe on any thread, every call
     jd_ut = _to_ut_julday(dt_ist)
     sun = swe.calc_ut(jd_ut, swe.SUN, FLAGS)[0][0] % 360
     moon = swe.calc_ut(jd_ut, swe.MOON, FLAGS)[0][0] % 360
@@ -72,6 +78,7 @@ def _karan_slot_at(dt_ist):
     return int(diff // 6) + 1
 
 def sidereal_longitudes(dt_ist):
+    ensure_lahiri_mode()  # U4C.2B -- safe on any thread, every call (this is the public entry point services/panchang_engine.py imports)
     jd_ut = _to_ut_julday(dt_ist)
     sun = swe.calc_ut(jd_ut, swe.SUN, FLAGS)[0][0] % 360
     moon = swe.calc_ut(jd_ut, swe.MOON, FLAGS)[0][0] % 360

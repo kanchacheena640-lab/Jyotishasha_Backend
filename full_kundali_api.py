@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import swisseph as swe
 from datetime import datetime, timedelta
+from lahiri_mode import ensure_lahiri_mode
 # T3 -- canonical birthplace-local -> UTC conversion (Foreign Birth
 # Timezone Correctness project). Replaces the hardcoded IST (-05:30)
 # assumption previously used directly in this file. See
@@ -31,28 +32,25 @@ from services.shubh_kartari_yog import evaluate_shubh_kartari_yog
 from services.vipreet_rajyog import evaluate_vipreet_rajyog
 from services.gemstone_recommender import recommend_gemstone_from_lagna_9th
 from services.foreign_travel import build_foreign_travel
-from modules.models_user import UserDashaTimeline
-from extensions import db
-
-def save_dasha_to_db(user_id, mahadashas):
-    # duplicate avoid
-    exists = UserDashaTimeline.query.filter_by(user_id=user_id).first()
-    if exists:
-        return
-
-    for md in mahadashas:
-        for ad in md["antardashas"]:
-            row = UserDashaTimeline(
-                user_id=user_id,
-                mahadasha=md["mahadasha"],
-                antardasha=ad["planet"],
-                start_date=ad["start"],
-                end_date=ad["end"]
-            )
-            db.session.add(row)
-
-    db.session.commit()
-
+# U4A.1 -- save_dasha_to_db() was removed from here. It was a THIRD,
+# independent UserDashaTimeline writer (alongside services/
+# dasha_db_filler.py and the new modules/services/dasha_timeline_
+# service.py), with its own weak "skip if any row exists" dedup, its
+# own hidden db.session.commit() inside a low-level function, and it
+# stored start_date/end_date as raw strings rather than parsed `date`
+# objects. Verified DEAD CODE before removal: it only ever ran when
+# calculate_full_kundali() was called with a truthy `user_id`, and an
+# exhaustive repo-wide search of every real call site (app.py,
+# life_tools_report.py, every Premium Generator, every Alerts/backfill
+# caller, modules/user_service.py, every test) found every single one
+# passes user_id=None explicitly (or omits it, same default) -- this
+# code path has never actually executed in the running application.
+# Dasha persistence now has exactly ONE implementation:
+# modules/services/dasha_timeline_service.py. The `user_id` parameter
+# below is left in place (still accepted, still unused for persistence)
+# purely for call-site signature compatibility -- removing the
+# parameter itself is a separate, unrelated change this task does not
+# make.
 
 import json
 import os
@@ -103,7 +101,17 @@ def calculate_planet_positions(dob, tob, lat, lon):
     jd_ut = swe.julday(utc_time.year, utc_time.month, utc_time.day,
                        utc_time.hour + utc_time.minute / 60.0)
 
-    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    # U4C.2B -- was a raw swe.set_sid_mode(swe.SIDM_LAHIRI) call;
+    # switched to the shared ensure_lahiri_mode() helper for
+    # consistency with every other guarded calculation entry point in
+    # the codebase. Behavior is byte-for-byte identical -- this was
+    # already the correct, self-contained, call-time pattern (U4A.1);
+    # U4C.2A additionally proved the underlying mechanism is per-
+    # THREAD, not merely process-global-via-import-order as originally
+    # documented, which is exactly why this call-time guard (rather
+    # than relying on any import having already run) was already the
+    # right fix and remains unchanged here.
+    ensure_lahiri_mode()
     FLAGS = swe.FLG_SIDEREAL | swe.FLG_SWIEPH
 
     cusps, ascmc = swe.houses(jd_ut, float(lat), float(lon), b'P')
@@ -238,6 +246,31 @@ def calculate_shadbala_for_planets(planets):
     return shadbala_data
 
 def get_moon_longitude_lahiri(dob, tob, lat, lon):
+    # U4A.1 -- explicit, self-contained Lahiri enforcement. This function
+    # previously relied entirely on swisseph's process-global sidereal
+    # mode already being SIDM_LAHIRI as a SIDE EFFECT of some other
+    # module having called swe.set_sid_mode() earlier in the same
+    # process (in practice, services/sadhesati_report_generator.py's
+    # own top-level import of smart_transit_engine.py, which sets
+    # SIDM_LAHIRI at import time -- three modules removed from this
+    # function and never guaranteed by anything this function itself
+    # does). U4A.0's audit proved this was harmless today only because
+    # every real call path happens to trigger that import chain first,
+    # not because this function was actually self-contained. Explicitly
+    # setting it here -- exactly the same call
+    # calculate_planet_positions() already makes for the same reason --
+    # removes that fragile, undocumented dependency with zero change to
+    # the Moon-longitude math itself (verified identical output before/
+    # after this fix; see test_dasha_lahiri_self_containment.py).
+    #
+    # U4C.2B -- U4C.2A proved the real mechanism is stronger than
+    # "process-global via import order": swe.set_sid_mode() is per-
+    # THREAD. This call-time guard was already the right shape for
+    # that (it re-establishes the mode on WHATEVER thread is actually
+    # executing, every call) -- only the helper it calls changed, to
+    # the shared ensure_lahiri_mode(), for consistency with every other
+    # guarded entry point. Behavior is byte-for-byte identical.
+    ensure_lahiri_mode()
     # T3 -- same canonical birthplace-local -> UTC conversion as
     # calculate_planet_positions() above (the single shared resolver,
     # never a second independent timezone implementation). utc_dt is
@@ -339,8 +372,10 @@ def calculate_full_kundali(name, dob, tob, lat, lon, user_id=None, language='en'
     mahadashas = calculate_vimshottari_dasha(moon_deg, birth_date)
     current_maha, current_antar = get_current_dasha(mahadashas)
 
-    if user_id:
-        save_dasha_to_db(user_id, mahadashas)
+    # U4A.1 -- the save_dasha_to_db(user_id, mahadashas) call that used
+    # to sit here was removed; see the note above this function's
+    # imports. This calculation function no longer has any DB
+    # dependency of its own -- it stays a pure function of its inputs.
 
     moon_sign = next((p['sign'] for p in planets if p["name"] == "Moon"), None)
     lagna_sign = next((p['sign'] for p in planets if "Ascendant" in p["name"]), None)
