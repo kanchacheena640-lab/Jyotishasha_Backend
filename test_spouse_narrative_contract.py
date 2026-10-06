@@ -312,5 +312,87 @@ _blob = "|".join(f"{g}:{rx.pattern}:{rx.flags}" for g in sn.PROHIBITED for rx in
 check("[2C.2-E] PROHIBITED + WEALTH_INSTABILITY patterns unchanged (no negation exceptions)",
       hashlib.sha256(_blob.encode("utf-8")).hexdigest() == "8ed84ab31d8b18484076b22d835b423f0b54466e43c482823e5dfed37941b531")
 
+print("\n=== SNR-2C.3: health vocabulary, raw-label guard, strict Basis, customer voice, certainty ===")
+_tpl3 = {lang: open(f"prompts/spouse_nature_report_{lang}.txt", encoding="utf-8").read() for lang in ("en", "hi")}
+
+# [A]/[B] health is written in wellbeing terms; medical concepts are not discussed even to deny them.
+check("[2C.3-A] EN health: wellbeing vocabulary only, no medical concept even to deny it",
+      "Write about health only in terms of wellbeing, rest, routine, energy, self-care and balance" in _tpl3["en"]
+      and "not even to say that it does not apply" in _tpl3["en"]
+      and all(f'"{w}"' in _tpl3["en"] for w in ("diagnosis", "disease", "illness", "treatment")))
+check("[2C.3-A] EN keeps the existing full medical/lifespan/fertility ban",
+      "Never mention any disease, diagnosis, body part, organ, medicine, treatment, lifespan, death, fertility, pregnancy or mental-health condition." in _tpl3["en"])
+check("[2C.3-B] HI health: wellbeing vocabulary only, no medical concept even to deny it",
+      "स्वास्थ्य के बारे में केवल सेहत, आराम, दिनचर्या, ऊर्जा, अपनी देखभाल और संतुलन के रूप में लिखें" in _tpl3["hi"]
+      and "उसे नकारने के लिए भी नहीं" in _tpl3["hi"]
+      and all(f'"{w}"' in _tpl3["hi"] for w in ("निदान", "बीमारी", "रोग", "इलाज"))
+      and "diagnosis, disease, illness या treatment" in _tpl3["hi"])
+check("[2C.3-B] HI keeps the existing medical ban", "किसी भी रोग, शरीर के अंग, जाँच, उपचार, आयु, गर्भधारण या मानसिक स्थिति का उल्लेख कभी न करें।" in _tpl3["hi"])
+# [C] the exact sentence from the restarted real run A stays rejected by the existing safety validator.
+check("[2C.3-C] real-run sentence 'They do not describe a particular diagnosis or condition.' rejected",
+      rejects(make_response(BASE, bodies={"health": SAFE_BODY["en"]["health"]
+              + " They do not describe a particular diagnosis or condition."}), BASE, needle="medical:diagnosis"))
+
+# [D]/[E] raw internal labels in customer text fail closed (never sanitised).
+check("[2C.3-D] real-run Hindi sentence with raw EFFORT_BUILT rejected", rejects(make_response(BASE, "hi", bodies={
+    "wealth": SAFE_BODY["hi"]["wealth"] + " आर्थिक पृष्ठभूमि का वर्ग EFFORT_BUILT है।"}), BASE, "hi", needle="internal label in customer text 'EFFORT_BUILT'"))
+check("[2C.3-E] raw NEEDS_ATTENTION rejected", rejects(make_response(BASE, bodies={
+    "health": SAFE_BODY["en"]["health"] + " The class here is NEEDS_ATTENTION."}), BASE, needle="'NEEDS_ATTENTION'"))
+for _label, _patch in (
+        ("capitalised state MIXED (real-run A)", {"health": SAFE_BODY["en"]["health"] + " The health class is MIXED."}),
+        ("capitalised state STEADY (real-run A)", {"wealth": SAFE_BODY["en"]["wealth"] + " The financial class is STEADY."}),
+        ("OUTER_INNER_CONTRAST", {"navamsa": SAFE_BODY["en"]["navamsa"] + " This is an OUTER_INNER_CONTRAST."}),
+        ("snake_case identifier approach_to_life", {"nature": SAFE_BODY["en"]["nature"] + " Their approach_to_life is mixed."}),
+        ("snake_case identifier unconventional_pattern", {"wealth": SAFE_BODY["en"]["wealth"] + " The unconventional_pattern is present."}),
+        ("evidence ref id", {"chart_basis": SAFE_BODY["en"]["chart_basis"] + " See nature.temperament."})):
+    check(f"[2C.3-E] {_label} in narrative rejected", rejects(make_response(BASE, bodies=_patch), BASE, needle="internal label"))
+check("[2C.3-E] raw label in an action item (customer-visible) rejected", rejects(make_response(BASE, meta_patch=lambda m: m.__setitem__(
+    "action_items", ["Plan finances knowing the class is EFFORT_BUILT."])), BASE, needle="'EFFORT_BUILT'"))
+check("[2C.3-E] raw label in the hero interpretation rejected", rejects(make_response(BASE, meta_patch=lambda m: m["answer_hero"].__setitem__(
+    "interpretation", "Health is NEEDS_ATTENTION.")), BASE, needle="'NEEDS_ATTENTION'"))
+check("[2C.3-E] central RAW_INTERNAL_LABELS covers every machine state named in the contract",
+      {"DOMINANT", "SUPPORTED", "MIXED", "NOT_INDICATED", "NEEDS_ATTENTION", "SUPPORTIVE", "STEADY", "GROWTH_ORIENTED",
+       "EFFORT_BUILT", "STRAINED", "NEUTRAL", "D1_ONLY", "CONFIRMED", "REFINEMENT", "OUTER_INNER_CONTRAST", "DK_TIE"} <= sn.RAW_INTERNAL_LABELS)
+
+# [F] structured META keeps its machine states and is not scanned by the guard.
+_meta_ok = make_response(BASE)
+check("[2C.3-F] valid response's META carries internal classes (e.g. DOMINANT/MIXED) and is accepted",
+      any(lbl in _meta_ok.split("===REPORT===")[0] for lbl in ("DOMINANT", "MIXED"))
+      and bool(sn.validate_spouse_response(_meta_ok, BASE, "en")))
+# [G] ordinary prose using the same words in lower/title case is not rejected.
+_natural = {"nature": "Mixed signals run through this chart. A steady, supported side may show in calm moments, "
+                      "while a dynamic side may appear when plans change; neutral moments are part of the picture too.",
+            "wealth": SAFE_BODY["en"]["wealth"] + " Resources may feel steady at times and mixed at others."}
+check("[2C.3-G] natural prose with 'Mixed', 'steady', 'supported', 'neutral' accepted",
+      bool(sn.validate_spouse_response(make_response(BASE, bodies=_natural), BASE, "en")))
+check("[2C.3-G] guard ignores lower/title case and Hindi prose",
+      sn.internal_label_leaks("Mixed, mixed, Steady, steady, Supported, Dominant, Neutral. मिले-जुले संकेत, स्थिर स्वभाव।") == [])
+
+# [H]/[I] strict Basis: no one-hop symbolism from properties of a listed factor.
+check("[2C.3-H] EN forbids derived meaning from a listed factor's properties",
+      "Do not derive further meaning from properties of that factor -- its sign, house, dignity, dispositor, conjunctions or aspects" in _tpl3["en"])
+check("[2C.3-I] EN gives the Moon-as-Navamsa-7th-lord example (its sign/house adds nothing)",
+      'if "Moon as the Navamsa 7th lord" is listed, the Moon counts only as the Navamsa 7th lord; the sign or house the Moon occupies adds nothing' in _tpl3["en"])
+check("[2C.3-H/I] HI has the same restriction and example",
+      "उस कारक के गुणों -- उसकी राशि, भाव, बल (उच्च/नीच/स्वराशि), राशि-स्वामी, युति या दृष्टि -- से कोई अतिरिक्त अर्थ न निकालें" in _tpl3["hi"]
+      and "चंद्रमा जिस राशि या भाव में है, वह उस गुण में कुछ नहीं जोड़ता" in _tpl3["hi"])
+# [J] customer voice: no analysis/meta language; labels never printed.
+check("[2C.3-J] EN discourages evidence/class/report meta-language and printing labels",
+      all(p in _tpl3["en"] for p in ('"the supplied evidence"', '"the trait evidence"', '"the class is"', '"tendency class"',
+                                    '"this report indicates"', "never print the label, name or id itself in the report text")))
+check("[2C.3-J] HI discourages meta-language and printing labels",
+      all(p in _tpl3["hi"] for p in ('"दिए गए प्रमाण"', '"इस वर्ग का अर्थ"', '"यह रिपोर्ट बताती है"',
+                                    "रिपोर्ट के पाठ में लेबल, नाम या संदर्भ स्वयं कभी न लिखें")))
+# [K] certainty style.
+check("[2C.3-K] EN tendency language, never a fixed future fact",
+      "may, can, tends to, suggests, points toward, is more likely to" in _tpl3["en"] and '"will be", "will do", "will always"' in _tpl3["en"])
+check("[2C.3-K] HI tendency language, never a fixed future fact",
+      "जीवनसाथी के बारे में प्रवृत्ति की भाषा में लिखें" in _tpl3["hi"] and '"...रहेगा", "...करेगा", "...होगा"' in _tpl3["hi"])
+for lang in ("en", "hi"):
+    check(f"[2C.3] [{lang}] built prompt carries the new rules", all(
+        s in sn.build_spouse_prompt(BASE, lang) for s in (
+            ("Customer voice:", "Do not derive further meaning", "Write about health only in terms of wellbeing") if lang == "en" else
+            ("पाठक से बात करने का ढंग:", "कोई अतिरिक्त अर्थ न निकालें", "स्वास्थ्य के बारे में केवल सेहत"))))
+
 print(f"\nRESULTS: {PASSED} passed, {FAILED} failed")
 sys.exit(1 if FAILED else 0)

@@ -20,11 +20,17 @@ Trait strength words:
 - A trait that is not listed in the evidence must not be described at all.
 - Never use: certain, certainly, definitely, guaranteed, will always, undoubtedly, for sure.
 - Do not use the words "guarantee", "instability", "loss" or "debt" (or forms such as "guaranteed", "unstable", "losses", "debts") anywhere in the report, including in reassurances, disclaimers, action items and negated statements such as "this does not mean...". The same applies to every word this policy forbids: never write a forbidden word in order to deny it.
+- Describe the spouse in tendency language -- may, can, tends to, suggests, points toward, is more likely to -- never as a fixed future fact ("will be", "will do", "will always").
+
+Customer voice:
+- Speak about the chart directly: "Your chart suggests...", "The 7th-house pattern points toward...", "The Navamsa adds...". Do not write about the analysis itself -- avoid phrases such as "the supplied evidence", "the trait evidence", "the evidence says", "the class is", "tendency class" or "this report indicates".
+- The capitalised labels, underscored names and bracketed reference ids in the evidence and in this prompt are instructions about meaning only. Put their meaning into natural words and never print the label, name or id itself in the report text; they belong only in the META block where the format requires them.
 
 Trait attribution -- strict:
 - Explain each trait ONLY through the factors listed for that exact trait in the evidence: its "Basis", or, for a MIXED trait, the factors listed under each "Toward".
 - Do not add sign symbolism, planet symbolism, Navamsa symbolism or any other astrological reasoning for a trait unless that factor is listed for that trait. A 7th-house sign may be credited only with the traits whose Basis lists that sign; the sign a planet occupies, the Navamsa 7th sign or the Navamsa 7th lord's sign adds nothing to a trait unless it is listed for it.
 - Chart facts (birth chart, Navamsa, Darakaraka) may be described as facts, but connect a fact to a trait only where that trait lists it.
+- Use a listed factor only in the role written for it. Do not derive further meaning from properties of that factor -- its sign, house, dignity, dispositor, conjunctions or aspects -- unless that exact fact is itself listed for the same trait. For example, if "Moon as the Navamsa 7th lord" is listed, the Moon counts only as the Navamsa 7th lord; the sign or house the Moon occupies adds nothing to the trait.
 
 Navamsa wording:
 - navamsa CONFIRMED: the Navamsa supports or reinforces the birth-chart indication.
@@ -38,6 +44,7 @@ Health ({health_class}) -- use only this class:
 - MIXED: "mixed indicators suggest that wellbeing may depend more on lifestyle, routine and circumstances".
 - NEEDS_ATTENTION: "some astrological factors suggest that health and wellbeing may need greater attention". Present it only as a reason for more care around wellbeing, rest and routine.
 - Never mention any disease, diagnosis, body part, organ, medicine, treatment, lifespan, death, fertility, pregnancy or mental-health condition.
+- Write about health only in terms of wellbeing, rest, routine, energy, self-care and balance. Do not discuss any medical concept, not even to say that it does not apply: never write "diagnosis", "disease", "illness" or "treatment".
 
 Financial background ({wealth_class}) -- use only this class:
 - STEADY: "a relatively steady resource-building tendency".

@@ -338,6 +338,25 @@ WEALTH_INSTABILITY = [
     re.compile(r"(अस्थिर|नुकसान|घाटा|आर्थिक संकट|कर्ज)"),
 ]
 
+# Machine vocabulary that must never reach customer prose (SNR-2C.3). META keeps
+# its structured class/direction fields; only the customer-visible text is scanned.
+# The capitalised states are matched case-sensitively as whole tokens, so ordinary
+# prose ("mixed", "Steady") is unaffected.
+DIGNITIES = ("EXALTED", "OWN", "DEBILITATED", "NEUTRAL")
+DARAKARAKA_STATUSES = ("DK_TIE",)
+RAW_INTERNAL_LABELS = frozenset(TRAIT_CLASSES + RECONCILIATIONS + HEALTH_CLASSES + WEALTH_CLASSES
+                                + ITEM_RESULTS + DIM_STATES + DIGNITIES + DARAKARAKA_STATUSES)
+_RAW_LABEL = re.compile(r"(?<![A-Za-z0-9_])("
+                        + "|".join(sorted(map(re.escape, RAW_INTERNAL_LABELS), key=len, reverse=True))
+                        + r")(?![A-Za-z0-9_])")
+# snake_case identifiers (approach_to_life, unconventional_pattern) and evidence ref ids.
+_MACHINE_IDENTIFIER = re.compile(r"\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b|\b(?:nature|health|wealth|chart_facts)\.[A-Za-z0-9_.-]+")
+
+
+def internal_label_leaks(text: str) -> list:
+    """Raw internal labels / identifiers found in customer-visible text."""
+    return sorted({m.group(0) for rx in (_RAW_LABEL, _MACHINE_IDENTIFIER) for m in rx.finditer(text or "")})
+
 
 def _scan(text: str, groups) -> list:
     hits = []
@@ -456,6 +475,8 @@ def validate_spouse_response(raw_text: str, evidence: dict, language: str) -> di
     ai_text = "\n".join([hero.get("interpretation", ""), *hero.get("evidence", []), *action_items, narrative or ""])
     for hit in _scan(ai_text, PROHIBITED):
         problems.append(f"prohibited content {hit!r}")
+    for token in internal_label_leaks(ai_text):
+        problems.append(f"internal label in customer text {token!r}")
     wealth_body = sections.get(SECTION_KEYS.index("wealth") + 1, ("", ""))[1]
     for rx in WEALTH_INSTABILITY:
         m = rx.search(wealth_body)
