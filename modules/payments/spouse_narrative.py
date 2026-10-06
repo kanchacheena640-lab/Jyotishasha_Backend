@@ -29,6 +29,13 @@ against those vocabularies before interpolation.
 
 Wired into tasks.py for spouse_nature_report (SNR-2D); see that file's
 spouse branch for the evidence -> prompt -> Luna -> validation order.
+
+SNR-2C.4 attribution boundary -- the BACKEND owns "why", Luna owns "what it
+means". Luna receives a factor-free digest (no planets, signs, houses,
+placements, Darakaraka identity or Basis lists) and writes sections 1, 2, 3,
+6, 7 and 8. Every chart-factor -> trait statement is rendered here from the
+frozen evidence votes: sections 4 and 5, the opening chart-basis line of
+sections 6 and 7, and the hero evidence bullets.
 """
 
 from __future__ import annotations
@@ -44,6 +51,7 @@ from modules.payments.report_structured_output import (
     validate_required_hero_fields,
 )
 from modules.payments.spouse_sign_table import DIMENSION_POLES, SIGN_ORDER, TRAIT_DIMENSIONS
+from data.name_mappings import planet_labels_hi, sign_labels_hi
 
 PRODUCT_SLUG = "spouse_nature_report"
 EVIDENCE_SCHEMA = "spouse_evidence_v1"
@@ -57,7 +65,8 @@ HEALTH_CLASSES = ("SUPPORTIVE", "MIXED", "NEEDS_ATTENTION")
 WEALTH_CLASSES = ("STEADY", "GROWTH_ORIENTED", "EFFORT_BUILT", "MIXED")
 ITEM_RESULTS = ("SUPPORT", "STRESS", "MIXED", "NONE")
 DIM_STATES = ("SUPPORTED", "STRAINED", "MIXED", "NEUTRAL")
-REQUIRED_HERO_FIELDS = ("label", "value", "interpretation", "evidence")
+# Hero evidence bullets are backend-rendered (SNR-2C.4); Luna supplies only the interpretation.
+REQUIRED_HERO_FIELDS = ("label", "value", "interpretation")
 
 # Narrative sections Luna writes (1-8). Section 9 (limitations) is fixed backend text.
 SECTION_KEYS = ("snapshot", "nature", "communication", "chart_basis", "navamsa", "health", "wealth", "integrated")
@@ -85,6 +94,12 @@ SECTION_TITLES = {
         "limitations": "महत्वपूर्ण सीमाएँ",
     },
 }
+# SNR-2C.4: Luna writes these sections; 4 (chart_basis) and 5 (navamsa) are backend-rendered.
+LUNA_SECTION_KEYS = ("snapshot", "nature", "communication", "health", "wealth", "integrated")
+BACKEND_SECTION_KEYS = ("chart_basis", "navamsa")
+LUNA_SECTION_NUMBERS = tuple(SECTION_KEYS.index(k) + 1 for k in LUNA_SECTION_KEYS)  # (1, 2, 3, 6, 7, 8)
+CANONICAL_DIMENSIONS = tuple(d for d, _ in TRAIT_DIMENSIONS)
+
 NATURE_SECTION_DIMS = ("temperament", "sociability", "independence", "approach_to_life", "responsibility", "convention")
 COMMUNICATION_SECTION_DIMS = ("communication", "emotional_style")
 
@@ -177,19 +192,220 @@ FACTOR_PHRASE = {
 }
 
 
-def _factor_text(v: dict) -> str:
-    phrase = FACTOR_PHRASE.get(v.get("factor"))
+FACTOR_PHRASE_HI = {
+    "occupant_7th": "सप्तम भाव में स्थित {planet}",
+    "seventh_sign": "सप्तम भाव की राशि {sign}",
+    "seventh_lord": "सप्तमेश {planet}",
+    "aspect_on_7th": "सप्तम भाव पर {planet} की दृष्टि",
+    "influence_on_7th_lord": "सप्तमेश से {planet} की युति या दृष्टि",
+    "d9_seventh_sign": "नवांश की सप्तम राशि {sign}",
+    "d9_seventh_lord": "नवांश सप्तमेश {planet}",
+    "d9_occupant_7th": "नवांश के सप्तम भाव में {planet}",
+    "darakaraka": "दाराकारक {planet}",
+}
+FACTOR_PHRASES = {"en": FACTOR_PHRASE, "hi": FACTOR_PHRASE_HI}
+
+DIMENSION_LABELS = {
+    "en": {"temperament": "Temperament", "communication": "Communication", "emotional_style": "Emotional style",
+           "sociability": "Sociability", "approach_to_life": "Approach to life", "responsibility": "Responsibility",
+           "independence": "Independence", "convention": "Relationship to convention"},
+    "hi": {"temperament": "स्वभाव", "communication": "संवाद", "emotional_style": "भावनात्मक शैली",
+           "sociability": "मिलनसारिता", "approach_to_life": "जीवन के प्रति दृष्टिकोण", "responsibility": "ज़िम्मेदारी",
+           "independence": "स्वतंत्रता", "convention": "परंपरा"},
+}
+CLASS_WORDS = {
+    "en": {"DOMINANT": "a prominent tendency", "SUPPORTED": "a supported tendency", "MIXED": "both sides appear"},
+    "hi": {"DOMINANT": "एक प्रमुख प्रवृत्ति", "SUPPORTED": "समर्थित प्रवृत्ति", "MIXED": "दोनों पक्ष दिखाई देते हैं"},
+}
+# Health items (frozen SNR-2A ids/names) and their result words -- verbalised, never re-interpreted.
+HEALTH_ITEM_PHRASES = {
+    "en": {"seventh_lord_dignity": "the 7th lord's dignity",
+           "seventh_lord_placement_from_spouse": "the 7th lord's placement counted from the spouse's side",
+           "influences_on_native_7th": "planetary influences on your 7th house",
+           "influences_on_7th_lord": "planetary influences on the 7th lord",
+           "lord_of_native_12_joins_spouse_1st": "the lord of your 12th house placed in your 7th house or with the 7th lord",
+           "lord_of_native_6_joins_spouse_1st": "the lord of your 6th house placed in your 7th house or with the 7th lord"},
+    "hi": {"seventh_lord_dignity": "सप्तमेश का बल",
+           "seventh_lord_placement_from_spouse": "जीवनसाथी की ओर से गिनी गई सप्तमेश की स्थिति",
+           "influences_on_native_7th": "आपके सप्तम भाव पर ग्रहों का प्रभाव",
+           "influences_on_7th_lord": "सप्तमेश पर ग्रहों का प्रभाव",
+           "lord_of_native_12_joins_spouse_1st": "आपके बारहवें भाव के स्वामी का सप्तम भाव में या सप्तमेश के साथ होना",
+           "lord_of_native_6_joins_spouse_1st": "आपके छठे भाव के स्वामी का सप्तम भाव में या सप्तमेश के साथ होना"},
+}
+HEALTH_RESULT_WORDS = {
+    "en": {"SUPPORT": "supportive", "STRESS": "calls for more care", "MIXED": "mixed"},
+    "hi": {"SUPPORT": "सहायक", "STRESS": "अधिक देखभाल की ओर संकेत", "MIXED": "मिला-जुला"},
+}
+WEALTH_DIMENSION_LABELS = {
+    "en": {"resources": "Resources", "income_growth": "Income growth", "professional_standing": "Professional standing"},
+    "hi": {"resources": "संसाधन", "income_growth": "आय में वृद्धि", "professional_standing": "पेशेवर प्रतिष्ठा"},
+}
+DIM_STATE_WORDS = {
+    "en": {"SUPPORTED": "supported", "STRAINED": "calls for more effort", "MIXED": "mixed", "NEUTRAL": "no strong emphasis"},
+    "hi": {"SUPPORTED": "समर्थित", "STRAINED": "अधिक प्रयास की ओर संकेत", "MIXED": "मिला-जुला", "NEUTRAL": "कोई विशेष ज़ोर नहीं"},
+}
+# Factor-free D1/D9 relationship semantics for Luna (no "Navamsa", no placements).
+RELATION_FOR_LUNA = {
+    "CONFIRMED": "confirmed again at a deeper level",
+    "REFINEMENT": "a secondary, deeper nuance toward {direction}",
+    "D1_ONLY": "an outward-level tendency with no separate deeper-level note",
+}
+EXPRESSION_FOR_LUNA = {"well_supported": "expressed with clear support", "uneven": "may show unevenly",
+                       "neutral": "no special note on expression"}
+HEALTH_MEANING_FOR_LUNA = {
+    "SUPPORTIVE": "overall supportive indicators around general wellbeing",
+    "MIXED": "wellbeing may depend more on lifestyle, routine and circumstances",
+    "NEEDS_ATTENTION": "more care around wellbeing, rest and routine may help",
+}
+WEALTH_MEANING_FOR_LUNA = {
+    "STEADY": "a relatively steady resource-building tendency",
+    "GROWTH_ORIENTED": "potential for gradual growth in resources or earnings",
+    "EFFORT_BUILT": "resources may be built more through sustained effort and persistence",
+    "MIXED": "financial indicators are mixed rather than pointing to one simple pattern",
+}
+UI = {
+    "en": {
+        "birth_chart": "Birth chart", "navamsa": "Navamsa", "toward": "Toward",
+        "seventh_occupied": "Your 7th house is {sign}; its lord, {lord}, sits in house {house} ({lord_sign}). Planets in your 7th house: {planets}.",
+        "seventh_empty": "Your 7th house is {sign}; its lord, {lord}, sits in house {house} ({lord_sign}). No planet occupies your 7th house, so it is read through its sign, its lord and the planets connected with them.",
+        "basis_intro": "These are the chart factors behind each trait described in this reading:",
+        "navamsa_only": "shown through the Navamsa (see the next section)",
+        "dk_only": "supported by the Darakaraka (see the next section)",
+        "d9_intro": "Navamsa 7th sign: {sign}. Navamsa 7th lord: {lord}.",
+        "d9_occupants": "Planets in the Navamsa 7th house: {planets}.",
+        "confirmed": "{dim} -- {pole}: the Navamsa repeats this direction ({factors}).",
+        "refinement": "{dim} -- {pole}: the Navamsa adds this as a secondary nuance ({factors}).",
+        "contrast": "{dim}: outwardly {outer} in the birth chart; in private life the Navamsa leans {inner} ({factors}).",
+        "contrast_both": "{dim}: the birth chart shows both sides outwardly; in private life the Navamsa leans {inner} ({factors}).",
+        "d1_only_with_d9": "{dim}: Navamsa factors -- {parts}; the reading of this trait rests on the birth chart.",
+        "no_d9": "The Navamsa does not add a separate emphasis to the traits above.",
+        "dk": "Darakaraka (a supporting indicator only): {planet} -- {leanings}.",
+        "dk_tie": "Darakaraka (an exact tie; supporting indicators only): {planets}. {parts}",
+        "dk_planet_leanings": "{planet} leans toward {leanings}.",
+        "dk_planet_none": "{planet} adds no separate emphasis to the traits described here.",
+        "dk_none": "it adds no separate emphasis to the traits described here",
+        "leaning": "{pole} ({dim})",
+        "navamsa_rule": "The Navamsa confirms or refines the birth-chart picture; the birth chart remains the primary reading.",
+        "health_basis": "Chart basis: {items}.",
+        "health_none": "Chart basis: no single factor stands out strongly here.",
+        "wealth_item": "{label} -- the spouse's house {spouse_house} (your house {native_house}, {sign}): {state}",
+        "wealth_basis": "Chart basis: {items}.",
+        "hero_line": "{dim} -- {pole}: {factors}",
+        "hero_fallback": "Your 7th house is {sign} and its lord is {lord}.",
+        "join": "; ", "and": " and ",
+    },
+    "hi": {
+        "birth_chart": "जन्मकुंडली", "navamsa": "नवांश", "toward": "की ओर",
+        "seventh_occupied": "आपका सप्तम भाव {sign} राशि में है; सप्तमेश {lord} भाव {house} ({lord_sign}) में है। सप्तम भाव में स्थित ग्रह: {planets}।",
+        "seventh_empty": "आपका सप्तम भाव {sign} राशि में है; सप्तमेश {lord} भाव {house} ({lord_sign}) में है। सप्तम भाव में कोई ग्रह नहीं है, इसलिए इसे इसकी राशि, सप्तमेश और उनसे जुड़े ग्रहों से पढ़ा जाता है।",
+        "basis_intro": "इस विश्लेषण में बताए गए हर गुण के पीछे कुंडली के ये कारक हैं:",
+        "navamsa_only": "नवांश से दिखाई देता है (अगला भाग देखें)",
+        "dk_only": "दाराकारक से सहायक संकेत (अगला भाग देखें)",
+        "d9_intro": "नवांश की सप्तम राशि: {sign}। नवांश सप्तमेश: {lord}।",
+        "d9_occupants": "नवांश के सप्तम भाव में ग्रह: {planets}।",
+        "confirmed": "{dim} -- {pole}: नवांश इसी दिशा को दोहराता है ({factors})।",
+        "refinement": "{dim} -- {pole}: नवांश इसे एक अतिरिक्त, सूक्ष्म पहलू के रूप में जोड़ता है ({factors})।",
+        "contrast": "{dim}: जन्मकुंडली में बाहरी रूप से {outer}; निजी जीवन में नवांश {inner} की ओर झुकता है ({factors})।",
+        "contrast_both": "{dim}: जन्मकुंडली में बाहरी रूप से दोनों पक्ष दिखते हैं; निजी जीवन में नवांश {inner} की ओर झुकता है ({factors})।",
+        "d1_only_with_d9": "{dim}: नवांश के कारक -- {parts}; इस गुण का विश्लेषण जन्मकुंडली पर आधारित है।",
+        "no_d9": "नवांश ऊपर बताए गए गुणों पर अलग से कोई ज़ोर नहीं जोड़ता।",
+        "dk": "दाराकारक (केवल सहायक संकेत): {planet} -- {leanings}।",
+        "dk_tie": "दाराकारक (बराबरी की स्थिति; केवल सहायक संकेत): {planets}। {parts}",
+        "dk_planet_leanings": "{planet} {leanings} की ओर संकेत करता है।",
+        "dk_planet_none": "{planet} यहाँ बताए गए गुणों पर अलग से कोई ज़ोर नहीं जोड़ता।",
+        "dk_none": "यह यहाँ बताए गए गुणों पर अलग से कोई ज़ोर नहीं जोड़ता",
+        "leaning": "{pole} ({dim})",
+        "navamsa_rule": "नवांश जन्मकुंडली की पुष्टि करता है या उसमें सूक्ष्म पहलू जोड़ता है; मुख्य आधार जन्मकुंडली ही रहती है।",
+        "health_basis": "कुंडली का आधार: {items}।",
+        "health_none": "कुंडली का आधार: यहाँ कोई एक कारक विशेष रूप से उभरकर नहीं आता।",
+        "wealth_item": "{label} -- जीवनसाथी का भाव {spouse_house} (आपका भाव {native_house}, {sign}): {state}",
+        "wealth_basis": "कुंडली का आधार: {items}।",
+        "hero_line": "{dim} -- {pole}: {factors}",
+        "hero_fallback": "आपका सप्तम भाव {sign} राशि में है और सप्तमेश {lord} है।",
+        "join": "; ", "and": " और ",
+    },
+}
+
+
+def _planet_name(planet, language):
+    _require(planet, GRAHAS, "planet")
+    return planet if language == "en" else planet_labels_hi[planet]
+
+
+def _sign_name(sign, language):
+    _require(sign, SIGN_ORDER, "sign")
+    return sign if language == "en" else sign_labels_hi[sign]
+
+
+def _factor_text(v: dict, language: str = "en") -> str:
+    """One evidence factor, verbalised from the frozen factor vocabulary only."""
+    phrase = FACTOR_PHRASES[language].get(v.get("factor"))
     if phrase is None:
         raise ReportMetadataError(f"spouse evidence: unknown factor {v.get('factor')!r}")
-    planet = _require(v["planet"], GRAHAS, "planet") if v.get("planet") else None
-    sign = _require(v["sign"], SIGN_ORDER, "sign") if v.get("sign") else None
+    planet = _planet_name(v["planet"], language) if v.get("planet") else None
+    sign = _sign_name(v["sign"], language) if v.get("sign") else None
     return phrase.format(planet=planet, sign=sign)
 
 
+def _reportable_traits(evidence: dict) -> list:
+    out = []
+    for t in evidence["nature"]["traits"]:
+        _require(t["dimension"], DIMENSION_POLES, "dimension")
+        klass = _require(t["class"], TRAIT_CLASSES, "trait class")
+        _require(t["d1_d9"], RECONCILIATIONS, "reconciliation")
+        if t.get("reportable") and klass != "NOT_INDICATED":
+            for v in t["evidence"]:
+                _require(v.get("pole"), DIMENSION_POLES[t["dimension"]], "pole")
+                _require(v.get("chart"), ("D1", "D9"), "chart")
+            out.append(t)
+    return out
+
+
+def _is_dk(v):
+    return v.get("factor") == "darakaraka"
+
+
+def _d1_votes(t, pole):
+    return [v for v in t["evidence"] if v["chart"] == "D1" and not _is_dk(v) and v["pole"] == pole]
+
+
+def _d9_votes(t, pole=None):
+    return [v for v in t["evidence"] if v["chart"] == "D9" and (pole is None or v["pole"] == pole)]
+
+
+def contrast_poles(t: dict) -> tuple:
+    """(outer, inner) for an OUTER_INNER_CONTRAST trait: inner = the single pole all
+    Navamsa votes share (the frozen rule's d9 direction); outer = the other pole.
+    Fails closed if the Navamsa votes are not unanimous."""
+    d9_poles = {v["pole"] for v in _d9_votes(t)}
+    if len(d9_poles) != 1:
+        raise ReportMetadataError(f"spouse evidence: contrast for {t['dimension']!r} has no single Navamsa direction")
+    inner = d9_poles.pop()
+    a, b = DIMENSION_POLES[t["dimension"]]
+    return (b if inner == a else a), inner
+
+
+def outer_poles(t: dict) -> tuple:
+    """Directions the BIRTH chart shows for a trait (primary/secondary votes -- the
+    tiers the frozen contrast rule reads), in canonical order."""
+    present = {v["pole"] for v in t["evidence"] if v["chart"] == "D1" and v.get("tier") in ("P", "S")}
+    return tuple(p for p in DIMENSION_POLES[t["dimension"]] if p in present)
+
+
+def _luna_relation(t: dict) -> str:
+    recon = t["d1_d9"]
+    if recon == "OUTER_INNER_CONTRAST":
+        _, inner = contrast_poles(t)
+        shown = outer_poles(t)
+        outward = "both sides appear outwardly" if len(shown) == 2 else f"outwardly {shown[0]}"
+        return f"{outward}; in private life leaning {inner}"
+    return RELATION_FOR_LUNA[recon].format(direction=t.get("direction"))
+
+
 def build_evidence_block(evidence: dict) -> tuple:
-    """Deterministic, human-readable evidence digest with [ref] ids.
-    Returns (text, allowed_refs). Only REPORTABLE traits get a reference --
-    a NOT_INDICATED trait is never offered to Luna."""
+    """Factor-FREE digest for Luna (SNR-2C.4): trait conclusions, health and wealth
+    meaning only -- no planets, signs, houses, placements, Darakaraka identity or
+    Basis lists. Returns (text, allowed_refs). NOT_INDICATED traits are omitted."""
     if not isinstance(evidence, dict) or evidence.get("schema_version") != EVIDENCE_SCHEMA:
         raise ReportMetadataError("spouse narrative requires a spouse_evidence_v1 payload")
     lines, refs = [], []
@@ -198,76 +414,197 @@ def build_evidence_block(evidence: dict) -> tuple:
         refs.append(rid)
         lines.append(f"[{rid}] {text}")
 
-    d1 = evidence["chart_facts"]["d1"]
-    d9 = evidence["chart_facts"]["d9"]
-    dk = evidence["chart_facts"]["darakaraka"]
-
-    lines.append("== Nature traits (only these may be described; anything not listed is NOT indicated) ==")
-    for t in evidence["nature"]["traits"]:
-        dim = _require(t["dimension"], DIMENSION_POLES, "dimension")
-        klass = _require(t["class"], TRAIT_CLASSES, "trait class")
-        recon = _require(t["d1_d9"], RECONCILIATIONS, "reconciliation")
-        if not t.get("reportable") or klass == "NOT_INDICATED":
-            continue
+    lines.append("== Spouse traits to interpret (only these; anything not listed must not be described) ==")
+    for t in _reportable_traits(evidence):
+        dim, klass = t["dimension"], t["class"]
         a, b = DIMENSION_POLES[dim]
         if klass == "MIXED":
-            factors_a = "; ".join(_factor_text(v) for v in t["evidence"] if v["pole"] == a) or "none"
-            factors_b = "; ".join(_factor_text(v) for v in t["evidence"] if v["pole"] == b) or "none"
-            ref(f"nature.{dim}", f"{dim}: MIXED (navamsa: {recon}). Toward '{a}': {factors_a}. Toward '{b}': {factors_b}.")
+            body = f"class MIXED (both directions appear: {a} and {b})"
         else:
             direction = _require(t["direction"], (a, b), "direction")
-            quality = _require(t["expression_quality"], ("well_supported", "uneven", "neutral"), "expression quality")
-            factors = "; ".join(_factor_text(v) for v in t["evidence"] if v["pole"] == direction)
-            ref(f"nature.{dim}", f"{dim}: {klass} toward '{direction}' (navamsa: {recon}; expression: {quality}). Basis: {factors}.")
+            quality = EXPRESSION_FOR_LUNA[_require(t["expression_quality"], tuple(EXPRESSION_FOR_LUNA), "expression quality")]
+            body = f"class {klass} toward {direction} ({quality})"
+        ref(f"nature.{dim}", f"dimension {dim}: {body}; depth: {_luna_relation(t)}.")
     snap = [f"{_require(s['dimension'], DIMENSION_POLES, 'dimension')}={s['direction']}" for s in evidence["nature"]["snapshot_traits"]]
-    lines.append(f"Snapshot traits (strongest reportable): {', '.join(snap) if snap else 'none -- the evidence is mostly mixed'}")
+    lines.append(f"Snapshot traits (strongest): {', '.join(snap) if snap else 'none -- the picture is mostly mixed'}")
 
-    lines.append("== Birth chart (D1) facts ==")
-    ref("chart_facts.d1.seventh_sign", f"Lagna {_require(d1['lagna'], SIGN_ORDER, 'sign')}; 7th-house sign {_require(d1['seventh_sign'], SIGN_ORDER, 'sign')}")
-    ref("chart_facts.d1.seventh_lord",
-        f"7th lord {_require(d1['seventh_lord'], GRAHAS, 'planet')} in {_require(d1['seventh_lord_sign'], SIGN_ORDER, 'sign')}, "
-        f"house {int(d1['seventh_lord_house'])} (house {int(d1['seventh_lord_house_from_seventh'])} counted from the 7th); "
-        f"dignity {d1['seventh_lord_dignity']}")
-    if d1["occupants_7th"]:
-        ref("chart_facts.d1.occupants_7th", f"Planets in the 7th house: {', '.join(_planets(d1['occupants_7th']))}")
-    else:
-        lines.append("The 7th house has no planet in it -- it is still read through its sign, its lord and the planets aspecting it.")
-    if d1["aspects_on_7th"]:
-        ref("chart_facts.d1.aspects_on_7th", f"Planets aspecting the 7th house: {', '.join(_planets(d1['aspects_on_7th']))}")
-    if d1["conjunct_with_7th_lord"]:
-        ref("chart_facts.d1.conjunct_with_7th_lord", f"Planets conjunct with the 7th lord: {', '.join(_planets(d1['conjunct_with_7th_lord']))}")
-    if d1["aspects_on_7th_lord"]:
-        ref("chart_facts.d1.aspects_on_7th_lord", f"Planets aspecting the 7th lord: {', '.join(_planets(d1['aspects_on_7th_lord']))}")
-    for karaka in ("venus", "jupiter"):
-        k = d1[karaka]
-        if k["link_to_7th"]:
-            ref(f"chart_facts.d1.{karaka}", f"{karaka.title()} in {_require(k['sign'], SIGN_ORDER, 'sign')} (house {int(k['house'])}), linked to the 7th by: {', '.join(k['link_to_7th'])}")
+    lines.append("== Spouse wellbeing (use ONLY this class) ==")
+    h = _require(evidence["health"]["class"], HEALTH_CLASSES, "health class")
+    ref("health.class", f"Health class: {h} -- {HEALTH_MEANING_FOR_LUNA[h]}")
 
-    lines.append("== Navamsa (D9) facts -- confirm or refine only, never override D1 ==")
-    ref("chart_facts.d9.seventh_sign", f"Navamsa Lagna {_require(d9['lagna'], SIGN_ORDER, 'sign')}; Navamsa 7th sign {_require(d9['seventh_sign'], SIGN_ORDER, 'sign')}")
-    ref("chart_facts.d9.seventh_lord",
-        f"Navamsa 7th lord {_require(d9['seventh_lord'], GRAHAS, 'planet')} in {_require(d9['seventh_lord_d9_sign'], SIGN_ORDER, 'sign')} "
-        f"(Navamsa house {int(d9['seventh_lord_d9_house'])}); dignity {d9['seventh_lord_d9_dignity']}")
-    if d9["occupants_d9_7th"]:
-        ref("chart_facts.d9.occupants_d9_7th", f"Planets in the Navamsa 7th house: {', '.join(_planets(d9['occupants_d9_7th']))}")
-    ref("chart_facts.darakaraka", f"Darakaraka (supporting only): {', '.join(_planets(dk['planets']))}{' (exact tie)' if dk['tie'] else ''}")
-
-    lines.append("== Spouse health tendency (use ONLY this class) ==")
-    h = evidence["health"]
-    ref("health.class", f"Health class: {_require(h['class'], HEALTH_CLASSES, 'health class')}")
-    for item in h["primary_items"] + h["secondary_items"]:
-        ref(f"health.{item['id']}", f"{item['item']}: {_require(item['result'], ITEM_RESULTS, 'item result')}")
-
-    lines.append("== Spouse financial-background tendency (use ONLY this class) ==")
+    lines.append("== Spouse financial background (use ONLY this class) ==")
     w = evidence["wealth"]
-    ref("wealth.class", f"Wealth class: {_require(w['class'], WEALTH_CLASSES, 'wealth class')}")
+    wc = _require(w["class"], WEALTH_CLASSES, "wealth class")
+    ref("wealth.class", f"Wealth class: {wc} -- {WEALTH_MEANING_FOR_LUNA[wc]}")
     for key in ("resources", "income_growth", "professional_standing"):
-        d = w["dimensions"][key]
-        ref(f"wealth.{key}", f"{key} ({d['role']}; spouse's house {int(d['spouse_house'])} = your house {int(d['native_house'])}, "
-                             f"sign {_require(d['sign'], SIGN_ORDER, 'sign')}): {_require(d['state'], DIM_STATES, 'state')}")
+        state = _require(w["dimensions"][key]["state"], DIM_STATES, "state")
+        ref(f"wealth.{key}", f"{key.replace('_', ' ')}: {DIM_STATE_WORDS['en'][state]}")
     if w["unconventional_pattern"]:
-        ref("wealth.unconventional_pattern", "unconventional_pattern: TRUE -- non-traditional, changing or unusual channels")
+        ref("wealth.unconventional_pattern", "unconventional pattern: present -- non-traditional, changing or unusual channels")
+    else:
+        lines.append("unconventional pattern: absent -- do not describe one")
     return "\n".join(lines), refs
+
+
+# ---------------------------------------------------------------------------
+# Backend attribution renderer (SNR-2C.4) -- the ONLY place chart factors are
+# connected to traits. Verbalises frozen evidence votes; adds no astrology.
+# ---------------------------------------------------------------------------
+def _join(items, language):
+    return UI[language]["join"].join(items)
+
+
+def _pole(pole, language):
+    return POLE_LABELS[language][pole]
+
+
+def _dim(dim, language):
+    return DIMENSION_LABELS[language][dim]
+
+
+def render_chart_basis(evidence: dict, language: str) -> str:
+    """Section 4 body: 7th-house facts + birth-chart factors per reportable trait."""
+    u = UI[language]
+    d1 = evidence["chart_facts"]["d1"]
+    facts = dict(sign=_sign_name(d1["seventh_sign"], language), lord=_planet_name(d1["seventh_lord"], language),
+                 house=int(d1["seventh_lord_house"]), lord_sign=_sign_name(d1["seventh_lord_sign"], language))
+    if d1["occupants_7th"]:
+        intro = u["seventh_occupied"].format(planets=", ".join(_planet_name(p, language) for p in d1["occupants_7th"]), **facts)
+    else:
+        intro = u["seventh_empty"].format(**facts)
+    out = [intro, "", u["basis_intro"]]
+    for t in _reportable_traits(evidence):
+        dim = t["dimension"]
+        if t["class"] == "MIXED":
+            head = f"- **{_dim(dim, language)}** ({CLASS_WORDS[language]['MIXED']})"
+            parts = []
+            for pole in DIMENSION_POLES[dim]:
+                f = _d1_votes(t, pole)
+                if f:
+                    parts.append(f"{_pole(pole, language)} -- {_join([_factor_text(v, language) for v in f], language)}")
+                elif _d9_votes(t, pole):
+                    parts.append(f"{_pole(pole, language)} -- {u['navamsa_only']}")
+                elif any(_is_dk(v) and v["pole"] == pole for v in t["evidence"]):
+                    parts.append(f"{_pole(pole, language)} -- {u['dk_only']}")
+            body = " | ".join(parts) if parts else u["navamsa_only"]
+        else:
+            head = f"- **{_dim(dim, language)} -- {_pole(t['direction'], language)}** ({CLASS_WORDS[language][t['class']]})"
+            f = _d1_votes(t, t["direction"])
+            body = _join([_factor_text(v, language) for v in f], language) if f else u["navamsa_only"]
+        out.append(f"{head}: {body}")
+    return "\n".join(out)
+
+
+def _dk_leanings(evidence, planet, language):
+    leanings = [UI[language]["leaning"].format(pole=_pole(v["pole"], language), dim=_dim(t["dimension"], language))
+                for t in _reportable_traits(evidence) for v in t["evidence"] if _is_dk(v) and v.get("planet") == planet]
+    if not leanings:
+        return UI[language]["dk_none"]
+    return leanings[0] if len(leanings) == 1 else ", ".join(leanings[:-1]) + UI[language]["and"] + leanings[-1]
+
+
+def render_navamsa(evidence: dict, language: str) -> str:
+    """Section 5 body: Navamsa facts, per-trait D1/D9 relationship, Darakaraka."""
+    u = UI[language]
+    d9 = evidence["chart_facts"]["d9"]
+    out = [u["d9_intro"].format(sign=_sign_name(d9["seventh_sign"], language), lord=_planet_name(d9["seventh_lord"], language))]
+    if d9["occupants_d9_7th"]:
+        out.append(u["d9_occupants"].format(planets=", ".join(_planet_name(p, language) for p in d9["occupants_d9_7th"])))
+    trait_lines = []
+    for t in _reportable_traits(evidence):
+        dim, recon = t["dimension"], t["d1_d9"]
+        factors = lambda vs: _join([_factor_text(v, language) for v in vs], language)  # noqa: E731
+        if recon in ("CONFIRMED", "REFINEMENT"):
+            _require(t.get("direction"), DIMENSION_POLES[dim], "direction")
+            if not _d9_votes(t, t["direction"]):
+                raise ReportMetadataError(f"spouse evidence: {recon} for {dim!r} without a Navamsa factor")
+        if recon == "CONFIRMED":
+            trait_lines.append(u["confirmed"].format(dim=_dim(dim, language), pole=_pole(t["direction"], language),
+                                                     factors=factors(_d9_votes(t, t["direction"]))))
+        elif recon == "REFINEMENT":
+            trait_lines.append(u["refinement"].format(dim=_dim(dim, language), pole=_pole(t["direction"], language),
+                                                      factors=factors(_d9_votes(t, t["direction"]))))
+        elif recon == "OUTER_INNER_CONTRAST":
+            _, inner = contrast_poles(t)
+            shown = outer_poles(t)
+            template = u["contrast_both"] if len(shown) == 2 else u["contrast"]
+            trait_lines.append(template.format(dim=_dim(dim, language), outer=_pole(shown[0], language),
+                                               inner=_pole(inner, language), factors=factors(_d9_votes(t, inner))))
+        elif _d9_votes(t):  # D1_ONLY but Navamsa factors exist: state them, never as support/override.
+            parts = [f"{_pole(p, language)}: {factors(_d9_votes(t, p))}" for p in DIMENSION_POLES[dim] if _d9_votes(t, p)]
+            trait_lines.append(u["d1_only_with_d9"].format(dim=_dim(dim, language), parts=_join(parts, language)))
+    out += [f"- {line}" for line in trait_lines] or [u["no_d9"]]
+    out.append(u["navamsa_rule"])
+    dk = evidence["chart_facts"]["darakaraka"]
+    planets = [_require(p, GRAHAS, "planet") for p in dk["planets"]]
+    if not planets:
+        raise ReportMetadataError("spouse evidence: Darakaraka missing")
+    if len(planets) == 1 and not dk.get("tie"):
+        out.append(u["dk"].format(planet=_planet_name(planets[0], language), leanings=_dk_leanings(evidence, planets[0], language)))
+    else:
+        parts = " ".join(
+            u["dk_planet_leanings"].format(planet=_planet_name(p, language), leanings=_dk_leanings(evidence, p, language))
+            if _dk_leanings(evidence, p, language) != u["dk_none"] else u["dk_planet_none"].format(planet=_planet_name(p, language))
+            for p in planets)
+        out.append(u["dk_tie"].format(planets=", ".join(_planet_name(p, language) for p in planets), parts=parts))
+    return "\n".join(out)
+
+
+def render_health_basis(evidence: dict, language: str) -> str:
+    items = []
+    for item in evidence["health"]["primary_items"] + evidence["health"]["secondary_items"]:
+        result = _require(item["result"], ITEM_RESULTS, "item result")
+        phrase = HEALTH_ITEM_PHRASES[language].get(item["item"])
+        if phrase is None:
+            raise ReportMetadataError(f"spouse evidence: unknown health item {item['item']!r}")
+        if result != "NONE":
+            items.append(f"{phrase} -- {HEALTH_RESULT_WORDS[language][result]}")
+    u = UI[language]
+    return u["health_basis"].format(items=_join(items, language)) if items else u["health_none"]
+
+
+def render_wealth_basis(evidence: dict, language: str) -> str:
+    items = []
+    for key in ("resources", "income_growth", "professional_standing"):
+        d = evidence["wealth"]["dimensions"][key]
+        items.append(UI[language]["wealth_item"].format(
+            label=WEALTH_DIMENSION_LABELS[language][key], spouse_house=int(d["spouse_house"]),
+            native_house=int(d["native_house"]), sign=_sign_name(d["sign"], language),
+            state=DIM_STATE_WORDS[language][_require(d["state"], DIM_STATES, "state")]))
+    return UI[language]["wealth_basis"].format(items=_join(items, language))
+
+
+def render_hero_evidence(evidence: dict, language: str) -> list:
+    """Backend hero bullets: the snapshot traits with their own birth-chart factors
+    (Navamsa factors only when the direction came from the Navamsa)."""
+    traits = {t["dimension"]: t for t in _reportable_traits(evidence)}
+    lines = []
+    for s in evidence["nature"]["snapshot_traits"][:3]:
+        t = traits.get(s["dimension"])
+        if t is None or t["class"] == "MIXED":
+            continue
+        votes = _d1_votes(t, t["direction"]) or _d9_votes(t, t["direction"])
+        if votes:
+            lines.append(UI[language]["hero_line"].format(dim=_dim(t["dimension"], language), pole=_pole(t["direction"], language),
+                                                          factors=_join([_factor_text(v, language) for v in votes], language)))
+    if not lines:
+        d1 = evidence["chart_facts"]["d1"]
+        lines.append(UI[language]["hero_fallback"].format(sign=_sign_name(d1["seventh_sign"], language),
+                                                          lord=_planet_name(d1["seventh_lord"], language)))
+    return lines
+
+
+def build_attribution(evidence: dict, language: str) -> dict:
+    """Every backend-owned, customer-facing chart attribution for one report."""
+    if language not in LANGUAGES:
+        raise ReportMetadataError(f"Unsupported language {language!r}")
+    return {
+        "chart_basis": render_chart_basis(evidence, language),
+        "navamsa": render_navamsa(evidence, language),
+        "health_basis": render_health_basis(evidence, language),
+        "wealth_basis": render_wealth_basis(evidence, language),
+        "hero_evidence": render_hero_evidence(evidence, language),
+    }
 
 
 def deterministic_hero_value(evidence: dict, language: str) -> str:
@@ -290,6 +627,7 @@ def build_spouse_prompt(evidence: dict, language: str) -> str:
         spouse_evidence_block=block,
         allowed_refs=", ".join(refs),
         hero_value=deterministic_hero_value(evidence, language),
+        allowed_dimensions=", ".join(t["dimension"] for t in _reportable_traits(evidence)),
         health_class=evidence["health"]["class"],
         wealth_class=evidence["wealth"]["class"],
     )
@@ -408,6 +746,9 @@ def validate_spouse_response(raw_text: str, evidence: dict, language: str) -> di
         discussed = []
     for t in discussed:
         dim = t.get("dimension") if isinstance(t, dict) else None
+        if dim not in CANONICAL_DIMENSIONS:
+            problems.append(f"trait dimension {dim!r} is not a canonical dimension name {CANONICAL_DIMENSIONS}")
+            continue
         b = backend.get(dim)
         if b is None or not b.get("reportable") or b["class"] == "NOT_INDICATED":
             problems.append(f"trait {dim!r} is not reportable (invented or NOT_INDICATED)")
@@ -428,9 +769,12 @@ def validate_spouse_response(raw_text: str, evidence: dict, language: str) -> di
         problems.append("sections missing")
         sections_meta = []
     by_key = {s.get("key"): s for s in sections_meta if isinstance(s, dict)}
-    for key in SECTION_KEYS:
+    for key in LUNA_SECTION_KEYS:
         if key not in by_key:
             problems.append(f"section {key!r} missing from META")
+    for key in by_key:
+        if key not in LUNA_SECTION_KEYS:
+            problems.append(f"section {key!r} is not written by Luna")
     all_refs = list(hero_refs)
     for s in by_key.values():
         r = s.get("evidence_refs")
@@ -449,19 +793,17 @@ def validate_spouse_response(raw_text: str, evidence: dict, language: str) -> di
         problems.append("health section must cite health.class")
     if "wealth" in by_key and not cites("wealth", lambda r: r == "wealth.class"):
         problems.append("wealth section must cite wealth.class")
-    if "navamsa" in by_key and not cites("navamsa", lambda r: r.startswith("chart_facts.d9.") or r == "chart_facts.darakaraka"):
-        problems.append("navamsa section must cite Navamsa or Darakaraka evidence")
-    if "chart_basis" in by_key and not cites("chart_basis", lambda r: r.startswith("chart_facts.d1.")):
-        problems.append("chart_basis section must cite birth-chart evidence")
     if reportable_refs and "snapshot" in by_key and not cites("snapshot", lambda r: r in reportable_refs):
         problems.append("snapshot section must cite at least one reportable trait")
 
-    # Narrative: sections 1-8 present, in order, with the fixed titles.
+    # Narrative: exactly Luna's sections (1, 2, 3, 6, 7, 8), with the fixed titles.
+    # Sections 4 and 5 are backend-rendered and must not be written by Luna.
     sections = split_sections(narrative)
     titles = SECTION_TITLES[language]
-    if sorted(sections) != list(range(1, len(SECTION_KEYS) + 1)):
-        problems.append(f"narrative must contain exactly sections 1-{len(SECTION_KEYS)} (found {sorted(sections)})")
-    for i, key in enumerate(SECTION_KEYS, start=1):
+    if sorted(sections) != list(LUNA_SECTION_NUMBERS):
+        problems.append(f"narrative must contain exactly sections {list(LUNA_SECTION_NUMBERS)} (found {sorted(sections)})")
+    for key in LUNA_SECTION_KEYS:
+        i = SECTION_KEYS.index(key) + 1
         if i in sections and sections[i][0] != titles[key]:
             problems.append(f"section {i} title {sections[i][0]!r} != {titles[key]!r}")
         if i in sections and not sections[i][1]:
@@ -472,7 +814,9 @@ def validate_spouse_response(raw_text: str, evidence: dict, language: str) -> di
     if not isinstance(action_items, list) or not all(isinstance(a, str) for a in action_items):
         problems.append("action_items must be a list of strings")
         action_items = []
-    ai_text = "\n".join([hero.get("interpretation", ""), *hero.get("evidence", []), *action_items, narrative or ""])
+    # Customer-visible Luna text (hero evidence bullets are backend-rendered; any
+    # Luna-supplied `evidence` is discarded and never shown).
+    ai_text = "\n".join([hero.get("interpretation", ""), *action_items, narrative or ""])
     for hit in _scan(ai_text, PROHIBITED):
         problems.append(f"prohibited content {hit!r}")
     for token in internal_label_leaks(ai_text):
@@ -496,15 +840,26 @@ def assemble_spouse_report(raw_text: str, evidence: dict, language: str) -> dict
     PDF pipeline consumes (answer_hero / narrative / action items / disclaimer).
     Gemstone and Dasha timeline are OFF for this product."""
     v = validate_spouse_response(raw_text, evidence, language)
+    attribution = build_attribution(evidence, language)
     hero = assemble_answer_hero(
-        {k: v["metadata"]["answer_hero"][k] for k in ("interpretation", "evidence")},
+        {"interpretation": v["metadata"]["answer_hero"]["interpretation"], "evidence": attribution["hero_evidence"]},
         deterministic_value=deterministic_hero_value(evidence, language),
     )
     hero["label"] = HERO_LABEL[language]
-    limitations = f"**9. {SECTION_TITLES[language]['limitations']}**\n{LIMITATIONS_TEXT[language]}"
+    titles = SECTION_TITLES[language]
+    blocks = []
+    for i, key in enumerate(SECTION_KEYS, start=1):
+        if key in BACKEND_SECTION_KEYS:
+            body = attribution[key]
+        elif key in ("health", "wealth"):
+            body = attribution[f"{key}_basis"] + "\n\n" + v["sections"][i][1]
+        else:
+            body = v["sections"][i][1]
+        blocks.append(f"**{i}. {titles[key]}**\n{body}")
+    blocks.append(f"**9. {titles['limitations']}**\n{LIMITATIONS_TEXT[language]}")
     return {
         "answer_hero": hero,
-        "narrative": v["narrative"].rstrip() + "\n\n" + limitations,
+        "narrative": "\n\n".join(blocks),
         "action_items": [a.strip() for a in (v["metadata"].get("action_items") or []) if a.strip()][:5],
         "disclaimers": {k: DISCLAIMERS[k][language] for k in DISCLAIMERS},
         "section_refs": {s["key"]: list(s["evidence_refs"]) for s in v["metadata"]["sections"]},

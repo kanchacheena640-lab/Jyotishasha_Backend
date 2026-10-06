@@ -43,8 +43,6 @@ SAFE_BODY = {
         "snapshot": "Your chart strongly suggests an expressive, dynamic and independent partner.",
         "nature": "A prominent tendency is an energetic, self-directed temperament. Different factors point in different directions for approach to life.",
         "communication": "Communication strongly suggests openness in conversation. Emotional style shows a combination of private and open sides.",
-        "chart_basis": "The 7th-house sign and its lord shape these themes, with Venus placed in the 7th house adding warmth.",
-        "navamsa": "The Navamsa supports and reinforces the birth-chart picture, while the Darakaraka adds a supporting note.",
         "health": "Mixed indicators suggest that wellbeing may depend more on lifestyle, routine and circumstances.",
         "wealth": "A relatively steady resource-building tendency appears, and the path to resources may involve non-traditional channels.",
         "integrated": "Together these themes describe an energetic partner; patient, open conversation will help you both.",
@@ -53,8 +51,6 @@ SAFE_BODY = {
         "snapshot": "आपकी कुंडली स्पष्ट रूप से संकेत देती है कि जीवनसाथी अभिव्यक्तिशील, ऊर्जावान और स्वतंत्र विचारों वाला हो सकता है।",
         "nature": "एक प्रमुख प्रवृत्ति ऊर्जावान और आत्मनिर्भर स्वभाव की है। जीवन के प्रति दृष्टिकोण पर अलग-अलग कारक अलग दिशाओं की ओर संकेत करते हैं।",
         "communication": "संवाद में खुलापन एक स्पष्ट विषय है। भावनात्मक शैली में निजी और खुले, दोनों पक्षों के संकेत हैं।",
-        "chart_basis": "सप्तम भाव की राशि और सप्तमेश इन विषयों को आकार देते हैं, और सप्तम भाव में स्थित शुक्र आत्मीयता जोड़ता है।",
-        "navamsa": "नवांश जन्मकुंडली के संकेत का समर्थन करता है, और दाराकारक एक सहायक संकेत जोड़ता है।",
         "health": "मिले-जुले संकेत बताते हैं कि स्वास्थ्य जीवनशैली, दिनचर्या और परिस्थितियों पर अधिक निर्भर कर सकता है।",
         "wealth": "संसाधन जुटाने की अपेक्षाकृत स्थिर प्रवृत्ति दिखती है, और रास्ता गैर-पारंपरिक माध्यमों से भी हो सकता है।",
         "integrated": "ये सभी विषय मिलकर एक ऊर्जावान जीवनसाथी का चित्र बनाते हैं; धैर्य और खुली बातचीत आप दोनों के लिए सहायक होगी।",
@@ -68,14 +64,11 @@ def spouse_response(lang="en", meta_patch=None, bodies=None):
     nature = [r for r in allowed if r.startswith("nature.")]
     refs = {
         "snapshot": nature[:1], "nature": nature[:1], "communication": nature[:1],
-        "chart_basis": ["chart_facts.d1.seventh_sign", "chart_facts.d1.seventh_lord"],
-        "navamsa": ["chart_facts.d9.seventh_sign", "chart_facts.darakaraka"],
         "health": ["health.class"], "wealth": ["wealth.class"], "integrated": nature[:1],
     }
     meta = {
         "answer_hero": {"label": sn.HERO_LABEL[lang], "value": AI_HERO_VALUE,
-                        "interpretation": SAFE_BODY[lang]["snapshot"], "evidence": ["The 7th-house sign is read first."],
-                        "evidence_refs": ["chart_facts.d1.seventh_sign"]},
+                        "interpretation": SAFE_BODY[lang]["snapshot"], "evidence_refs": nature[:1]},
         "classes": {"health": EVIDENCE["health"]["class"], "wealth": EVIDENCE["wealth"]["class"]},
         "traits_discussed": [{"dimension": t["dimension"], "class": t["class"],
                               "direction": None if t["class"] == "MIXED" else t["direction"]}
@@ -87,7 +80,8 @@ def spouse_response(lang="en", meta_patch=None, bodies=None):
     if meta_patch:
         meta_patch(meta)
     body = dict(SAFE_BODY[lang], **(bodies or {}))
-    parts = [f"**{i}. {sn.SECTION_TITLES[lang][key]}**\n{body[key]}" for i, key in enumerate(sn.SECTION_KEYS, start=1)]
+    # SNR-2C.4: Luna writes sections 1, 2, 3, 6, 7, 8; the backend inserts 4 and 5.
+    parts = [f"**{sn.SECTION_KEYS.index(key) + 1}. {sn.SECTION_TITLES[lang][key]}**\n{body[key]}" for key in sn.LUNA_SECTION_KEYS]
     return "===META===\n" + json.dumps(meta, ensure_ascii=False) + "\n===REPORT===\n" + "\n\n".join(parts)
 
 
@@ -297,6 +291,11 @@ class GenerationTests(_NoLiveOpenAI):
         self.assertIn(sn.LIMITATIONS_TEXT[lang], kw["gpt_response"])
         for i, key in enumerate(sn.SECTION_KEYS, start=1):
             self.assertIn(f"**{i}. {sn.SECTION_TITLES[lang][key]}**", kw["gpt_response"])
+        # SNR-2C.4: chart attribution in the PDF is the backend's, never Luna's.
+        attribution = sn.build_attribution(EVIDENCE, lang)
+        self.assertEqual(kw["answer_hero"]["evidence"], attribution["hero_evidence"])
+        for part in ("chart_basis", "navamsa", "health_basis", "wealth_basis"):
+            self.assertIn(attribution[part], kw["gpt_response"])
         self.assertTrue(kw["action_list"]["items"])
         self.assertEqual(kw["used_placeholders"], ["birth_chart_summary"])
         run.deliver.assert_called_once()
@@ -352,7 +351,7 @@ class GenerationTests(_NoLiveOpenAI):
         bodies = {
             "probability claim": {"snapshot": "There is an 80% probability your spouse will be expressive."},
             "medical claim": {"health": "Your spouse may suffer from diabetes."},
-            "D9 overrides D1": {"navamsa": "The Navamsa overrides the birth chart here."},
+            "D9 overrides D1": {"integrated": "The Navamsa overrides the birth chart here."},
         }
         for name in list(cases) + list(bodies):
             with self.subTest(name):
