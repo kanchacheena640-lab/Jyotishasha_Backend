@@ -92,7 +92,7 @@ def build_marriage_path(kundali_data: dict, language: str = "en") -> dict:
     lord_house = next((p["house"] for p in planets if p["name"] == house_7_lord), None)
     for p in planets:
         if p["name"] == "Rahu" and p["house"] == lord_house:
-            negative_points.append("Rahu is conjoined with Mars (7th house lord).")
+            negative_points.append(f"Rahu is conjoined with {house_7_lord} (7th house lord).")
             dominant_planet = dominant_planet or "Rahu"
 
     # Dominant trait
@@ -112,6 +112,6 @@ def build_marriage_path(kundali_data: dict, language: str = "en") -> dict:
         "positive_points": positive_points,
         "negative_points": negative_points,
         "dominant_influence": dominant_line,
-        "cta": "➡️ यह एक सामान्य वैवाहिक झलक है। विस्तृत रिपोर्ट ₹98 में प्राप्त करें।" if language == "hi"
-        else "➡️ This is a general marriage snapshot. Get a full detailed report based on Dasha & Transit for only ₹98."
+        "cta": "➡️ यह एक सामान्य वैवाहिक झलक है। विवाह रिपोर्ट आपके विवाह की संभावनाओं और वर्तमान दशा का अलग, विस्तृत विश्लेषण है।" if language == "hi"
+        else "➡️ This is a general marriage snapshot. The Marriage Report is a separate, detailed reading of your marriage outlook and current Dasha period."
     }
