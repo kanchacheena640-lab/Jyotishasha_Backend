@@ -69,6 +69,9 @@ _SECTION_INSTRUCTIONS = {
 # Raw calculation fields that must never reach customer prose; the model still gets score / maximum and the
 # koota-specific attributes (varna, gana, yoni, nadi, lords, bhakoot dosha) it needs for an accurate interpretation.
 _RAW_KOOTA_FIELDS = frozenset({"status", "bride_to_groom_remainder", "groom_to_bride_remainder", "positions"})
+# Engine bookkeeping on the Ashtakoot result itself (version tag, DOB-only approximation flag). The model already gets the
+# partner-data completeness in plain language via partner_birth_data, so these never reach the customer evidence.
+_RAW_ASHTAKOOT_FIELDS = frozenset({"engine_version", "approximate", "approximation_reason"})
 
 _PARTNER_BIRTH_DATA = {
     "A_FULL_DUAL": ("full", "Complete birth details (date, time and place) were available and used for both people."),
@@ -127,7 +130,7 @@ def normalize_relationship_headings(text: str, language: str) -> str:
 def _customer_ashtakoot(ashtakoot: Any) -> Dict[str, Any]:
     if not isinstance(ashtakoot, dict):
         return {}
-    cleaned = dict(ashtakoot)
+    cleaned = {k: v for k, v in ashtakoot.items() if k not in _RAW_ASHTAKOOT_FIELDS}
     kootas = ashtakoot.get("kootas")
     if isinstance(kootas, dict):
         cleaned["kootas"] = {

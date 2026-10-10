@@ -40,9 +40,14 @@ def _extract_moon(kundali: Dict[str, Any]) -> Dict[str, Any]:
     if not moon:
         raise LoveServiceError("Moon data missing in kundali")
 
+    # Degree within the sign. Prefer the full-precision longitude: the chart's own `degree` is rounded to
+    # 0.01, which can push a Moon at e.g. Sagittarius 14.996 deg across the 15-deg Vashya boundary.
+    longitude = moon.get("longitude")
+    degree = (float(longitude) % 30) if isinstance(longitude, (int, float)) else moon.get("degree")
+
     return {
         "rashi": moon.get("sign"),
-        "degree": moon.get("degree"),
+        "degree": degree,
         "nakshatra": moon.get("nakshatra"),
     }
 
@@ -126,6 +131,10 @@ def run_love_compatibility(
         fallback = compute_vedic_fallback(user_kundali, safe_mode=True)
 
         result["labels"]["analysis"] = "Partial Analysis (Moon-based + Vedic fallback)"
+        # The partner's Moon is an estimate from the date of birth only, so every Moon-based koota and the
+        # total are approximate. Additive fields; consumers that ignore them are unaffected.
+        ashtakoot["approximate"] = True
+        ashtakoot["approximation_reason"] = "partner_birth_time_or_place_missing"
         result["ashtakoot"] = ashtakoot
         result["fallback"] = fallback
         result["notes"].append(
@@ -134,21 +143,31 @@ def run_love_compatibility(
         )
 
     # ---------------- NORMALIZE ASHTAKOOT STATUS FOR REPORT ----------------
-    STATUS_MAP = {
-        "pass": "pass",
-        "mixed": "partial",
-        "enemy": "fail",
-        "sworn_enemy": "dosha",
-        "dosha": "dosha",
-        "fail": "fail",
-    }
-
     if isinstance(result.get("ashtakoot"), dict):
         kootas = result["ashtakoot"].get("kootas", {})
         for _, v in kootas.items():
-            if not isinstance(v, dict):
-                continue
-            st = (v.get("status") or "").lower()
-            v["status"] = STATUS_MAP.get(st, "partial")
+            if isinstance(v, dict):
+                v["status"] = normalize_koota_status(v)
 
     return result
+
+
+# Engine statuses that name an actual dosha (Bhakoot / Nadi "dosha", Yoni Mahavaira "sworn_enemy").
+_DOSHA_RAW_STATUSES = {"dosha", "sworn_enemy"}
+
+
+def normalize_koota_status(koota: Dict[str, Any]) -> str:
+    """
+    Outward status for one koota: exactly one of "pass" | "partial" | "dosha" | "fail" (the vocabulary the
+    website and the Flutter app already render). Derived from the koota's own score/max and the engine's
+    dosha flags -- never from the engine's status wording, so a full score is always "pass".
+    """
+    score, mx = koota.get("score"), koota.get("max")
+    raw = (koota.get("status") or "").lower()
+    if raw == "invalid" or not isinstance(score, (int, float)) or not isinstance(mx, (int, float)) or mx <= 0:
+        return "fail"
+    if score >= mx:
+        return "pass"  # includes a dosha treated as cancelled with full points; the note says so
+    if score <= 0:
+        return "dosha" if raw in _DOSHA_RAW_STATUSES else "fail"
+    return "partial"

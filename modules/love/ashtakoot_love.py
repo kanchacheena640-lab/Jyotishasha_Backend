@@ -6,6 +6,11 @@ from typing import Dict, Any, Optional
 # SINGLE SOURCE OF TRUTH (NO DUPLICATES)
 # ============================================================
 
+# Bumped whenever a scoring rule changes. 2026-10 Phase 1: definite-bug fixes from the Ashtakoot
+# correctness audit (Bhakoot 1/7, Tara remainders, Yoni map / sworn-enemy pairs / symmetric lookup,
+# Gana map for the two Bhadrapadas, Saturn's enemies). Disputed conventions are unchanged.
+ENGINE_VERSION = "ashtakoot-2026.10-p1"
+
 # Moon Rashi → Lord (LOCKED)
 RASHI_LORD = {
     "Aries": "Mars", "Scorpio": "Mars",
@@ -35,7 +40,7 @@ ENEMY = {
     "Mercury": {"Moon"},
     "Jupiter": {"Venus", "Mercury"},
     "Venus": {"Sun", "Moon"},
-    "Saturn": {"Sun", "Moon"},
+    "Saturn": {"Sun", "Moon", "Mars"},
 }
 
 # ============================================================
@@ -154,6 +159,10 @@ NAKSHATRAS_27 = [
 ]
 NAK_INDEX = {n: i for i, n in enumerate(NAKSHATRAS_27)}
 
+# Vipat (3), Pratyak (5), Naidhana (7). _tara_remainder returns 1..9 (a remainder of 0 is reported as 9).
+TARA_INAUSPICIOUS_REMAINDERS = {3, 5, 7}
+
+
 def _tara_remainder(from_nak: str, to_nak: str) -> int:
     if from_nak not in NAK_INDEX or to_nak not in NAK_INDEX:
         raise ValueError("Invalid nakshatra")
@@ -175,12 +184,14 @@ def tara_koota(bride_moon: Dict, groom_moon: Dict) -> Dict:
     except ValueError:
         return {"score": 0, "max": 3, "status": "invalid", "note": "Invalid nakshatra"}
 
-    even_bg = (rem_bg % 2 == 0)
-    even_gb = (rem_gb % 2 == 0)
+    good_bg = rem_bg not in TARA_INAUSPICIOUS_REMAINDERS
+    good_gb = rem_gb not in TARA_INAUSPICIOUS_REMAINDERS
 
-    if even_bg and even_gb:
+    if good_bg and good_gb:
         score, status = 3, "excellent"
-    elif (not even_bg) and (not even_gb):
+    elif not good_bg and not good_gb:
+        # Not reachable with 27 nakshatras (the two inclusive counts always sum to 29, so their
+        # remainders sum to 2 mod 9); kept as a defensive branch.
         score, status = 0, "challenging"
     else:
         score, status = 1.5, "mixed"
@@ -200,35 +211,46 @@ def tara_koota(bride_moon: Dict, groom_moon: Dict) -> Dict:
 FEMALE_NAK_TO_YONI = {
     "Ashwini": "Ashwa", "Bharani": "Gaja", "Krittika": "Mesha",
     "Rohini": "Sarpa", "Mrigashira": "Sarpa", "Ardra": "Shwan",
-    "Punarvasu": "Marjar", "Pushya": "Marjar", "Ashlesha": "Marjar",
+    "Punarvasu": "Marjar", "Pushya": "Mesha", "Ashlesha": "Marjar",
     "Magha": "Mushak", "Purva Phalguni": "Mushak",
     "Uttara Phalguni": "Go", "Hasta": "Mahish",
     "Chitra": "Vyaghra", "Swati": "Mahish",
     "Vishakha": "Vyaghra", "Anuradha": "Mriga",
-    "Jyeshtha": "Mriga", "Mula": "Vanar",
+    "Jyeshtha": "Mriga", "Mula": "Shwan",
     "Purva Ashadha": "Vanar", "Uttara Ashadha": "Nakul",
-    "Shravana": "Simha", "Dhanishta": "Simha", "Shatabhisha": "Simha",
-    "Purva Bhadrapada": "Ashwa", "Uttara Bhadrapada": "Go", "Revati": "Gaja",
+    "Shravana": "Vanar", "Dhanishta": "Simha", "Shatabhisha": "Ashwa",
+    "Purva Bhadrapada": "Simha", "Uttara Bhadrapada": "Go", "Revati": "Gaja",
 }
 
 MALE_NAK_TO_YONI = dict(FEMALE_NAK_TO_YONI)  # locked mapping in your file
 
-YONI_RELATION = {
-    "Ashwa": {"Ashwa": 4, "Gaja": 2, "Mesha": 2, "Sarpa": 1},
-    "Gaja": {"Gaja": 4, "Ashwa": 2, "Simha": 1},
-    "Mesha": {"Mesha": 4, "Sarpa": 1},
-    "Sarpa": {"Sarpa": 4, "Mesha": 1},
-    "Shwan": {"Shwan": 4, "Marjar": 0},
-    "Marjar": {"Marjar": 4, "Shwan": 0},
-    "Mushak": {"Mushak": 4, "Vyaghra": 0},
-    "Go": {"Go": 4, "Vyaghra": 1},
-    "Mahish": {"Mahish": 4, "Vyaghra": 2},
-    "Vyaghra": {"Vyaghra": 4, "Mushak": 0},
-    "Mriga": {"Mriga": 4, "Vanar": 2},
-    "Vanar": {"Vanar": 4, "Mriga": 2},
-    "Nakul": {"Nakul": 4, "Sarpa": 1},
-    "Simha": {"Simha": 4, "Gaja": 1},
-}
+# Mahavaira (sworn-enemy) pairs -- 0 points (Muhurta Chintamani; onlinejyotish; aaps.space grid).
+YONI_SWORN_ENEMIES = (
+    ("Ashwa", "Mahish"),   # horse - buffalo
+    ("Gaja", "Simha"),     # elephant - lion
+    ("Mesha", "Vanar"),    # sheep - monkey
+    ("Sarpa", "Nakul"),    # serpent - mongoose
+    ("Shwan", "Mriga"),    # dog - deer
+    ("Marjar", "Mushak"),  # cat - rat
+    ("Go", "Vyaghra"),     # cow - tiger
+)
+
+# Other explicit pair scores carried over unchanged from the previous table (symmetric). Pairs not
+# listed score the neutral default 2. Replacing these with a full 14x14 grid is a pending convention.
+_YONI_OTHER_PAIRS = (
+    ("Ashwa", "Gaja", 2),
+    ("Ashwa", "Mesha", 2),
+    ("Ashwa", "Sarpa", 1),
+    ("Mesha", "Sarpa", 1),
+    ("Mahish", "Vyaghra", 2),
+    ("Mriga", "Vanar", 2),
+)
+
+YONI_RELATION: Dict[str, Dict[str, int]] = {y: {y: 4} for y in set(FEMALE_NAK_TO_YONI.values())}
+for _a, _b in YONI_SWORN_ENEMIES:
+    YONI_RELATION[_a][_b] = YONI_RELATION[_b][_a] = 0
+for _a, _b, _score in _YONI_OTHER_PAIRS:
+    YONI_RELATION[_a][_b] = YONI_RELATION[_b][_a] = _score
 
 def yoni_koota(bride_moon: Dict, groom_moon: Dict) -> Dict:
     b_nak = bride_moon.get("nakshatra")
@@ -321,11 +343,11 @@ NAKSHATRA_TO_GANA = {
     "Bharani": "Manushya", "Rohini": "Manushya", "Ardra": "Manushya",
     "Purva Phalguni": "Manushya", "Uttara Phalguni": "Manushya",
     "Purva Ashadha": "Manushya", "Uttara Ashadha": "Manushya",
+    "Purva Bhadrapada": "Manushya", "Uttara Bhadrapada": "Manushya",
     # Rakshasa
     "Krittika": "Rakshasa", "Ashlesha": "Rakshasa", "Magha": "Rakshasa",
     "Chitra": "Rakshasa", "Vishakha": "Rakshasa", "Jyeshtha": "Rakshasa",
     "Mula": "Rakshasa", "Dhanishta": "Rakshasa", "Shatabhisha": "Rakshasa",
-    "Purva Bhadrapada": "Rakshasa", "Uttara Bhadrapada": "Rakshasa",
 }
 
 GANA_SCORE = {
@@ -376,7 +398,7 @@ def bhakoot_koota(bride_moon: Dict, groom_moon: Dict) -> Dict:
 
     auspicious = (
         (p_bg == 1 and p_gb == 1) or
-        ({p_bg, p_gb} == {1, 7}) or
+        (p_bg == 7 and p_gb == 7) or  # samasaptaka: opposite Moon signs
         ({p_bg, p_gb} == {3, 11}) or
         ({p_bg, p_gb} == {4, 10})
     )
@@ -521,4 +543,5 @@ def compute_ashtakoot(
         "max_score": max_total,
         "invalid_kootas": invalids,
         "kootas": kootas,
+        "engine_version": ENGINE_VERSION,
     }

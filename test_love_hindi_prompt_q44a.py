@@ -161,7 +161,8 @@ live = collect_love_report_data(order=order, user_kundali=kundali, language="hi"
 live_prompt = build_love_premium_prompt(live)
 live_evidence = json.loads(live_prompt.split("Deterministic evidence:\n")[1])
 check("9: live payload -> full partner birth data in the Hindi prompt evidence", live_evidence["partner_birth_data"]["completeness"] == "full")
-check("9: live payload -> 32.5/36 in the Hindi prompt evidence", live_evidence["ashtakoot"]["total_score"] == 32.5)
+# 2026-10 Ashtakoot Phase 1 re-baseline: 32.5 -> 34.0 (Tara remainder-9 fix; see test_love_partner_payload_contract_q44a.py).
+check("9: live payload -> 34.0/36 in the Hindi prompt evidence", live_evidence["ashtakoot"]["total_score"] == 34.0)
 check("9: live prompt still has exactly 10 numbered sections", len(re.findall(r"^\d+\.", live_prompt, re.M)) == 10)
 
 print("\n" + "=" * 50)

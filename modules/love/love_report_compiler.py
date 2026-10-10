@@ -156,7 +156,7 @@ class LoveReportCompiler:
 
         house_planets = only_nonempty_houses(extract_house_planets(kundali))
 
-        disclaimers = self.build_disclaimers(lang, client)
+        disclaimers = self.build_disclaimers(lang, client, ashtakoot=ashtakoot, dasha=dasha, transits=transits)
         signals = self.build_signals(lang, kundali, ashtakoot, dasha, transits, house_planets)
 
         mangal_dosh = payload.get("mangal_dosh")
@@ -187,6 +187,8 @@ class LoveReportCompiler:
                 "total_score": ashtakoot.get("total_score"),
                 "max_score": ashtakoot.get("max_score", 36),
                 "kootas": ashtakoot.get("kootas", {}) if isinstance(ashtakoot.get("kootas"), dict) else {},
+                "approximate": bool(ashtakoot.get("approximate")),
+                "engine_version": ashtakoot.get("engine_version"),
             },
             "sections": [s.to_dict() for s in sections],
             "signals": signals,
@@ -211,7 +213,7 @@ class LoveReportCompiler:
         transits = payload.get("transits") if isinstance(payload.get("transits"), dict) else {}
 
         house_planets = only_nonempty_houses(extract_house_planets(kundali))
-        disclaimers = self.build_disclaimers(lang, client)
+        disclaimers = self.build_disclaimers(lang, client, ashtakoot=ashtakoot, dasha=dasha, transits=transits)
         signals = self.build_signals(lang, kundali, ashtakoot, dasha, transits, house_planets)
 
         if tool_id == TOOL_MARRIAGE_TIMING:
@@ -235,7 +237,15 @@ class LoveReportCompiler:
 
     # ------------------------- Disclaimers (Frontend-ready) -------------------------
 
-    def build_disclaimers(self, lang: str, client: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def build_disclaimers(
+        self,
+        lang: str,
+        client: Dict[str, Any],
+        *,
+        ashtakoot: Optional[Dict[str, Any]] = None,
+        dasha: Optional[Dict[str, Any]] = None,
+        transits: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
         missing = []
         if not _non_empty_str(client.get("dob")):
             missing.append("dob")
@@ -258,14 +268,39 @@ class LoveReportCompiler:
                 )
             })
         else:
-            d.append({
-                "key": "full_details_accuracy",
-                "severity": "info",
+            # Describe only what this result actually used (the free match carries no dasha/transit data).
+            cur_md = _safe_get(dasha or {}, ["current", "mahadasha"], default=None)
+            t_summary = (transits or {}).get("summary") if isinstance(transits, dict) else None
+            uses_dasha = _non_empty_str(cur_md)
+            uses_transit = _non_empty_str(t_summary)
+            if uses_dasha or uses_transit:
+                used_en = " and ".join(x for x, ok in (("the current Mahadasha", uses_dasha), ("a transit summary", uses_transit)) if ok)
+                used_hi = " और ".join(x for x, ok in (("वर्तमान महादशा", uses_dasha), ("गोचर सारांश", uses_transit)) if ok)
+                text = _title(
+                    lang,
+                    f"Ashtakoot is calculated from both partners' Moon sign and nakshatra. Timing notes use {used_en} from your birth chart.",
+                    f"अष्टकूट दोनों साथियों की चंद्र राशि और नक्षत्र से निकाला जाता है। समय से जुड़े संकेत आपकी जन्म कुंडली की {used_hi} पर आधारित हैं।",
+                )
+            else:
+                text = _title(
+                    lang,
+                    "Ashtakoot is calculated from both partners' Moon sign and nakshatra. Dasha and transit timing are not part of this result.",
+                    "अष्टकूट दोनों साथियों की चंद्र राशि और नक्षत्र से निकाला जाता है। दशा और गोचर का समय इस परिणाम में शामिल नहीं है।",
+                )
+            d.append({"key": "full_details_accuracy", "severity": "info", "text": text})
+
+        # The partner's Moon was estimated from date of birth only -> the score is approximate.
+        if isinstance(ashtakoot, dict) and ashtakoot.get("approximate"):
+            d.insert(0, {
+                "key": "partner_birth_time_missing",
+                "severity": "warning",
                 "text": _title(
                     lang,
-                    "Birth details are complete, so the report uses deeper Vedic timing and transit logic.",
-                    "जन्म विवरण पूर्ण हैं, इसलिए रिपोर्ट में वैदिक टाइमिंग और गोचर लॉजिक अधिक सटीक रूप से लागू होता है।",
-                )
+                    "Partner's birth time or place was not given, so the partner's Moon is only estimated from the date of birth. "
+                    "The Ashtakoot score is approximate and may change once the exact birth time and place are added.",
+                    "साथी का जन्म समय या स्थान नहीं दिया गया, इसलिए साथी की चंद्र स्थिति केवल जन्म तिथि से अनुमानित है। "
+                    "अष्टकूट स्कोर अनुमानित है और सही जन्म समय व स्थान जोड़ने पर बदल सकता है।",
+                ),
             })
 
         # Guidance disclaimer
@@ -324,6 +359,10 @@ class LoveReportCompiler:
                     "Vashya harmony indicates ease in adjustment and mutual influence.",
                     "वश्य सामंजस्य आपसी तालमेल और समायोजन को आसान बनाता है।",
                 ),
+                "partial": (
+                    "Partial vashya match: mutual influence is workable but needs some adjustment.",
+                    "आंशिक वश्य मिलान: आपसी प्रभाव संभालने योग्य है, पर कुछ तालमेल की जरूरत है।",
+                ),
                 "weak": (
                     "Weak vashya may cause control issues or difficulty in mutual adjustment.",
                     "कमजोर वश्य नियंत्रण या तालमेल की समस्या पैदा कर सकता है।",
@@ -333,6 +372,10 @@ class LoveReportCompiler:
                 "strong": (
                     "Tara koota support shows favorable destiny flow and mutual growth.",
                     "तारा (नक्षत्र) कूट अनुकूल भाग्य प्रवाह और आपसी प्रगति दर्शाता है।",
+                ),
+                "partial": (
+                    "Partial tara match: favorable in one direction only, so timing and confidence may need care.",
+                    "आंशिक तारा मिलान: केवल एक दिशा से अनुकूल, इसलिए समय और आत्मविश्वास पर ध्यान देना होगा।",
                 ),
                 "weak": (
                     "Tara weakness may bring ups and downs affecting confidence or timing.",
@@ -380,6 +423,10 @@ class LoveReportCompiler:
                     "Gana dosha may cause temperament clashes and reaction-based conflicts.",
                     "गण दोष स्वभाविक टकराव और प्रतिक्रिया-जनित विवाद ला सकता है।",
                 ),
+                "weak": (
+                    "Gana mismatch may cause temperament clashes and reaction-based conflicts.",
+                    "गण असंगति स्वभाविक टकराव और प्रतिक्रिया-जनित विवाद ला सकती है।",
+                ),
             },
             "bhakoot": {
                 "strong": (
@@ -391,8 +438,10 @@ class LoveReportCompiler:
                     "भकूट दोष भावनात्मक या आर्थिक असंतुलन के संकेत देता है।",
                 ),
                 "cancelled": (
-                    "Bhakoot dosha is present, but cancellation reduces its negative impact.",
-                    "भकूट दोष मौजूद है, लेकिन निरसन से उसका प्रभाव काफी कम हो जाता है।",
+                    "A Bhakoot dosha sign pattern is present, but it is treated as cancelled here because the two Moon-sign lords "
+                    "are the same or mutual friends, so full points are given. Astrologers differ on this cancellation.",
+                    "भकूट दोष वाला राशि संयोग मौजूद है, पर दोनों चंद्र राशियों के स्वामी एक ही या परस्पर मित्र हैं, इसलिए इसे यहाँ "
+                    "निरस्त मानकर पूरे अंक दिए गए हैं। इस निरसन पर ज्योतिषियों के मत अलग हैं।",
                 ),
             },
             "nadi": {
@@ -405,8 +454,10 @@ class LoveReportCompiler:
                     "नाड़ी दोष स्वास्थ्य या संतान से जुड़ी संवेदनशीलता दिखा सकता है।",
                 ),
                 "cancelled": (
-                    "Nadi dosha exists, but cancellation minimizes health-related concerns.",
-                    "नाड़ी दोष है, पर निरसन से स्वास्थ्य संबंधी चिंता कम हो जाती है।",
+                    "Both partners share the same Nadi, but it is treated as cancelled here because the Moon signs or their lords "
+                    "are the same, so full points are given. Astrologers differ on this cancellation.",
+                    "दोनों साथियों की नाड़ी एक है, पर चंद्र राशि या उसके स्वामी एक होने से इसे यहाँ निरस्त मानकर पूरे अंक दिए गए हैं। "
+                    "इस निरसन पर ज्योतिषियों के मत अलग हैं।",
                 ),
             },
         }
@@ -427,50 +478,35 @@ class LoveReportCompiler:
             if isinstance(sc, (int, float)) and isinstance(mx, (int, float)) and mx > 0:
                 pct = sc / mx
 
-            # Pick line (FINAL – NO KeyError, NO ambiguity)
-            if cancelled and key in T and "cancelled" in T[key]:
-                en, hi = T[key]["cancelled"]
-                line = _title(lang, en, hi)
+            # Pick the line from the koota's own facts (score/max, dosha, cancellation) -- never from a status
+            # word alone, so a full score is never described as weak, partial or a dosha.
+            def pick(*buckets: str) -> Optional[str]:
+                for b in buckets:
+                    if key in T and b in T[key]:
+                        en, hi = T[key][b]
+                        return _title(lang, en, hi)
+                return None
 
-            elif status in ("dosha", "fail"):
-                # dosha-specific
-                if key in T and "dosha" in T[key]:
-                    en, hi = T[key]["dosha"]
-                    line = _title(lang, en, hi)
-                else:
-                    line = _title(
-                        lang,
-                        f"Dosha detected ({dosha}). This may create friction unless balanced.",
-                        f"दोष पाया गया ({dosha})। संतुलन न हो तो मतभेद बढ़ सकते हैं।",
-                    )
-
-            elif status == "partial" or (pct is not None and pct < 0.8):
-                if key in T and "partial" in T[key]:
-                    en, hi = T[key]["partial"]
-                    line = _title(lang, en, hi)
-                elif key in T and "weak" in T[key]:
-                    en, hi = T[key]["weak"]
-                    line = _title(lang, en, hi)
-                elif key in T and "dosha" in T[key]:
-                    en, hi = T[key]["dosha"]
-                    line = _title(lang, en, hi)
-                else:
-                    line = _title(
-                        lang,
-                        "This koota shows mixed results and needs conscious handling.",
-                        "यह कूट मिश्रित परिणाम दिखाता है और सचेत समझ की आवश्यकता है।",
-                    )
-
+            if pct is None:
+                line = _title(
+                    lang,
+                    "This koota could not be scored from the available details.",
+                    "उपलब्ध विवरण से इस कूट का स्कोर नहीं निकल सका।",
+                )
+            elif cancelled and pct >= 1:
+                line = pick("cancelled", "strong")
+            elif pct >= 1:
+                line = pick("strong")
+            elif pct <= 0:
+                line = pick("dosha", "weak") if status in ("dosha", "sworn_enemy") else pick("weak", "dosha")
             else:
-                if key in T and "strong" in T[key]:
-                    en, hi = T[key]["strong"]
-                    line = _title(lang, en, hi)
-                else:
-                    line = _title(
-                        lang,
-                        "This koota is supportive overall.",
-                        "यह कूट समग्र रूप से सहायक है।",
-                    )
+                line = pick("partial", "weak")
+            if line is None:
+                line = _title(
+                    lang,
+                    f"This koota scores {sc}/{mx}.",
+                    f"इस कूट का स्कोर {sc}/{mx} है।",
+                )
 
             notes.append({
                 "key": key,
@@ -545,8 +581,17 @@ class LoveReportCompiler:
                 "मिलान संभालने योग्य है; परिपक्वता, संवाद और स्पष्ट निर्णय प्रक्रिया से परिणाम बेहतर होंगे।",
             )
 
+        approximate = bool(ashtakoot.get("approximate"))
+        if approximate:
+            reason_line = _title(
+                lang,
+                "Approximate: the partner's birth time or place is missing, so the partner's Moon is estimated from the date of birth. ",
+                "अनुमानित: साथी का जन्म समय या स्थान नहीं है, इसलिए साथी की चंद्र स्थिति जन्म तिथि से अनुमानित है। ",
+            ) + reason_line
+
         return {
             "level": level,                      # Low | Medium | High
+            "approximate": approximate,
             "score": total,
             "max_score": max_score,
             "score_pct": pct,
@@ -598,8 +643,10 @@ class LoveReportCompiler:
             "टाइमिंग स्नैपशॉट उपलब्ध नहीं; बेहतर विंडो के लिए दशा/गोचर डेटा जोड़ें।",
         )
 
-        # 2) Love vs Arranged probability (controlled, based on allowed indicators)
-        # STRICT: we do not mention empty houses; we only check occupancy presence.
+        # 2) Love vs Arranged probability -- NOT PUBLISHED. The heuristic below (50/50 shifted by 5th/7th
+        # house occupancy) is not genuine love-vs-arranged logic, and the free match never supplies houses,
+        # so it always produced 50/50. Kept unpublished until real inputs and approved logic exist.
+        signals["love_vs_arranged"]["available"] = False
         base_love = 50.0
         base_arr = 50.0
 
@@ -632,11 +679,7 @@ class LoveReportCompiler:
             base_love = (base_love / s) * 100.0
             base_arr = (base_arr / s) * 100.0
 
-        # Only publish if we have at least 1 reason or total score exists
-        if reasons or isinstance(total, (int, float)):
-            signals["love_vs_arranged"]["love_pct"] = round(base_love, 0)
-            signals["love_vs_arranged"]["arranged_pct"] = round(base_arr, 0)
-            signals["love_vs_arranged"]["reasons"] = reasons[:3]
+        # Intentionally not published: love_pct / arranged_pct stay None and reasons stay empty.
 
         # 3) Love → Marriage Flow (short, non-repetitive, frontend-ready)
         flow_line = _title(
@@ -762,8 +805,8 @@ class LoveReportCompiler:
         else:
             summary = _title(
                 lang,
-                "Percent split is not computed from current inputs; see reasons below.",
-                "वर्तमान इनपुट से प्रतिशत नहीं निकला; नीचे कारण देखें।",
+                "Not available: a love-vs-arranged estimate is not part of this result.",
+                "उपलब्ध नहीं: लव बनाम अरेंज्ड अनुमान इस परिणाम का हिस्सा नहीं है।",
             )
 
         bullets = [str(x) for x in (lva.get("reasons") or [])][:3]

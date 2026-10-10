@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from full_kundali_api import calculate_full_kundali  # noqa: E402
 from modules.love.ashtakoot_love import compute_ashtakoot  # noqa: E402
+from modules.love.moon_only import derive_moon_from_dob  # noqa: E402
 from modules.love.love_data_collector import (  # noqa: E402
     collect_love_report_data, _pick_partner, LoveCollectorError,
 )
@@ -50,8 +51,10 @@ PARTNER_LIVE = dict(
     name="Ananya Verma", dob="1992-03-22", tob="10:45", pob="New Delhi, India",
     latitude=28.6139, longitude=77.2090,
 )
-EXPECTED_KOOTAS = {"varna": 1, "vashya": 2, "tara": 1.5, "yoni": 2, "graha_maitri": 5, "gana": 6, "bhakoot": 7, "nadi": 8}
-EXPECTED_TOTAL = 32.5
+# 2026-10 Ashtakoot Phase 1 re-baseline: 32.5 -> 34.0. Tara 1.5 -> 3: Vishakha (bride) -> Shatabhisha (groom) counts 9,
+# remainder 0 (reported as 9), which is auspicious; the old even/odd rule wrongly treated 9 as inauspicious.
+EXPECTED_KOOTAS = {"varna": 1, "vashya": 2, "tara": 3, "yoni": 2, "graha_maitri": 5, "gana": 6, "bhakoot": 7, "nadi": 8}
+EXPECTED_TOTAL = 34.0
 
 _user_kundali_cache = {}
 
@@ -120,7 +123,7 @@ print("\n=== 1b: what the model is actually shown (real prompt builder, no AI ca
 prompt = build_love_premium_prompt(payload)
 evidence = json.loads(prompt.split("Deterministic evidence:\n")[1])
 check("1b: prompt evidence says the partner's birth data is full (plain words, no internal mode name)", evidence["partner_birth_data"]["completeness"] == "full" and "A_FULL_DUAL" not in json.dumps(evidence))
-check("1b: prompt evidence carries the 32.5/36 total", evidence["ashtakoot"]["total_score"] == 32.5 and evidence["ashtakoot"]["max_score"] == 36)
+check("1b: prompt evidence carries the 34.0/36 total", evidence["ashtakoot"]["total_score"] == EXPECTED_TOTAL and evidence["ashtakoot"]["max_score"] == 36)
 check("1b: prompt evidence carries the 8 real koota scores",
       {k: v["score"] for k, v in evidence["ashtakoot"]["kootas"].items()} == EXPECTED_KOOTAS)
 
@@ -145,8 +148,12 @@ for label, dob_only in (
     check(f"4: {label} -> B_DOB_ONLY_HYBRID", p["compatibility"]["case"] == "B_DOB_ONLY_HYBRID")
     check(f"4: {label} -> the DOB-only limitation note is still emitted", any("not provided" in n for n in p["compatibility"]["notes"]))
     check(f"4: {label} -> fallback analysis still attached", p["compatibility"].get("fallback") is not None)
-check("4: DOB-only Moon is the approximation (Aquarius) -- proving the two modes really differ",
-      collect({"name": "Ananya Verma", "dob": "1992-03-22"})["compatibility"]["ashtakoot"]["total_score"] != EXPECTED_TOTAL)
+# 2026-10 Ashtakoot Phase 1: under the corrected rules this couple's DOB-only estimate happens to score the same 34.0 as
+# the real chart, so the modes are told apart by what actually differs -- the partner's Moon and the approximate flag.
+_dob_only = collect({"name": "Ananya Verma", "dob": "1992-03-22"})["compatibility"]
+check("4: DOB-only Moon is the approximation (Aquarius, not the real Libra) -- proving the two modes really differ",
+      derive_moon_from_dob("1992-03-22")["rashi"] == "Aquarius" and moon_of(ananya)["sign"] == "Libra"
+      and _dob_only["ashtakoot"].get("approximate") is True and a.get("approximate") is not True)
 
 print("\n=== 5: precedence when BOTH forms are present: canonical latitude/longitude wins ===")
 both = {**PARTNER_LIVE, "lat": 19.0760, "lng": 72.8777}   # stale Mumbai alias next to the real Delhi canonical values
@@ -280,11 +287,11 @@ for lang in ("en", "hi"):
     ev = json.loads(seen["prompt"].split("Deterministic evidence:\n")[1])
     check(f"9[{lang}]: the real task reached Ready", order.report_stage == "Ready")
     check(f"9[{lang}]: the model was shown full partner birth data", ev["partner_birth_data"]["completeness"] == "full")
-    check(f"9[{lang}]: the model was shown the real 32.5/36 and the 8 real koota scores",
-          ev["ashtakoot"]["total_score"] == 32.5 and {k: v["score"] for k, v in ev["ashtakoot"]["kootas"].items()} == EXPECTED_KOOTAS)
+    check(f"9[{lang}]: the model was shown the real 34.0/36 and the 8 real koota scores",
+          ev["ashtakoot"]["total_score"] == EXPECTED_TOTAL and {k: v["score"] for k, v in ev["ashtakoot"]["kootas"].items()} == EXPECTED_KOOTAS)
     check(f"9[{lang}]: the stored order.partner_payload was not mutated (no lat/lng written back)", live_partner == PARTNER_LIVE and "lat" not in order.partner_payload)
     label = "अष्टकूट अनुकूलता" if lang == "hi" else "Ashtakoot compatibility"
-    check(f"9[{lang}]: the PDF hero's engine-owned supporting evidence carries the real total", pdf["answer_hero"]["evidence"][0] == f"{label}: 32.5/36")
+    check(f"9[{lang}]: the PDF hero's engine-owned supporting evidence carries the real total", pdf["answer_hero"]["evidence"][0] == f"{label}: {EXPECTED_TOTAL:g}/36")
     check(f"9[{lang}]: the PDF is rendered as the relationship product in the right language", pdf["product"] == "relationship_future_report" and pdf["language"] == lang)
 
 print("\n" + "=" * 50)

@@ -146,10 +146,10 @@ class ContractTests(unittest.TestCase):
 
     def test_real_ashtakoot_fixture(self):
         result = ashtakoot_fixture()
-        self.assertEqual(result["total_score"], 27)
+        self.assertEqual(result["total_score"], 26)  # 2026-10 Ashtakoot Phase 1: was 27; Pushya now Sheep, Serpent-Sheep yoni = 1
         self.assertEqual(result["max_score"], 36)
         self.assertEqual(len(result["kootas"]), 8)
-        self.assertEqual(sum(k["score"] for k in result["kootas"].values()), 27)
+        self.assertEqual(sum(k["score"] for k in result["kootas"].values()), 26)
         self.assertFalse(result["invalid_kootas"])
 
     def test_empty_houses_and_real_dates(self):
@@ -214,7 +214,7 @@ class ContractTests(unittest.TestCase):
                     for forbidden in ("love_vs_arranged", "stability_score", "HEURISTIC_SECRET_MARKER", "99%", "98%"):
                         self.assertNotIn(forbidden, prompt)
                     data = json.loads(prompt.split("Deterministic evidence:\n")[1])
-                    self.assertEqual(data["ashtakoot"]["total_score"], 27)
+                    self.assertEqual(data["ashtakoot"]["total_score"], 26)
                     # Q4.4B: internal mode names are never sent to the model; completeness is described in plain words.
                     self.assertEqual(data["partner_birth_data"]["completeness"], "full" if case == "A" else "partial")
                     self.assertEqual(len(data["user_house_lord_facts"]), 2)
@@ -276,7 +276,7 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(ai.call_count, 0 if missing_partner else (2 if retry else 1))
             if ai.called and slug == LOVE:
                 live_prompt = ai.call_args.args[0]
-                self.assertIn("27.0", live_prompt)
+                self.assertIn("26.0", live_prompt)
                 self.assertNotIn("stability_score", live_prompt)
                 self.assertNotIn("love_vs_arranged", live_prompt)
                 self.assertIn('"house": 5', live_prompt)
@@ -361,7 +361,7 @@ def add_pipeline_tests():
                         self.assertEqual(pdf["gemstone"]["gemstone"], "Yellow Sapphire")
                     if slug == LOVE:
                         self.assertIsNone(pdf.get("timeline"))
-                        self.assertEqual(pdf["answer_hero"]["evidence"], ["अष्टकूट अनुकूलता: 27/36" if language == "hi" else "Ashtakoot compatibility: 27/36"])
+                        self.assertEqual(pdf["answer_hero"]["evidence"], ["अष्टकूट अनुकूलता: 26/36" if language == "hi" else "Ashtakoot compatibility: 26/36"])
                         self.assertNotIn("35/36", str(pdf))
                         self.assertTrue(pdf["action_list"]["items"])
                     else:
