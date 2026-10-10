@@ -167,12 +167,13 @@ def compile_truth_or_dare(payload: Dict[str, Any]) -> Dict[str, Any]:
     verdict = "TRUTH" if score >= 2 else "DARE"
     confidence = "high" if not fallback_mode else "low"
 
+    # Describes the chart indicators only -- never a judgement that the relationship is "safe" or "risky".
     verdict_line = _t(
         lang,
-        f"Verdict: {verdict} — this relationship is "
-        f"{'safe to pursue' if verdict == 'TRUTH' else 'emotionally risky'}.",
-        f"निर्णय: {verdict} — यह रिश्ता "
-        f"{'आगे बढ़ाने योग्य' if verdict == 'TRUTH' else 'भावनात्मक रूप से जोखिमपूर्ण'} है।"
+        f"Verdict: {verdict} — "
+        f"{'the chart indicators look supportive for this relationship.' if verdict == 'TRUTH' else 'the chart indicators point to areas that need extra care and honest conversation.'}",
+        f"निर्णय: {verdict} — "
+        f"{'कुंडली के संकेत इस रिश्ते के लिए सहायक दिखते हैं।' if verdict == 'TRUTH' else 'कुंडली के संकेत कुछ ऐसे पहलू दिखाते हैं जिन पर अतिरिक्त ध्यान और खुली बातचीत ज़रूरी है।'}"
     )
 
     # ----------------------------
