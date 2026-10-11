@@ -527,6 +527,47 @@ def build_birth_chart_summary_display(kundali: dict, language: str, english_summ
     return " ".join(lines)
 
 
+# Mangal Dosh P0 (2026-10) -- the Manglik line reads the engine's own
+# kundali["manglik_dosh"]["status"]["strength"] (services/mangalik_dosh_logic.py:
+# Strong | Partial | Cancelled | None). It used to read a key the engine never
+# returns ("is_manglik"), so every report said "not Mangalik". A missing or
+# unrecognised result is reported as unavailable, never converted into an
+# absence claim. English feeds the prompts; the Hindi PDF card uses the display
+# text below (same pattern as build_birth_chart_summary_display).
+_MANGLIK_SUMMARY_EN = {
+    "Strong": "You are Mangalik.",
+    "Partial": "You are Mangalik (partial Mangal Dosh).",
+    "Cancelled": "You are not Mangalik (Mangal Dosh is cancelled by special combinations).",
+    "None": "You are not Mangalik.",
+}
+_MANGLIK_SUMMARY_HI = {
+    "Strong": "आप मांगलिक हैं।",
+    "Partial": "आप मांगलिक हैं (आंशिक मंगल दोष)।",
+    "Cancelled": "आप मांगलिक नहीं हैं (विशेष योगों के कारण मंगल दोष रद्द है)।",
+    "None": "आप मांगलिक नहीं हैं।",
+}
+_MANGLIK_UNAVAILABLE_EN = "Manglik status is not available."
+_MANGLIK_UNAVAILABLE_HI = "मांगलिक स्थिति उपलब्ध नहीं है।"
+
+
+def _manglik_strength(kundali: dict):
+    raw = kundali.get("manglik_dosh")
+    status = raw.get("status") if isinstance(raw, dict) else None
+    strength = status.get("strength") if isinstance(status, dict) else None
+    return strength if strength in _MANGLIK_SUMMARY_EN else None
+
+
+def _build_manglik_summary(kundali: dict) -> str:
+    return _MANGLIK_SUMMARY_EN.get(_manglik_strength(kundali), _MANGLIK_UNAVAILABLE_EN)
+
+
+def build_manglik_summary_display(kundali: dict, language: str, english_summary: str) -> str:
+    """Returns `english_summary` unchanged for every language except "hi"."""
+    if language != "hi":
+        return english_summary
+    return _MANGLIK_SUMMARY_HI.get(_manglik_strength(kundali), _MANGLIK_UNAVAILABLE_HI)
+
+
 def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
     planets = kundali.get("planets", [])
     lagna_sign = kundali.get("lagna_sign", "")
@@ -549,9 +590,8 @@ def build_summary_blocks_with_transit(kundali: dict, transit: dict) -> dict:
             aspect_lines.append(f"{p['name']} is aspecting {', '.join(aspects)}.")
     aspect_summary = " ".join(aspect_lines)
 
-    # 3. Manglik Summary (unchanged).
-    manglik_raw = kundali.get("manglik_dosh", {})
-    manglik_summary = "You are Mangalik." if manglik_raw.get("is_manglik") else "You are not Mangalik."
+    # 3. Manglik Summary -- from the Mangal Dosh engine's own result (see _build_manglik_summary).
+    manglik_summary = _build_manglik_summary(kundali)
 
     # 4. Mahadasha Summary -- UNCHANGED computation (Q1 compatibility
     # requirement: existing prompts depend on this exact key/shape).

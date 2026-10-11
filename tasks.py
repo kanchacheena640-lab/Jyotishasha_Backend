@@ -14,7 +14,7 @@ from modules.payments.report_delivery_service import deliver_generated_report
 # product belongs to the focused-report family at all; the actual trusted
 # generator lookup happens inside paid_report_router, not here.
 from modules.focused_reports.dispatcher import HANDLERS as FOCUSED_QUESTION_KEYS
-from summary_blocks import build_summary_blocks_with_transit, build_birth_chart_summary_display
+from summary_blocks import build_summary_blocks_with_transit, build_birth_chart_summary_display, build_manglik_summary_display
 from full_kundali_api import calculate_full_kundali
 from transit_engine import get_current_positions
 from kundali_chart_generator import generate_kundali_drawing
@@ -599,6 +599,9 @@ def _generate_and_send_report_core(order_id):
             pdf_summary_blocks = dict(summary_blocks)
             pdf_summary_blocks["birth_chart_summary"] = build_birth_chart_summary_display(
                 kundali, language, summary_blocks.get("birth_chart_summary", "")
+            )
+            pdf_summary_blocks["manglik_summary"] = build_manglik_summary_display(
+                kundali, language, summary_blocks.get("manglik_summary", "")
             )
 
             output_path = f"/home/Jyotishasha/reports/{product_slug}_{safe_name}.pdf"

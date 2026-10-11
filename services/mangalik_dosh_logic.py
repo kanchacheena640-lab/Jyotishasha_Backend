@@ -108,8 +108,8 @@ def _compute_house_from_moon_fallback(planets: List[Dict[str, Any]]) -> Tuple[Op
     if not m_moon:
         moon_lagna = _to_int(moon.get("house_from_lagna") or moon.get("house"))
         if m_lagna and moon_lagna:
-            diff = (m_lagna - moon_lagna) % 12
-            m_moon = diff if diff != 0 else 12
+            # Inclusive sign count: the Moon's own house is the 1st (Moon Gemini, Mars Libra -> 5th).
+            m_moon = ((m_lagna - moon_lagna) % 12) + 1
     return m_lagna, m_moon
 
 def _mars_own_or_exalted(sign: str) -> bool:

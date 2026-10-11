@@ -111,7 +111,8 @@ def _kundali(**overrides):
             {"name": "Jupiter", "house": 12, "sign": "Cancer"},
             {"name": "Venus", "house": 9, "sign": "Taurus"},
         ],
-        "manglik_dosh": {"is_manglik": False},
+        # The Mangal Dosh engine's real shape (services/mangalik_dosh_logic.py status.strength).
+        "manglik_dosh": {"status": {"strength": "None"}},
         "Mahadasha": mahadashas,
         "current_mahadasha": mahadashas[0],
         "current_antardasha": mahadashas[0]["antardashas"][0],
@@ -196,10 +197,10 @@ print("\n=== D: aspect_summary / manglik_summary still present and stable ===")
 # =================================================================
 check("D: aspect_summary key present", "aspect_summary" in blocks)
 check("D: aspect_summary reflects Moon's aspecting data", "Moon is aspecting Mars" in blocks["aspect_summary"])
-check("D: manglik_summary key present and correct for is_manglik=False", blocks["manglik_summary"] == "You are not Mangalik.")
+check("D: manglik_summary key present and correct for engine strength None", blocks["manglik_summary"] == "You are not Mangalik.")
 
-blocks_manglik = sb.build_summary_blocks_with_transit(_kundali(manglik_dosh={"is_manglik": True}), _transit())
-check("D: manglik_summary correct for is_manglik=True", blocks_manglik["manglik_summary"] == "You are Mangalik.")
+blocks_manglik = sb.build_summary_blocks_with_transit(_kundali(manglik_dosh={"status": {"strength": "Strong"}}), _transit())
+check("D: manglik_summary correct for engine strength Strong", blocks_manglik["manglik_summary"] == "You are Mangalik.")
 
 # =================================================================
 print("\n=== E: dasha_window_summary -- new, deterministic, no invented dates ===")
