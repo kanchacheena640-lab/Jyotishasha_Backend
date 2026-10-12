@@ -423,11 +423,13 @@ def calculate_full_kundali(name, dob, tob, lat, lon, user_id=None, language='en'
         lagna_trait_text = "Lagna description not found."
 
       # ✅ Inject Manglik Dosh Analysis
+    # The report language is the function's own argument (it was passed inside the dict and ignored,
+    # so Hindi requests got English text).
     manglik_result = build_manglik_dosh({
         "planets": planets,
         "lagna_sign": lagna_sign,
-        "language": language
-    })
+        "moon_sign": moon_sign,
+    }, language)
 
     kaalsarp_result = generate_kaalsarp_dosh_report(planets, language)
 

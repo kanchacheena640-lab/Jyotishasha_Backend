@@ -143,8 +143,9 @@ class MoonHouseCounting(unittest.TestCase):
         self.assertEqual(mangal_for(asc=0, moon=9, mars=3)["context"]["mars_house_from_moon"], 7)    # opposite signs
 
     def test_gemini_moon_libra_mars_is_5th_end_to_end(self):
-        """The reported case, through calculate_full_kundali() exactly as the tool page and love match use it."""
-        k = full_kundali_for(asc=0, moon=2, mars=6)
+        """The reported case, through calculate_full_kundali() exactly as the tool page and love match use it.
+        Jupiter in Taurus: no Kendra from Lagna/Moon and no aspect on Mars, so no cancellation applies."""
+        k = full_kundali_for(asc=0, moon=2, mars=6, jupiter=1)
         md = k["manglik_dosh"]
         self.assertEqual((next(p["sign"] for p in k["planets"] if p["name"] == "Moon"),
                           next(p["sign"] for p in k["planets"] if p["name"] == "Mars")), ("Gemini", "Libra"))
@@ -173,14 +174,12 @@ class ScopeGuards(unittest.TestCase):
         self.assertNotIn("mars_house_from_venus", md["context"])
         self.assertEqual(set(md["evaluation"]["triggers"]), {"from_lagna", "from_moon"})
 
-    def test_dosh_bhang_behaviour_unchanged(self):
-        """Pinned as-is. Known P1 from the audit (Jupiter-Kendra and benefic aspect/conjunction can never fire)
-        is deliberately NOT changed by the P0 work; changing it needs astrologer sign-off."""
+    def test_own_exalted_rule_unchanged(self):
+        """The one cancellation that already worked. Jupiter-Kendra and benefic aspect/conjunction were
+        activated later; see test_mangal_dosh_cancellation.py."""
         own = mangal_for(asc=0, moon=3, mars=0)  # Mars in Aries (own sign) in the 1st
         self.assertTrue(own["context"]["cancellation_flags"]["mars_own_or_exalted"])
-        jup = mangal_for(asc=0, moon=5, mars=6, jupiter=0)  # Jupiter in the 1st, aspecting Mars in the 7th
-        self.assertFalse(jup["context"]["cancellation_flags"]["jupiter_in_kendra_from_lagna_or_moon"])
-        self.assertFalse(jup["context"]["cancellation_flags"]["benefic_aspect_or_conjunction_on_mars"])
+        self.assertFalse(mangal_for(asc=0, moon=3, mars=3)["context"]["cancellation_flags"]["mars_own_or_exalted"])  # Cancer
 
     def test_severity_table_unchanged(self):
         table = {(fl, fm, n): MD._severity_score(fl, fm, n > 0, n > 1, n > 2)[0]
@@ -216,7 +215,8 @@ class ManglikSummary(unittest.TestCase):
             self.assertEqual(_summary(raw), "Manglik status is not available.", raw)
 
     def test_real_charts_manglik_and_not_manglik(self):
-        strong = full_kundali_for(asc=1, moon=1, mars=1, jupiter=5)   # Mars Taurus: 1st from Lagna and from Moon
+        # Jupiter in Gemini: no Kendra, no aspect on Mars in Taurus, so nothing cancels.
+        strong = full_kundali_for(asc=1, moon=1, mars=1, jupiter=2)   # Mars Taurus: 1st from Lagna and from Moon
         self.assertEqual(strong["manglik_dosh"]["status"]["strength"], "Strong")
         self.assertEqual(_summary(strong), "You are Mangalik.")
         partial = full_kundali_for(asc=0, moon=9, mars=4, jupiter=5)  # Mars Leo: 5th from Lagna, 8th from Moon (Capricorn)

@@ -2,10 +2,26 @@
 # Generate structured, human-friendly Mangal Dosh (Kuja Dosha) report in English/Hindi.
 # Drop-in helper: call generate_mangal_dosh_report(kundali, language="en"|"hi")
 
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 MD_HOUSES = {1, 2, 4, 7, 8, 12}
 KENDRA_HOUSES = {1, 4, 7, 10}
+# Owner decision (2026-10): only Jupiter's aspect or same-sign conjunction cancels. Mercury and Venus are not
+# cancellation planets (their own data is untouched for every other calculation).
+CANCELLING_BENEFICS = {"Jupiter"}
+PLANET_HI = {
+    "Sun": "सूर्य", "Moon": "चंद्र", "Mars": "मंगल", "Mercury": "बुध", "Jupiter": "गुरु",
+    "Venus": "शुक्र", "Saturn": "शनि", "Rahu": "राहु", "Ketu": "केतु",
+}
+# Display text only; evaluation["mitigations"] keeps the English values.
+MITIGATION_HI = {
+    "Mars in own/exalted sign": "मंगल स्वराशि/उच्च राशि में",
+    "Jupiter in Kendra (from Lagna/Moon)": "गुरु केन्द्र में (लग्न/चंद्र से)",
+    "Benefic aspect/conjunction on Mars": "मंगल पर गुरु की दृष्टि/एक ही राशि में युति",
+}
+# full_kundali_api.calculate_drishti_for_planets() records aspects as "Jupiter (7th drishti)".
+_DRISHTI_SUFFIX = re.compile(r"\s*\(\d+(?:st|nd|rd|th) drishti\)$")
 
 SIGN_HI = {
     "Aries": "मेष", "Taurus": "वृषभ", "Gemini": "मिथुन", "Cancer": "कर्क",
@@ -27,7 +43,9 @@ LANG = {
             "moon_trigger": "From the Moon, Mars occupies the {mars_house_from_moon} house in {mars_sign}. This placement can sensitize emotional responses and may contribute to Mangal Dosh indications if not otherwise balanced.",
             "own_or_exalted_cancellation": "Because Mars is in {mars_sign}, which counts as own/exalted dignity, the harsher side of Mangal Dosh is significantly reduced, often converting sharpness into constructive drive.",
             "jupiter_kendra_cancellation": "Protective influence: Jupiter positioned in a Kendra (houses 1/4/7/10) from Lagna ({jupiter_house_from_lagna}) or Moon ({jupiter_house_from_moon}) tends to neutralize Mangal Dosh by adding wisdom, patience, and grace to relationships.",
-            "benefic_on_mars_cancellation": "Benefic support is present: {benefics_aspecting} aspect(s) or {benefics_conjunct} conjunction(s) with Mars soften the intensity, encouraging cooperative problem‑solving and balanced commitments."
+            "benefic_on_mars_cancellation": "Benefic support is present ({benefic_support}), which softens the intensity of Mars, encouraging cooperative problem‑solving and balanced commitments.",
+            "benefic_aspect_part": "aspect from {names} on Mars",
+            "benefic_conjunct_part": "{names} in the same sign as Mars (same-sign conjunction)"
         },
         "summary_heading": "Mangal Dosh Summary",
         "summary_points": [
@@ -60,7 +78,9 @@ LANG = {
             "moon_trigger": "चंद्र से मंगल {mars_house_from_moon} भाव में {mars_sign} राशि में स्थित है। यह स्थिति भावनात्मक प्रतिक्रिया को संवेदनशील बनाती है और यदि संतुलन न हो तो मंगल दोष को बल दे सकती है।",
             "own_or_exalted_cancellation": "चूंकि मंगल {mars_sign} राशि में है, जो इसकी स्वयं की अथवा उच्च राशि मानी जाती है, इसलिए मंगल दोष का तीव्र प्रभाव कम होकर ऊर्जा सकारात्मक दिशा में रूपांतरित हो जाता है।",
             "jupiter_kendra_cancellation": "रक्षक प्रभाव: गुरु लग्न ({jupiter_house_from_lagna}) अथवा चंद्र ({jupiter_house_from_moon}) से केन्द्र (1/4/7/10) में स्थित है। यह मंगल दोष को काफी हद तक शान्त करता है और वैवाहिक जीवन में धैर्य व सौम्यता लाता है।",
-            "benefic_on_mars_cancellation": "शुभ प्रभाव उपस्थित है: {benefics_aspecting} दृष्टि या {benefics_conjunct} की युति मंगल पर है, जिससे दोष का प्रभाव नरम होकर सामंजस्य और संतुलन बढ़ता है।"
+            "benefic_on_mars_cancellation": "शुभ प्रभाव उपस्थित है ({benefic_support}), जिससे दोष का प्रभाव नरम होकर सामंजस्य और संतुलन बढ़ता है।",
+            "benefic_aspect_part": "मंगल पर {names} की दृष्टि",
+            "benefic_conjunct_part": "{names} की मंगल के साथ एक ही राशि में युति"
         },
         "summary_heading": "मंगल दोष सारांश",
         "summary_points": [
@@ -112,6 +132,34 @@ def _compute_house_from_moon_fallback(planets: List[Dict[str, Any]]) -> Tuple[Op
             m_moon = ((m_lagna - moon_lagna) % 12) + 1
     return m_lagna, m_moon
 
+def _jupiter_houses(planets: List[Dict[str, Any]]) -> Tuple[Optional[int], Optional[int]]:
+    """(jupiter_from_lagna, jupiter_from_moon), counted exactly like Mars above: the whole-sign house
+    from the chart, and the inclusive sign count from the Moon's house when not supplied."""
+    jup = _get_planet(planets, "Jupiter")
+    moon = _get_planet(planets, "Moon")
+    j_lagna = _to_int(jup.get("house_from_lagna") or jup.get("house"))
+    j_moon = _to_int(jup.get("house_from_moon"))
+    if not j_moon:
+        moon_lagna = _to_int(moon.get("house_from_lagna") or moon.get("house"))
+        if j_lagna and moon_lagna:
+            j_moon = ((j_lagna - moon_lagna) % 12) + 1
+    return j_lagna, j_moon
+
+def _same_house_planets(planets: List[Dict[str, Any]], mars: Dict[str, Any]) -> List[str]:
+    """Planets sharing Mars' house (whole-sign conjunction), used when no "conjunct" list is supplied.
+    An unknown Mars house yields no conjunctions, never a guessed one."""
+    m_house = _to_int(mars.get("house_from_lagna") or mars.get("house"))
+    if not m_house:
+        return []
+    out = []
+    for p in planets or []:
+        name = p.get("name", "")
+        if not name or name == "Mars" or "Ascendant" in name:
+            continue
+        if _to_int(p.get("house_from_lagna") or p.get("house")) == m_house:
+            out.append(name)
+    return out
+
 def _mars_own_or_exalted(sign: str) -> bool:
     return sign in {"Aries", "Scorpio", "Capricorn"}
 
@@ -122,17 +170,22 @@ def _collect_names(entries: Any) -> List[str]:
     out = []
     for e in entries or []:
         if isinstance(e, str):
-            out.append(e)
+            out.append(_DRISHTI_SUFFIX.sub("", e))
         elif isinstance(e, dict):
             n = e.get("name")
             if n: out.append(n)
     return out
 
-def _benefic_support_flags(mars: Dict[str, Any]) -> Tuple[bool, List[str], List[str]]:
+def _benefic_support_flags(mars: Dict[str, Any], planets: List[Dict[str, Any]]) -> Tuple[bool, List[str], List[str]]:
+    """Returns (cancels, cancelling aspects on Mars, cancelling conjunctions with Mars). Aspects come from the
+    chart's own drishti list; a conjunction means the same sign (whole-sign house), not a close-degree one.
+    Only CANCELLING_BENEFICS are listed: these lists feed the "benefic support" text and context fields."""
     asp = _collect_names(mars.get("aspected_by"))
-    conj = _collect_names(mars.get("conjunct"))
-    has_benefic = any(n in {"Jupiter", "Venus", "Mercury"} for n in set(asp + conj))
-    return has_benefic, asp, conj
+    conj_raw = mars.get("conjunct")
+    conj = _collect_names(conj_raw) if conj_raw is not None else _same_house_planets(planets, mars)
+    asp_b = [n for n in asp if n in CANCELLING_BENEFICS]
+    conj_b = [n for n in conj if n in CANCELLING_BENEFICS]
+    return bool(asp_b or conj_b), asp_b, conj_b
 
 def _trigger_text(lang: str, from_lagna: bool, from_moon: bool) -> str:
     if lang == "hi":
@@ -145,6 +198,10 @@ def _trigger_text(lang: str, from_lagna: bool, from_moon: bool) -> str:
         if from_lagna: return "Triggered from Lagna only"
         if from_moon: return "Triggered from Moon only"
         return "No active trigger"
+
+def _display_names(items: List[str], lang: str, hi_map: Dict[str, str]) -> List[str]:
+    """Hindi display names for planets / mitigation reasons; the underlying values stay English."""
+    return [hi_map.get(i, i) for i in items] if lang == "hi" else list(items)
 
 def _strength_label(lang: str, strength: str) -> str:
     return LANG[lang]["labels"].get(strength, strength)
@@ -211,7 +268,6 @@ def generate_mangal_dosh_report(kundali: Dict[str, Any], language: str = "en") -
 
     planets = kundali.get("planets", [])
     mars = _get_planet(planets, "Mars")
-    jup = _get_planet(planets, "Jupiter")
 
     mars_sign_en = mars.get("sign") or "Unknown"
     mars_sign_hi = SIGN_HI.get(mars_sign_en, mars_sign_en)
@@ -223,10 +279,9 @@ def generate_mangal_dosh_report(kundali: Dict[str, Any], language: str = "en") -
     from_moon = bool(m_moon and m_moon in MD_HOUSES)
 
     own_exalted = _mars_own_or_exalted(mars_sign_en)
-    j_lagna = _to_int(jup.get("house_from_lagna"))
-    j_moon = _to_int(jup.get("house_from_moon"))
+    j_lagna, j_moon = _jupiter_houses(planets)
     jup_kendra = _is_kendra(j_lagna) or _is_kendra(j_moon)
-    benefic_ok, asp_list, conj_list = _benefic_support_flags(mars)
+    benefic_ok, asp_list, conj_list = _benefic_support_flags(mars, planets)
 
     final_strength, mitigations = _severity_score(from_lagna, from_moon, own_exalted, jup_kendra, benefic_ok)
     human_status = L["human_status"][final_strength]
@@ -268,14 +323,18 @@ def generate_mangal_dosh_report(kundali: Dict[str, Any], language: str = "en") -
     if benefic_ok:
         paragraphs.append(
             P["benefic_on_mars_cancellation"].format(
-                benefics_aspecting=_format_list(asp_list, lang),
-                benefics_conjunct=_format_list(conj_list, lang)
+                # Only the parts that actually apply (aspect, same-sign conjunction, or both).
+                benefic_support="; ".join(
+                    P[part].format(names=", ".join(_display_names(names, lang, PLANET_HI)))
+                    for part, names in (("benefic_aspect_part", asp_list), ("benefic_conjunct_part", conj_list))
+                    if names
+                )
             )
         )
 
     # Summary block
     trigger_status_text = _trigger_text(lang, from_lagna, from_moon)
-    mitigations_joined = _format_list(mitigations, lang)
+    mitigations_joined = _format_list(_display_names(mitigations, lang, MITIGATION_HI), lang)
     summary_points = [
         L["summary_points"][0].format(trigger_status_text=trigger_status_text),
         L["summary_points"][1].format(mitigations_joined=mitigations_joined),
