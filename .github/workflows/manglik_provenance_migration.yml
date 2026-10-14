@@ -1,0 +1,337 @@
+name: Production Manglik Provenance Migration (ONE-TIME)
+
+# Manual, one-time runner that brings production from ec4f2103b154 to
+# f18b2c7d903a (four nullable Manglik provenance columns on public.app_users,
+# no defaults, no data rewrite). It must complete BEFORE backend ecc2b93 is
+# deployed: that code's AppUser model selects these columns.
+#
+# Fails closed at every gate. It never prints DATABASE_URL, never runs
+# db.create_all(), never runs anything except the reviewed, committed Alembic
+# revision f18b2c7d903a, and never reads, exports or writes user rows (the
+# only row-level statement is a COUNT proving the new columns are empty).
+#
+# Only `flask db current` and `flask db upgrade f18b2c7d903a` go through the
+# app (Flask-Migrate needs an app context). Importing `app` requires non-empty
+# OpenAI/Razorpay keys and a parseable Firebase service-account JSON at import
+# time; this workflow supplies obvious placeholders and a throwaway RSA key
+# generated inside the runner for this run only -- never a real credential,
+# never committed, and never used by any code path this workflow calls.
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_confirmation:
+        description: 'Type exactly BACKUP-AND-PITR-VERIFIED after confirming a fresh production backup and point-in-time recovery are available'
+        required: true
+        type: string
+      backup_reference:
+        description: 'Backup / PITR reference recorded by the operator (e.g. Render backup id or restore timestamp; not a secret)'
+        required: true
+        type: string
+      target_revision:
+        description: 'Type exactly f18b2c7d903a'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-manglik-provenance-migration
+  cancel-in-progress: false
+
+env:
+  EXPECTED_DATABASE: jyotishasha
+  EXPECTED_STARTING_REVISION: ec4f2103b154
+  EXPECTED_TARGET_REVISION: f18b2c7d903a
+  PROVENANCE_COLUMNS: manglik_calculation_version,manglik_calculated_at,manglik_input_digest,manglik_correction_run_id
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Gate -- operator approval inputs (backup/PITR confirmed, exact target)
+        env:
+          IN_CONFIRMATION: ${{ inputs.backup_confirmation }}
+          IN_REFERENCE: ${{ inputs.backup_reference }}
+          IN_TARGET: ${{ inputs.target_revision }}
+        run: |
+          set -euo pipefail
+          if [ "$IN_CONFIRMATION" != "BACKUP-AND-PITR-VERIFIED" ]; then
+            echo "REFUSING: backup/PITR readiness was not explicitly confirmed by the operator."; exit 1
+          fi
+          if [ "$IN_TARGET" != "$EXPECTED_TARGET_REVISION" ]; then
+            echo "REFUSING: target_revision must be exactly $EXPECTED_TARGET_REVISION."; exit 1
+          fi
+          if ! printf '%s' "$IN_REFERENCE" | grep -qE '^[A-Za-z0-9 ._:/+-]{6,200}$'; then
+            echo "REFUSING: backup_reference must be 6-200 plain characters (letters, digits, space . _ : / + -)."; exit 1
+          fi
+          {
+            echo "### Manglik provenance migration"
+            echo "- Operator confirmed backup/PITR readiness: yes"
+            echo "- Backup reference: \`$IN_REFERENCE\`"
+            echo "- Planned: $EXPECTED_STARTING_REVISION -> $EXPECTED_TARGET_REVISION"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Approval gate passed."
+
+      - name: Checkout this exact ref
+        uses: actions/checkout@v4
+
+      - name: Setup Python (matches production runtime.txt)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.9"
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pip install -r requirements.txt
+
+      - name: Gate -- repository has exactly one Alembic head, and it is the target (no app import, no DB)
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import sys
+          from alembic.script import ScriptDirectory
+
+          target = os.environ["EXPECTED_TARGET_REVISION"]
+          start = os.environ["EXPECTED_STARTING_REVISION"]
+          script = ScriptDirectory("migrations")
+          heads = list(script.get_heads())
+          if heads != [target]:
+              print(f"REFUSING: repository heads are {heads!r}, expected exactly [{target!r}].")
+              sys.exit(1)
+          rev = script.get_revision(target)
+          if rev is None or rev.down_revision != start:
+              print(f"REFUSING: {target} must have exactly {start} as its parent.")
+              sys.exit(1)
+          print(f"PASS: single repository head {target}, parent {start}.")
+          PY
+
+      - name: Gate -- production preflight (read-only; database, recovery mode, revision, schema, privileges, timeouts)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGOPTIONS: "-c lock_timeout=5s -c statement_timeout=120s"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import sys
+
+          def fail(msg):
+              print(f"REFUSING: {msg}")
+              sys.exit(1)
+
+          url = os.environ.get("DATABASE_URL") or ""
+          if not url:
+              fail("DATABASE_URL secret is not available to this workflow.")
+          expected_db = os.environ["EXPECTED_DATABASE"]
+          start = os.environ["EXPECTED_STARTING_REVISION"]
+          columns = os.environ["PROVENANCE_COLUMNS"].split(",")
+
+          try:
+              import psycopg2
+              conn = psycopg2.connect(url, connect_timeout=15, application_name="manglik-migration-preflight")
+          except Exception as exc:  # never echo the message: it can contain the host
+              fail(f"could not connect ({type(exc).__name__}).")
+          try:
+              conn.set_session(readonly=True)
+              with conn.cursor() as cur:
+                  cur.execute("SELECT current_database()")
+                  name = cur.fetchone()[0]
+                  if name != expected_db:
+                      fail(f"database is {name!r}, expected {expected_db!r}.")
+                  print(f"PASS: database is {expected_db!r}.")
+
+                  cur.execute("SELECT pg_is_in_recovery(), current_setting('server_version_num')::int")
+                  in_recovery, version_num = cur.fetchone()
+                  if in_recovery:
+                      fail("connected to a read-only standby (pg_is_in_recovery is true).")
+                  if version_num < 110000:
+                      fail(f"PostgreSQL {version_num} is older than 11; ADD COLUMN would not be metadata-only.")
+                  print(f"PASS: primary server, PostgreSQL server_version_num={version_num}.")
+
+                  cur.execute("SHOW lock_timeout")
+                  lock_timeout = cur.fetchone()[0]
+                  cur.execute("SHOW statement_timeout")
+                  statement_timeout = cur.fetchone()[0]
+                  if lock_timeout != "5s" or statement_timeout != "2min":
+                      fail(f"session timeouts not applied (lock_timeout={lock_timeout!r}, statement_timeout={statement_timeout!r}).")
+                  print("PASS: lock_timeout=5s and statement_timeout=120s apply to connections from this URL.")
+
+                  cur.execute("SELECT to_regclass('public.alembic_version') IS NOT NULL")
+                  if not cur.fetchone()[0]:
+                      fail("public.alembic_version does not exist.")
+                  cur.execute("SELECT version_num FROM public.alembic_version")
+                  revisions = sorted(r[0] for r in cur.fetchall())
+                  if revisions != [start]:
+                      fail(f"production Alembic revision is {revisions!r}, expected [{start!r}].")
+                  print(f"PASS: production Alembic revision is {start}.")
+
+                  cur.execute("""
+                      SELECT c.relkind, c.relrowsecurity
+                      FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                      WHERE n.nspname = 'public' AND c.relname = 'app_users'
+                  """)
+                  row = cur.fetchone()
+                  if row is None:
+                      fail("public.app_users does not exist.")
+                  if row[0] != "r":
+                      fail(f"public.app_users is not an ordinary table (relkind={row[0]!r}).")
+                  print("PASS: public.app_users is an ordinary table.")
+
+                  cur.execute("""
+                      SELECT column_name FROM information_schema.columns
+                      WHERE table_schema = 'public' AND table_name = 'app_users'
+                        AND column_name = ANY(%s)
+                  """, (columns,))
+                  present = sorted(r[0] for r in cur.fetchall())
+                  if present:
+                      fail(f"provenance column(s) already exist: {present!r}. Not proceeding.")
+                  print("PASS: all four Manglik provenance columns are absent.")
+
+                  cur.execute("""
+                      SELECT
+                        (SELECT rolsuper FROM pg_roles WHERE rolname = current_user)
+                        OR pg_has_role(current_user, c.relowner, 'MEMBER')
+                      FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                      WHERE n.nspname = 'public' AND c.relname = 'app_users'
+                  """)
+                  if not cur.fetchone()[0]:
+                      fail("the connected role cannot ALTER public.app_users (not its owner).")
+                  cur.execute("SELECT has_table_privilege(current_user, 'public.alembic_version', 'UPDATE')")
+                  if not cur.fetchone()[0]:
+                      fail("the connected role cannot UPDATE public.alembic_version.")
+                  print("PASS: connected role can ALTER app_users and UPDATE alembic_version.")
+          except SystemExit:
+              raise
+          except Exception as exc:
+              fail(f"preflight query failed ({type(exc).__name__}).")
+          finally:
+              conn.close()
+          print("Production preflight passed.")
+          PY
+
+      - name: Apply ONLY f18b2c7d903a (Flask-Migrate; committed Alembic file; 5s lock / 120s statement timeouts)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACTIVITY_EVENTS_ENVIRONMENT: production
+          PGOPTIONS: "-c lock_timeout=5s -c statement_timeout=120s"
+          # Placeholders only -- see the note at the top of this file.
+          OPENAI_API_KEY: "sk-migration-only-unused"
+          RAZORPAY_KEY_ID: "migration-only-unused"
+          RAZORPAY_KEY_SECRET: "migration-only-unused"
+        run: |
+          set -euo pipefail
+          # Throwaway, run-local Firebase service-account JSON (a fresh RSA key that
+          # authenticates nowhere) so `import app` succeeds. Kept in this step only.
+          FCM_SERVICE_ACCOUNT_JSON="$(python - <<'PY'
+          import json
+          from cryptography.hazmat.primitives import serialization
+          from cryptography.hazmat.primitives.asymmetric import rsa
+          key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+          pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                  serialization.NoEncryption()).decode()
+          print(json.dumps({
+              "type": "service_account", "project_id": "migration-only-unused",
+              "private_key_id": "migration-only-unused", "private_key": pem,
+              "client_email": "migration-only-unused@migration-only-unused.iam.gserviceaccount.com",
+              "client_id": "000000000000000000000",
+              "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+              "token_uri": "https://oauth2.googleapis.com/token",
+          }))
+          PY
+          )"
+          export FCM_SERVICE_ACCOUNT_JSON
+
+          # Re-check the starting revision through the same app engine the upgrade uses.
+          python -m flask --app app db current > current_before.txt 2>flask_stderr.txt || {
+            echo "REFUSING: 'flask db current' failed (output withheld; it may contain connection details)."; exit 1; }
+          BEFORE="$(grep -oE '\b[0-9a-f]{12}\b' current_before.txt | sort -u || true)"
+          if [ "$BEFORE" != "$EXPECTED_STARTING_REVISION" ]; then
+            echo "REFUSING: app engine reports '${BEFORE:-<none>}', expected $EXPECTED_STARTING_REVISION."; exit 1
+          fi
+          echo "PASS: app engine reports $EXPECTED_STARTING_REVISION."
+
+          # Explicit target revision -- never "head".
+          python -m flask --app app db upgrade "$EXPECTED_TARGET_REVISION" > upgrade.txt 2>&1 || {
+            echo "UPGRADE FAILED (output withheld; it may contain connection details). Nothing beyond the failed transaction was applied."; exit 1; }
+          grep -E "Running upgrade [0-9a-f]{12} -> [0-9a-f]{12}" upgrade.txt || true
+          echo "Upgrade command completed."
+
+      - name: Verify final revision, four nullable columns, and that no user row was populated
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGOPTIONS: "-c lock_timeout=5s -c statement_timeout=120s"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import sys
+
+          def fail(msg):
+              print(f"VERIFICATION FAILED: {msg}")
+              sys.exit(1)
+
+          target = os.environ["EXPECTED_TARGET_REVISION"]
+          expected = {
+              "manglik_calculation_version": ("smallint", None),
+              "manglik_calculated_at": ("timestamp with time zone", None),
+              "manglik_input_digest": ("character varying", 64),
+              "manglik_correction_run_id": ("uuid", None),
+          }
+          try:
+              import psycopg2
+              conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=15,
+                                      application_name="manglik-migration-verify")
+          except Exception as exc:
+              fail(f"could not connect ({type(exc).__name__}).")
+          try:
+              conn.set_session(readonly=True)
+              with conn.cursor() as cur:
+                  cur.execute("SELECT version_num FROM public.alembic_version")
+                  revisions = sorted(r[0] for r in cur.fetchall())
+                  if revisions != [target]:
+                      fail(f"Alembic revision is {revisions!r}, expected [{target!r}].")
+                  print(f"PASS: production Alembic revision is {target}.")
+
+                  cur.execute("""
+                      SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
+                      FROM information_schema.columns
+                      WHERE table_schema = 'public' AND table_name = 'app_users'
+                        AND column_name = ANY(%s)
+                  """, (list(expected),))
+                  found = {r[0]: r[1:] for r in cur.fetchall()}
+                  if set(found) != set(expected):
+                      fail(f"expected columns {sorted(expected)!r}, found {sorted(found)!r}.")
+                  for name, (dtype, length) in expected.items():
+                      got_type, got_len, nullable, default = found[name]
+                      if got_type != dtype or got_len != length or nullable != "YES" or default is not None:
+                          fail(f"{name} is {got_type}/{got_len}/nullable={nullable}/default={default!r}.")
+                  print("PASS: all four columns exist with the expected types, nullable, no default.")
+
+                  cur.execute("""
+                      SELECT count(*) FROM public.app_users
+                      WHERE manglik_calculation_version IS NOT NULL OR manglik_calculated_at IS NOT NULL
+                         OR manglik_input_digest IS NOT NULL OR manglik_correction_run_id IS NOT NULL
+                  """)
+                  populated = cur.fetchone()[0]
+                  if populated != 0:
+                      fail(f"{populated} user row(s) already have Manglik provenance values.")
+                  print("PASS: no existing user row has Manglik provenance populated.")
+          except SystemExit:
+              raise
+          except Exception as exc:
+              fail(f"verification query failed ({type(exc).__name__}).")
+          finally:
+              conn.close()
+          PY
+          {
+            echo "- Result: production is at $EXPECTED_TARGET_REVISION; four nullable provenance columns present; 0 rows populated."
+            echo "- Next (separate approval): deploy backend ecc2b93 on Render."
+          } >> "$GITHUB_STEP_SUMMARY"
