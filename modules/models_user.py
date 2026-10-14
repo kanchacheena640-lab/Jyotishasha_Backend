@@ -53,6 +53,13 @@ class AppUser(db.Model):
     static_astrology_calculated_at = db.Column(db.DateTime(timezone=True), nullable=True)
     static_astrology_version = db.Column(db.SmallInteger, nullable=True)
 
+    # Independent Manglik-only correction provenance; global snapshot version is unchanged.
+    # No defaults: historical rows remain unknown until a guarded correction verifies them.
+    manglik_calculation_version = db.Column(db.SmallInteger, nullable=True)
+    manglik_calculated_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    manglik_input_digest = db.Column(db.String(64), nullable=True)
+    manglik_correction_run_id = db.Column(db.UUID(as_uuid=True), nullable=True)
+
     # App prefs/state
     tz = db.Column(db.String(10), nullable=False, default="+05:30")
     # L2/L3: explicit authenticated app preference; content/bootstrap/profile

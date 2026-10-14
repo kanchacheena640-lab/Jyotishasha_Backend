@@ -1,0 +1,3 @@
+# Dedicated operator environment; no production application dependency changes.
+-r ../requirements.txt
+cryptography==50.0.0

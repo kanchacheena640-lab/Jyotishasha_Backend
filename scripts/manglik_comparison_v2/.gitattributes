@@ -1,0 +1,2 @@
+# These pinned files are verified by byte-level SHA-256 before execution.
+*.py -text

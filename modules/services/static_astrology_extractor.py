@@ -253,3 +253,8 @@ def apply_snapshot_to_app_user(app_user, snapshot: Dict[str, Any]) -> None:
     sequence that could accidentally skip a field."""
     for field, value in snapshot.items():
         setattr(app_user, field, value)
+    # A normal full recalculation/invalidation supersedes any earlier targeted
+    # correction. Never leave its provenance attached to subsequently changed facts.
+    for field in ("manglik_calculation_version", "manglik_calculated_at",
+                  "manglik_input_digest", "manglik_correction_run_id"):
+        setattr(app_user, field, None)

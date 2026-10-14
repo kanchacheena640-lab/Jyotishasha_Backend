@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 # Bumped whenever a scoring rule changes. 2026-10 Phase 1: definite-bug fixes from the Ashtakoot
 # correctness audit (Bhakoot 1/7, Tara remainders, Yoni map / sworn-enemy pairs / symmetric lookup,
 # Gana map for the two Bhadrapadas, Saturn's enemies). Disputed conventions are unchanged.
-ENGINE_VERSION = "ashtakoot-2026.10-p1"
+ENGINE_VERSION = "ashtakoot-2026.10-p1.1"
 
 # Moon Rashi → Lord (LOCKED)
 RASHI_LORD = {
@@ -469,6 +469,13 @@ def nadi_koota(bride_moon: Dict, groom_moon: Dict) -> Dict:
 
     b_rashi = bride_moon.get("rashi")
     g_rashi = groom_moon.get("rashi")
+
+    # Unknown signs previously compared as None == None in RASHI_LORD and
+    # fabricated a same-lord cancellation. Valid-chart scoring is unchanged.
+    if any(r is not None and (not isinstance(r, str) or r not in RASHI_LORD)
+           for r in (b_rashi, g_rashi)):
+        return {"bride_nadi": b_nadi, "groom_nadi": g_nadi,
+                "score": 0, "max": 8, "status": "invalid", "note": "Rashi not mapped"}
 
     cancelled = False
     if b_rashi and g_rashi:
