@@ -102,7 +102,7 @@ class RecordingConnection(Connection):
 
 class PublicDefaultBuiltinTests(unittest.TestCase):
     """Guard correction: PostgreSQL's PUBLIC-default EXECUTE on side-effecting built-ins (and default TEMP)
-    no longer rejects a read-only role; explicit grants, writer mode and sequence access still fail closed."""
+    no longer rejects the reader or writer role; explicit grants and sequence access still fail closed."""
     setUp = SecurityTests.setUp
     tearDown = SecurityTests.tearDown
 
@@ -137,12 +137,18 @@ class PublicDefaultBuiltinTests(unittest.TestCase):
                                                          "pg_create_logical_replication_slot",
                                                          "pg_drop_replication_slot", "pg_logical_emit_message"})
 
-    def test_writer_mode_gets_no_exception(self):
+    def test_writer_mode_gets_the_same_public_only_exception(self):
         conn = RecordingConnection(self.params, {"writer": True})
-        with self.assertRaises(SecurityFailure):  # the mock grants no writer UPDATE scope; only the call matters
+        with self.assertRaisesRegex(SecurityFailure, "column_write_scope_mismatch"):  # mock grants no writer scope
             verify_connection(conn, self.approved, readonly=False)
-        self.assertEqual(self.routine_call(conn)[1][0], False)
-        self.assertEqual(next(p for s, p in conn.log if "has_database_privilege" in s), (False,))
+        self.assertEqual(self.routine_call(conn)[1][0], True)
+        self.assertEqual(next(p for s, p in conn.log if "has_database_privilege" in s), (True,))
+        # Non-PUBLIC routines and TEMP still fail closed for the writer.
+        for failure, code in (("functions", "executable_unreviewed_or_side_effecting_routines"),
+                              ("temp", "database_create_or_temp_privilege"), ("sequences", "sequence_privilege")):
+            with self.assertRaisesRegex(SecurityFailure, code):
+                verify_connection(RecordingConnection(self.params, {"writer": True, failure: True}), self.approved,
+                                  readonly=False)
 
     def test_sequence_privilege_and_non_public_temp_still_fail_closed(self):
         with self.assertRaisesRegex(SecurityFailure, "sequence_privilege"):

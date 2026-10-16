@@ -55,12 +55,14 @@ class LocalGuardPrivilegeTests(unittest.TestCase):
         cur.execute("RESET ROLE")
         return names
 
-    def refused_as_role(self, cur, sql):
-        """Runs sql as the probe role in a READ ONLY scope; returns the SQLSTATE, or None if it ran."""
+    def refused_as_role(self, cur, sql, readonly=True):
+        """Runs sql as the probe role (READ ONLY scope unless readonly=False, as the writer runs); returns the
+        SQLSTATE, or None if it ran. Always rolled back to a savepoint."""
         cur.execute("SAVEPOINT probe_call")
         try:
             cur.execute("SET LOCAL ROLE manglik_guard_probe")
-            cur.execute("SET LOCAL transaction_read_only = on")
+            if readonly:
+                cur.execute("SET LOCAL transaction_read_only = on")
             cur.execute(sql)
             return None
         except psycopg2.Error as exc:
@@ -89,6 +91,18 @@ class LocalGuardPrivilegeTests(unittest.TestCase):
             self.assertEqual(self.as_role(cur, ROUTINE_CHECK_SQL, readonly), 0)
             self.assertEqual(self.as_role(cur, DATABASE_CHECK_SQL, (True,)), 0)
             self.assertEqual(self.as_role(cur, SEQUENCE_CHECK_SQL), 0)
+            # Writer mode (read-write transaction): the approved residual is real -- session temp tables and
+            # large objects -- but PUBLIC defaults still cannot touch an application table or sequence.
+            cur.execute("CREATE TABLE public.manglik_guard_probe_tbl (id int)")
+            cur.execute("CREATE SEQUENCE public.manglik_guard_probe_rw_seq")
+            self.assertIsNone(self.refused_as_role(cur, "CREATE TEMP TABLE manglik_guard_probe_tmp (x int)", False))
+            self.assertIsNone(self.refused_as_role(cur, "SELECT pg_catalog.lo_create(0)", False))
+            for call in ("INSERT INTO public.manglik_guard_probe_tbl VALUES (1)",
+                         "UPDATE public.manglik_guard_probe_tbl SET id = 2",
+                         "DELETE FROM public.manglik_guard_probe_tbl",
+                         "SELECT pg_catalog.nextval('public.manglik_guard_probe_rw_seq')",
+                         "SELECT pg_catalog.setval('public.manglik_guard_probe_rw_seq', 5)"):
+                self.assertEqual(self.refused_as_role(cur, call, False), "42501", call)
             # Excused replication-slot built-ins really are refused for a role without REPLICATION
             # (temporary slots, so nothing could outlive the session even if PostgreSQL allowed it).
             for call in ("SELECT pg_catalog.pg_create_physical_replication_slot('manglik_guard_probe_p', false, true)",
