@@ -15,6 +15,129 @@ from test_manglik_writer import row
 ROOT = Path(__file__).resolve().parent
 
 
+class LocalGuardPrivilegeTests(unittest.TestCase):
+    """Runs the guard's exact privilege SQL against a real local PostgreSQL as a throwaway role that holds
+    nothing but PostgreSQL's PUBLIC defaults. One transaction, always rolled back: the role and every grant
+    disappear. Needs a local superuser DSN in MANGLIK_LOCAL_TEST_DSN (localhost/jyotishasha_local)."""
+
+    def setUp(self):
+        url = os.environ.get("MANGLIK_LOCAL_TEST_DSN")
+        if not url:
+            self.skipTest("Set MANGLIK_LOCAL_TEST_DSN for localhost/jyotishasha_local guard privilege tests")
+        parsed = urlparse(url)
+        assert parsed.hostname == "localhost" and parsed.path == "/jyotishasha_local"
+        try:
+            self.conn = psycopg2.connect(url, connect_timeout=3)
+        except Exception:
+            raise RuntimeError("Local test connection failed; connection details suppressed") from None
+        self.addCleanup(self.conn.close)
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT current_database(), inet_server_addr()::text")
+            database, address = cur.fetchone()
+            assert database == "jyotishasha_local" and ipaddress.ip_interface(address).ip.is_loopback
+        self.conn.rollback()
+        self.addCleanup(self.conn.rollback)  # never commit: role and grants vanish with the transaction
+
+    def as_role(self, cur, sql, params=()):
+        cur.execute("SET LOCAL ROLE manglik_guard_probe")
+        cur.execute(sql, params)
+        value = cur.fetchone()[0]
+        cur.execute("RESET ROLE")
+        return value
+
+    def remaining(self, cur, params):
+        """Names of the routines the guard's routine check still counts for the probe role."""
+        from scripts.manglik_security import ROUTINE_CHECK_SQL
+        listing = ROUTINE_CHECK_SQL.replace("SELECT count(*) FROM", "SELECT p.proname FROM", 1)
+        cur.execute("SET LOCAL ROLE manglik_guard_probe")
+        cur.execute(listing, params)
+        names = sorted(name for (name,) in cur.fetchall())
+        cur.execute("RESET ROLE")
+        return names
+
+    def refused_as_role(self, cur, sql):
+        """Runs sql as the probe role in a READ ONLY scope; returns the SQLSTATE, or None if it ran."""
+        cur.execute("SAVEPOINT probe_call")
+        try:
+            cur.execute("SET LOCAL ROLE manglik_guard_probe")
+            cur.execute("SET LOCAL transaction_read_only = on")
+            cur.execute(sql)
+            return None
+        except psycopg2.Error as exc:
+            return exc.pgcode
+        finally:
+            cur.execute("ROLLBACK TO SAVEPOINT probe_call")
+
+    def test_public_defaults_accepted_only_for_readonly_and_explicit_grants_rejected(self):
+        from scripts.manglik_security import (ROUTINE_CHECK_SQL, DATABASE_CHECK_SQL, SEQUENCE_CHECK_SQL,
+                                              PUBLIC_DEFAULT_BUILTINS, REPLICATION_SLOT_BUILTINS,
+                                              PRIVILEGE_GATED_BUILTINS)
+        builtins, gated, slots = list(PUBLIC_DEFAULT_BUILTINS), list(PRIVILEGE_GATED_BUILTINS), list(REPLICATION_SLOT_BUILTINS)
+        readonly, strict = (True, builtins, gated), (False, builtins, gated)
+        wal = ["pg_logical_emit_message", "pg_logical_emit_message"]  # text and bytea variants
+        variants = ("pg_catalog.pg_logical_emit_message(boolean, text, text, boolean)",
+                    "pg_catalog.pg_logical_emit_message(boolean, text, bytea, boolean)")
+        with self.conn.cursor() as cur:
+            cur.execute("CREATE ROLE manglik_guard_probe NOLOGIN NOINHERIT")
+            # The defect: with only PUBLIC defaults, the old (strict) routine and TEMP checks reject the role.
+            strict_names = self.remaining(cur, strict)
+            self.assertEqual(strict_names.count("pg_logical_emit_message"), 2)  # writer mode never excuses it
+            self.assertTrue(set(slots) <= set(strict_names))
+            self.assertEqual(self.as_role(cur, DATABASE_CHECK_SQL, (False,)), 1)
+            # The fix: the same role passes in read-only mode, both WAL-message variants included.
+            self.assertEqual(self.remaining(cur, readonly), [])
+            self.assertEqual(self.as_role(cur, ROUTINE_CHECK_SQL, readonly), 0)
+            self.assertEqual(self.as_role(cur, DATABASE_CHECK_SQL, (True,)), 0)
+            self.assertEqual(self.as_role(cur, SEQUENCE_CHECK_SQL), 0)
+            # Excused replication-slot built-ins really are refused for a role without REPLICATION
+            # (temporary slots, so nothing could outlive the session even if PostgreSQL allowed it).
+            for call in ("SELECT pg_catalog.pg_create_physical_replication_slot('manglik_guard_probe_p', false, true)",
+                         "SELECT pg_catalog.pg_create_logical_replication_slot('manglik_guard_probe_l', 'pgoutput', true)",
+                         "SELECT pg_catalog.pg_drop_replication_slot('manglik_guard_probe_absent')"):
+                self.assertEqual(self.refused_as_role(cur, call), "42501", call)
+            # ...and stop being excused once REPLICATION is reachable, directly or through membership.
+            # Every gated built-in (slots and WAL message) is counted again once REPLICATION is reachable,
+            # directly or through membership.
+            cur.execute("ALTER ROLE manglik_guard_probe REPLICATION")
+            self.assertEqual(self.remaining(cur, readonly), sorted(wal + slots))
+            cur.execute("ALTER ROLE manglik_guard_probe NOREPLICATION")
+            cur.execute("CREATE ROLE manglik_guard_probe_repl NOLOGIN REPLICATION")
+            cur.execute("GRANT manglik_guard_probe_repl TO manglik_guard_probe")
+            self.assertEqual(self.remaining(cur, readonly), sorted(wal + slots))
+            cur.execute("REVOKE manglik_guard_probe_repl FROM manglik_guard_probe")
+            self.assertEqual(self.remaining(cur, readonly), [])
+            # A role-level REVOKE cannot block pg_logical_emit_message while PUBLIC holds EXECUTE (why the
+            # exception exists at all).
+            for variant in variants:
+                cur.execute(f"REVOKE EXECUTE ON FUNCTION {variant} FROM manglik_guard_probe")
+                self.assertEqual(self.as_role(cur, "SELECT has_function_privilege(current_user, %s, 'EXECUTE')::integer",
+                                              (variant,)), 1)
+            # Explicit grants are never excused: each WAL-message variant, directly or via a plain group role.
+            for variant in variants:
+                cur.execute(f"GRANT EXECUTE ON FUNCTION {variant} TO manglik_guard_probe")
+                self.assertEqual(self.remaining(cur, readonly), ["pg_logical_emit_message"], variant)
+                cur.execute(f"REVOKE EXECUTE ON FUNCTION {variant} FROM manglik_guard_probe")
+                self.assertEqual(self.remaining(cur, readonly), [])
+            cur.execute("CREATE ROLE manglik_guard_probe_group NOLOGIN")
+            cur.execute("GRANT manglik_guard_probe_group TO manglik_guard_probe")
+            cur.execute(f"GRANT EXECUTE ON FUNCTION {variants[1]} TO manglik_guard_probe_group")
+            self.assertEqual(self.remaining(cur, readonly), ["pg_logical_emit_message"])
+            cur.execute(f"REVOKE EXECUTE ON FUNCTION {variants[1]} FROM manglik_guard_probe_group")
+            self.assertEqual(self.remaining(cur, readonly), [])
+            cur.execute("GRANT EXECUTE ON FUNCTION pg_catalog.nextval(regclass) TO manglik_guard_probe")
+            self.assertEqual(self.remaining(cur, readonly), ["nextval"])
+            cur.execute("REVOKE EXECUTE ON FUNCTION pg_catalog.nextval(regclass) FROM manglik_guard_probe")
+            self.assertEqual(self.remaining(cur, readonly), [])
+            cur.execute("SELECT format('GRANT TEMP ON DATABASE %I TO manglik_guard_probe', current_database())")
+            cur.execute(cur.fetchone()[0])
+            self.assertEqual(self.as_role(cur, DATABASE_CHECK_SQL, (True,)), 1)
+            cur.execute("CREATE TEMP SEQUENCE manglik_guard_probe_seq")
+            cur.execute("GRANT USAGE ON SEQUENCE manglik_guard_probe_seq TO manglik_guard_probe")
+            self.assertGreater(self.as_role(cur, SEQUENCE_CHECK_SQL), 0)
+            # Server-side file access is never on the list, even if PUBLIC held it.
+            self.assertNotIn("lo_import", builtins)
+
+
 class LocalPostgresTests(unittest.TestCase):
     def setUp(self):
         url = os.environ.get("MANGLIK_LOCAL_TEST_DSN")

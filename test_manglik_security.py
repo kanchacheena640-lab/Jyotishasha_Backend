@@ -83,4 +83,74 @@ class SecurityTests(unittest.TestCase):
             with self.assertRaises(SecurityFailure):validate_export_row(dict(row,**changes))
 
 
+class RecordingCursor(Cursor):
+    """Records every guard query with its parameters; optional per-check results."""
+    def __init__(self, failures, log): super().__init__(failures); self.log = log; self.params = ()
+    def execute(self, sql, params=()): self.sql = sql; self.params = params; self.log.append((sql, params))
+    def fetchone(self):
+        if "has_sequence_privilege" in self.sql: return (int(self.failures.get("sequences", False)),)
+        if "has_database_privilege" in self.sql: return (int(self.failures.get("temp", False)),)
+        if self.failures.get("writer") and "current_setting('transaction_read_only')" in self.sql:
+            return ("approved_db", "approved_reader", "off", "read committed", True, False)
+        return super().fetchone()
+
+
+class RecordingConnection(Connection):
+    def __init__(self, params, failures=None): super().__init__(params, failures); self.log = []
+    def cursor(self): return RecordingCursor(self.failures, self.log)
+
+
+class PublicDefaultBuiltinTests(unittest.TestCase):
+    """Guard correction: PostgreSQL's PUBLIC-default EXECUTE on side-effecting built-ins (and default TEMP)
+    no longer rejects a read-only role; explicit grants, writer mode and sequence access still fail closed."""
+    setUp = SecurityTests.setUp
+    tearDown = SecurityTests.tearDown
+
+    def routine_call(self, conn):
+        return next((sql, p) for sql, p in conn.log if "has_function_privilege" in sql)
+
+    def test_readonly_passes_the_public_default_exception(self):
+        from scripts.manglik_security import PUBLIC_DEFAULT_BUILTINS, PRIVILEGE_GATED_BUILTINS
+        conn = RecordingConnection(self.params)
+        self.assertTrue(verify_connection(conn, self.approved, readonly=True))
+        sql, params = self.routine_call(conn)
+        self.assertEqual(params, (True, list(PUBLIC_DEFAULT_BUILTINS), list(PRIVILEGE_GATED_BUILTINS)))
+        self.assertIn("r.rolreplication OR r.rolsuper", sql)    # gated built-ins excused only without REPLICATION
+        self.assertIn("a.grantee <> 0", sql)                    # only PUBLIC (grantee 0) is excused
+        self.assertIn("NOT p.prosecdef", sql)                   # security-definer routines never excused
+        self.assertIn("n.nspname = 'pg_catalog'", sql)          # only catalog built-ins
+        db_sql, db_params = next((s, p) for s, p in conn.log if "has_database_privilege" in s)
+        self.assertEqual(db_params, (True,))
+        self.assertIn("'CREATE'", db_sql)                       # CREATE is never excused
+
+    def test_exception_list_is_narrow(self):
+        from scripts.manglik_security import PUBLIC_DEFAULT_BUILTINS, PRIVILEGE_GATED_BUILTINS
+        excused = PUBLIC_DEFAULT_BUILTINS + PRIVILEGE_GATED_BUILTINS
+        for forbidden in ("lo_import", "lo_export", "pg_read_file", "pg_write_file",
+                          "pg_reload_conf", "pg_promote", "pg_switch_wal", "pg_create_restore_point", "dblink_exec",
+                          "pg_replication_slot_advance", "pg_copy_physical_replication_slot"):
+            self.assertNotIn(forbidden, excused)
+        self.assertEqual(len(excused), len(set(excused)))
+        # The WAL-message exception is owner-approved and gated; it is never an ungated PUBLIC default.
+        self.assertNotIn("pg_logical_emit_message", PUBLIC_DEFAULT_BUILTINS)
+        self.assertEqual(set(PRIVILEGE_GATED_BUILTINS), {"pg_create_physical_replication_slot",
+                                                         "pg_create_logical_replication_slot",
+                                                         "pg_drop_replication_slot", "pg_logical_emit_message"})
+
+    def test_writer_mode_gets_no_exception(self):
+        conn = RecordingConnection(self.params, {"writer": True})
+        with self.assertRaises(SecurityFailure):  # the mock grants no writer UPDATE scope; only the call matters
+            verify_connection(conn, self.approved, readonly=False)
+        self.assertEqual(self.routine_call(conn)[1][0], False)
+        self.assertEqual(next(p for s, p in conn.log if "has_database_privilege" in s), (False,))
+
+    def test_sequence_privilege_and_non_public_temp_still_fail_closed(self):
+        with self.assertRaisesRegex(SecurityFailure, "sequence_privilege"):
+            verify_connection(RecordingConnection(self.params, {"sequences": True}), self.approved)
+        with self.assertRaisesRegex(SecurityFailure, "database_create_or_temp_privilege"):
+            verify_connection(RecordingConnection(self.params, {"temp": True}), self.approved)
+        with self.assertRaisesRegex(SecurityFailure, "executable_unreviewed_or_side_effecting_routines"):
+            verify_connection(RecordingConnection(self.params, {"functions": True}), self.approved)
+
+
 if __name__ == "__main__":unittest.main()
