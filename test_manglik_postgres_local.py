@@ -91,6 +91,38 @@ class LocalGuardPrivilegeTests(unittest.TestCase):
             self.assertEqual(self.as_role(cur, ROUTINE_CHECK_SQL, readonly), 0)
             self.assertEqual(self.as_role(cur, DATABASE_CHECK_SQL, (True,)), 0)
             self.assertEqual(self.as_role(cur, SEQUENCE_CHECK_SQL), 0)
+            # Table writes: PostgreSQL's PUBLIC UPDATE on pg_catalog.pg_settings (== SET) is the only excuse.
+            from scripts.manglik_security import TABLE_WRITE_CHECK_SQL
+            self.assertEqual(self.as_role(cur, "SELECT has_table_privilege(current_user, "
+                                               "'pg_catalog.pg_settings', 'UPDATE')::integer"), 1)
+            self.assertEqual(self.as_role(cur, TABLE_WRITE_CHECK_SQL), 0)
+            cur.execute("GRANT UPDATE ON pg_catalog.pg_settings TO manglik_guard_probe")
+            self.assertEqual(self.as_role(cur, TABLE_WRITE_CHECK_SQL), 1)          # explicit grant never excused
+            cur.execute("REVOKE UPDATE ON pg_catalog.pg_settings FROM manglik_guard_probe")
+            cur.execute("CREATE TABLE public.manglik_guard_probe_w (id int, note text)")
+            cur.execute("GRANT UPDATE (note) ON public.manglik_guard_probe_w TO manglik_guard_probe")
+            self.assertEqual(self.as_role(cur, TABLE_WRITE_CHECK_SQL), 0)          # column scope: separate check
+            for grant in ("UPDATE", "INSERT", "DELETE", "TRUNCATE", "INSERT (note)"):
+                cur.execute(f"GRANT {grant} ON public.manglik_guard_probe_w TO manglik_guard_probe")
+                self.assertEqual(self.as_role(cur, TABLE_WRITE_CHECK_SQL), 1, grant)
+                cur.execute(f"REVOKE {grant} ON public.manglik_guard_probe_w FROM manglik_guard_probe")
+            cur.execute("GRANT UPDATE (note) ON public.manglik_guard_probe_w TO manglik_guard_probe")
+            self.assertEqual(self.as_role(cur, TABLE_WRITE_CHECK_SQL), 0)
+            # UPDATE-column scope: pg_settings' PUBLIC default is excluded; any grant beyond PUBLIC is visible.
+            from scripts.manglik_security import UPDATE_COLUMNS_SQL
+
+            def update_columns():
+                cur.execute("SET LOCAL ROLE manglik_guard_probe")
+                cur.execute(UPDATE_COLUMNS_SQL)
+                found = sorted(cur.fetchall())
+                cur.execute("RESET ROLE")
+                return found
+            self.assertEqual(update_columns(), [("public", "manglik_guard_probe_w", "note")])
+            for grant in ("UPDATE", "UPDATE (setting)"):
+                cur.execute(f"GRANT {grant} ON pg_catalog.pg_settings TO manglik_guard_probe")
+                self.assertIn(("pg_catalog", "pg_settings", "setting"), update_columns(), grant)
+                cur.execute(f"REVOKE {grant} ON pg_catalog.pg_settings FROM manglik_guard_probe")
+            self.assertEqual(update_columns(), [("public", "manglik_guard_probe_w", "note")])
             # Writer mode (read-write transaction): the approved residual is real -- session temp tables and
             # large objects -- but PUBLIC defaults still cannot touch an application table or sequence.
             cur.execute("CREATE TABLE public.manglik_guard_probe_tbl (id int)")

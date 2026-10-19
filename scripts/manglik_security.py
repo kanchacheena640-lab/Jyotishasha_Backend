@@ -75,6 +75,31 @@ DATABASE_CHECK_SQL = """SELECT (has_database_privilege(current_user, current_dat
         WHERE d.datname = current_database() AND """ + _GRANTED_BEYOND_PUBLIC.format(
     acl="COALESCE(d.datacl, pg_catalog.acldefault('d', d.datdba))", privilege="TEMPORARY") + "))))::integer"
 
+# Counts relations the role may write table-wide. PostgreSQL grants UPDATE on the pg_catalog.pg_settings view to
+# PUBLIC by default; updating it is equivalent to SET for the role's own session and touches no table. That one
+# default is excused only while UPDATE comes solely from PUBLIC (seen on Render PostgreSQL 17.9).
+TABLE_WRITE_CHECK_SQL = """SELECT count(*) FROM pg_catalog.pg_class c
+    WHERE c.relkind IN ('r','p','v','m','f') AND
+    (has_table_privilege(current_user,c.oid,'INSERT')
+     OR (has_table_privilege(current_user,c.oid,'UPDATE') AND NOT (c.oid = 'pg_catalog.pg_settings'::pg_catalog.regclass
+         AND NOT """ + _GRANTED_BEYOND_PUBLIC.format(
+    acl="COALESCE(c.relacl, pg_catalog.acldefault('r', c.relowner))", privilege="UPDATE") + """))
+     OR has_table_privilege(current_user,c.oid,'DELETE') OR has_table_privilege(current_user,c.oid,'TRUNCATE')
+     OR has_any_column_privilege(current_user,c.oid,'INSERT'))"""
+
+# Every column the role may UPDATE, except pg_settings' columns while that UPDATE is solely PostgreSQL's PUBLIC
+# default (no table- or column-level grant beyond PUBLIC); see TABLE_WRITE_CHECK_SQL.
+UPDATE_COLUMNS_SQL = """SELECT n.nspname,c.relname,a.attname FROM pg_catalog.pg_attribute a
+    JOIN pg_catalog.pg_class c ON c.oid=a.attrelid
+    JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+    WHERE a.attnum>0 AND NOT a.attisdropped AND c.relkind IN ('r','p','v','f')
+      AND has_column_privilege(current_user,c.oid,a.attnum,'UPDATE')
+      AND NOT (c.oid = 'pg_catalog.pg_settings'::pg_catalog.regclass
+               AND NOT """ + _GRANTED_BEYOND_PUBLIC.format(
+    acl="COALESCE(c.relacl, pg_catalog.acldefault('r', c.relowner))", privilege="UPDATE") + """
+               AND NOT (a.attacl IS NOT NULL AND """ + _GRANTED_BEYOND_PUBLIC.format(
+    acl="a.attacl", privilege="UPDATE") + "))"
+
 # Neither the reader nor the writer needs any sequence; without USAGE/UPDATE, nextval/setval cannot run.
 SEQUENCE_CHECK_SQL = """SELECT count(*) FROM pg_catalog.pg_class c WHERE c.relkind = 'S' AND
     (has_sequence_privilege(current_user, c.oid, 'USAGE') OR has_sequence_privilege(current_user, c.oid, 'UPDATE')
@@ -152,17 +177,9 @@ def verify_connection(conn, approved, readonly=True):
         require(cursor.fetchone()[0] == 0, "schema_create_privilege")
         cursor.execute(DATABASE_CHECK_SQL, (True,))
         require(cursor.fetchone()[0] == 0, "database_create_or_temp_privilege")
-        cursor.execute("""SELECT count(*) FROM pg_catalog.pg_class c
-            WHERE c.relkind IN ('r','p','v','m','f') AND
-            (has_table_privilege(current_user,c.oid,'INSERT') OR has_table_privilege(current_user,c.oid,'UPDATE')
-             OR has_table_privilege(current_user,c.oid,'DELETE') OR has_table_privilege(current_user,c.oid,'TRUNCATE')
-             OR has_any_column_privilege(current_user,c.oid,'INSERT'))""")
+        cursor.execute(TABLE_WRITE_CHECK_SQL)
         require(cursor.fetchone()[0] == 0, "table_write_privilege")
-        cursor.execute("""SELECT n.nspname,c.relname,a.attname FROM pg_catalog.pg_attribute a
-            JOIN pg_catalog.pg_class c ON c.oid=a.attrelid
-            JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
-            WHERE a.attnum>0 AND NOT a.attisdropped AND c.relkind IN ('r','p','v','f')
-              AND has_column_privilege(current_user,c.oid,a.attnum,'UPDATE')""")
+        cursor.execute(UPDATE_COLUMNS_SQL)
         updates = set(cursor.fetchall())
         expected = {("public", "app_users", name) for name in (
             "static_dosh", "manglik_calculation_version", "manglik_calculated_at",

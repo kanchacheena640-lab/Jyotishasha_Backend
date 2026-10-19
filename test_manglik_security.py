@@ -150,6 +150,20 @@ class PublicDefaultBuiltinTests(unittest.TestCase):
                 verify_connection(RecordingConnection(self.params, {"writer": True, failure: True}), self.approved,
                                   readonly=False)
 
+    def test_table_write_check_excuses_only_public_pg_settings_update(self):
+        from scripts.manglik_security import TABLE_WRITE_CHECK_SQL, UPDATE_COLUMNS_SQL
+        for sql in (TABLE_WRITE_CHECK_SQL, UPDATE_COLUMNS_SQL):
+            self.assertEqual(sql.count("pg_settings"), 1)                     # the only excused relation
+            self.assertIn("a.grantee <> 0", sql)                              # ...and only via PUBLIC
+        self.assertEqual(TABLE_WRITE_CHECK_SQL.count("'UPDATE'"), 2)          # excuse covers UPDATE alone
+        self.assertIn("a.attacl", UPDATE_COLUMNS_SQL)                         # column-level grants still count
+        conn = RecordingConnection(self.params)
+        self.assertTrue(verify_connection(conn, self.approved))
+        self.assertIn(TABLE_WRITE_CHECK_SQL, [sql for sql, _ in conn.log])
+        self.assertIn(UPDATE_COLUMNS_SQL, [sql for sql, _ in conn.log])
+        with self.assertRaisesRegex(SecurityFailure, "table_write_privilege"):
+            verify_connection(RecordingConnection(self.params, {"writes": True}), self.approved)
+
     def test_sequence_privilege_and_non_public_temp_still_fail_closed(self):
         with self.assertRaisesRegex(SecurityFailure, "sequence_privilege"):
             verify_connection(RecordingConnection(self.params, {"sequences": True}), self.approved)
