@@ -84,6 +84,7 @@ from modules.payments.payment_models import (
     PaymentStatus,
 )
 from modules.payments.razorpay_provider import RazorpayProvider
+from modules.payments.report_payment_events import emit_report_payment_verified
 
 
 class ReportPaymentFinalizationStatus:
@@ -371,6 +372,10 @@ class PaymentFinalizationService:
                 message="Order's payment state changed concurrently; no changes were applied.",
             )
 
+        # Snapshot for the payment_verified analytics event below, taken
+        # before commit() expires the instance (no extra read afterwards).
+        verified_event_order = (order.id, order.product, order.amount_paise)
+
         try:
             db.session.commit()
         except Exception:
@@ -387,6 +392,15 @@ class PaymentFinalizationService:
             raise
 
         log_payment_event("report_payment_finalized", status="SUCCESS", order_id=order.id, **log_ctx)
+
+        # Observational only, after the PAID commit: the one place a website
+        # report payment records payment_verified (see report_payment_events).
+        # Never raises; the result returned below is already decided.
+        order_id, product_slug, amount_paise = verified_event_order
+        emit_report_payment_verified(
+            request, order_id=order_id, product_slug=product_slug, amount_paise=amount_paise,
+            correlation_id=log_ctx.get("correlation_id"),
+        )
         return ReportPaymentFinalizationResult(
             status=ReportPaymentFinalizationStatus.FINALIZED, order_id=order.id,
             message="Payment finalized; Order is now PAID.",
