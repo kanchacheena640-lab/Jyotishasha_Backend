@@ -54,6 +54,7 @@ from routes.routes_alerts_dashboard import routes_alerts_dashboard
 from routes.routes_app_version import routes_app_version
 from routes.routes_app_version import admin_or_bridge_required
 from routes.routes_admin_users import routes_admin_users
+from routes.routes_reviews import routes_reviews
 from routes.routes_admin_audiences import routes_admin_audiences
 from routes.routes_admin_notifications import routes_admin_notifications
 from routes.routes_activity_events import routes_activity_events
@@ -134,6 +135,7 @@ app.register_blueprint(routes_google_report_confirm)
 app.register_blueprint(routes_alerts_dashboard)
 app.register_blueprint(routes_app_version)
 app.register_blueprint(routes_admin_users)
+app.register_blueprint(routes_reviews)
 app.register_blueprint(routes_admin_audiences)
 app.register_blueprint(routes_admin_notifications)
 app.register_blueprint(routes_activity_events)

@@ -8,6 +8,9 @@ from datetime import datetime
 from email_utils import send_email
 from extensions import db
 from models import Order
+from modules.reviews.review_tokens import issue_review_token, review_links_enabled
+
+SITE_URL = "https://www.jyotishasha.com"
 
 
 def pdf_artifact_is_usable(pdf_path: str | None) -> bool:
@@ -21,16 +24,30 @@ def pdf_artifact_is_usable(pdf_path: str | None) -> bool:
         return False
 
 
+def review_invitation(order: Order) -> str:
+    """F10-P15: personal verified-buyer review link, or "" when review links are
+    not configured (REVIEW_LINK_SECRET unset) -- the email is then unchanged.
+    The token sits in the URL fragment so it never reaches server logs."""
+    if not review_links_enabled() or not order.id or not order.email:
+        return ""
+    is_hi = (order.language or "").lower().startswith("hi")
+    link = f"{SITE_URL}{'/hi' if is_hi else ''}/review#t={issue_review_token(order.id, order.email)}"
+    if is_hi:
+        return f"\n\nअपना अनुभव साझा करें (केवल इस रिपोर्ट के खरीदार ही समीक्षा कर सकते हैं):\n{link}"
+    return f"\n\nShare your experience (only buyers of this report can review it):\n{link}"
+
+
 def delivery_message(order: Order) -> tuple[str, str]:
+    invitation = review_invitation(order)
     if order.product == "relationship_future_report":
         return (
             "Your Love & Marriage Life Report",
-            f"Hello {order.name},\n\nYour Love & Relationship report is ready.",
+            f"Hello {order.name},\n\nYour Love & Relationship report is ready.{invitation}",
         )
     product_name = (order.product or "report").replace("_", " ").replace("-", " ").title()
     return (
         f"Your {product_name} Report",
-        f"Hello {order.name},\n\nPlease find attached your personalized astrology report.\n\nRegards,\nTeam Jyotishasha",
+        f"Hello {order.name},\n\nPlease find attached your personalized astrology report.{invitation}\n\nRegards,\nTeam Jyotishasha",
     )
 
 
