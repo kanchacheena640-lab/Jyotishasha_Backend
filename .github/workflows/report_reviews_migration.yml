@@ -1,0 +1,410 @@
+name: Production Report Reviews Migration (ONE-TIME)
+
+# Manual, one-time runner that brings production from f18b2c7d903a to
+# b3d8f1a6c2e9 (F10-P15: one NEW table public.report_reviews + 3 indexes, a
+# unique order_id, two CHECK constraints and an FK to orders.id ON DELETE
+# CASCADE). No existing table, column or row is altered. It must complete
+# BEFORE backend 557c21e is deployed: that code's review endpoints use the
+# table.
+#
+# Modelled on manglik_provenance_migration.yml and fails closed at every
+# gate. It never prints DATABASE_URL, never runs db.create_all(), never runs
+# anything except the reviewed, committed Alembic revision b3d8f1a6c2e9, and
+# never reads, exports or writes user rows (the only row-level statement is a
+# COUNT proving the new table is empty).
+#
+# Locking: creating the FK takes a brief SHARE ROW EXCLUSIVE lock on
+# public.orders. lock_timeout=5s bounds the wait; on timeout the whole
+# migration rolls back (one transaction, transactional DDL) and nothing is
+# applied -- simply re-run later.
+#
+# Only `flask db current` and `flask db upgrade b3d8f1a6c2e9` go through the
+# app (Flask-Migrate needs an app context). Importing `app` requires non-empty
+# OpenAI/Razorpay keys and a parseable Firebase service-account JSON at import
+# time; this workflow supplies obvious placeholders and a throwaway RSA key
+# generated inside the runner for this run only -- never a real credential.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pitr_confirmation:
+        description: 'Type exactly PITR-VERIFIED after confirming production point-in-time recovery is available right now'
+        required: true
+        type: string
+      pitr_reference:
+        description: 'PITR reference recorded by the operator, e.g. "Render PITR window to 2026-10-28 14:05 IST" (not a secret)'
+        required: true
+        type: string
+      target_revision:
+        description: 'Type exactly b3d8f1a6c2e9'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-report-reviews-migration
+  cancel-in-progress: false
+
+env:
+  EXPECTED_DATABASE: jyotishasha
+  EXPECTED_STARTING_REVISION: f18b2c7d903a
+  EXPECTED_TARGET_REVISION: b3d8f1a6c2e9
+  NEW_TABLE: report_reviews
+  NEW_OBJECTS: report_reviews_pkey,uq_report_reviews_order_id,ix_report_reviews_product,ix_report_reviews_status,ix_report_reviews_product_status,ck_report_reviews_rating_1_5,ck_report_reviews_status
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Gate -- operator approval inputs (PITR confirmed, exact target)
+        env:
+          IN_CONFIRMATION: ${{ inputs.pitr_confirmation }}
+          IN_REFERENCE: ${{ inputs.pitr_reference }}
+          IN_TARGET: ${{ inputs.target_revision }}
+        run: |
+          set -euo pipefail
+          if [ "$IN_CONFIRMATION" != "PITR-VERIFIED" ]; then
+            echo "REFUSING: point-in-time recovery was not explicitly confirmed by the operator."; exit 1
+          fi
+          if [ "$IN_TARGET" != "$EXPECTED_TARGET_REVISION" ]; then
+            echo "REFUSING: target_revision must be exactly $EXPECTED_TARGET_REVISION."; exit 1
+          fi
+          if ! printf '%s' "$IN_REFERENCE" | grep -qE '^[A-Za-z0-9 ._:/+-]{6,200}$'; then
+            echo "REFUSING: pitr_reference must be 6-200 plain characters (letters, digits, space . _ : / + -)."; exit 1
+          fi
+          {
+            echo "### Report reviews migration"
+            echo "- Operator confirmed PITR availability: yes"
+            echo "- PITR reference: \`$IN_REFERENCE\`"
+            echo "- Planned: $EXPECTED_STARTING_REVISION -> $EXPECTED_TARGET_REVISION"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Approval gate passed."
+
+      - name: Checkout this exact ref
+        uses: actions/checkout@v4
+
+      - name: Setup Python (matches production runtime.txt)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11.9"
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pip install -r requirements.txt
+
+      - name: Gate -- repository has exactly one Alembic head, and it is the target (no app import, no DB)
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import sys
+          from alembic.script import ScriptDirectory
+
+          target = os.environ["EXPECTED_TARGET_REVISION"]
+          start = os.environ["EXPECTED_STARTING_REVISION"]
+          script = ScriptDirectory("migrations")
+          heads = list(script.get_heads())
+          if heads != [target]:
+              print(f"REFUSING: repository heads are {heads!r}, expected exactly [{target!r}].")
+              sys.exit(1)
+          rev = script.get_revision(target)
+          if rev is None or rev.down_revision != start:
+              print(f"REFUSING: {target} must have exactly {start} as its parent.")
+              sys.exit(1)
+          print(f"PASS: single repository head {target}, parent {start}.")
+          PY
+
+      - name: Gate -- production preflight (read-only; database, primary, timeouts, revision, absent objects, orders FK target, privileges)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGOPTIONS: "-c lock_timeout=5s -c statement_timeout=60s"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import os
+          import sys
+
+          def fail(msg):
+              print(f"REFUSING: {msg}")
+              sys.exit(1)
+
+          url = os.environ.get("DATABASE_URL") or ""
+          if not url:
+              fail("DATABASE_URL secret is not available to this workflow.")
+          expected_db = os.environ["EXPECTED_DATABASE"]
+          start = os.environ["EXPECTED_STARTING_REVISION"]
+          new_objects = os.environ["NEW_OBJECTS"].split(",")
+
+          try:
+              import psycopg2
+              conn = psycopg2.connect(url, connect_timeout=15, application_name="report-reviews-migration-preflight")
+          except Exception as exc:  # never echo the message: it can contain the host
+              fail(f"could not connect ({type(exc).__name__}).")
+          try:
+              conn.set_session(readonly=True)
+              with conn.cursor() as cur:
+                  cur.execute("SELECT current_database()")
+                  name = cur.fetchone()[0]
+                  if name != expected_db:
+                      fail(f"database is {name!r}, expected {expected_db!r}.")
+                  print(f"PASS: database is {expected_db!r}.")
+
+                  cur.execute("SELECT pg_is_in_recovery()")
+                  if cur.fetchone()[0]:
+                      fail("connected to a read-only standby (pg_is_in_recovery is true).")
+                  print("PASS: primary server.")
+
+                  cur.execute("SHOW lock_timeout")
+                  lock_timeout = cur.fetchone()[0]
+                  cur.execute("SHOW statement_timeout")
+                  statement_timeout = cur.fetchone()[0]
+                  if lock_timeout != "5s" or statement_timeout != "1min":
+                      fail(f"session timeouts not applied (lock_timeout={lock_timeout!r}, statement_timeout={statement_timeout!r}).")
+                  print("PASS: lock_timeout=5s and statement_timeout=60s apply to connections from this URL.")
+
+                  cur.execute("SELECT to_regclass('public.alembic_version') IS NOT NULL")
+                  if not cur.fetchone()[0]:
+                      fail("public.alembic_version does not exist.")
+                  cur.execute("SELECT version_num FROM public.alembic_version")
+                  revisions = sorted(r[0] for r in cur.fetchall())
+                  if revisions != [start]:
+                      fail(f"production Alembic revision is {revisions!r}, expected [{start!r}].")
+                  print(f"PASS: production Alembic revision is {start}.")
+
+                  cur.execute("SELECT to_regclass('public.report_reviews')")
+                  if cur.fetchone()[0] is not None:
+                      fail("public.report_reviews already exists. Not proceeding.")
+                  cur.execute("""
+                      SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                      WHERE n.nspname = 'public' AND c.relname = ANY(%s)
+                      UNION
+                      SELECT conname FROM pg_constraint WHERE connamespace = 'public'::regnamespace AND conname = ANY(%s)
+                  """, (new_objects, new_objects))
+                  clash = sorted(r[0] for r in cur.fetchall())
+                  if clash:
+                      fail(f"object name(s) already in use: {clash!r}. Not proceeding.")
+                  print("PASS: report_reviews and all its index/constraint names are absent.")
+
+                  cur.execute("""
+                      SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                      WHERE n.nspname = 'public' AND c.relname = 'orders'
+                  """)
+                  row = cur.fetchone()
+                  if row is None or row[0] != "r":
+                      fail("public.orders is missing or not an ordinary table.")
+                  cur.execute("""
+                      SELECT a.atttypid::regtype::text FROM pg_constraint k
+                      JOIN pg_attribute a ON a.attrelid = k.conrelid AND a.attnum = ANY(k.conkey)
+                      WHERE k.conrelid = 'public.orders'::regclass AND k.contype IN ('p', 'u')
+                        AND array_length(k.conkey, 1) = 1 AND a.attname = 'id'
+                  """)
+                  key = cur.fetchone()
+                  if key is None or key[0] != "integer":
+                      fail(f"public.orders.id is not a single-column integer primary/unique key ({key!r}).")
+                  print("PASS: public.orders.id is an integer key (valid FK target).")
+
+                  cur.execute("SELECT has_schema_privilege(current_user, 'public', 'CREATE')")
+                  if not cur.fetchone()[0]:
+                      fail("the connected role cannot CREATE in schema public.")
+                  cur.execute("SELECT has_table_privilege(current_user, 'public.orders', 'REFERENCES')")
+                  if not cur.fetchone()[0]:
+                      fail("the connected role lacks REFERENCES on public.orders.")
+                  cur.execute("SELECT has_table_privilege(current_user, 'public.alembic_version', 'UPDATE')")
+                  if not cur.fetchone()[0]:
+                      fail("the connected role cannot UPDATE public.alembic_version.")
+                  print("PASS: role can CREATE in public, REFERENCE orders and UPDATE alembic_version.")
+
+                  # Fingerprint of orders' schema (columns, constraints, indexes) -- no row data.
+                  cur.execute("""
+                      SELECT string_agg(x, '|' ORDER BY x) FROM (
+                        SELECT 'c:' || column_name || ':' || data_type || ':' || is_nullable || ':' || coalesce(column_default, '')
+                          FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'orders'
+                        UNION ALL SELECT 'k:' || conname || ':' || pg_get_constraintdef(oid)
+                          FROM pg_constraint WHERE conrelid = 'public.orders'::regclass
+                        UNION ALL SELECT 'i:' || indexname || ':' || indexdef
+                          FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'orders'
+                      ) s(x)
+                  """)
+                  fingerprint = hashlib.sha256((cur.fetchone()[0] or "").encode()).hexdigest()
+                  with open(os.environ["GITHUB_ENV"], "a") as env:
+                      env.write(f"ORDERS_SCHEMA_FINGERPRINT={fingerprint}\n")
+                  print(f"PASS: recorded orders schema fingerprint {fingerprint[:12]}.")
+          except SystemExit:
+              raise
+          except Exception as exc:
+              fail(f"preflight query failed ({type(exc).__name__}).")
+          finally:
+              conn.close()
+          print("Production preflight passed.")
+          PY
+
+      - name: Apply ONLY b3d8f1a6c2e9 (Flask-Migrate; committed Alembic file; 5s lock / 60s statement timeouts)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACTIVITY_EVENTS_ENVIRONMENT: production
+          PGOPTIONS: "-c lock_timeout=5s -c statement_timeout=60s"
+          # Placeholders only -- see the note at the top of this file.
+          OPENAI_API_KEY: "sk-migration-only-unused"
+          RAZORPAY_KEY_ID: "migration-only-unused"
+          RAZORPAY_KEY_SECRET: "migration-only-unused"
+        run: |
+          set -euo pipefail
+          FCM_SERVICE_ACCOUNT_JSON="$(python - <<'PY'
+          import json
+          from cryptography.hazmat.primitives import serialization
+          from cryptography.hazmat.primitives.asymmetric import rsa
+          key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+          pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                  serialization.NoEncryption()).decode()
+          print(json.dumps({
+              "type": "service_account", "project_id": "migration-only-unused",
+              "private_key_id": "migration-only-unused", "private_key": pem,
+              "client_email": "migration-only-unused@migration-only-unused.iam.gserviceaccount.com",
+              "client_id": "000000000000000000000",
+              "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+              "token_uri": "https://oauth2.googleapis.com/token",
+          }))
+          PY
+          )"
+          export FCM_SERVICE_ACCOUNT_JSON
+
+          # Re-check the starting revision through the same app engine the upgrade uses.
+          python -m flask --app app db current > current_before.txt 2>flask_stderr.txt || {
+            echo "REFUSING: 'flask db current' failed (output withheld; it may contain connection details)."; exit 1; }
+          BEFORE="$(grep -oE '\b[0-9a-f]{12}\b' current_before.txt | sort -u || true)"
+          if [ "$BEFORE" != "$EXPECTED_STARTING_REVISION" ]; then
+            echo "REFUSING: app engine reports '${BEFORE:-<none>}', expected $EXPECTED_STARTING_REVISION."; exit 1
+          fi
+          echo "PASS: app engine reports $EXPECTED_STARTING_REVISION."
+
+          # The upgrade runs on the app's own SQLAlchemy engine (migrations/env.py ->
+          # db.engine). Prove PGOPTIONS reaches THAT engine, not only the preflight's
+          # direct connection (a URL-level `options=` would override it).
+          python - <<'PY' 2>/dev/null || { echo "REFUSING: app-engine timeout check failed (output withheld)."; exit 1; }
+          import contextlib, io, sys
+          with contextlib.redirect_stdout(io.StringIO()):
+              from app import app
+          from extensions import db
+          with app.app_context(), db.engine.connect() as conn:
+              lock_timeout = conn.exec_driver_sql("SHOW lock_timeout").scalar()
+              statement_timeout = conn.exec_driver_sql("SHOW statement_timeout").scalar()
+          if lock_timeout != "5s" or statement_timeout != "1min":
+              print(f"REFUSING: app engine timeouts are lock_timeout={lock_timeout!r}, statement_timeout={statement_timeout!r}.")
+              sys.exit(1)
+          print("PASS: the migration engine uses lock_timeout=5s and statement_timeout=60s.")
+          PY
+
+          # Explicit target revision -- never "head".
+          python -m flask --app app db upgrade "$EXPECTED_TARGET_REVISION" > upgrade.txt 2>&1 || {
+            echo "UPGRADE FAILED (output withheld; it may contain connection details). The migration runs in one transaction, so nothing was applied."; exit 1; }
+          grep -E "Running upgrade [0-9a-f]{12} -> [0-9a-f]{12}" upgrade.txt || true
+          echo "Upgrade command completed."
+
+      - name: Verify final revision, report_reviews structure, empty table, orders schema unchanged
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGOPTIONS: "-c lock_timeout=5s -c statement_timeout=60s"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import os
+          import sys
+
+          def fail(msg):
+              print(f"VERIFICATION FAILED: {msg}")
+              sys.exit(1)
+
+          target = os.environ["EXPECTED_TARGET_REVISION"]
+          expected_columns = {
+              "id": ("integer", "NO"), "order_id": ("integer", "NO"), "product": ("character varying", "NO"),
+              "rating": ("smallint", "NO"), "body": ("text", "NO"), "display_name": ("character varying", "NO"),
+              "language": ("character varying", "NO"), "status": ("character varying", "NO"),
+              "auto_flags": ("character varying", "YES"), "moderation_reason": ("character varying", "YES"),
+              "moderated_at": ("timestamp without time zone", "YES"), "edit_count": ("smallint", "NO"),
+              "created_at": ("timestamp without time zone", "NO"), "updated_at": ("timestamp without time zone", "NO"),
+              "published_at": ("timestamp without time zone", "YES"),
+          }
+          expected_indexes = {"report_reviews_pkey", "uq_report_reviews_order_id", "ix_report_reviews_product",
+                              "ix_report_reviews_status", "ix_report_reviews_product_status"}
+          try:
+              import psycopg2
+              conn = psycopg2.connect(os.environ["DATABASE_URL"], connect_timeout=15,
+                                      application_name="report-reviews-migration-verify")
+          except Exception as exc:
+              fail(f"could not connect ({type(exc).__name__}).")
+          try:
+              conn.set_session(readonly=True)
+              with conn.cursor() as cur:
+                  cur.execute("SELECT version_num FROM public.alembic_version")
+                  revisions = sorted(r[0] for r in cur.fetchall())
+                  if revisions != [target]:
+                      fail(f"Alembic revision is {revisions!r}, expected [{target!r}].")
+                  print(f"PASS: production Alembic revision is {target}.")
+
+                  cur.execute("""
+                      SELECT column_name, data_type, is_nullable FROM information_schema.columns
+                      WHERE table_schema = 'public' AND table_name = 'report_reviews'
+                  """)
+                  found = {r[0]: (r[1], r[2]) for r in cur.fetchall()}
+                  if found != expected_columns:
+                      fail(f"report_reviews columns differ: {sorted(set(found) ^ set(expected_columns))!r} / types {found!r}.")
+                  print("PASS: report_reviews has the expected 15 columns, types and nullability.")
+
+                  cur.execute("SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'report_reviews'")
+                  indexes = {r[0] for r in cur.fetchall()}
+                  if indexes != expected_indexes:
+                      fail(f"indexes are {sorted(indexes)!r}, expected {sorted(expected_indexes)!r}.")
+                  print("PASS: primary key, unique order_id and the 3 indexes exist.")
+
+                  cur.execute("""
+                      SELECT conname, contype, confdeltype, confrelid::regclass::text
+                      FROM pg_constraint WHERE conrelid = 'public.report_reviews'::regclass AND contype IN ('c', 'f', 'u', 'p')
+                  """)
+                  cons = {r[0]: r[1:] for r in cur.fetchall()}
+                  checks = {k for k, v in cons.items() if v[0] == "c"}
+                  fks = [v for v in cons.values() if v[0] == "f"]
+                  if not {"ck_report_reviews_rating_1_5", "ck_report_reviews_status"} <= checks:
+                      fail(f"CHECK constraints are {sorted(checks)!r}.")
+                  if len(fks) != 1 or fks[0][1] != "c" or fks[0][2] not in ("orders", "public.orders"):
+                      fail(f"expected one FK to orders ON DELETE CASCADE, found {fks!r}.")
+                  print("PASS: rating/status CHECKs and FK -> orders(id) ON DELETE CASCADE.")
+
+                  cur.execute("SELECT count(*) FROM public.report_reviews")
+                  if cur.fetchone()[0] != 0:
+                      fail("report_reviews is not empty.")
+                  print("PASS: report_reviews is empty.")
+
+                  cur.execute("""
+                      SELECT string_agg(x, '|' ORDER BY x) FROM (
+                        SELECT 'c:' || column_name || ':' || data_type || ':' || is_nullable || ':' || coalesce(column_default, '')
+                          FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'orders'
+                        UNION ALL SELECT 'k:' || conname || ':' || pg_get_constraintdef(oid)
+                          FROM pg_constraint WHERE conrelid = 'public.orders'::regclass
+                        UNION ALL SELECT 'i:' || indexname || ':' || indexdef
+                          FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'orders'
+                      ) s(x)
+                  """)
+                  after = hashlib.sha256((cur.fetchone()[0] or "").encode()).hexdigest()
+                  if after != os.environ.get("ORDERS_SCHEMA_FINGERPRINT"):
+                      fail("public.orders schema fingerprint changed.")
+                  print("PASS: public.orders schema (columns, constraints, indexes) unchanged.")
+          except SystemExit:
+              raise
+          except Exception as exc:
+              fail(f"verification query failed ({type(exc).__name__}).")
+          finally:
+              conn.close()
+          PY
+          {
+            echo "- Result: production is at $EXPECTED_TARGET_REVISION; report_reviews created (15 columns, 3 indexes, unique order_id, 2 CHECKs, FK -> orders ON DELETE CASCADE); 0 rows; orders schema unchanged."
+            echo "- Next (separate approval): deploy backend 557c21e on Render (manual). Keep REVIEW_LINK_SECRET unset until the frontend is live."
+          } >> "$GITHUB_STEP_SUMMARY"
