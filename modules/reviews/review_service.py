@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
+from sqlalchemy.exc import IntegrityError
+
 from extensions import db
 from models import Order
 from modules.payments.report_product_registry import ReportProduct
@@ -42,6 +44,7 @@ _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
 _PHONE = re.compile(r"(?:\+?\d[\s-]?){7,}")
 _HTML = re.compile(r"<\s*/?\s*[a-z!][^>]*>", re.I)
 _NAME_OK = re.compile(r"^[^\W\d_]+(?:[ .'\-][^\W\d_]+)*\.?$", re.UNICODE)
+ORDER_UNIQUE_CONSTRAINT = "uq_report_reviews_order_id"
 
 
 class ReviewError(Exception):
@@ -200,8 +203,21 @@ def submit_review(token: str, rating, body, display_name=None) -> dict:
     review.updated_at = now
     if status == STATUS_PUBLISHED and review.published_at is None:
         review.published_at = now
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError as exc:
+        db.session.rollback()
+        # Two first submissions for one order raced: the other one won the
+        # UNIQUE(order_id) insert. Nothing was written here; a retry edits it.
+        if is_duplicate_order_review(exc):
+            raise ReviewError("try_again", 409)
+        raise
     return own_review(review)
+
+
+def is_duplicate_order_review(exc: IntegrityError) -> bool:
+    diag = getattr(exc.orig, "diag", None)
+    return getattr(diag, "constraint_name", None) == ORDER_UNIQUE_CONSTRAINT
 
 
 # --------------------------------------------------------------------- public

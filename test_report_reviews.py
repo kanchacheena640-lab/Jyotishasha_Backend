@@ -265,6 +265,41 @@ with app.app_context():
         check("deleted review is gone from the public page and summary", all(x["id"] != gid for x in client.get("/api/reviews/product/career_report").json["reviews"]))
         check("the order itself is untouched by review deletion", db.session.get(Order, gone.id) is not None)
         check("deleting again -> 404", client.post(f"/api/admin/reviews/{gid}/moderate", json={"action": "delete"}, headers=ADMIN).status_code == 404)
+
+        print("\n=== 11. F10-P21T concurrent first submissions for one order ===")
+        from types import SimpleNamespace
+        from sqlalchemy import event, text
+        from sqlalchemy.exc import IntegrityError
+        from modules.reviews.review_service import is_duplicate_order_review
+        raced = make_order()
+        fired = {"n": 0}
+
+        def competing_first_review(session, flush_context, instances):
+            # Runs after submit_review's SELECT ... FOR UPDATE found no row and
+            # just before its INSERT: a second request commits its review first.
+            if fired["n"]:
+                return
+            fired["n"] += 1
+            with db.engine.begin() as conn:
+                conn.execute(text(
+                    "INSERT INTO report_reviews (order_id, product, rating, body, display_name, language, status,"
+                    " edit_count, created_at, updated_at, published_at)"
+                    " VALUES (:o, 'career_report', 4, :b, 'Racer A.', 'en', 'PUBLISHED', 0, now(), now(), now())"),
+                    {"o": raced.id, "b": GOOD})
+
+        event.listen(db.session, "before_flush", competing_first_review)
+        try:
+            r = post("/api/reviews/submit", {"token": token_for(raced), "rating": 2, "body": GOOD})
+        finally:
+            event.remove(db.session, "before_flush", competing_first_review)
+        check("losing a first-submission race -> 409 try_again, not 500", fired["n"] == 1 and r.status_code == 409 and r.json == {"error": "try_again"})
+        rows = ReportReview.query.filter_by(order_id=raced.id).all()
+        check("the race leaves exactly one review: the winner's, untouched", len(rows) == 1 and rows[0].rating == 4 and rows[0].edit_count == 0)
+        r = post("/api/reviews/submit", {"token": token_for(raced), "rating": 2, "body": GOOD})
+        check("retrying after try_again edits that one review (edit limit still applies)", r.status_code == 200 and r.json["review"]["edits_left"] == 2 and ReportReview.query.filter_by(order_id=raced.id).count() == 1)
+        other_violation = IntegrityError("INSERT", {}, SimpleNamespace(diag=SimpleNamespace(constraint_name="ck_report_reviews_rating_1_5")))
+        check("only the UNIQUE(order_id) conflict maps to try_again; other integrity errors are re-raised",
+              not is_duplicate_order_review(other_violation) and not is_duplicate_order_review(IntegrityError("INSERT", {}, Exception("no diag"))))
     finally:
         cleanup()
         check("cleanup removed all marker orders and their reviews", Order.query.filter(Order.email.like(f"{MARKER}-%")).count() == 0)
