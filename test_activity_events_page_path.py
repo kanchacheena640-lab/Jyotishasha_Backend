@@ -27,7 +27,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+from local_test_db import local_test_db_url  # noqa: E402
+LOCAL_DB_URL = local_test_db_url()
 
 os.environ["DATABASE_URL"] = LOCAL_DB_URL
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-dummy-not-used")

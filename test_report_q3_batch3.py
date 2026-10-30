@@ -338,7 +338,8 @@ print(f"\nPart 1 subtotal: {passed} passed, {failed} failed so far")
 # tasks.py::_generate_and_send_report_core() code path.
 # =====================================================================
 
-LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+from local_test_db import local_test_db_url  # noqa: E402
+LOCAL_DB_URL = local_test_db_url()
 os.environ["DATABASE_URL"] = LOCAL_DB_URL
 os.environ.setdefault("ACTIVITY_EVENTS_ENVIRONMENT", "local")
 

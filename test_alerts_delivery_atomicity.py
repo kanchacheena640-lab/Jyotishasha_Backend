@@ -18,7 +18,8 @@ from datetime import date, datetime, timedelta
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+from local_test_db import local_test_db_url  # noqa: E402
+LOCAL_DB_URL = local_test_db_url()
 os.environ["DATABASE_URL"] = LOCAL_DB_URL
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

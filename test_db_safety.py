@@ -48,7 +48,8 @@ def check(label, condition):
         failed += 1
 
 
-LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+from local_test_db import local_test_db_url  # noqa: E402
+LOCAL_DB_URL = local_test_db_url()
 LOCAL_DB_URL_127 = "postgresql://jyotishasha_dev:pw@127.0.0.1:5432/jyotishasha_local"
 # NOT a real credential and NOT the real production host -- a
 # structurally similar but entirely fake "looks like a hosted prod DB"

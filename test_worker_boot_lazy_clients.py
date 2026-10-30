@@ -38,6 +38,8 @@ import sys
 import unittest
 from unittest.mock import patch
 
+from local_test_db import local_test_db_url
+
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # Mirrors scripts/campaign_worker_runner.py's own production gate env,
@@ -91,8 +93,7 @@ class WorkerBootWithoutOpenAIOrRazorpayTests(unittest.TestCase):
         return subprocess.run(
             [sys.executable, '-c', code],
             cwd=REPO_ROOT,
-            env=_clean_worker_env(os.environ.get(
-                'DATABASE_URL', 'postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local')),
+            env=_clean_worker_env(local_test_db_url()),
             capture_output=True, text=True, timeout=60,
         )
 
@@ -158,8 +159,7 @@ class WorkerBootWithoutOpenAIOrRazorpayTests(unittest.TestCase):
             self.skipTest(f'stray FROZEN/SENDING execution(s) present ({stray}) -- '
                            'not this test\'s fixture to clean up, skipping to avoid a real Firebase attempt.')
 
-        env = _clean_worker_env(os.environ.get(
-            'DATABASE_URL', 'postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local'))
+        env = _clean_worker_env(local_test_db_url())
         env['DEPLOYMENT_ENVIRONMENT'] = 'production'
         env['ADMIN_CAMPAIGN_SEND_ENABLED'] = 'true'
         env['ADMIN_CAMPAIGN_WORKER_AUTHORIZED'] = 'true'

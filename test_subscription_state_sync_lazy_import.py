@@ -64,7 +64,8 @@ def check(label, condition):
         failed += 1
 
 
-LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+from local_test_db import local_test_db_url  # noqa: E402
+LOCAL_DB_URL = local_test_db_url()
 
 
 def run_in_fresh_process(code: str, strip_razorpay_env: bool) -> subprocess.CompletedProcess:

@@ -419,7 +419,8 @@ def test_no_user_or_appuser_import_coupling():
 # Connects ONLY to jyotishasha_local, refuses to run against anything
 # else -- same convention as test_app_version_policy.py.
 # =====================================================================
-LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+from local_test_db import local_test_db_url  # noqa: E402
+LOCAL_DB_URL = local_test_db_url()
 
 
 def run_db_backed_persistence_tests():

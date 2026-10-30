@@ -13,7 +13,10 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+from local_test_db import local_dev_db_url, require_target_confirmation  # noqa: E402
+
+# The developer's own local DATABASE_URL (env / .env); never embedded here.
+LOCAL_DB_URL = local_dev_db_url()
 TARGET_REVISION = "c71a83b4e209"
 
 
@@ -61,6 +64,7 @@ def prepare():
 
 
 def main():
+    require_target_confirmation(LOCAL_DB_URL, sys.argv[1:], f"scripts/{Path(__file__).name}")
     prepare()
     from app import app
     from flask_migrate import upgrade, current

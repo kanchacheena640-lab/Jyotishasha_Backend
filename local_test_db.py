@@ -54,21 +54,46 @@ def _dotenv_database_url() -> str:
     return ""
 
 
-def local_test_db_url() -> str:
-    """Database URL for the local DB-writing suites. No credentials live in test code.
+def local_dev_db_url() -> str:
+    """The developer's own local DATABASE_URL (environment, then .env), never the isolated test schema.
 
-    The isolated schema (JYOTISHASHA_TEST_DATABASE_URL) when set; otherwise the developer's own local
-    DATABASE_URL (environment, then .env). Anything that is not the local jyotishasha_local database on a
-    local host is refused, so a production or staging URL in the environment can never be used.
+    Anything that is not the local jyotishasha_local database on a local host is refused, so a production
+    or staging URL in the environment can never be used. The URL itself is never printed.
     """
-    if os.environ.get(ENV_VAR):
-        return resolve_test_db_url("")
     url = os.environ.get("DATABASE_URL") or _dotenv_database_url()
     parsed = urlparse(url)
     if parsed.hostname not in LOCAL_HOSTS or parsed.path != LOCAL_DEV_DB_PATH:
-        raise SystemExit("REFUSING TO RUN: DB-writing suites need a local jyotishasha_local DATABASE_URL "
-                         f"(or {ENV_VAR}); host {parsed.hostname!r} / database {parsed.path!r} is not allowed.")
+        raise SystemExit("REFUSING TO RUN: a local jyotishasha_local DATABASE_URL is required "
+                         f"(or {ENV_VAR} for tests); host {parsed.hostname!r} / database {parsed.path!r} is not allowed.")
     return url
+
+
+def local_test_db_url() -> str:
+    """Database URL for the local DB-writing suites. No credentials live in test code.
+
+    The isolated schema (JYOTISHASHA_TEST_DATABASE_URL) when set; otherwise local_dev_db_url().
+    """
+    if os.environ.get(ENV_VAR):
+        return resolve_test_db_url("")
+    return local_dev_db_url()
+
+
+def describe_target(url: str) -> str:
+    """host:port/database only -- never the user or password."""
+    parsed = urlparse(url)
+    return f"{parsed.hostname}:{parsed.port or 5432}{parsed.path}"
+
+
+CONFIRM_FLAG = "--confirm-target"
+
+
+def require_target_confirmation(url: str, argv, script: str) -> None:
+    """Writes need `--confirm-target <database>` naming the exact database about to be changed."""
+    expected = urlparse(url).path.lstrip("/")
+    given = argv[argv.index(CONFIRM_FLAG) + 1] if CONFIRM_FLAG in argv[:-1] else None
+    if given != expected:
+        raise SystemExit(f"Target: {describe_target(url)}. Nothing was changed.\n"
+                         f"Re-run with `python {script} {CONFIRM_FLAG} {expected}` to apply.")
 
 
 def assert_isolated_schema(current_schema: str) -> None:
