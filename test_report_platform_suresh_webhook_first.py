@@ -24,10 +24,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 # Same dedicated local database as the existing R1-R6 regression scripts.
-from local_test_db import assert_isolated_schema, resolve_test_db_url  # noqa: E402
-os.environ["DATABASE_URL"] = resolve_test_db_url(
-    "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
-)
+from local_test_db import assert_isolated_schema, local_test_db_url  # noqa: E402
+os.environ["DATABASE_URL"] = local_test_db_url()
 os.environ["FCM_SERVICE_ACCOUNT_JSON"] = _FAKE_FCM_JSON
 os.environ["OPENAI_API_KEY"] = "sk-local-test-unused"
 os.environ["RAZORPAY_KEY_ID"] = "local-test-unused"

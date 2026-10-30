@@ -22,10 +22,9 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from dotenv import dotenv_values  # noqa: E402
 
-from local_test_db import assert_isolated_schema, resolve_test_db_url  # noqa: E402
-LOCAL_DB_URL = resolve_test_db_url(os.environ.get("DATABASE_URL") or dotenv_values(".env").get("DATABASE_URL", ""))
+from local_test_db import assert_isolated_schema, local_test_db_url  # noqa: E402
+LOCAL_DB_URL = local_test_db_url()
 _u = urlparse(LOCAL_DB_URL)
 if _u.hostname not in ("127.0.0.1", "localhost") or _u.path != "/jyotishasha_local":
     raise SystemExit("REFUSING TO RUN: test_report_reviews.py needs the local jyotishasha_local database.")

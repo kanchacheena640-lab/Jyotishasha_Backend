@@ -20,7 +20,7 @@ class ReportReview(db.Model):
     __tablename__ = "report_reviews"
 
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, unique=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
     product = db.Column(db.String(100), nullable=False, index=True)
     rating = db.Column(db.SmallInteger, nullable=False)
     body = db.Column(db.Text, nullable=False)
@@ -37,6 +37,9 @@ class ReportReview(db.Model):
     published_at = db.Column(db.DateTime, nullable=True)
 
     __table_args__ = (
+        # Named exactly as migration b3d8f1a6c2e9 creates it: review_service matches on this name to turn a
+        # first-submission race into 409 try_again, so a create_all-built schema must use the same name.
+        db.UniqueConstraint("order_id", name="uq_report_reviews_order_id"),
         db.CheckConstraint("rating BETWEEN 1 AND 5", name="ck_report_reviews_rating_1_5"),
         db.CheckConstraint("status IN ('PUBLISHED','PENDING','REJECTED')", name="ck_report_reviews_status"),
         db.Index("ix_report_reviews_product_status", "product", "status"),

@@ -64,9 +64,6 @@ def main() -> None:
         if current != schema:
             raise SystemExit(f"REFUSED: expected search_path {schema}, got {current!r}")
         db.create_all()
-    # Fidelity with the Alembic-built schema: the model declares only unique=True, but migration
-    # b3d8f1a6c2e9 names the constraint, and review_service matches on that name to return 409 try_again.
-    cur.execute(f'ALTER TABLE "{schema}".report_reviews RENAME CONSTRAINT report_reviews_order_id_key TO uq_report_reviews_order_id')
     # Registry rows only: read from public, written into the isolated schema.
     cur.execute("SELECT column_name FROM information_schema.columns WHERE table_schema = %s AND table_name = 'report_products' "
                 "ORDER BY ordinal_position", (schema,))

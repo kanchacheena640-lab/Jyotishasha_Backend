@@ -40,6 +40,37 @@ def resolve_test_db_url(default: str) -> str:
     return url
 
 
+LOCAL_DEV_DB_PATH = "/jyotishasha_local"
+
+
+def _dotenv_database_url() -> str:
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(env_file):
+        return ""
+    with open(env_file, encoding="utf-8") as handle:
+        for line in handle:
+            if line.startswith("DATABASE_URL="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    return ""
+
+
+def local_test_db_url() -> str:
+    """Database URL for the local DB-writing suites. No credentials live in test code.
+
+    The isolated schema (JYOTISHASHA_TEST_DATABASE_URL) when set; otherwise the developer's own local
+    DATABASE_URL (environment, then .env). Anything that is not the local jyotishasha_local database on a
+    local host is refused, so a production or staging URL in the environment can never be used.
+    """
+    if os.environ.get(ENV_VAR):
+        return resolve_test_db_url("")
+    url = os.environ.get("DATABASE_URL") or _dotenv_database_url()
+    parsed = urlparse(url)
+    if parsed.hostname not in LOCAL_HOSTS or parsed.path != LOCAL_DEV_DB_PATH:
+        raise SystemExit("REFUSING TO RUN: DB-writing suites need a local jyotishasha_local DATABASE_URL "
+                         f"(or {ENV_VAR}); host {parsed.hostname!r} / database {parsed.path!r} is not allowed.")
+    return url
+
+
 def assert_isolated_schema(current_schema: str) -> None:
     """When isolation is requested, the live connection must actually be in that schema."""
     url = os.environ.get(ENV_VAR)

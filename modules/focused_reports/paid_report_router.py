@@ -43,6 +43,7 @@ from typing import Any, Dict
 from extensions import db
 from models import Order
 from email_utils import send_email
+from report_output import report_output_path
 from full_kundali_api import calculate_full_kundali
 from modules.intents.question_catalog import get_question, UnknownQuestionError
 from modules.focused_reports.dispatcher import generate_focused_report
@@ -169,7 +170,7 @@ def route_focused_report_generation(order_id: int) -> None:
 
         customer = _build_pdf_customer(order)
         safe_name = (order.name or "customer").replace(" ", "_")
-        output_path = f"/home/Jyotishasha/reports/focused_{safe_name}_{order_id}.pdf"
+        output_path = report_output_path(f"focused_{safe_name}_{order_id}.pdf")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         path = render_focused_report_pdf(result, customer, output_path)
 

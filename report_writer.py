@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from email_utils import send_email as send_email_with_attachment
 from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
+from report_output import report_output_dir
 
 #from pdf_generator import generate_pdf_report
 
@@ -39,7 +40,7 @@ def get_openai_response(prompt):
 
 def generate_pdf_and_email(name, email, product, report_text, kundali, language="en"):
     # Create reports folder if needed
-    reports_dir = "/home/Jyotishasha/reports"
+    reports_dir = report_output_dir()
     os.makedirs(reports_dir, exist_ok=True)
 
     # Create filename

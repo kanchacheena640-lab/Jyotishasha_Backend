@@ -15,6 +15,7 @@ from transit_engine import get_current_positions
 from kundali_chart_generator import generate_kundali_drawing
 from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
 from email_utils import send_email
+from report_output import report_output_path
 from modules.payments.report_delivery_service import deliver_generated_report
 from models import Order
 from extensions import db
@@ -337,7 +338,7 @@ def generate_love_premium_report(order_id: int):
 
             # ---------------- 8) PDF ----------------
             safe_name = order.name.replace(" ", "_")
-            output_path = f"/home/Jyotishasha/reports/love_{safe_name}_{order_id}.pdf"
+            output_path = report_output_path(f"love_{safe_name}_{order_id}.pdf")
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             generate_pdf_report(

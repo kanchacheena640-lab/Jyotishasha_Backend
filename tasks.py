@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from extensions import db
 from models import Order
 from email_utils import send_email
+from report_output import report_output_path
 from modules.payments.report_delivery_service import deliver_generated_report
 # P0.3 -- Focused Reports Rs51 Payment Bridge. Static, in-memory set of all
 # 63 question_keys (zero DB access) used only to decide whether an Order's
@@ -604,7 +605,7 @@ def _generate_and_send_report_core(order_id):
                 kundali, language, summary_blocks.get("manglik_summary", "")
             )
 
-            output_path = f"/home/Jyotishasha/reports/{product_slug}_{safe_name}.pdf"
+            output_path = report_output_path(f"{product_slug}_{safe_name}.pdf")
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             generate_pdf_report(
