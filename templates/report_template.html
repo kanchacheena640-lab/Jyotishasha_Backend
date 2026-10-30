@@ -137,6 +137,11 @@
        page-break-after keeps the label with the paragraph it introduces. */
     .card .lead-in { margin: 12px 0 3px 0; color: var(--accent); page-break-after: avoid; }
     .card .lead-in:first-child { margin-top: 0; }
+    /* F12-P3.9 -- focused reports use narrative_style="plain" (no card shell), so their
+       section headings are lead-ins outside any card and the rule above never reached
+       them: a heading could end a page with its paragraph on the next. convert_headings()
+       always opens a card before a card-mode lead-in, so standard reports are unchanged. */
+    .lead-in { page-break-after: avoid; }
     /* Q4.2A -- page flow (Hindi only). Devanagari sections are taller, and
        "avoid" on a whole section card pushed the first narrative section
        to a new page, leaving the Dasha page mostly blank. Allowing the
