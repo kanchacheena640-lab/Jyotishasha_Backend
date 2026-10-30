@@ -24,7 +24,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 # Same dedicated local database as the existing R1-R6 regression scripts.
-os.environ["DATABASE_URL"] = (
+from local_test_db import assert_isolated_schema, resolve_test_db_url  # noqa: E402
+os.environ["DATABASE_URL"] = resolve_test_db_url(
     "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
 )
 os.environ["FCM_SERVICE_ACCOUNT_JSON"] = _FAKE_FCM_JSON
@@ -57,10 +58,11 @@ class SureshWebhookFirstRegression(unittest.TestCase):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
         self.stack.enter_context(app.app_context())
-        self.assertEqual(db.engine.url.host, "localhost")
+        self.assertIn(db.engine.url.host, ("localhost", "127.0.0.1", "::1"))
         self.assertEqual(db.engine.dialect.name, "postgresql")
         self.assertEqual(db.session.execute(text("SELECT current_database()")).scalar(),
                          "jyotishasha_local")
+        assert_isolated_schema(db.session.execute(text("SELECT current_schema()")).scalar())
         self.token = uuid4().hex
         self.rp_order = "order_step2_" + self.token
         self.payment_id = "pay_step2_" + self.token

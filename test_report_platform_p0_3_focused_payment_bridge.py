@@ -40,7 +40,8 @@ from unittest.mock import patch, MagicMock
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-LOCAL_DB_URL = "postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local"
+from local_test_db import assert_isolated_schema, resolve_test_db_url  # noqa: E402
+LOCAL_DB_URL = resolve_test_db_url("postgresql://jyotishasha_dev:dcaslQQbyPSBsvTg2UEa@localhost:5432/jyotishasha_local")
 os.environ["DATABASE_URL"] = LOCAL_DB_URL
 os.environ.setdefault("OPENAI_API_KEY", "sk-local-test-unused")
 os.environ.setdefault("RAZORPAY_KEY_ID", "local-test-unused")
@@ -124,6 +125,7 @@ def make_order(payload):
 def main():
     with app.app_context():
         current_db = db.session.execute(text("SELECT current_database()")).scalar()
+        assert_isolated_schema(db.session.execute(text("SELECT current_schema()")).scalar())
         print(f"Connected to database: {current_db}")
         assert current_db == "jyotishasha_local", (
             f"Refusing to run -- expected jyotishasha_local, got {current_db!r}"

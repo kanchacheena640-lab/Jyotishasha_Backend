@@ -24,7 +24,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from dotenv import dotenv_values  # noqa: E402
 
-LOCAL_DB_URL = os.environ.get("DATABASE_URL") or dotenv_values(".env").get("DATABASE_URL", "")
+from local_test_db import assert_isolated_schema, resolve_test_db_url  # noqa: E402
+LOCAL_DB_URL = resolve_test_db_url(os.environ.get("DATABASE_URL") or dotenv_values(".env").get("DATABASE_URL", ""))
 _u = urlparse(LOCAL_DB_URL)
 if _u.hostname not in ("127.0.0.1", "localhost") or _u.path != "/jyotishasha_local":
     raise SystemExit("REFUSING TO RUN: test_report_reviews.py needs the local jyotishasha_local database.")
@@ -102,6 +103,7 @@ def cleanup():
 GOOD = "Clear and practical report. The career timing section matched my situation well."
 
 with app.app_context():
+    assert_isolated_schema(db.session.execute(db.text("SELECT current_schema()")).scalar())
     cleanup()
     rate_limit.reset_memory_for_tests()
     try:
