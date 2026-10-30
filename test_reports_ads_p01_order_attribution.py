@@ -103,6 +103,7 @@ def dual_payload(**overrides):
         "name": "Attribution Partner", "dob": "1992-08-15", "tob": "06:30",
         "pob": "Mumbai", "latitude": "19.076", "longitude": "72.8777",
     }
+    payload["buyer_role"] = "groom"  # F12-P3.7: two-person orders must name the buyer's role
     payload.update(overrides)
     return payload
 

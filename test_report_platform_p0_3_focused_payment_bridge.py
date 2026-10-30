@@ -100,6 +100,7 @@ _DUAL_PAYLOAD = {
     "product": DUAL_TEST_SLUG, "name": "Focused Dual Test User", "phone": "9999999999",
     "dob": "1994-01-26", "tob": "08:40", "pob": "Sindhnur Rural",
     "latitude": "15.6167", "longitude": "76.6833", "language": "en",
+    "buyer_role": "bride",  # F12-P3.7: explicit, never assumed; bride exercises the formerly mis-mapped case
     "partner": {
         "name": "Partner", "dob": "1992-08-15", "tob": "06:30",
         "pob": "Mumbai", "latitude": "19.076", "longitude": "72.8777",
@@ -356,8 +357,8 @@ def main():
             check("D9: DUAL payload carries both people's real birth data",
                   dual_payload_sent["user"]["name"] == dual_router_order.name
                   and dual_payload_sent["partner"]["name"] == "Partner")
-            check("D10: boy_is_user is a real bool (existing love_premium_v1 convention reused)",
-                  dual_payload_sent["boy_is_user"] is True)
+            check("D10: boy_is_user follows the order's explicit buyer_role (bride -> False), never assumed",
+                  dual_payload_sent["boy_is_user"] is False)
 
             # Exception during generation -> Failed, payment untouched.
             failing_order = make_order(_SELF_PAYLOAD)

@@ -56,6 +56,10 @@ DUAL_GENERATOR = "focused_dual_v1"
 
 _GENERATOR_TO_PERSON_MODE = {SELF_GENERATOR: "single", DUAL_GENERATOR: "dual"}
 
+# The buyer's explicit Ashtakoot role, validated at checkout (order_service._validate_buyer_role) and stored
+# in partner_payload["buyer_role"]. Anything else is refused -- the groom role is never assumed.
+_BOY_IS_USER = {"groom": True, "bride": False}
+
 
 class FocusedReportRoutingError(Exception):
     """Raised for a trust/contract violation caught before any generation
@@ -135,19 +139,21 @@ def route_focused_report_generation(order_id: int) -> None:
 
         if question.person_mode == "dual":
             partner = order.partner_payload if isinstance(order.partner_payload, dict) else {}
+            # Ashtakoot is asymmetric (Varna can move the /36 total by 1), so the buyer's role must be
+            # explicit. An order without a valid buyer_role fails here (report_stage -> "Failed" below),
+            # before any chart work -- never silently treated as groom.
+            boy_is_user = _BOY_IS_USER.get(partner.get("buyer_role"))
+            if boy_is_user is None:
+                raise FocusedReportRoutingError(
+                    f"Order {order_id}: two-person report has no explicit buyer_role ('bride' or 'groom') "
+                    "-- refusing to assume a role, failing closed."
+                )
             # Shape required by modules/focused_reports/relationship_evidence.py::
             # collect_relationship_evidence(): {user:{...}, partner:{...},
             # boy_is_user: bool}. latitude/longitude pass through verbatim --
             # _profile() there already accepts either latitude/longitude or
             # lat/lng, and calls calculate_full_kundali() itself for BOTH
             # people; no kundali is pre-built here for a dual report.
-            #
-            # boy_is_user: no Order/partner_payload field encodes this today
-            # for ANY paid product -- modules/love/love_premium_task.py's own
-            # existing, live relationship_future_report pipeline hardcodes
-            # boy_is_user=True unconditionally (verified: it never reads this
-            # from the Order). Reusing that exact same existing convention
-            # here, not inventing a new one or a new field.
             payload = {
                 "user": {
                     "name": order.name, "dob": order.dob, "tob": order.tob, "pob": order.pob,
@@ -158,7 +164,7 @@ def route_focused_report_generation(order_id: int) -> None:
                     "pob": partner.get("pob"), "latitude": partner.get("latitude"),
                     "longitude": partner.get("longitude"),
                 },
-                "boy_is_user": True,
+                "boy_is_user": boy_is_user,
             }
             result = generate_focused_report(question_key, payload, language)
         else:

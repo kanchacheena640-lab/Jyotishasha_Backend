@@ -213,6 +213,19 @@ def _validate_birth_coordinates(source: Any, prefix: str = "") -> None:
         )
 
 
+BUYER_ROLES = ("bride", "groom")
+
+
+def _validate_buyer_role(value: Any) -> str:
+    """A two-person focused order must say whether the buyer is the bride or the groom: Ashtakoot is
+    asymmetric (Varna), so swapping the roles can change the /36 total. Rejected BEFORE any Order row
+    or Razorpay order exists -- the role is never assumed."""
+    role = value.strip().lower() if isinstance(value, str) else None
+    if role not in BUYER_ROLES:
+        raise OrderValidationError("buyer_role is required for this report and must be 'bride' or 'groom'.")
+    return role
+
+
 @dataclass
 class CreatedReportOrder:
     order_id: int
@@ -337,6 +350,10 @@ class OrderService:
             # DOB-only partner analysis is a separate, unpaid/internal capability
             # (modules/love/love_data_collector.py) and is not affected.
             _validate_birth_coordinates(partner_payload, "partner.")
+            if product.generator == FOCUSED_DUAL_GENERATOR:
+                # Order has no role column, so the validated role travels in partner_payload.
+                # love_premium_v1 is unchanged.
+                partner_payload = dict(partner_payload, buyer_role=_validate_buyer_role(payload.get("buyer_role")))
         elif product.generator == FOCUSED_GENERATOR:
             # P0.3 -- focused_v1 (54 SELF focused products). Same required-field
             # set as every standard report (STANDARD_REQUIRED_FIELDS, unchanged),

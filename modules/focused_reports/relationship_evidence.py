@@ -97,8 +97,9 @@ def collect_relationship_evidence(question_key, payload, language="en"):
     facts = {k: kootas[k] for k in components}
     if components == ALL_KOOTAS:
         facts.update(total_score=match["total_score"], max_score=match["max_score"])
-    sections["compatibility_facts"] = ("Existing Ashtakoot facts; not a probability. Groom role: " +
-        ("Primary person" if payload["boy_is_user"] else "Partner") + ". " + json.dumps(facts, ensure_ascii=False))
+    groom_label, bride_label = ("Primary person", "Partner") if payload["boy_is_user"] else ("Partner", "Primary person")
+    sections["compatibility_facts"] = ("Existing Ashtakoot facts; not a probability. Groom role: " + groom_label +
+        "; bride role: " + bride_label + ". " + json.dumps(facts, ensure_ascii=False))
     period = None
     if months:
         transits = [build_promotion_transit_evidence(c["lagna_sign"], horizon_months=months,
