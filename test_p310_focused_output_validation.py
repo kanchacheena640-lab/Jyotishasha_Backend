@@ -1,4 +1,4 @@
-"""Regression tests for F12-P3.10: focused-report AI output validation and the untimed-prompt fix.
+"""Regression tests for F12-P3.10 / P3.10.1: delivery-first focused-report output validation and the untimed-prompt fix.
 
 Valid examples are hand-written, realistic answers grounded in the REAL prompts (frozen clock, fixture chart) for every
 archetype, EN and HI, including both buyer roles of kundali_match_for_marriage. Invalid examples are the P3.9 probe
@@ -19,7 +19,8 @@ from modules.focused_reports import dispatcher, paid_report_router as router
 from modules.focused_reports import relationship_evidence as relationship_collector
 from modules.focused_reports.dispatcher import resolve_focused_handler
 from modules.focused_reports.master_contract import TIMING_SECTIONS, is_timed, output_contract, report_sections
-from modules.focused_reports.output_validation import FocusedOutputValidationError, validate_focused_output
+from modules.focused_reports import output_validation
+from modules.focused_reports.output_validation import HARD_CODES, WARNING_CODES, FocusedOutputValidationError, validate_focused_output
 from modules.focused_reports.prompt_specs import get_prompt_spec
 from modules.intents.question_catalog import QUESTIONS
 from modules.payments.report_date_format import format_customer_date
@@ -203,105 +204,152 @@ class FocusedOutputValidationTests(unittest.TestCase):
         for (case, language), (hero, actions, body) in examples(format_customer_date).items():
             spec = get_prompt_spec(CASES[case])
             sections = [pair[language == "hi"] for pair in report_sections(spec)]
-            if case == "diagnostic" or case == "timing":
-                pass  # every heading used, including the optional timing ones (dated support exists)
             label = "Promotion Outlook" if CASES[case] == "promotion_timing" else spec.title.get(language)
             cls.valid[(case, language)] = raw_answer(label, hero, actions, report(language, sections, body))
 
     def check(self, case, language, raw):
-        """Run the real finalizer, then the validator; returns the error codes (empty when valid)."""
+        """Real finalizer, then the validator: returns (hard codes, warning codes)."""
         output = self.handlers[case].finalize(raw, language)
         try:
-            validate_focused_output(CASES[case], language, self.prompts[(case, language)], output)
+            return set(), set(validate_focused_output(CASES[case], language, self.prompts[(case, language)], output))
         except FocusedOutputValidationError as exc:
-            return set(exc.codes)
-        return set()
+            return set(exc.codes), set()
 
     def mutate(self, case, language, old, new):
         raw = self.valid[(case, language)]
         self.assertIn(old, raw, f"{case}/{language}: mutation anchor missing")
         return self.check(case, language, raw.replace(old, new, 1))
 
-    # -------------------------------------------------------------- valid examples
-    def test_valid_examples_pass_for_every_archetype_in_en_and_hi(self):
+    # -------------------------------------------------------------- classification is explicit and closed
+    def test_hard_and_warning_codes_are_disjoint_and_hard_is_contradictions_only(self):
+        self.assertEqual(HARD_CODES, {"role_contradiction", "score_contradiction"})
+        self.assertFalse(HARD_CODES & WARNING_CODES)
+
+    # -------------------------------------------------------------- valid examples and variations
+    def test_valid_examples_pass_cleanly_for_every_archetype_in_en_and_hi(self):
         self.assertEqual(len(self.valid), 14)
         for (case, language), raw in self.valid.items():
             with self.subTest(case=case, language=language):
-                self.assertEqual(self.check(case, language, raw), set())
+                self.assertEqual(self.check(case, language, raw), (set(), set()))
 
-    def test_legitimate_prose_that_resembles_a_violation_still_passes(self):
+    def test_realistic_variations_are_never_blocked(self):
+        variations = [  # (case, language, old, new) -- legitimate model behaviour that must still be delivered cleanly
+            ("timing", "en", "**Direct Answer**", "**Direct Answer:**"),
+            ("timing", "en", "**Why Your Chart Says This**", "**why your chart says this**"),
+            ("timing", "en", "**Slower or Watch Period**\n", "**Key point:**\n"),
+            ("timing", "hi", "**धीमा या ध्यान रखने वाला समय**\n", ""),
+            ("diagnostic", "en", "\n\n**What You Can Do**", "\n\n\n**What You Can Do**"),
+            ("direction", "hi", "आपकी सबसे बड़ी ताकत", "Overall, आपकी सबसे बड़ी strength"),
+            ("timing", "en", "a phase that rewards clear communication",
+             "a phase (roughly Oct 31st onward, or 31/10/2026) that rewards clear communication"),
+            ("match_bride", "en", "Patience in daily decisions helps.",
+             "Patience in daily decisions helps, and your role as the bride is honoured."),
+        ]
+        for case, language, old, new in variations:
+            with self.subTest(case=case, language=language, new=new[:40]):
+                self.assertEqual(self.mutate(case, language, old, new), (set(), set()))
+
+    def test_unrecognised_wording_produces_no_code_at_all(self):
         additions = {
             ("direction", "en"): "Jupiter is not in your 10th house, so leadership comes through knowledge instead. Your guru may be a book.",
             ("match_bride", "hi"): "इसमें किसी का दोष नहीं है। मंगलवार या शनिवार को साथ समय बिताएँ।",
-            ("timing", "en"): "Saturn in Capricorn gives strength in the 10th house matters you handle.",
+            ("timing", "en"): "Saturn in Capricorn gives strength in the 10th house matters you handle. Around the 31st, review goals.",
             ("obstacles", "hi"): "हर मंगलवार थोड़ा समय अपने लिए रखें।",
+            ("strengths", "en"): "Many people find this chart pattern, which some call a blessing, quietly reliable.",
         }
         for (case, language), sentence in additions.items():
             with self.subTest(case=case, language=language):
                 raw = self.valid[(case, language)]
-                last = raw.rstrip().rsplit("\n", 1)
-                self.assertEqual(self.check(case, language, last[0] + "\n" + last[1] + " " + sentence), set())
+                self.assertEqual(self.check(case, language, raw.rstrip() + " " + sentence), (set(), set()))
 
-    # -------------------------------------------------------------- P3.9 probe outputs
-    def test_p39_probe_outputs_are_rejected(self):
-        meta = {"value": "Steady", "interpretation": "One sentence.", "evidence": ["Libra Ascendant", "Moon in 5th house"]}
-        probes = [
-            ("A English narrative for a HINDI order", "direction", "hi",
-             "**Direct Answer**\nYour chart shows steady strengths.\n\n**Bottom Line**\nYou are capable.", "language_mismatch"),
-            ("B invented placement", "direction", "en",
-             "**Direct Answer**\nJupiter in your 10th house gives you leadership.", "unsupported_placement"),
-            ("C timing section + dates in an untimed report", "direction", "en",
-             "**Direct Answer**\nStrong.\n\n**Current Timing Context**\nFrom 3 March 2027 to 9 May 2027 is your best window.",
-             "unsupported_timing_section"),
-            ("D bride/groom swapped", "match_bride", "en", "**Direct Answer**\nAs the groom, your Moon in Aquarius ...", "role_mismatch"),
-            ("E headings missing", "timing", "en", "Promotion looks fine.", "missing_section"),
-            ("F invented Manglik dosha", "diagnostic", "en", "**Direct Answer**\nYour Manglik dosha delays marriage.", "unsupported_dosha"),
+    # -------------------------------------------------------------- warnings (still delivered)
+    def test_heuristic_findings_are_warnings_never_hard(self):
+        warnings = [
+            ("timing", "en", "From 31 October 2026", "From 3 November 2026", "date_not_in_evidence"),
+            ("direction", "en", "Choose roles where patience is rewarded.",
+             "Choose roles where patience is rewarded, especially in 2028.", "date_not_in_evidence"),
+            ("timing", "en", "Saturn sits in your 4th house", "Saturn sits in your 10th house", "placement_not_in_evidence"),
+            ("timing", "en", "Jupiter is in Leo", "Jupiter is in Virgo", "placement_not_in_evidence"),
+            ("diagnostic", "hi", "Saturn आपके 4th House में घर-परिवार", "Saturn आपके 9th House में घर-परिवार", "placement_not_in_evidence"),
+            ("obstacles", "en", "Rahu moves into Capricorn", "Rahu moves into Sagittarius", "placement_not_in_evidence"),
+            ("direction", "en", "Libra Ascendant, you", "Scorpio Ascendant, you", "lagna_not_in_evidence"),
+            ("direction", "en", "brings independent, inventive thinking.",
+             "brings independent thinking, and Gajakesari Yog adds fame.", "yoga_not_in_evidence"),
+            ("diagnostic", "en", "Talk openly with family", "Sade Sati is active, so talk openly with family", "dosha_not_in_evidence"),
+            ("direction", "hi", "**व्यावहारिक ध्यान**", "**अभी के समय का संदर्भ**\nअभी समय अच्छा है।\n\n**व्यावहारिक ध्यान**",
+             "timing_section_without_dated_evidence"),
+            ("timing", "hi", "**सबसे मजबूत समय**\n", "", "heading_missing"),
         ]
-        for label, case, language, narrative, code in probes:
-            with self.subTest(label):
-                spec = get_prompt_spec(CASES[case])
-                self.assertIn(code, self.check(case, language, raw_answer(spec.title.get(language), meta, ["Act"], narrative)))
-        codes = self.check("direction", "en", raw_answer("x", meta, ["Act"],
-                           "**Direct Answer**\nStrong.\n\n**Current Timing Context**\nFrom 3 March 2027 to 9 May 2027."))
-        self.assertIn("unsupported_date", codes)
-
-    # -------------------------------------------------------------- one defect at a time
-    def test_single_targeted_mutations_are_rejected_with_the_right_code(self):
-        mutations = [
-            ("timing", "en", "From 31 October 2026", "From 3 November 2026", "unsupported_date"),
-            ("timing", "en", "Saturn sits in your 4th house", "Saturn sits in your 10th house", "unsupported_placement"),
-            ("timing", "en", "Jupiter is in Leo", "Jupiter is in Virgo", "unsupported_placement"),
-            ("direction", "en", "Libra Ascendant, you", "Scorpio Ascendant, you", "unsupported_lagna"),
-            ("direction", "en", "brings independent, inventive thinking.", "brings independent thinking, and Gajakesari Yog adds fame.", "unsupported_yoga"),
-            ("direction", "en", "Choose roles where patience is rewarded.", "Choose roles where patience is rewarded, especially in 2028.", "unsupported_date"),
-            ("direction", "hi", "**व्यावहारिक ध्यान**", "**अभी के समय का संदर्भ**\nअभी समय अच्छा है।\n\n**व्यावहारिक ध्यान**", "unsupported_timing_section"),
-            ("timing", "hi", "**सबसे मजबूत समय**\n", "", "missing_section"),
-            ("diagnostic", "en", "Talk openly with family", "Sade Sati is active, so talk openly with family", "unsupported_dosha"),
-            ("diagnostic", "hi", "Saturn आपके 4th House में घर-परिवार", "Saturn आपके 9th House में घर-परिवार", "unsupported_placement"),
-            ("obstacles", "en", "Rahu moves into Capricorn", "Rahu moves into Sagittarius", "unsupported_placement"),
-            ("match_bride", "en", "with 24.5 out of 36", "with 23.5 out of 36", "score_mismatch"),
-            ("match_bride", "en", "this is a workable match", "this is 24.5/35, a workable match", "score_mismatch"),
-            ("match_bride", "en", "As the bride, your Moon", "As the groom, your Moon", "role_mismatch"),
-            ("match_groom", "hi", "वर के रूप में आपका", "वधू के रूप में आपका", "role_mismatch"),
-            ("match_groom", "en", "Patience helps.", "Patience helps; you are the bride here.", "role_mismatch"),
-        ]
-        for case, language, old, new, code in mutations:
-            with self.subTest(case=case, language=language, code=code, new=new[:40]):
-                self.assertIn(code, self.mutate(case, language, old, new))
+        for case, language, old, new, code in warnings:
+            with self.subTest(case=case, language=language, code=code):
+                hard, found = self.mutate(case, language, old, new)
+                self.assertEqual(hard, set())
+                self.assertIn(code, found)
         swapped = self.valid[("timing", "en")]
         a, b = "**Strongest Periods**", "**What You Should Do**"
         swapped = swapped.replace(a, "\x00").replace(b, a).replace("\x00", b)
-        self.assertIn("section_order", self.check("timing", "en", swapped))
-        hindi_for_english = self.valid[("direction", "hi")]
-        self.assertIn("language_mismatch", self.check("direction", "en", hindi_for_english))
-
-    def test_a_total_score_is_rejected_where_no_total_was_supplied(self):
-        self.assertNotIn('"total_score"', self.prompts[("conflict_bride", "en")])
-        codes = self.check("conflict_bride", "en", raw_answer(
+        self.assertEqual(self.check("timing", "en", swapped), (set(), {"heading_order"}))
+        hard, found = self.check("direction", "en", self.valid[("direction", "hi")])
+        self.assertEqual(hard, set())
+        self.assertIn("language_share", found)
+        hard, found = self.check("conflict_bride", "en", raw_answer(
             "x", {"value": "v", "interpretation": "i", "evidence": ["a", "b"]}, ["Act"], "**Direct Answer**\nYou score 24.5 out of 36."))
-        self.assertIn("unsupported_score", codes)
+        self.assertEqual(hard, set())
+        self.assertIn("total_score_not_supplied", found)
 
-    # -------------------------------------------------------------- prompt contract (Step 1)
+    def test_p39_probe_outputs_classified(self):
+        meta = {"value": "Steady", "interpretation": "One sentence.", "evidence": ["Libra Ascendant", "Moon in 5th house"]}
+        probes = [
+            ("A English for a HINDI order", "direction", "hi",
+             "**Direct Answer**\nYour chart shows steady strengths.\n\n**Bottom Line**\nYou are capable.", "language_share"),
+            ("B invented placement", "direction", "en", "**Direct Answer**\nJupiter in your 10th house gives you leadership.",
+             "placement_not_in_evidence"),
+            ("C timing section in an untimed report", "direction", "en",
+             "**Direct Answer**\nStrong.\n\n**Current Timing Context**\nFrom 3 March 2027 to 9 May 2027 is your best window.",
+             "timing_section_without_dated_evidence"),
+            ("E headings missing", "timing", "en", "Promotion looks fine.", "heading_missing"),
+            ("F Manglik dosha", "diagnostic", "en", "**Direct Answer**\nYour Manglik dosha delays marriage.", "dosha_not_in_evidence"),
+        ]
+        for label, case, language, narrative, code in probes:
+            with self.subTest(label):
+                hard, found = self.check(case, language, raw_answer(get_prompt_spec(CASES[case]).title.get(language), meta, ["Act"], narrative))
+                self.assertEqual(hard, set())
+                self.assertIn(code, found)
+        hard, _ = self.check("match_bride", "en", raw_answer("x", meta, ["Act"], "**Direct Answer**\nAs the groom, your Moon in Aquarius ..."))
+        self.assertEqual(hard, {"role_contradiction"})
+
+    # -------------------------------------------------------------- hard failures (blocked)
+    def test_proven_contradictions_are_hard_failures(self):
+        hard_cases = [
+            ("match_bride", "en", "with 24.5 out of 36", "with 23.5 out of 36", "score_contradiction"),
+            ("match_bride", "en", "this is a workable match", "this is 24.5/35, a workable match", "score_contradiction"),
+            ("match_bride", "hi", "36 में से 24.5 गुण मिलते हैं", "36 में से 26 गुण मिलते हैं", "score_contradiction"),
+            ("match_bride", "en", "As the bride, your Moon", "As the groom, your Moon", "role_contradiction"),
+            ("match_groom", "hi", "वर के रूप में आपका", "वधू के रूप में आपका", "role_contradiction"),
+            ("match_groom", "en", "Patience helps.", "Patience helps; you are the bride here.", "role_contradiction"),
+            ("match_groom", "en", "Patience helps.", "Patience helps; your partner is the groom.", "role_contradiction"),
+        ]
+        for case, language, old, new, code in hard_cases:
+            with self.subTest(case=case, language=language, code=code):
+                hard, _ = self.mutate(case, language, old, new)
+                self.assertEqual(hard, {code})
+
+    def test_existing_meta_and_empty_output_hard_failures_are_unchanged(self):
+        from modules.payments.report_structured_output import ReportMetadataError
+        for raw in ("===META===\n{not json}\n===REPORT===\n**Direct Answer**\nx",
+                    raw_answer("x", {"value": "y", "interpretation": "z"}, ["Act"], "**Direct Answer**\nx"),
+                    raw_answer("x", {"value": "v", "interpretation": "i", "evidence": ["a"]}, ["Act"], "   ")):
+            with self.assertRaises(ReportMetadataError):
+                self.handlers["direction"].finalize(raw, "en")
+
+    def test_a_crash_inside_a_check_never_blocks_delivery(self):
+        output = self.handlers["match_bride"].finalize(self.valid[("match_bride", "en")], "en")
+        with patch.object(output_validation, "_dual_codes", side_effect=RuntimeError("bug")), \
+             patch.object(output_validation, "_placement_codes", side_effect=RuntimeError("bug")):
+            warnings = validate_focused_output("kundali_match_for_marriage", "en", self.prompts[("match_bride", "en")], output)
+        self.assertEqual(warnings, ("check_error",))
+
+    # -------------------------------------------------------------- prompt contract (P3.10 Step 1, unchanged)
     def test_untimed_questions_never_ask_for_a_timing_section(self):
         untimed = [q.question_key for q in QUESTIONS if not is_timed(get_prompt_spec(q.question_key))]
         self.assertEqual(sorted(untimed), sorted(["conflict_areas", "emotional_communication_fit", "kundali_match_for_marriage",
@@ -316,47 +364,67 @@ class FocusedOutputValidationTests(unittest.TestCase):
                 self.assertNotIn("Current Timing Context", headings)
                 self.assertNotIn("अभी के समय का संदर्भ", headings)
                 self.assertIn("No dated evidence is supplied for this question", contract)
-                self.assertNotIn("Strongest Periods: a concise reason", contract)
+        self.assertIn("MUST NOT calculate, change or invent any planetary position", self.prompts[("direction", "en")])
         self.assertIn("**Current Timing Context**", output_contract(get_prompt_spec("study_abroad"), "en"))
 
-    # -------------------------------------------------------------- integration: nothing invalid reaches PDF/email
-    def test_dispatcher_rejects_invalid_output_by_default(self):
-        bad = self.valid[("direction", "en")].replace("Saturn is placed in your 4th house", "Saturn is placed in your 10th house")
-        with contextlib.redirect_stdout(io.StringIO()), frozen_clock(), \
-             patch("modules.payments.report_ai_client.generate_report_completion", return_value=SimpleNamespace(content=bad)):
+    # -------------------------------------------------------------- integration
+    def test_dispatcher_delivers_warned_output_and_raises_only_on_contradiction(self):
+        warned = self.valid[("direction", "en")].replace("Saturn is placed in your 4th house", "Saturn is placed in your 10th house")
+        with contextlib.redirect_stdout(io.StringIO()), frozen_clock():
             kundali = calculate_full_kundali(name=USER["name"], dob=USER["dob"], tob=USER["tob"], lat=USER["lat"], lon=USER["lng"], language="en")
-            with self.assertRaises(FocusedOutputValidationError) as ctx:
-                dispatcher.generate_focused_report("natural_strengths", kundali, "en")
-        self.assertEqual(ctx.exception.codes, ("unsupported_placement",))
-        self.assertNotIn(USER["name"], str(ctx.exception))
-        good = self.valid[("direction", "en")]
+            with patch("modules.payments.report_ai_client.generate_report_completion", return_value=SimpleNamespace(content=warned)):
+                result = dispatcher.generate_focused_report("natural_strengths", kundali, "en")
+        self.assertEqual(result["output_warnings"], ("placement_not_in_evidence",))
+        self.assertIn("10th house", result["report"])
+        contradiction = self.valid[("match_bride", "en")].replace("with 24.5 out of 36", "with 30 out of 36")
         with contextlib.redirect_stdout(io.StringIO()), frozen_clock(), \
-             patch("modules.payments.report_ai_client.generate_report_completion", return_value=SimpleNamespace(content=good)):
-            result = dispatcher.generate_focused_report("natural_strengths", kundali, "en")
-        self.assertEqual(result["question_key"], "natural_strengths")
+             patch("modules.payments.report_ai_client.generate_report_completion", return_value=SimpleNamespace(content=contradiction)):
+            with self.assertRaises(FocusedOutputValidationError) as ctx:
+                dispatcher.generate_focused_report("kundali_match_for_marriage", {"user": USER, "partner": PARTNER, "boy_is_user": False}, "en")
+        self.assertEqual(ctx.exception.codes, ("score_contradiction",))
+        self.assertNotIn(USER["name"], str(ctx.exception))
 
-    def test_paid_router_never_renders_or_emails_a_rejected_output_and_logs_codes_only(self):
+    def _route(self, generate):
         order = SimpleNamespace(id=7, product="natural_strengths", name="Asha Verma", dob=USER["dob"], tob=USER["tob"],
                                 pob=USER["pob"], latitude=USER["lat"], longitude=USER["lng"], language="en",
                                 partner_payload=None, report_stage="Queued", processing_started_at=None, pdf_url=None)
-        rejected = FocusedOutputValidationError(["unsupported_placement", "language_mismatch"])
         log = io.StringIO()
         with patch.object(router, "Order") as orders, patch.object(router, "ReportProduct") as products, \
              patch.object(router, "db"), patch.object(router, "calculate_full_kundali", return_value={}), \
-             patch.object(router, "generate_focused_report", side_effect=rejected), \
-             patch.object(router, "render_focused_report_pdf") as render, \
-             patch.object(router, "deliver_generated_report") as deliver, contextlib.redirect_stdout(log):
+             patch.object(router, "generate_focused_report", **generate), \
+             patch.object(router, "render_focused_report_pdf", return_value="x.pdf") as render, \
+             patch.object(router, "deliver_generated_report") as deliver, \
+             patch.object(router, "report_output_path", return_value="out/x.pdf"), patch.object(router.os, "makedirs"), \
+             contextlib.redirect_stdout(log):
             orders.query.get.return_value = order
             products.query.get.return_value = SimpleNamespace(generator="focused_v1")
-            with self.assertRaises(FocusedOutputValidationError):
+            error = None
+            try:
                 router.route_focused_report_generation(order.id)
+            except FocusedOutputValidationError as exc:
+                error = exc
+        return order, render, deliver, log.getvalue(), error
+
+    def test_paid_router_delivers_despite_warnings_and_logs_codes_only(self):
+        result = {"question_key": "natural_strengths", "report": "x", "output_warnings": ("date_not_in_evidence", "language_share")}
+        order, render, deliver, log, error = self._route({"return_value": result})
+        self.assertIsNone(error)
+        render.assert_called_once()
+        deliver.assert_called_once()
+        self.assertEqual(order.report_stage, "Ready")
+        self.assertIn("[FOCUSED REPORT OUTPUT WARNINGS] order=7 date_not_in_evidence,language_share", log)
+        for private in ("Asha", USER["dob"], USER["tob"], "Lucknow"):
+            self.assertNotIn(private, log)
+
+    def test_paid_router_blocks_only_a_hard_contradiction(self):
+        order, render, deliver, log, error = self._route({"side_effect": FocusedOutputValidationError(["role_contradiction"])})
+        self.assertIsInstance(error, FocusedOutputValidationError)
         render.assert_not_called()
         deliver.assert_not_called()
         self.assertEqual(order.report_stage, "Failed")
-        line = log.getvalue()
-        self.assertIn("order=7 language_mismatch,unsupported_placement", line)
+        self.assertIn("[FOCUSED REPORT OUTPUT REJECTED] order=7 role_contradiction", log)
         for private in ("Asha", USER["dob"], USER["tob"], "Lucknow"):
-            self.assertNotIn(private, line)
+            self.assertNotIn(private, log)
 
     def test_validation_is_wired_only_into_focused_reports(self):
         import pathlib

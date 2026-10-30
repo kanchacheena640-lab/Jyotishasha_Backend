@@ -175,6 +175,14 @@ def route_focused_report_generation(order_id: int) -> None:
             )
             result = generate_focused_report(question_key, kundali, language)
 
+        # F12-P3.10.1: heuristic findings are logged (order id + codes only) and never block the PDF or email.
+        try:
+            warnings = tuple(result.get("output_warnings") or ()) if isinstance(result, dict) else ()
+            if warnings:
+                print("[FOCUSED REPORT OUTPUT WARNINGS]", f"order={order_id}", ",".join(map(str, warnings)))
+        except Exception:
+            pass
+
         customer = _build_pdf_customer(order)
         safe_name = (order.name or "customer").replace(" ", "_")
         output_path = report_output_path(f"focused_{safe_name}_{order_id}.pdf")
@@ -201,7 +209,8 @@ def route_focused_report_generation(order_id: int) -> None:
 
     except Exception as exc:
         if isinstance(exc, FocusedOutputValidationError):
-            # F12-P3.10: the AI output was rejected before any PDF/email existed. Codes only -- never the text or
+            # F12-P3.10(.1): a proven role/score contradiction (the only hard codes) was rejected before any
+            # PDF/email existed. Codes only -- never the text or
             # birth details. The order stays PAID and becomes "Failed" below, so the existing recovery paths
             # (ReconciliationService.regenerate / a repeated payment verification) can retry it; nothing here
             # retries automatically.

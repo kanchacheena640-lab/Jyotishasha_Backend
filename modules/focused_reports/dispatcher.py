@@ -83,9 +83,10 @@ def generate_focused_report(question_key: str, kundali: dict[str, Any], language
 Uses the paid Luna client and its configured model, with no fallback. The
 result contains customer output and selection identity, never raw evidence.
 The finalized output is checked against the evidence in the exact prompt sent
-(output_validation.py) and FocusedOutputValidationError is raised before the
-result can reach a PDF or email. validate_output=False is for generation-
-mechanics tests only; the paid router always uses the default.
+(output_validation.py): only a proven role/score contradiction raises
+FocusedOutputValidationError; heuristic findings come back as
+"output_warnings" (codes only) and never block delivery. validate_output=False
+is for generation-mechanics tests only; the paid router uses the default.
 """
     selection, handler = resolve_focused_handler(question_key)
     built = handler.build_prompt(kundali, language)
@@ -93,8 +94,9 @@ mechanics tests only; the paid router always uses the default.
 
     completion = generate_report_completion(built.prompt)
     output = handler.finalize(completion.content, built.language)
+    warnings = ()
     if validate_output:
-        validate_focused_output(selection.question_key, built.language, built.prompt, output)
+        warnings = validate_focused_output(selection.question_key, built.language, built.prompt, output)
     return {
         "question_key": selection.question_key,
         "intent_slug": selection.intent_slug,
@@ -102,4 +104,5 @@ mechanics tests only; the paid router always uses the default.
         "language": built.language,
         "customer_question": selection.display(built.language),
         **output,
+        "output_warnings": warnings,
     }

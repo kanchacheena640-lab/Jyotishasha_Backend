@@ -1,22 +1,20 @@
-"""Deterministic post-generation checks for focused reports (F12-P3.10).
+"""Post-generation checks for focused reports (F12-P3.10, delivery-first since F12-P3.10.1).
 
 Runs on the finalized customer output BEFORE any PDF or email exists, against the exact prompt the model received:
-its evidence block (plus the stated evidence period) is the only source of facts the model was allowed to use, so it
-is the only source of what may appear in the answer.
+its evidence block (plus the stated evidence period) is the only source of supplied facts.
 
-What is checked (each a recognisable failure shape, chosen to avoid false positives on ordinary prose):
-  - language: Devanagari share of the customer-visible text (HI must be mostly Devanagari, EN must not be);
-  - sections: every required heading present, in order; no timing section in a question without dated evidence;
-  - dates: every full date, month-year and standalone year must occur in the evidence;
-  - placements: "<planet> ... in <Nth> house" / "<planet> ... in <sign>" (EN and HI phrasings) and "<sign>
-    Ascendant/Lagna" must match a natal or transit fact in the evidence;
-  - doshas / Sade Sati and named yogas: only if that exact name is in the evidence;
-  - two-person Ashtakoot: the buyer is never called the other role, and any "/36" total equals the supplied total
-    (no /35, and no total at all where none was supplied).
+HARD (blocks delivery; the order fails safely and can be regenerated) -- only clearly proven contradictions:
+  - role_contradiction: a two-person Ashtakoot report calls the buyer the other role, or the partner the buyer's role;
+  - score_contradiction: a "/36" total that differs from the supplied total, or any total out of 35.
+  (Empty output and invalid META are already hard failures in finalize_customer_output, before this module runs.)
 
-What is NOT checked: free-form interpretation, aspects, lordship phrasing, house/sign claims worded in an unrecognised
-way, or which of two people a dual-chart placement belongs to. Passing these checks does not prove that every
-astrological statement is correct. Error messages carry only error codes -- never customer text or birth details.
+WARNINGS (logged as codes only; never block the PDF, the email or order completion) -- heuristics that can miss
+legitimate phrasing, so they are signals for review, never proof that anything was invented:
+  language_share, heading_missing, heading_order, timing_section_without_dated_evidence, date_not_in_evidence,
+  placement_not_in_evidence, lagna_not_in_evidence, dosha_not_in_evidence, yoga_not_in_evidence,
+  total_score_not_supplied, check_error.
+A text the patterns cannot recognise produces no code at all: nothing is flagged merely because a regex fails to
+match it. Codes never carry customer text or birth details.
 """
 from __future__ import annotations
 
@@ -29,7 +27,15 @@ from modules.focused_reports.prompt_specs import get_prompt_spec
 from modules.payments.report_date_format import EN_MONTHS, HI_MONTHS
 
 
+HARD_CODES = frozenset({"role_contradiction", "score_contradiction"})
+WARNING_CODES = frozenset({
+    "language_share", "heading_missing", "heading_order", "timing_section_without_dated_evidence",
+    "date_not_in_evidence", "placement_not_in_evidence", "lagna_not_in_evidence", "dosha_not_in_evidence",
+    "yoga_not_in_evidence", "total_score_not_supplied", "check_error"})
+
+
 class FocusedOutputValidationError(ValueError):
+    """Only for HARD_CODES."""
     code = "focused_output_invalid"
 
     def __init__(self, codes: Iterable[str]):
@@ -205,14 +211,14 @@ def _section_codes(spec, lang: str, report: str) -> set[str]:
         if key in present:
             positions.append(present.index(key))
         elif pair[0] not in OPTIONAL_SECTIONS:
-            codes.add("missing_section")
+            codes.add("heading_missing")
     if positions != sorted(positions):
-        codes.add("section_order")
+        codes.add("heading_order")
     if not is_timed(spec):
         timing = {_heading_key(pair[i]) for sections in SECTIONS.values() for pair in sections
                   if pair[0] in TIMING_SECTIONS for i in (0, 1)}
         if timing & plain_lines:
-            codes.add("unsupported_timing_section")
+            codes.add("timing_section_without_dated_evidence")
     return codes
 
 
@@ -222,7 +228,7 @@ def _date_codes(text: str, evidence: str) -> set[str]:
     allowed_years |= {y for y, _ in allowed_month_years}
     full, month_years, years = _dates(text)
     if full - allowed_full or month_years - allowed_month_years or years - allowed_years:
-        return {"unsupported_date"}
+        return {"date_not_in_evidence"}
     return set()
 
 
@@ -243,16 +249,16 @@ def _placement_codes(text: str, evidence: str) -> set[str]:
     for planet, claim in _claims(text, _HOUSE_CLAIM):
         house = int(claim.group(2) or claim.group(3))
         if house not in {h for h, _ in allowed.get(planet, ())}:
-            codes.add("unsupported_placement")
+            codes.add("placement_not_in_evidence")
     for planet, claim in _claims(text, _SIGN_CLAIM):
         raw = claim.group(2) or claim.group(3)
         sign = HI_SIGNS.get(raw, raw.title())
         if sign not in {s for _, s in allowed.get(planet, ())}:
-            codes.add("unsupported_placement")
+            codes.add("placement_not_in_evidence")
     for claim in _LAGNA_CLAIM.finditer(text):
         raw = claim.group(1) or claim.group(2)
         if HI_SIGNS.get(raw, raw.title()) not in lagnas:
-            codes.add("unsupported_lagna")
+            codes.add("lagna_not_in_evidence")
     return codes
 
 
@@ -263,15 +269,16 @@ def _named_term_codes(text: str, evidence: str) -> set[str]:
         term = _normalized(m.group(0))
         term = _DOSHA_CANON.get(term, term)
         if term not in plain_evidence:
-            codes.add("unsupported_dosha")
+            codes.add("dosha_not_in_evidence")
     for m in _YOGA.finditer(text):
         if m.lastgroup not in plain_evidence:
-            codes.add("unsupported_yoga")
+            codes.add("yoga_not_in_evidence")
     return codes
 
 
-def _dual_codes(text: str, lang: str, evidence: str) -> set[str]:
-    codes = set()
+def _dual_codes(text: str, lang: str, evidence: str) -> tuple[set[str], set[str]]:
+    """(hard, warnings) for two-person Ashtakoot reports."""
+    codes, warnings = set(), set()
     role = re.search(r"Groom role: (Primary person|Partner); bride role: (Primary person|Partner)", evidence)
     if role:
         buyer = "groom" if role.group(1) == "Primary person" else "bride"
@@ -289,16 +296,16 @@ def _dual_codes(text: str, lang: str, evidence: str) -> set[str]:
                      rf"आप\s+{w[other]}\s+के\s+रूप\s+में", rf"आप\s+\({w[other]}\)", rf"{w[other]}\s+\(आप\)",
                      rf"{partner}\s+(?:ही\s+)?{w[buyer]}\s+(?:हैं|है)", rf"{w[buyer]}\s+\({partner}\)")
         if any(re.search(p, text, re.I) for p in wrong):
-            codes.add("role_mismatch")
+            codes.add("role_contradiction")
     total = re.search(r'"total_score": ([\d.]+)', evidence)
     claims = [float(m.group(1) or m.group(2)) for m in _TOTAL_CLAIM.finditer(text)]
     if claims and not total:
-        codes.add("unsupported_score")
+        warnings.add("total_score_not_supplied")  # no supplied number to contradict
     elif total and any(abs(c - float(total.group(1))) > 1e-9 for c in claims):
-        codes.add("score_mismatch")
+        codes.add("score_contradiction")
     if _BAD_DENOMINATOR.search(text):
-        codes.add("score_mismatch")
-    return codes
+        codes.add("score_contradiction")  # the frozen engine's total is always out of 36
+    return codes, warnings
 
 
 # ---------------------------------------------------------------- entry point ----------------------------------------
@@ -311,25 +318,47 @@ def _customer_text(output: dict[str, Any]) -> str:
     return "\n".join(p for p in parts if isinstance(p, str))
 
 
-def validate_focused_output(question_key: str, language: str, prompt: str, output: dict[str, Any]) -> None:
-    """Raise FocusedOutputValidationError (codes only) if the finalized output fails any deterministic check."""
+def _hard_codes(spec, lang: str, evidence: str, text: str) -> tuple[set[str], set[str]]:
+    if spec.person_mode != "dual":
+        return set(), set()
+    return _dual_codes(text, lang, evidence)
+
+
+def _warning_codes(spec, lang: str, evidence: str, text: str, report: str) -> set[str]:
+    codes = set()
+    share = _devanagari_share(text)
+    if (lang == "hi" and share < HI_MIN_DEVANAGARI) or (lang == "en" and share > EN_MAX_DEVANAGARI):
+        codes.add("language_share")
+    codes |= _section_codes(spec, lang, report)
+    codes |= _date_codes(text, evidence)
+    codes |= _placement_codes(text, evidence)
+    codes |= _named_term_codes(text, evidence)
+    return codes
+
+
+def validate_focused_output(question_key: str, language: str, prompt: str, output: dict[str, Any]) -> tuple[str, ...]:
+    """Raise FocusedOutputValidationError only for a proven contradiction (HARD_CODES); otherwise return the sorted
+    warning codes, which never block delivery. A failure inside a check is never blamed on the report: it becomes the
+    warning "check_error" and the report is delivered."""
     spec = get_prompt_spec(question_key)
     lang = language_key(language)
     evidence = _evidence_text(prompt)
     report = output.get("report") or ""
     text = _customer_text(output).translate(_DEVANAGARI_DIGITS)
-    codes = set()
-    share = _devanagari_share(text)
-    if (lang == "hi" and share < HI_MIN_DEVANAGARI) or (lang == "en" and share > EN_MAX_DEVANAGARI):
-        codes.add("language_mismatch")
-    codes |= _section_codes(spec, lang, report)
-    codes |= _date_codes(text, evidence)
-    codes |= _placement_codes(text, evidence)
-    codes |= _named_term_codes(text, evidence)
-    if spec.person_mode == "dual":
-        codes |= _dual_codes(text, lang, evidence)
-    if codes:
-        raise FocusedOutputValidationError(codes)
+    warnings = set()
+    try:
+        hard, dual_warnings = _hard_codes(spec, lang, evidence, text)
+        warnings |= dual_warnings
+    except Exception:
+        hard = set()
+        warnings.add("check_error")
+    try:
+        warnings |= _warning_codes(spec, lang, evidence, text, report)
+    except Exception:
+        warnings.add("check_error")
+    if hard:
+        raise FocusedOutputValidationError(hard)
+    return tuple(sorted(warnings))
 
 
-__all__ = ["FocusedOutputValidationError", "validate_focused_output"]
+__all__ = ["FocusedOutputValidationError", "HARD_CODES", "WARNING_CODES", "validate_focused_output"]
