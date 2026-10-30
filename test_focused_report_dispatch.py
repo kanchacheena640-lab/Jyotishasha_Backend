@@ -50,7 +50,7 @@ class FocusedDispatchTests(unittest.TestCase):
         for lang, date in (("en", "15 October 2026"), ("hi-IN", "15 अक्टूबर 2026")):
             with frozen_clock(), patch("modules.payments.report_ai_client.generate_report_completion",
                                        return_value=SimpleNamespace(content=response())) as ai:
-                result = dispatcher.generate_focused_report("promotion_timing", kundali, lang)
+                result = dispatcher.generate_focused_report("promotion_timing", kundali, lang, validate_output=False)
             ai.assert_called_once()
             prompt = ai.call_args.args[0]
             self.assertIn(result["customer_question"], prompt)

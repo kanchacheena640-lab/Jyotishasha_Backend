@@ -160,7 +160,7 @@ class RelationshipTests(unittest.TestCase):
             for key in KEYS:
                 for lang in ("en", "hi"):
                     with patch("modules.payments.report_ai_client.generate_report_completion", return_value=SimpleNamespace(content=response())) as ai:
-                        result = dispatcher.generate_focused_report(key, self.payload, lang)
+                        result = dispatcher.generate_focused_report(key, self.payload, lang, validate_output=False)
                     ai.assert_called_once()
                     self.assertEqual(result["customer_question"], get_prompt_spec(key).question.get(lang))
                     args = pdf_adapter.focused_pdf_arguments(result, customer)

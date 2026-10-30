@@ -32,6 +32,26 @@ SECTIONS = {
         ("Bottom Line", "सीधी बात")),
 }
 
+# F12-P3.10 -- a question is "timed" only when its evidence includes Dasha or transit facts.
+TIMED_EVIDENCE_KEYS = frozenset({"dasha_window_summary", "dasha_sequence", "Jupiter", "Saturn", "Rahu",
+                                 "both_dasha_windows", "both_relevant_transits"})
+# Sections that exist only to place dated evidence. An untimed question never gets them (no contradiction with
+# "omit timing when dated support is absent"); a timed question may still omit the optional ones.
+TIMING_SECTIONS = frozenset({"Strongest Periods", "Slower or Watch Period", "When Pressure May Ease",
+                             "Current Timing Context", "Current Active Obstacles", "Currently Active Strengths"})
+OPTIONAL_SECTIONS = frozenset({"Slower or Watch Period", "When Pressure May Ease", "Current Timing Context"})
+
+
+def is_timed(spec):
+    return any(r.key in TIMED_EVIDENCE_KEYS for r in spec.evidence_requirements)
+
+
+def report_sections(spec):
+    """(en, hi) heading pairs this question's prompt asks for, in order."""
+    timed = is_timed(spec)
+    return tuple(pair for pair in SECTIONS[spec.archetype] if timed or pair[0] not in TIMING_SECTIONS)
+
+
 # Shared, conditional -- appended to the prompt only when a PromptSpec sets remedies=True (currently only
 # kundali_obstacles/major_kundali_obstacles). ONE instruction block, never duplicated per question.
 REMEDY_INSTRUCTION = {
@@ -63,15 +83,20 @@ def output_contract(spec, language):
         "interpretation": "<one calm sentence tied to the strongest supplied evidence>",
         "evidence": ["<a real fact from the data above>", "<a second real fact>"]},
         "action_items": ["<short practical guidance item>", "<short practical guidance item>"]}, ensure_ascii=False)
-    headings = "\n".join(f"**{pair[language == 'hi']}**" for pair in SECTIONS[spec.archetype])
+    headings = "\n".join(f"**{pair[language == 'hi']}**" for pair in report_sections(spec))
+    timing = (
+        "Strongest Periods: a concise reason for each. "
+        "Slower or Watch Period: include this section only if the astrology genuinely justifies it. "
+        "Any timing section, including easing or Current Timing Context, is omitted when dated support is absent. "
+    ) if is_timed(spec) else (
+        "No dated evidence is supplied for this question: do not add any timing section, period, date or year. "
+    )
     return (
         "Return exactly the two markers below on their own lines. META must be valid JSON, no comments or trailing commas. "
         "Keep JSON keys unchanged; write all prose values and REPORT in the requested language. Keep the supplied hero label.\n"
         "===META===\n" + example + "\n===REPORT===\n<the report as plain text>\n\n"
         "Use these headings in this order, bold on their own lines:\n" + headings + "\n"
-        "Direct Answer: 2 to 3 lines. Why: only the strongest relevant factors. Strongest Periods: a concise reason for each. "
-        "Slower or Watch Period: include this section only if the astrology genuinely justifies it. "
-        "Any timing section, including easing or Current Timing Context, is omitted when dated support is absent. "
+        "Direct Answer: 2 to 3 lines. Why: only the strongest relevant factors. " + timing +
         "Do not presume difficulty in a diagnostic answer if the evidence does not support it. "
         "Practical guidance: 2 to 3 concise practical actions. Bottom Line: 1 to 2 lines that answer the original question again. "
         "Do not repeat interpretations across sections."

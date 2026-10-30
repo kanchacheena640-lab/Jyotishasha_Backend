@@ -47,6 +47,7 @@ from report_output import report_output_path
 from full_kundali_api import calculate_full_kundali
 from modules.intents.question_catalog import get_question, UnknownQuestionError
 from modules.focused_reports.dispatcher import generate_focused_report
+from modules.focused_reports.output_validation import FocusedOutputValidationError
 from modules.focused_reports.pdf_adapter import render_focused_report_pdf
 from modules.payments.report_delivery_service import deliver_generated_report
 from modules.payments.report_product_registry import ReportProduct
@@ -198,7 +199,13 @@ def route_focused_report_generation(order_id: int) -> None:
             # (deliver_generated_report() itself already records that).
             print("[FOCUSED REPORT EMAIL ERROR]", email_exc)
 
-    except Exception:
+    except Exception as exc:
+        if isinstance(exc, FocusedOutputValidationError):
+            # F12-P3.10: the AI output was rejected before any PDF/email existed. Codes only -- never the text or
+            # birth details. The order stays PAID and becomes "Failed" below, so the existing recovery paths
+            # (ReconciliationService.regenerate / a repeated payment verification) can retry it; nothing here
+            # retries automatically.
+            print("[FOCUSED REPORT OUTPUT REJECTED]", f"order={order_id}", ",".join(exc.codes))
         # Matches love_premium_task.py's own outer-except pattern: re-query
         # rather than trust the in-memory `order` object, and never
         # overwrite report_stage="Ready" if generation actually completed

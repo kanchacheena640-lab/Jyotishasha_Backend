@@ -140,7 +140,7 @@ class MoneyBusinessTests(unittest.TestCase):
             for q in QUESTIONS_MB:
                 for lang in ("en", "hi"):
                     with patch("modules.payments.report_ai_client.generate_report_completion", return_value=SimpleNamespace(content=response())) as ai:
-                        result = dispatcher.generate_focused_report(q.question_key, self.kundali, lang)
+                        result = dispatcher.generate_focused_report(q.question_key, self.kundali, lang, validate_output=False)
                     ai.assert_called_once()
                     self.assertEqual(result["customer_question"], q.question.get(lang))
                     self.assertEqual(result["intent_slug"], q.intent_slug)

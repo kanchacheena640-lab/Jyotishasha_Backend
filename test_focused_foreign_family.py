@@ -147,7 +147,7 @@ class ForeignTests(unittest.TestCase):
             for key in FOREIGN_HORIZONS:
                 for lang in ("en", "hi"):
                     with patch("modules.payments.report_ai_client.generate_report_completion", return_value=SimpleNamespace(content=response())) as ai:
-                        result = dispatcher.generate_focused_report(key, self.kundali, lang)
+                        result = dispatcher.generate_focused_report(key, self.kundali, lang, validate_output=False)
                     ai.assert_called_once()
                     self.assertEqual(result["handler_key"], key)
                     self.assertEqual(result["customer_question"], get_prompt_spec(key).question.get(lang))

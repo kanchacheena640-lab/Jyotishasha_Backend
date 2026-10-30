@@ -91,7 +91,7 @@ class CareerFamilyTests(unittest.TestCase):
                 for language in ("en", "hi"):
                     with patch("modules.payments.report_ai_client.generate_report_completion",
                                return_value=SimpleNamespace(content=response())) as ai:
-                        result = dispatcher.generate_focused_report(q.question_key, self.kundali, language)
+                        result = dispatcher.generate_focused_report(q.question_key, self.kundali, language, validate_output=False)
                     ai.assert_called_once()
                     prompt = ai.call_args.args[0]
                     self.assertIn(q.question.get(language), prompt)
@@ -175,7 +175,7 @@ class CareerFamilyTests(unittest.TestCase):
 
     def test_pdf_rejects_other_career_keys_leaked_in_narrative(self):
         with patch("modules.payments.report_ai_client.generate_report_completion", return_value=SimpleNamespace(content=response())):
-            result = dispatcher.generate_focused_report("new_job_timing", self.kundali)
+            result = dispatcher.generate_focused_report("new_job_timing", self.kundali, validate_output=False)
         for internal in ("new_job_timing", "job_change_timing", "best_career_years", "dasha_sequence"):
             with self.assertRaises(ValueError):
                 pdf_adapter.focused_pdf_arguments({**result, "report": internal}, PERSONA)
