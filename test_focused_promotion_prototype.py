@@ -450,6 +450,11 @@ class IsolationTests(unittest.TestCase):
         forbidden = ("report_ai_client", "openai", "import tasks", "from tasks", "razorpay", "pdf_generator", "email_utils",
                      "order_service", "payment_service", "report_generation_dispatcher", "report_delivery_service")
         for path in (REPO / "modules" / "focused_reports").glob("*.py"):
+            # paid_report_router.py (0b5b3b4) is the deliberate paid-order -> generation -> PDF -> email
+            # bridge, so it must import the delivery pipeline; it has its own suite
+            # (test_report_platform_p0_3_focused_payment_bridge.py). Every evidence/prompt module stays isolated.
+            if path.name == "paid_report_router.py":
+                continue
             imports = "\n".join(line for line in path.read_text(encoding="utf-8").splitlines()
                                 if line.startswith(("import ", "from ")))
             for token in forbidden:
