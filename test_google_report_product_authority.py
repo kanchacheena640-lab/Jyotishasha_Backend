@@ -15,7 +15,7 @@ from modules.payments.payment_models import (
 from modules.payments.payment_service import PaymentService
 from routes.routes_google_report_confirm import routes_google_report_confirm
 from config.google_play_report_products import (
-    RELATIONSHIP_REPORT_PRODUCT_ID, STANDARD_REPORT_PRODUCT_ID,
+    LEGACY_STANDARD_REPORT_PRODUCT_ID, RELATIONSHIP_REPORT_PRODUCT_ID, STANDARD_REPORT_PRODUCT_ID,
 )
 
 
@@ -142,11 +142,13 @@ class GoogleReportProductAuthorityTests(unittest.TestCase):
         return service, order_service, request
 
     def test_correct_standard_and_relationship_products_reach_token_claim(self):
-        cases = (
-            ("career_report", STANDARD_REPORT_PRODUCT_ID,
-             SimpleNamespace(report_slug="career_report", price=51)),
+        # Standard reports honour reports99 and the legacy reports51 at either registry price (Rs51 -> Rs99 switch).
+        cases = tuple(
+            ("career_report", play_id, SimpleNamespace(report_slug="career_report", price=price, generator="standard_v1"))
+            for play_id in (STANDARD_REPORT_PRODUCT_ID, LEGACY_STANDARD_REPORT_PRODUCT_ID) for price in (51, 99)
+        ) + (
             ("relationship_future_report", RELATIONSHIP_REPORT_PRODUCT_ID,
-             SimpleNamespace(report_slug="relationship_future_report", price=199)),
+             SimpleNamespace(report_slug="relationship_future_report", price=199, generator="love_premium_v1")),
         )
         for slug, play_id, registered in cases:
             with self.subTest(slug=slug):
@@ -160,9 +162,14 @@ class GoogleReportProductAuthorityTests(unittest.TestCase):
     def test_cross_tier_products_are_rejected_before_claim_or_order(self):
         cases = (
             ("relationship_future_report", STANDARD_REPORT_PRODUCT_ID,
-             SimpleNamespace(report_slug="relationship_future_report", price=199)),
+             SimpleNamespace(report_slug="relationship_future_report", price=199, generator="love_premium_v1")),
+            ("relationship_future_report", LEGACY_STANDARD_REPORT_PRODUCT_ID,
+             SimpleNamespace(report_slug="relationship_future_report", price=199, generator="love_premium_v1")),
             ("career_report", RELATIONSHIP_REPORT_PRODUCT_ID,
-             SimpleNamespace(report_slug="career_report", price=51)),
+             SimpleNamespace(report_slug="career_report", price=99, generator="standard_v1")),
+            # a Rs51 focused product is never sold as the Rs99 standard Play product
+            ("promotion_timing", STANDARD_REPORT_PRODUCT_ID,
+             SimpleNamespace(report_slug="promotion_timing", price=51, generator="focused_v1")),
         )
         for slug, play_id, registered in cases:
             with self.subTest(slug=slug, play_id=play_id):

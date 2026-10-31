@@ -1,5 +1,7 @@
 # config/pricing.py
 
+# Historical R2 seed catalog (frozen; not read at runtime). Live prices are report_products.price -- standard
+# reports are Rs99 since migration c5e1d7a9b2f4.
 PRODUCT_PRICES = {
     "marriage_report": 51,
     "career_report": 51,

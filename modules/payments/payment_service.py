@@ -147,7 +147,7 @@ from modules.payments.google_play_provider import GooglePlayProvider
 from modules.payments.order_service import (
     OrderService, OrderValidationError, ReportDispatchError,
 )
-from config.google_play_report_products import expected_report_product_id
+from config.google_play_report_products import accepted_report_product_ids
 from modules.payments.payment_logger import log_payment_event, new_correlation_id
 from modules.payments.payment_models import (
     PaymentProviderType,
@@ -310,13 +310,14 @@ class PaymentService:
                 (request.order_payload or {}).get("product")
             )
             try:
-                expected_product_id = expected_report_product_id(
+                accepted_product_ids = accepted_report_product_ids(
                     report_product.report_slug, report_product.price,
+                    getattr(report_product, "generator", None),
                 )
             except ValueError as exc:
                 raise OrderValidationError(str(exc)) from exc
             verified_product_id = (result.raw_payload or {}).get("product_id")
-            if verified_product_id != expected_product_id:
+            if verified_product_id not in accepted_product_ids:
                 raise OrderValidationError(
                     "Google Play product does not match the requested report."
                 )
