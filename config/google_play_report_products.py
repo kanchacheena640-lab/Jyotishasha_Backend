@@ -6,6 +6,14 @@ RELATIONSHIP_REPORT_SLUG = "relationship_future_report"
 RELATIONSHIP_REPORT_PRODUCT_ID = "relationship_report199"
 STANDARD_GENERATOR = "standard_v1"
 
+# What Google actually charges for each Play product. A Google Play order records this, not the registry price,
+# so an old-app reports51 purchase after the Rs99 switch (or a reports99 one before it) is recorded as charged.
+PLAY_PRODUCT_AMOUNT_PAISE = {
+    LEGACY_STANDARD_REPORT_PRODUCT_ID: 5100,
+    STANDARD_REPORT_PRODUCT_ID: 9900,
+    RELATIONSHIP_REPORT_PRODUCT_ID: 19900,
+}
+
 
 def expected_report_product_id(report_slug: str, price_rupees: int) -> str:
     """Return the Play product for this registry product's price tier."""
