@@ -119,6 +119,11 @@ LABELS = {
         "en": "Download Jyotishasha App",
         "hi": "Jyotishasha App Download करें",
     },
+    # Base report PDFs: related Rs51 focused reports, listed before the app CTA.
+    "related_reports_heading": {
+        "en": "Get a Focused Answer to Your Next Question",
+        "hi": "अपने अगले सवाल का Focused जवाब पाएँ",
+    },
     # Q4.2A -- modern-Hindi static labels for the cover / summary cards
     # that report_template.html previously hardcoded in English for
     # every language. English values below are EXACTLY the old literal

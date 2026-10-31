@@ -316,6 +316,7 @@ def generate_pdf_report_weasy(
     disclaimer: str | None = None,
     app_download: dict | None = None,     # Q2.1 -- {heading, benefit_text, play_store_url, app_store_url}
     partner_info: dict | None = None,     # Q4.4B -- relationship_future_report only: {name, dob, tob, pob}
+    related_reports: list | None = None,  # base reports only: [{title, price, url}] related focused reports
 ):
     # Ensure folders exist
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -421,6 +422,7 @@ def generate_pdf_report_weasy(
         "highlights": highlights or [],
         "gemstone": gemstone,
         "disclaimer": disclaimer,
+        "related_reports": related_reports or [],
         "app_download": app_download,
 
         # ✅ Final GPT response converted via numbered parser

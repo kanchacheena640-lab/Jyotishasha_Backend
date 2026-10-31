@@ -26,6 +26,7 @@ from pdf_generator_weasy import generate_pdf_report_weasy as generate_pdf_report
 # report_ai_client.py's own docstring for the full rationale, incl.
 # the locked "no automatic model fallback" rule).
 from modules.payments.report_ai_client import generate_report_completion
+from modules.payments.base_report_focused_links import related_focused_reports
 from modules.payments.report_product_intelligence import get_product_intelligence
 from modules.payments.report_structured_output import (
     parse_structured_response,
@@ -638,6 +639,8 @@ def _generate_and_send_report_core(order_id):
                 action_list=action_list_component,
                 timeline=timeline_component,
                 disclaimer=disclaimer_text,
+                # 2-3 related Rs51 focused reports (title, price, live URL), listed before the app CTA.
+                related_reports=related_focused_reports(product_slug, language),
                 app_download=app_download_component,
                 # Spouse Nature Report only: long single-section narratives
                 # render without the keep-together card shell (English cards

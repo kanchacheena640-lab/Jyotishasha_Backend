@@ -425,6 +425,19 @@
        ever names the one locked action (downloading the app) plus
        whatever store links (if any) are supplied.
        =================================================== */
+    .related-reports-box {
+      margin-top: 18px;
+      padding: 14px 18px;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      page-break-inside: avoid;
+    }
+    .related-reports-heading { font-size: 12pt; font-weight: bold; color: var(--accent); margin-bottom: 6px; }
+    .related-reports-list { margin: 0; padding-left: 16px; }
+    .related-reports-list li { margin: 0 0 6px; font-size: 10.5pt; }
+    .related-report-title { font-weight: bold; }
+    .related-report-url { font-size: 8.5pt; color: var(--muted, #666); word-break: break-all; }
+    a.related-report-anchor { color: inherit; text-decoration: none; }
     .app-download-box {
       margin-top: 18px;
       padding: 16px 18px;
@@ -667,8 +680,25 @@
     <div class="disclaimer-box">{{ disclaimer }}</div>
   {% endif %}
 
+  <!-- ================= RELATED FOCUSED REPORTS (optional, base reports only) =================
+       2-3 real Rs51 focused reports (title, price, live URL) from
+       modules/payments/base_report_focused_links.py. Each line is a real <a href>,
+       so WeasyPrint makes it a clickable PDF link. Absent unless supplied. -->
+  {% if related_reports %}
+    <div class="related-reports-box">
+      <div class="related-reports-heading">{{ labels.related_reports_heading }}</div>
+      <ul class="related-reports-list">
+        {% for item in related_reports %}
+        <li><a class="related-report-anchor" href="{{ item.url }}"><span class="related-report-title">{{ item.title }}</span> — ₹{{ item.price }}</a>
+          <div class="related-report-url"><a class="related-report-anchor" href="{{ item.url }}">{{ item.url }}</a></div></li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
   <!-- ================= 6/8. APP DOWNLOAD CLOSING CTA (optional) =================
-       LOCKED RULE: the only shared closing CTA. No fake store links --
+       The shared app closing CTA (base report PDFs also list related focused
+       reports just above it). No fake store links --
        a URL renders only when actually supplied. The store line is wrapped in a
        real <a href> (WeasyPrint turns an absolute-URL anchor into a clickable
        PDF link annotation) so the existing, unchanged visible text becomes a
