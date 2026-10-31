@@ -119,10 +119,18 @@ LABELS = {
         "en": "Download Jyotishasha App",
         "hi": "Jyotishasha App Download करें",
     },
-    # Base report PDFs: related Rs51 focused reports, listed before the app CTA.
+    # Base report PDFs: optional related Rs51 focused reports, listed before the app CTA.
     "related_reports_heading": {
-        "en": "Get a Focused Answer to Your Next Question",
-        "hi": "अपने अगले सवाल का Focused जवाब पाएँ",
+        "en": "Questions You May Want to Explore Next",
+        "hi": "कुछ और सवाल, जिन्हें आप जानना चाहें",
+    },
+    "related_reports_intro": {
+        "en": "Your current report is complete. These are optional topics to explore if they are relevant to you.",
+        "hi": "आपकी यह रिपोर्ट पूरी है। नीचे दिए गए विषय वैकल्पिक हैं—यदि आपके लिए उपयोगी हों, तभी देखें।",
+    },
+    "related_report_two_person": {
+        "en": "Requires your partner's birth details",
+        "hi": "इसके लिए पार्टनर की जन्म जानकारी ज़रूरी है",
     },
     # Q4.2A -- modern-Hindi static labels for the cover / summary cards
     # that report_template.html previously hardcoded in English for

@@ -433,6 +433,8 @@
       page-break-inside: avoid;
     }
     .related-reports-heading { font-size: 12pt; font-weight: bold; color: var(--accent); margin-bottom: 6px; }
+    .related-reports-intro { font-size: 9.5pt; color: var(--muted, #666); margin: 0 0 8px; }
+    .related-report-note { font-size: 8.5pt; font-style: italic; color: var(--muted, #666); }
     .related-reports-list { margin: 0; padding-left: 16px; }
     .related-reports-list li { margin: 0 0 6px; font-size: 10.5pt; }
     .related-report-title { font-weight: bold; }
@@ -687,9 +689,11 @@
   {% if related_reports %}
     <div class="related-reports-box">
       <div class="related-reports-heading">{{ labels.related_reports_heading }}</div>
+      <div class="related-reports-intro">{{ labels.related_reports_intro }}</div>
       <ul class="related-reports-list">
         {% for item in related_reports %}
         <li><a class="related-report-anchor" href="{{ item.url }}"><span class="related-report-title">{{ item.title }}</span> — ₹{{ item.price }}</a>
+          {% if item.two_person %}<div class="related-report-note">{{ labels.related_report_two_person }}</div>{% endif %}
           <div class="related-report-url"><a class="related-report-anchor" href="{{ item.url }}">{{ item.url }}</a></div></li>
         {% endfor %}
       </ul>

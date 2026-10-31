@@ -21,6 +21,7 @@ from config.google_play_report_products import (
 )
 from config.pricing import PRODUCT_PRICES
 from modules.focused_reports.prompt_specs import get_prompt_spec
+from modules.intents.question_catalog import get_question
 from modules.intents.question_catalog import QUESTIONS
 from modules.payments.base_report_focused_links import BASE_TO_FOCUSED, focused_report_url, related_focused_reports
 from modules.payments.report_i18n_labels import get_label
@@ -100,13 +101,30 @@ class GooglePlayPolicyTests(unittest.TestCase):
 
 
 class RelatedFocusedMappingTests(unittest.TestCase):
-    def test_every_base_report_maps_to_three_distinct_real_focused_reports(self):
+    def test_every_base_report_maps_to_at_most_three_distinct_real_focused_reports(self):
         self.assertEqual(sorted(BASE_TO_FOCUSED), STANDARD_SLUGS)
         self.assertNotIn("relationship_future_report", BASE_TO_FOCUSED)
         for slug, keys in BASE_TO_FOCUSED.items():
-            self.assertEqual(len(keys), 3, slug)
-            self.assertEqual(len(set(keys)), 3, slug)
+            self.assertLessEqual(len(keys), 3, slug)
+            self.assertEqual(len(set(keys)), len(keys), slug)
             self.assertTrue(set(keys) <= set(FOCUSED_KEYS), slug)
+
+    def test_content_rules_for_sensitive_base_reports(self):
+        # No buyer-chart topic presented as a child analysis, and no generic stand-ins for a legal report.
+        self.assertEqual(BASE_TO_FOCUSED["children_parenting_report"], ())
+        self.assertEqual(BASE_TO_FOCUSED["legal_disputes_report"], ())
+        # Heartbreak: never assume a current partner.
+        self.assertTrue(all(get_question(k).person_mode != "dual" for k in BASE_TO_FOCUSED["love_disappointment_report"]))
+        # Money: never assume debt or financial distress.
+        money = BASE_TO_FOCUSED["financial_report"] + BASE_TO_FOCUSED["financial_stability_report"]
+        self.assertFalse({"debt_pressure_easing", "financial_pressure_easing"} & set(money))
+        # A base report never re-sells its own question.
+        self.assertNotIn("marriage_delay_reason", BASE_TO_FOCUSED["delay_in_marriage_report"])
+
+    def test_two_person_reports_are_flagged(self):
+        for slug, keys in BASE_TO_FOCUSED.items():
+            for key, item in zip(keys, related_focused_reports(slug, "en")):
+                self.assertEqual(item["two_person"], get_question(key).person_mode == "dual", (slug, key))
 
     def test_titles_prices_and_live_urls_match_the_pdf_language(self):
         for language, prefix in (("en", "https://www.jyotishasha.com/reports/focused/"),
@@ -157,13 +175,28 @@ class BaseReportPdfCtaTests(unittest.TestCase):
                 self.assertLess(text.index(get_label("related_reports_heading", "en")), text.index("Download Jyotishasha App"))
 
     def test_no_related_block_without_related_reports(self):
-        text, uris = self.render("en", None)
-        self.assertNotIn(get_label("related_reports_heading", "en"), text)
-        self.assertFalse(any("/reports/focused/" in u for u in uris))
+        for related in (None, [], related_focused_reports("legal_disputes_report", "en")):
+            text, uris = self.render("en", related)
+            self.assertNotIn(get_label("related_reports_heading", "en"), text)
+            self.assertNotIn(get_label("related_reports_intro", "en"), text.replace("\n", " "))
+            self.assertFalse(any("/reports/focused/" in u for u in uris))
+            self.assertEqual(uris.count(JYOTISHASHA_PLAY_STORE_URL), 1)
 
-    def test_related_reports_heading_has_both_languages(self):
-        self.assertTrue(get_label("related_reports_heading", "en") and get_label("related_reports_heading", "hi"))
-        self.assertTrue(re.search(r"[ऀ-ॿ]", get_label("related_reports_heading", "hi")))
+    def test_intro_and_partner_note_render_only_where_they_apply(self):
+        text, _ = self.render("en", related_focused_reports("marriage_report", "en"))
+        flat = text.replace("\n", " ")
+        self.assertIn(get_label("related_reports_intro", "en"), flat)
+        dual = sum(i["two_person"] for i in related_focused_reports("marriage_report", "en"))
+        self.assertEqual(flat.count(get_label("related_report_two_person", "en")), dual)
+        text, _ = self.render("en", related_focused_reports("career_report", "en"))
+        self.assertNotIn(get_label("related_report_two_person", "en"), text)
+
+    def test_related_reports_labels_have_both_languages(self):
+        for key in ("related_reports_heading", "related_reports_intro", "related_report_two_person"):
+            self.assertTrue(get_label(key, "en") and get_label(key, "hi"), key)
+            self.assertTrue(re.search(r"[ऀ-ॿ]", get_label(key, "hi")), key)
+        self.assertEqual(get_label("related_reports_heading", "en"), "Questions You May Want to Explore Next")
+        self.assertEqual(get_label("related_reports_heading", "hi"), "कुछ और सवाल, जिन्हें आप जानना चाहें")
 
 
 if __name__ == "__main__":
