@@ -57,6 +57,7 @@ from modules.payments import (
     PaymentService,
     PaymentStatus,
 )
+from modules.payments.google_play_identifiers import is_valid_product_id, is_valid_purchase_token
 from modules.payments.google_play_models import GooglePlayVerificationStatus
 from modules.payments.order_service import OrderValidationError
 
@@ -92,6 +93,13 @@ def confirm_google_report_purchase():
     product_id = data.get("product_id")
     if not product_id or not isinstance(product_id, str):
         return _bad_request("product_id is required.")
+
+    # The token must reach Google and the payment ledger as the same exact string: an alias such
+    # as "TOKEN#1" would verify the real purchase again under a new ledger key (replay).
+    if not is_valid_purchase_token(purchase_token):
+        return _bad_request("purchase_token has an invalid format.")
+    if not is_valid_product_id(product_id):
+        return _bad_request("product_id has an invalid format.")
 
     missing = [field for field in _REQUIRED_ORDER_FIELDS if not data.get(field)]
     if missing:

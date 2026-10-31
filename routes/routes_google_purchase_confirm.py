@@ -126,6 +126,7 @@ from modules.payments import (
     PaymentService,
     PaymentStatus,
 )
+from modules.payments.google_play_identifiers import is_valid_purchase_token
 from modules.payments.google_play_models import GooglePlayVerificationStatus
 from modules.payments.payment_logger import log_payment_event, new_correlation_id
 
@@ -226,6 +227,12 @@ def confirm_google_purchase():
         return _bad_request(
             "purchase_token is required.",
             correlation_id=correlation_id, reason="missing_purchase_token",
+        )
+    # Same exact string to Google and to the payment ledger (no "TOKEN#1"-style aliases).
+    if not is_valid_purchase_token(purchase_token):
+        return _bad_request(
+            "purchase_token has an invalid format.",
+            correlation_id=correlation_id, reason="invalid_purchase_token",
         )
 
     platform = data.get("platform")

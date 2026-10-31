@@ -73,6 +73,11 @@ from modules.payments.google_play_models import (
     GooglePlaySubscriptionVerification,
     GooglePlayVerificationStatus,
 )
+from modules.payments.google_play_identifiers import (
+    is_valid_product_id,
+    is_valid_purchase_token,
+    path_segment,
+)
 from modules.payments.payment_logger import _mask_identifier
 from modules.payments.payment_models import (
     PaymentProviderType,
@@ -206,6 +211,16 @@ class GooglePlayProvider(PaymentProvider):
                 error_message="purchase_token is required.",
             )
 
+        if not is_valid_purchase_token(purchase_token):
+            # Never sent to Google: an alias ("TOKEN#1", "a/../TOKEN") would verify a real purchase
+            # under a different ledger key. See google_play_identifiers.
+            return GooglePlaySubscriptionVerification(
+                verification_status=GooglePlayVerificationStatus.INVALID_TOKEN,
+                purchase_token=purchase_token,
+                package_name=package_name,
+                error_message="purchase_token has an invalid format.",
+            )
+
         if not package_name:
             return GooglePlaySubscriptionVerification(
                 verification_status=GooglePlayVerificationStatus.AUTH_ERROR,
@@ -223,8 +238,8 @@ class GooglePlayProvider(PaymentProvider):
             )
 
         url = (
-            f"{_ANDROID_PUBLISHER_BASE}/applications/{package_name}"
-            f"/purchases/subscriptionsv2/tokens/{purchase_token}"
+            f"{_ANDROID_PUBLISHER_BASE}/applications/{path_segment(package_name)}"
+            f"/purchases/subscriptionsv2/tokens/{path_segment(purchase_token)}"
         )
 
         try:
@@ -366,6 +381,17 @@ class GooglePlayProvider(PaymentProvider):
                 error_message="product_id is required.",
             )
 
+        if not is_valid_purchase_token(purchase_token) or not is_valid_product_id(product_id):
+            # Never sent to Google: an alias ("TOKEN#1", "a/../TOKEN") would verify a real purchase
+            # under a different ledger key, or a different product. See google_play_identifiers.
+            return GooglePlayProductVerification(
+                verification_status=GooglePlayVerificationStatus.INVALID_TOKEN,
+                purchase_token=purchase_token,
+                product_id=product_id,
+                package_name=package_name,
+                error_message="purchase_token or product_id has an invalid format.",
+            )
+
         if not package_name:
             return GooglePlayProductVerification(
                 verification_status=GooglePlayVerificationStatus.AUTH_ERROR,
@@ -385,8 +411,8 @@ class GooglePlayProvider(PaymentProvider):
             )
 
         url = (
-            f"{_ANDROID_PUBLISHER_BASE}/applications/{package_name}"
-            f"/purchases/products/{product_id}/tokens/{purchase_token}"
+            f"{_ANDROID_PUBLISHER_BASE}/applications/{path_segment(package_name)}"
+            f"/purchases/products/{path_segment(product_id)}/tokens/{path_segment(purchase_token)}"
         )
 
         try:
@@ -462,6 +488,19 @@ class GooglePlayProvider(PaymentProvider):
             )
 
         body = self._safe_json(response)
+
+        # ProductPurchase's purchaseToken/productId "may not be present"; when Google does return
+        # them they must be exactly the token and product this request verified.
+        for field, expected in (("purchaseToken", purchase_token), ("productId", product_id)):
+            echoed = body.get(field)
+            if echoed is not None and echoed != expected:
+                return GooglePlayProductVerification(
+                    verification_status=GooglePlayVerificationStatus.INVALID_TOKEN,
+                    purchase_token=purchase_token,
+                    product_id=product_id,
+                    package_name=package_name,
+                    error_message=f"Google Play returned a different {field} than the one verified.",
+                )
 
         return GooglePlayProductVerification(
             verification_status=GooglePlayVerificationStatus.VERIFIED,
@@ -546,8 +585,9 @@ class GooglePlayProvider(PaymentProvider):
             )
 
         url = (
-            f"{_ANDROID_PUBLISHER_BASE}/applications/{package_name}"
-            f"/purchases/subscriptions/{subscription_id}/tokens/{purchase_token}:acknowledge"
+            f"{_ANDROID_PUBLISHER_BASE}/applications/{path_segment(package_name)}"
+            f"/purchases/subscriptions/{path_segment(subscription_id)}"
+            f"/tokens/{path_segment(purchase_token)}:acknowledge"
         )
 
         try:
