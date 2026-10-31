@@ -113,6 +113,9 @@ class RelatedFocusedMappingTests(unittest.TestCase):
         # No buyer-chart topic presented as a child analysis, and no generic stand-ins for a legal report.
         self.assertEqual(BASE_TO_FOCUSED["children_parenting_report"], ())
         self.assertEqual(BASE_TO_FOCUSED["legal_disputes_report"], ())
+        self.assertEqual(BASE_TO_FOCUSED["lifestyle_analysis_report"], ())
+        self.assertEqual(BASE_TO_FOCUSED["love_disappointment_report"], ("current_phase_meaning",))
+        self.assertEqual(BASE_TO_FOCUSED["gemstone_consultation"], ("major_kundali_strengths",))
         # Heartbreak: never assume a current partner.
         self.assertTrue(all(get_question(k).person_mode != "dual" for k in BASE_TO_FOCUSED["love_disappointment_report"]))
         # Money: never assume debt or financial distress.
