@@ -48,7 +48,7 @@ import math
 import threading
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 from extensions import db
@@ -160,6 +160,10 @@ def _has_value(value: Any) -> bool:
     return True
 
 
+# Order column widths (models.Order): a longer value would fail the INSERT, after the payment was claimed.
+_ORDER_TEXT_LIMITS = {"name": 50, "email": 120, "phone": 20, "pob": 100}
+
+
 def _missing_fields(payload: Dict[str, Any], required_fields) -> list:
     return [f for f in required_fields if not _has_value(payload.get(f) if isinstance(payload, dict) else None)]
 
@@ -172,6 +176,17 @@ def _validate_dob(value: Any, field: str) -> None:
         date.fromisoformat(value)
     except ValueError as exc:
         raise OrderValidationError(f"{field} must be a valid YYYY-MM-DD calendar date.") from exc
+
+
+def _validate_tob(value: Any, field: str) -> None:
+    """Require a 24-hour HH:MM time -- exactly what report generation parses
+    (full_kundali_api.calculate_full_kundali: "%Y-%m-%d %H:%M")."""
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9]{2}:[0-9]{2}", value):
+        raise OrderValidationError(f"{field} must be a valid 24-hour HH:MM time.")
+    try:
+        datetime.strptime(value, "%H:%M")
+    except ValueError as exc:
+        raise OrderValidationError(f"{field} must be a valid 24-hour HH:MM time.") from exc
 
 
 def _coordinate_number(value: Any, bound: float) -> Optional[float]:
@@ -211,6 +226,79 @@ def _validate_birth_coordinates(source: Any, prefix: str = "") -> None:
             f"{prefix}latitude/longitude (0, 0) is not a valid birth place. "
             "Please select the birth place from the suggestions."
         )
+
+
+def validate_report_order_fields(product: ReportProduct, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Required order fields for `product`'s generator; returns the partner payload to store.
+
+    Shared by create_pending_order() (website) and OrderService.validate_paid_report_order() (Google Play,
+    run before the purchase token is claimed) so both paths enforce the same rules. Raises
+    OrderValidationError; never touches the database.
+    """
+    partner_payload: Optional[Dict[str, Any]] = None
+    if product.generator in (LOVE_PREMIUM_GENERATOR, FOCUSED_DUAL_GENERATOR):
+        # P0.3 -- focused_dual_v1 (9 relationship-family focused products)
+        # shares this branch verbatim with love_premium_v1: same primary/
+        # partner required-field sets, same _validate_birth_coordinates()
+        # calls, same error-message shape. Nothing below was changed to
+        # accommodate it.
+        missing = _missing_fields(payload, LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS)
+        if missing:
+            raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
+        _validate_dob(payload.get("dob"), "dob")
+        if product.generator == FOCUSED_DUAL_GENERATOR:
+            _validate_tob(payload.get("tob"), "tob")
+        _validate_birth_coordinates(payload)
+
+        partner_payload = payload.get("partner")
+        if not isinstance(partner_payload, dict) or not partner_payload:
+            raise OrderValidationError("partner details are required for this report.")
+        partner_missing = _missing_fields(partner_payload, LOVE_PREMIUM_PARTNER_REQUIRED_FIELDS)
+        if partner_missing:
+            raise OrderValidationError(
+                f"Missing required partner field(s): {', '.join('partner.' + f for f in partner_missing)}"
+            )
+        _validate_dob(partner_payload.get("dob"), "partner.dob")
+        if product.generator == FOCUSED_DUAL_GENERATOR:
+            _validate_tob(partner_payload.get("tob"), "partner.tob")
+        # The paid contract above already REQUIRES the partner's full birth data
+        # (tob/pob/latitude/longitude), so its coordinates are enforced the same way.
+        # DOB-only partner analysis is a separate, unpaid/internal capability
+        # (modules/love/love_data_collector.py) and is not affected.
+        _validate_birth_coordinates(partner_payload, "partner.")
+    elif product.generator == FOCUSED_GENERATOR:
+        # P0.3 -- focused_v1 (54 SELF focused products). Same required-field
+        # set as every standard report (STANDARD_REQUIRED_FIELDS, unchanged),
+        # PLUS a birth-coordinate check the standard_v1 branch below has never
+        # enforced at this layer -- a deliberate, additive safety choice for
+        # this new product family only; standard_v1's own existing behavior
+        # (final `else` below) is left byte-for-byte unchanged.
+        missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
+        if missing:
+            raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
+        _validate_dob(payload.get("dob"), "dob")
+        _validate_tob(payload.get("tob"), "tob")
+        _validate_birth_coordinates(payload)
+        candidate_partner = payload.get("partner")
+        if isinstance(candidate_partner, dict):
+            partner_payload = candidate_partner
+            if "dob" in partner_payload:
+                _validate_dob(partner_payload.get("dob"), "partner.dob")
+    else:
+        missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
+        if missing:
+            raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
+        _validate_dob(payload.get("dob"), "dob")
+        # Not required for a standard report, but stored verbatim
+        # if a caller happens to send one -- never invented, never
+        # rejected either way. Matches create_paid_report_order()'s
+        # own existing partner_payload handling exactly.
+        candidate_partner = payload.get("partner")
+        if isinstance(candidate_partner, dict):
+            partner_payload = candidate_partner
+            if "dob" in partner_payload:
+                _validate_dob(partner_payload.get("dob"), "partner.dob")
+    return partner_payload
 
 
 @dataclass
@@ -309,65 +397,7 @@ class OrderService:
         if not product.active:
             raise OrderValidationError(f"Report product is not currently available: {report_slug!r}")
 
-        partner_payload: Optional[Dict[str, Any]] = None
-
-        if product.generator in (LOVE_PREMIUM_GENERATOR, FOCUSED_DUAL_GENERATOR):
-            # P0.3 -- focused_dual_v1 (9 relationship-family focused products)
-            # shares this branch verbatim with love_premium_v1: same primary/
-            # partner required-field sets, same _validate_birth_coordinates()
-            # calls, same error-message shape. Nothing below was changed to
-            # accommodate it.
-            missing = _missing_fields(payload, LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS)
-            if missing:
-                raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
-            _validate_dob(payload.get("dob"), "dob")
-            _validate_birth_coordinates(payload)
-
-            partner_payload = payload.get("partner")
-            if not isinstance(partner_payload, dict) or not partner_payload:
-                raise OrderValidationError("partner details are required for this report.")
-            partner_missing = _missing_fields(partner_payload, LOVE_PREMIUM_PARTNER_REQUIRED_FIELDS)
-            if partner_missing:
-                raise OrderValidationError(
-                    f"Missing required partner field(s): {', '.join('partner.' + f for f in partner_missing)}"
-                )
-            _validate_dob(partner_payload.get("dob"), "partner.dob")
-            # The paid contract above already REQUIRES the partner's full birth data
-            # (tob/pob/latitude/longitude), so its coordinates are enforced the same way.
-            # DOB-only partner analysis is a separate, unpaid/internal capability
-            # (modules/love/love_data_collector.py) and is not affected.
-            _validate_birth_coordinates(partner_payload, "partner.")
-        elif product.generator == FOCUSED_GENERATOR:
-            # P0.3 -- focused_v1 (54 SELF focused products). Same required-field
-            # set as every standard report (STANDARD_REQUIRED_FIELDS, unchanged),
-            # PLUS a birth-coordinate check the standard_v1 branch below has never
-            # enforced at this layer -- a deliberate, additive safety choice for
-            # this new product family only; standard_v1's own existing behavior
-            # (final `else` below) is left byte-for-byte unchanged.
-            missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
-            if missing:
-                raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
-            _validate_dob(payload.get("dob"), "dob")
-            _validate_birth_coordinates(payload)
-            candidate_partner = payload.get("partner")
-            if isinstance(candidate_partner, dict):
-                partner_payload = candidate_partner
-                if "dob" in partner_payload:
-                    _validate_dob(partner_payload.get("dob"), "partner.dob")
-        else:
-            missing = _missing_fields(payload, STANDARD_REQUIRED_FIELDS)
-            if missing:
-                raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
-            _validate_dob(payload.get("dob"), "dob")
-            # Not required for a standard report, but stored verbatim
-            # if a caller happens to send one -- never invented, never
-            # rejected either way. Matches create_paid_report_order()'s
-            # own existing partner_payload handling exactly.
-            candidate_partner = payload.get("partner")
-            if isinstance(candidate_partner, dict):
-                partner_payload = candidate_partner
-                if "dob" in partner_payload:
-                    _validate_dob(partner_payload.get("dob"), "partner.dob")
+        partner_payload = validate_report_order_fields(product, payload)
 
         order = Order(
             name=payload.get("name"),
@@ -420,6 +450,36 @@ class OrderService:
             "Finalization) boundary -- not implemented until that phase."
         )
 
+    def validate_paid_report_order(self, order_payload: Dict[str, Any],
+                                   registry_product: Optional[ReportProduct] = None) -> ReportProduct:
+        """Every check create_paid_report_order() makes before it inserts the Order.
+
+        PaymentService runs this BEFORE claiming a Google Play purchase token: a rejection there leaves the
+        token unclaimed, while the same rejection after the claim would leave a paid purchase that can never
+        become a report. Focused reports get the same generator rules as the website (validate_report_order_fields);
+        standard and relationship reports keep their existing, looser rules so purchases from older app
+        versions are never newly refused.
+        """
+        if not all([order_payload.get("name"), order_payload.get("email"), order_payload.get("product")]):
+            raise ValueError("name, email, and product are required to create a report order.")
+        for field, limit in _ORDER_TEXT_LIMITS.items():
+            value = order_payload.get(field)
+            if isinstance(value, str) and len(value) > limit:
+                raise OrderValidationError(f"{field} must be at most {limit} characters.")
+        product = registry_product or self.resolve_paid_report_product(order_payload.get("product"))
+        if getattr(product, "generator", None) in (FOCUSED_GENERATOR, FOCUSED_DUAL_GENERATOR):
+            validate_report_order_fields(product, order_payload)
+            return product
+        _validate_dob(order_payload.get("dob"), "dob")
+        partner = order_payload.get("partner")
+        if product.report_slug == LOVE_PREMIUM_PRODUCT_SLUG:
+            if not isinstance(partner, dict):
+                raise OrderValidationError("partner details are required for this report.")
+            _validate_dob(partner.get("dob"), "partner.dob")
+        elif isinstance(partner, dict) and "dob" in partner:
+            _validate_dob(partner.get("dob"), "partner.dob")
+        return product
+
     def create_paid_report_order(self, order_payload: Dict[str, Any],
                                  amount_paise: Optional[int] = None) -> CreatedReportOrder:
         """
@@ -430,21 +490,8 @@ class OrderService:
         """
         name = order_payload.get("name")
         email = order_payload.get("email")
-        raw_product = order_payload.get("product")
-
-        if not all([name, email, raw_product]):
-            raise ValueError("name, email, and product are required to create a report order.")
-
-        registry_product = self.resolve_paid_report_product(raw_product)
+        registry_product = self.validate_paid_report_order(order_payload)
         product = registry_product.report_slug
-        _validate_dob(order_payload.get("dob"), "dob")
-        partner = order_payload.get("partner")
-        if product == LOVE_PREMIUM_PRODUCT_SLUG:
-            if not isinstance(partner, dict):
-                raise OrderValidationError("partner details are required for this report.")
-            _validate_dob(partner.get("dob"), "partner.dob")
-        elif isinstance(partner, dict) and "dob" in partner:
-            _validate_dob(partner.get("dob"), "partner.dob")
 
         order = Order(
             name=name,

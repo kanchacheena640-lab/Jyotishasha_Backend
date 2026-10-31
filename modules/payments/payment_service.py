@@ -321,6 +321,9 @@ class PaymentService:
                 raise OrderValidationError(
                     "Google Play product does not match the requested report."
                 )
+            # Every order-field rule create_paid_report_order() applies, checked while the token is still
+            # unclaimed: a bad form must not turn a paid purchase into a stuck, unusable claim.
+            self._order_service.validate_paid_report_order(request.order_payload or {}, report_product)
 
         try:
             claimed = self._try_claim(request)
