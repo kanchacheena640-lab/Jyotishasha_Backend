@@ -420,7 +420,8 @@ class OrderService:
             "Finalization) boundary -- not implemented until that phase."
         )
 
-    def create_paid_report_order(self, order_payload: Dict[str, Any]) -> CreatedReportOrder:
+    def create_paid_report_order(self, order_payload: Dict[str, Any],
+                                 amount_paise: Optional[int] = None) -> CreatedReportOrder:
         """
         order_payload carries exactly the fields app.py's /webhook
         already reads from the client today. Required: name, email,
@@ -450,7 +451,9 @@ class OrderService:
             email=email,
             phone=order_payload.get("phone"),
             product=product,
-            amount_paise=registry_product.price * 100,
+            # A verified Google Play purchase passes what Google charged for its product
+            # (config.google_play_report_products.PLAY_PRODUCT_AMOUNT_PAISE); otherwise the registry price.
+            amount_paise=amount_paise if amount_paise is not None else registry_product.price * 100,
             dob=order_payload.get("dob"),
             tob=order_payload.get("tob"),
             pob=order_payload.get("pob"),

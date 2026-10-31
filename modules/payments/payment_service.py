@@ -147,7 +147,7 @@ from modules.payments.google_play_provider import GooglePlayProvider
 from modules.payments.order_service import (
     OrderService, OrderValidationError, ReportDispatchError,
 )
-from config.google_play_report_products import accepted_report_product_ids
+from config.google_play_report_products import PLAY_PRODUCT_AMOUNT_PAISE, accepted_report_product_ids
 from modules.payments.payment_logger import log_payment_event, new_correlation_id
 from modules.payments.payment_models import (
     PaymentProviderType,
@@ -680,7 +680,14 @@ class PaymentService:
         if request.purpose == PaymentPurpose.REPORT_PURCHASE:
             if not request.order_payload:
                 raise ValueError("order_payload is required for a REPORT_PURCHASE payment.")
-            created = self._order_service.create_paid_report_order(request.order_payload)
+            amount_paise = None
+            if request.provider == PaymentProviderType.GOOGLE_PLAY:
+                # The Google-verified product (token checked against it), never a client-supplied value.
+                verified_product_id = (verification_result.raw_payload or {}).get("product_id")
+                amount_paise = PLAY_PRODUCT_AMOUNT_PAISE.get(verified_product_id)
+                if amount_paise is None:
+                    raise OrderValidationError("Verified Google Play product has no configured amount.")
+            created = self._order_service.create_paid_report_order(request.order_payload, amount_paise=amount_paise)
             return {
                 "order_id": created.order_id,
                 "status": created.status,
