@@ -68,8 +68,8 @@ check("A2 output never claims Mars is the 7th lord", not any("Mars" in p for p i
 
 # A3: Capricorn lagna -> 7th house Cancer -> 7th lord Moon; Hindi run.
 r3 = build_marriage_path(chart("Capricorn", {"Moon": 10, "Rahu": 10, "Ketu": 4, "Mars": 6}), language="hi")
-check("A3 Hindi run, 7th lord Moon -> finding names Moon, not Mars",
-      conjunction_lines(r3) == ["Rahu is conjoined with Moon (7th house lord)."])
+check("A3 Hindi run, 7th lord Moon -> Hindi finding names Moon (चंद्र), not Mars",
+      [p for p in r3["negative_points"] if p.startswith("राहु सप्तमेश")] == ["राहु सप्तमेश चंद्र के साथ स्थित है।"])
 
 # A4: Aries lagna -> 7th lord Venus in the 5th, Rahu in the 8th: rule not met -> no finding.
 r4 = build_marriage_path(chart("Aries", {"Venus": 5, "Rahu": 8, "Ketu": 2, "Mars": 1}))
@@ -85,6 +85,46 @@ check("B4 CTA points to the Marriage Report as a separate reading (EN + HI)",
 check("B5 CTA claims no Transit / Navamsa (D9) / exact date for the report",
       not re.search(r"\b(Transit|Navamsa|D9|date|age)\b", r1["cta"]) and
       not any(w in r3["cta"] for w in ("गोचर", "नवांश", "तारीख", "आयु")))
+
+print("\n=== C. Language, consistency and 7th-house facts ===")
+import os
+DEV = re.compile(r"[ऀ-ॿ]")
+# C1: every point is Hindi on a Hindi run (no English sentences leak into /hi).
+rich = chart("Virgo", {"Venus": 1, "Jupiter": 5, "Saturn": 7, "Moon": 7, "Rahu": 4, "Ketu": 10})  # Venus in Virgo (debilitated)
+rich_hi = build_marriage_path(rich, language="hi")
+rich_en = build_marriage_path(rich)
+all_hi = rich_hi["positive_points"] + rich_hi["negative_points"] + [rich_hi["dominant_influence"]]
+check("C1 Hindi run: every point and the key-influence line are Hindi",
+      len(all_hi) >= 3 and all(DEV.search(p) and not re.search(r"\b(is placed|debilitated|exalted|conjoined)\b", p) for p in all_hi))
+check("C2 EN and HI return the same number of points (same rules)",
+      len(rich_en["positive_points"]) == len(rich_hi["positive_points"]) and len(rich_en["negative_points"]) == len(rich_hi["negative_points"]))
+# C3: debilitated Venus as the key influence never gets the favourable 'harmony' trait.
+check("C3 debilitated Venus key influence uses the debilitated trait, not 'romance, charm and harmony' (EN + HI)",
+      rich_en["dominant_influence"].startswith("Venus is a key influence") and "debilitated" in rich_en["dominant_influence"] and
+      "harmony" not in rich_en["dominant_influence"] and "नीच" in rich_hi["dominant_influence"] and "तालमेल" not in rich_hi["dominant_influence"])
+deb_j = build_marriage_path(chart("Leo", {"Jupiter": 6, "Venus": 3, "Rahu": 2, "Ketu": 8}))  # Leo + 6th = Capricorn
+check("C4 debilitated Jupiter key influence uses the debilitated trait",
+      deb_j["dominant_influence"].startswith("Jupiter is a key influence") and "debilitated" in deb_j["dominant_influence"] and "support in married life" not in deb_j["dominant_influence"])
+ex_v = build_marriage_path(chart("Scorpio", {"Venus": 5, "Rahu": 1, "Ketu": 7}))  # Scorpio + 4 = Pisces, Venus exalted
+check("C5 exalted Venus keeps the favourable trait", "harmony in married life" in ex_v["dominant_influence"])
+# C6: wording -- 'key influence', never 'dominant influence' or 'strongest'.
+check("C6 'key influence' wording, no 'dominant'/'strongest' claim (EN + HI)",
+      all("dominant" not in r["dominant_influence"] and "strongest" not in r["dominant_influence"] for r in (rich_en, deb_j, ex_v)) and
+      "प्रमुख प्रभाव" in rich_hi["dominant_influence"])
+# C7: additive facts, existing fields kept.
+legacy = {"tool_id", "language", "heading", "positive_points", "negative_points", "dominant_influence", "cta"}
+check("C7 response keeps every existing field and adds the 7th-house facts",
+      legacy <= set(rich_en) and rich_en["seventh_sign"] == "Pisces" and rich_en["seventh_lord"] == "Jupiter" and
+      rich_en["seventh_lord_house"] == 5 and rich_en["seventh_house_planets"] == ["Saturn", "Moon"])
+# C8: a chart matching no rule still returns its 7th-house facts and no invented text.
+empty = build_marriage_path(chart("Cancer", {"Mars": 2, "Venus": 4, "Jupiter": 5, "Rahu": 6, "Ketu": 12, "Saturn": 9}))
+check("C8 no-rule chart: empty points, empty key influence, facts present (7th Capricorn, lord Saturn in 9th)",
+      empty["positive_points"] == [] and empty["negative_points"] == [] and empty["dominant_influence"] == "" and
+      empty["seventh_sign"] == "Capricorn" and empty["seventh_lord"] == "Saturn" and empty["seventh_lord_house"] == 9 and empty["seventh_house_planets"] == [])
+# C9: cautious wording -- no deterministic outcome verbs remain in the traits.
+src_text = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "services", "marriage_path.py"), encoding="utf-8").read()
+check("C9 no deterministic claims ('Causes delay', 'Gives a', 'Brings', 'divine grace', 'must be controlled')",
+      not re.search(r"Causes delay|Gives a |Brings charm|divine grace|must be controlled|high-class", src_text))
 
 print("\n" + "=" * 50)
 print(f"TOTAL: {passed} passed, {failed} failed")

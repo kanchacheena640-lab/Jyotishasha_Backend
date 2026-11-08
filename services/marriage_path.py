@@ -1,4 +1,12 @@
 def build_marriage_path(kundali_data: dict, language: str = "en") -> dict:
+    """Free Marriage Path snapshot (/api/life-tool -> "marriage_path").
+
+    Rules (unchanged): planets in the 7th house (whole sign), Venus/Jupiter exalted or debilitated, and Rahu in
+    the same house as the 7th lord. The "key influence" is the first planet a rule matches, in the chart's planet
+    order -- it is not a strength ranking. Every point is returned in the requested language (EN/HI). The response
+    keeps every existing field and adds the already-computed 7th-house facts (seventh_sign, seventh_lord,
+    seventh_lord_house, seventh_house_planets) so a chart that matches no rule still has something factual to show.
+    """
     SIGNS = [
         "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
         "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
@@ -19,35 +27,51 @@ def build_marriage_path(kundali_data: dict, language: str = "en") -> dict:
     POSITIVE_PLANETS = ["Jupiter", "Moon", "Venus", "Mercury"]
     NEGATIVE_PLANETS = ["Mars", "Saturn", "Rahu", "Ketu", "Sun"]
 
+    hi = language == "hi"
+
+    # Traditional significations, worded as tendencies (no fixed outcomes).
     TRAITS_EN = {
-        "Sun": "May cause delay in marriage; partner comes after maturity. Brings ego issues, but spouse is dignified and authoritative.",
-        "Moon": "Can bring early marriage if emotions dominate decisions. Creates emotional bonding, but mood swings affect stability.",
-        "Mars": "Can lead to early marriage due to impulsive decisions. Passionate bond, but anger and aggression must be controlled.",
-        "Mercury": "Marriage timing may fluctuate, sometimes early due to quick choices. Brings a witty, communicative spouse, but indecision can cause issues.",
-        "Jupiter": "Favors timely or early marriage with divine grace. Gives a wise, supportive spouse and stable, prosperous married life.",
-        "Venus": "Often leads to early or love marriage. Brings charm, romance, and harmony in married life.",
-        "Saturn": "Causes delay in marriage, often after struggles. Relationship grows stronger with time, but feels heavy in the beginning.",
-        "Rahu": "Marriage may happen suddenly or in unusual circumstances. Gives unconventional, modern, or foreign spouse; may bring illusions too.",
-        "Ketu": "Creates delay or detachment in marriage matters. Spouse may be spiritual or reserved; bond feels karmic, not material."
+        "Sun": "Traditionally linked with a later marriage and a dignified, self-respecting partner; ego clashes are worth watching.",
+        "Moon": "Traditionally linked with strong emotional bonding in marriage; changing moods can affect stability.",
+        "Mars": "Traditionally linked with passion and quick decisions in relationships; patience with anger helps.",
+        "Mercury": "Traditionally linked with a communicative, witty partner; indecision can be a theme.",
+        "Jupiter": "Traditionally linked with wisdom, respect and support in married life.",
+        "Venus": "Traditionally linked with romance, charm and harmony in married life.",
+        "Saturn": "Traditionally linked with a later or slower-to-settle marriage that tends to strengthen with time.",
+        "Rahu": "Traditionally linked with unconventional circumstances or a partner from a different background; clear expectations help.",
+        "Ketu": "Traditionally linked with a reserved or spiritual note in marriage and a sense of detachment.",
     }
-
     TRAITS_HI = {
-        "Sun": "विवाह में विलंब संभव है, पर जीवनसाथी गरिमामय होता है। अहंकार के टकराव संभव हैं।",
-        "Moon": "भावनात्मक जुड़ाव से शीघ्र विवाह संभव है, लेकिन मनोदशा में उतार-चढ़ाव से अस्थिरता आ सकती है।",
-        "Mars": "उत्साही निर्णयों से शीघ्र विवाह संभव है, लेकिन गुस्सा और अधिकार नियंत्रित करना ज़रूरी है।",
-        "Mercury": "तेज़ फैसलों से विवाह में उतार-चढ़ाव हो सकता है। जीवनसाथी बुद्धिमान और हास्यप्रिय होता है।",
-        "Jupiter": "समय पर विवाह और स्थायित्व प्रदान करता है। जीवनसाथी ज्ञानी और सहायक होता है।",
-        "Venus": "प्रेम विवाह या आकर्षणयुक्त रिश्ता बनता है। जीवन में रोमांस और तालमेल लाता है।",
-        "Saturn": "संघर्षों के बाद विलंब से विवाह होता है, लेकिन समय के साथ रिश्ता मजबूत होता है।",
-        "Rahu": "अचानक या असामान्य परिस्थितियों में विवाह संभव। भ्रम या विदेशी जीवनसाथी का संकेत।",
-        "Ketu": "विवाह में विलंब या दूरी की भावना। जीवनसाथी आध्यात्मिक या गूढ़ स्वभाव का हो सकता है।"
+        "Sun": "परंपरा में इसे देर से विवाह और स्वाभिमानी, गरिमामय जीवनसाथी से जोड़ा जाता है; अहंकार के टकराव पर ध्यान देना उपयोगी है।",
+        "Moon": "परंपरा में इसे विवाह में गहरे भावनात्मक जुड़ाव से जोड़ा जाता है; मनोदशा के उतार-चढ़ाव स्थिरता को प्रभावित कर सकते हैं।",
+        "Mars": "परंपरा में इसे रिश्तों में जोश और जल्दी निर्णयों से जोड़ा जाता है; गुस्से पर धैर्य रखना सहायक है।",
+        "Mercury": "परंपरा में इसे बातचीत में कुशल, हाज़िरजवाब जीवनसाथी से जोड़ा जाता है; अनिर्णय एक विषय हो सकता है।",
+        "Jupiter": "परंपरा में इसे वैवाहिक जीवन में समझदारी, सम्मान और सहयोग से जोड़ा जाता है।",
+        "Venus": "परंपरा में इसे वैवाहिक जीवन में प्रेम, आकर्षण और तालमेल से जोड़ा जाता है।",
+        "Saturn": "परंपरा में इसे देर से या धीरे-धीरे स्थिर होने वाले विवाह से जोड़ा जाता है, जो समय के साथ मजबूत होता है।",
+        "Rahu": "परंपरा में इसे असामान्य परिस्थितियों या अलग पृष्ठभूमि वाले जीवनसाथी से जोड़ा जाता है; स्पष्ट अपेक्षाएँ सहायक होती हैं।",
+        "Ketu": "परंपरा में इसे विवाह में संयम, आध्यात्मिकता और कुछ विरक्ति के भाव से जोड़ा जाता है।",
+    }
+    # A debilitated Venus/Jupiter never gets the favourable trait above.
+    TRAITS_DEBILITATED_EN = {
+        "Venus": "Venus is debilitated here, which is traditionally read as love and attraction needing conscious care in marriage.",
+        "Jupiter": "Jupiter is debilitated here, which is traditionally read as respect and trust needing conscious care in marriage.",
+    }
+    TRAITS_DEBILITATED_HI = {
+        "Venus": "यहाँ शुक्र नीच का है, जिसे परंपरा में विवाह में प्रेम और आकर्षण को सजग देखभाल की ज़रूरत के रूप में देखा जाता है।",
+        "Jupiter": "यहाँ गुरु नीच का है, जिसे परंपरा में विवाह में सम्मान और भरोसे को सजग देखभाल की ज़रूरत के रूप में देखा जाता है।",
     }
 
-    def get_trait(p): return TRAITS_HI[p] if language == "hi" else TRAITS_EN[p]
-    def get_hi(p): return {
+    PLANET_HI = {
         "Sun": "सूर्य", "Moon": "चंद्र", "Mars": "मंगल", "Mercury": "बुध",
         "Jupiter": "गुरु", "Venus": "शुक्र", "Saturn": "शनि", "Rahu": "राहु", "Ketu": "केतु"
-    }.get(p, p)
+    }
+
+    def get_hi(p):
+        return PLANET_HI.get(p, p)
+
+    def text(en, hi_text):
+        return hi_text if hi else en
 
     planets = kundali_data.get("planets", [])
     lagna_sign = kundali_data.get("lagna_sign")
@@ -59,6 +83,7 @@ def build_marriage_path(kundali_data: dict, language: str = "en") -> dict:
     house_7_lord = SIGN_LORDS.get(house_7_sign)
 
     positive_points, negative_points = [], []
+    seventh_house_planets = []
     dominant_planet = None
 
     for p in planets:
@@ -68,50 +93,64 @@ def build_marriage_path(kundali_data: dict, language: str = "en") -> dict:
         if name in ["Venus", "Jupiter"]:
             if sign == EXALTED.get(name):
                 if name == "Venus":
-                    positive_points.append("Venus is well placed — brings charm and high-class romance in marriage.")
+                    positive_points.append(text("Venus is exalted — traditionally linked with charm and romance in marriage.",
+                                                "शुक्र उच्च का है — परंपरा में इसे विवाह में आकर्षण और रोमांस से जोड़ा जाता है।"))
                 else:
-                    positive_points.append("Jupiter is well placed — gives mutual respect and admiration in marriage.")
+                    positive_points.append(text("Jupiter is exalted — traditionally linked with mutual respect and admiration in marriage.",
+                                                "गुरु उच्च का है — परंपरा में इसे विवाह में परस्पर सम्मान और प्रशंसा से जोड़ा जाता है।"))
                 dominant_planet = dominant_planet or name
             elif sign == DEBILITATED.get(name):
                 if name == "Venus":
-                    negative_points.append("Venus is debilitated — causes lack of love or attraction in marriage.")
+                    negative_points.append(text("Venus is debilitated — traditionally read as love and attraction needing extra care in marriage.",
+                                                "शुक्र नीच का है — परंपरा में इसे विवाह में प्रेम और आकर्षण को अधिक देखभाल की ज़रूरत के रूप में देखा जाता है।"))
                 else:
-                    negative_points.append("Jupiter is debilitated — respect and trust may be missing in marriage.")
+                    negative_points.append(text("Jupiter is debilitated — traditionally read as respect and trust needing extra care in marriage.",
+                                                "गुरु नीच का है — परंपरा में इसे विवाह में सम्मान और भरोसे को अधिक देखभाल की ज़रूरत के रूप में देखा जाता है।"))
                 dominant_planet = dominant_planet or name
 
         # Planet in 7th house
         if house == house_7_number:
             if name in POSITIVE_PLANETS:
-                positive_points.append(f"{name} is placed in 7th house.")
+                positive_points.append(text(f"{name} is placed in 7th house.", f"{get_hi(name)} सप्तम भाव में स्थित है।"))
             elif name in NEGATIVE_PLANETS:
-                negative_points.append(f"{name} is placed in 7th house.")
+                negative_points.append(text(f"{name} is placed in 7th house.", f"{get_hi(name)} सप्तम भाव में स्थित है।"))
             if name != "Ascendant (Lagna)":
                 dominant_planet = dominant_planet or name
+                seventh_house_planets.append(name)
 
     # Check conjunction: is Rahu in same house as 7th lord?
     lord_house = next((p["house"] for p in planets if p["name"] == house_7_lord), None)
     for p in planets:
         if p["name"] == "Rahu" and p["house"] == lord_house:
-            negative_points.append(f"Rahu is conjoined with {house_7_lord} (7th house lord).")
+            negative_points.append(text(f"Rahu is conjoined with {house_7_lord} (7th house lord).",
+                                        f"राहु सप्तमेश {get_hi(house_7_lord)} के साथ स्थित है।"))
             dominant_planet = dominant_planet or "Rahu"
 
-    # Dominant trait
+    # Key influence: the first matched planet (not a strength ranking).
     if dominant_planet:
-        trait = get_trait(dominant_planet)
-        if language == "hi":
-            dominant_line = f"{get_hi(dominant_planet)} का विवाह पर प्रमुख प्रभाव है। {trait}"
+        dominant_sign = next((p["sign"] for p in planets if p["name"] == dominant_planet), None)
+        debilitated = dominant_planet in TRAITS_DEBILITATED_EN and dominant_sign == DEBILITATED.get(dominant_planet)
+        if hi:
+            trait = TRAITS_DEBILITATED_HI[dominant_planet] if debilitated else TRAITS_HI[dominant_planet]
+            dominant_line = f"{get_hi(dominant_planet)} आपके सप्तम भाव पर एक प्रमुख प्रभाव है। {trait}"
         else:
-            dominant_line = f"{dominant_planet} has a dominant influence on your marriage. {trait}"
+            trait = TRAITS_DEBILITATED_EN[dominant_planet] if debilitated else TRAITS_EN[dominant_planet]
+            dominant_line = f"{dominant_planet} is a key influence on your 7th house. {trait}"
     else:
         dominant_line = ""
 
     return {
         "tool_id": "marriage_path",
         "language": language,
-        "heading": "सप्तम भाव (विवाह भाव): यह आपका वैवाहिक विश्लेषण है।" if language == "hi" else "7th House (Marriage Bhav): Here's your Marriage Insight.",
+        "heading": "सप्तम भाव (विवाह भाव): यह आपका वैवाहिक विश्लेषण है।" if hi else "7th House (Marriage Bhav): Here's your Marriage Insight.",
         "positive_points": positive_points,
         "negative_points": negative_points,
         "dominant_influence": dominant_line,
-        "cta": "➡️ यह एक सामान्य वैवाहिक झलक है। विवाह रिपोर्ट आपके विवाह की संभावनाओं और वर्तमान दशा का अलग, विस्तृत विश्लेषण है।" if language == "hi"
-        else "➡️ This is a general marriage snapshot. The Marriage Report is a separate, detailed reading of your marriage outlook and current Dasha period."
+        "cta": "➡️ यह एक सामान्य वैवाहिक झलक है। विवाह रिपोर्ट आपके विवाह की संभावनाओं और वर्तमान दशा का अलग, विस्तृत विश्लेषण है।" if hi
+        else "➡️ This is a general marriage snapshot. The Marriage Report is a separate, detailed reading of your marriage outlook and current Dasha period.",
+        # Additive 7th-house facts (backend values, English names; the frontend localizes them).
+        "seventh_sign": house_7_sign,
+        "seventh_lord": house_7_lord,
+        "seventh_lord_house": lord_house,
+        "seventh_house_planets": seventh_house_planets,
     }
