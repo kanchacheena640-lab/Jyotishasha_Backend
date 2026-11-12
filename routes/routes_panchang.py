@@ -98,20 +98,24 @@ def api_muhurth_list():
         print(">> Muhurth Language:", language)
 
         # ⭐ Pass language to next_best_dates()
+        skipped_dates = []
         results = next_best_dates(
             activity,
             lat,
             lon,
             days=days,
             top_k=top_k,
-            language=language
+            language=language,
+            skipped=skipped_dates
         )
 
         return jsonify({
             "activity": activity,
             "window_days": days,
             "language": language,
-            "results": results
+            "results": results,
+            # Days that could not be calculated (logged server-side); normally empty.
+            "skipped_dates": skipped_dates
         })
 
     except Exception as e:
@@ -166,6 +170,7 @@ def api_muhurth_month():
         if language != "hi":
             language = "en"
 
+        skipped_dates = []
         results = next_best_dates_for_month(
             activity=activity,
             lat=lat,
@@ -173,7 +178,8 @@ def api_muhurth_month():
             month=month,
             year=year,
             top_k=top_k,
-            language=language
+            language=language,
+            skipped=skipped_dates
         )
 
         return jsonify({
@@ -181,7 +187,9 @@ def api_muhurth_month():
             "month": month,
             "year": year,
             "language": language,
-            "results": results
+            "results": results,
+            # Days that could not be calculated (logged server-side); normally empty.
+            "skipped_dates": skipped_dates
         })
 
     except Exception as e:

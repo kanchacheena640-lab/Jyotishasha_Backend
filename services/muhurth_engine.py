@@ -1,7 +1,24 @@
 # muhurth_engine.py
-import json, os
+import json, logging, os
 from datetime import datetime, timedelta, date
 from services.panchang_engine import calculate_panchang
+
+logger = logging.getLogger(__name__)
+
+
+def _panchang_or_skip(d, lat, lon, skipped):
+    """
+    Panchang for one day, or None when that single day cannot be calculated.
+    The day is logged and recorded in `skipped` (when given) so one failing date
+    never turns a whole month/window into an error, and is never silently dropped.
+    """
+    try:
+        return calculate_panchang(d, lat, lon, "en")
+    except Exception:
+        logger.exception("Muhurth: Panchang calculation failed for %s", d)
+        if skipped is not None:
+            skipped.append(d.isoformat())
+        return None
 
 RULES_DIR = os.path.join(os.path.dirname(__file__), "..", "rules")
 
@@ -11,6 +28,9 @@ TITHI_HI = {
     "Chaturthi": "चतुर्थी", "Panchami": "पंचमी", "Shashthi": "षष्ठी",
     "Saptami": "सप्तमी", "Ashtami": "अष्टमी", "Navami": "नवमी",
     "Dashami": "दशमी", "Ekadashi": "एकादशी", "Dwadashi": "द्वादशी",
+    # panchang_engine.TITHI_NAMES spells the 12th tithi "Dvadashi"; without this
+    # key Hindi responses showed the English name.
+    "Dvadashi": "द्वादशी",
     "Trayodashi": "त्रयोदशी", "Chaturdashi": "चतुर्दशी",
     "Purnima": "पूर्णिमा", "Amavasya": "अमावस्या"
 }
@@ -137,7 +157,7 @@ def _score_and_reasons(p, rules):
     return score, reasons
 
 # -------------------- MAIN ENGINE --------------------
-def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
+def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en", skipped=None):
     # Force English scoring
     is_hindi = (language or "en").lower() == "hi"
     language = "en"
@@ -151,7 +171,9 @@ def next_best_dates(activity, lat, lon, days=30, top_k=10, language="en"):
         d = today + timedelta(days=i)
 
         # Panchang always in ENGLISH
-        p = calculate_panchang(d, lat, lon, "en")
+        p = _panchang_or_skip(d, lat, lon, skipped)
+        if p is None:
+            continue
 
         score, reasons = _score_and_reasons(p, rules)
 
@@ -184,7 +206,8 @@ def next_best_dates_for_month(
     month,
     year,
     top_k=50,
-    language="en"
+    language="en",
+    skipped=None
 ):
     is_hindi = (language or "en").lower() == "hi"
     language = "en"
@@ -204,7 +227,10 @@ def next_best_dates_for_month(
 
     while current <= end_date:
 
-        p = calculate_panchang(current, lat, lon, "en")
+        p = _panchang_or_skip(current, lat, lon, skipped)
+        if p is None:
+            current += timedelta(days=1)
+            continue
 
         score, reasons = _score_and_reasons(p, rules)
 
