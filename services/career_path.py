@@ -202,6 +202,6 @@ def build_career_report(kundali_data: dict, language: str = "en") -> dict:
         "positive_points": convert_to_hindi(positive_points) if language == "hi" else positive_points,
         "negative_points": convert_to_hindi(negative_points) if language == "hi" else negative_points,
         "dominant_influence": dominant_line,
-        "cta": "➡️ यह एक सामान्य करियर झलक है। आपकी दशा और गोचर के अनुसार अधिक विस्तृत करियर रिपोर्ट ₹98 में प्राप्त करें।" if language == "hi"
-               else "➡️ This is a general career snapshot. Get a full detailed report based on Dasha & Transit for only ₹98."
+        "cta": "➡️ यह एक सामान्य करियर झलक है। अपने करियर योग और वर्तमान दशा अवधि पर आधारित विस्तृत रिपोर्ट प्राप्त करें।" if language == "hi"
+               else "➡️ This is a general career snapshot. Get a detailed report based on your career yogas and current dasha period."
     }
