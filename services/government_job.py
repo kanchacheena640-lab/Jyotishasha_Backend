@@ -84,31 +84,31 @@ def build_government_job(kundali_data: Dict[str, Any], lang: str = "en") -> Dict
     if l6_status in {"own", "exalted"}:
         positive.append({
             "en": f"Strong 6th lord ({lord6}) shows ability to face competition and exams.",
-            "hi": f"मज़बूत षष्ठेश ({PLANET_HI.get(lord6, lord6)}) प्रतियोगिता और परीक्षाओं में सफलता दर्शाता है।"
+            "hi": f"मज़बूत षष्ठेश ({PLANET_HI.get(lord6, lord6)}) प्रतियोगिता और परीक्षाओं का सामना करने की क्षमता दर्शाता है।"
         })
 
     # ---- Negative / obstacles ----
     if l10_status == "debilitated":
         negative.append({
-            "en": f"Weak 10th lord ({lord10}) may bring obstacles in achieving authority, remedies are suggested.",
-            "hi": f"कमज़ोर दशमेश ({PLANET_HI.get(lord10, lord10)}) सरकारी पद में बाधाएँ ला सकता है, उपाय आवश्यक हैं।"
+            "en": f"Weak 10th lord ({lord10}) may bring obstacles in achieving authority.",
+            "hi": f"कमज़ोर दशमेश ({PLANET_HI.get(lord10, lord10)}) सरकारी पद में बाधाएँ ला सकता है।"
         })
     if l6_status == "debilitated":
         negative.append({
-            "en": f"Weak 6th lord ({lord6}) shows struggle in competitive exams, but effort and remedies can change destiny.",
-            "hi": f"कमज़ोर षष्ठेश ({PLANET_HI.get(lord6, lord6)}) प्रतियोगी परीक्षाओं में संघर्ष दिखाता है, पर मेहनत और उपाय भाग्य बदल सकते हैं।"
+            "en": f"Weak 6th lord ({lord6}) shows struggle in competitive exams.",
+            "hi": f"कमज़ोर षष्ठेश ({PLANET_HI.get(lord6, lord6)}) प्रतियोगी परीक्षाओं में संघर्ष दिखाता है।"
         })
 
     # Always add a normalized line if nothing got appended
     if not positive:
         positive.append({
-            "en": "Your chart shows moderate chances of success in government jobs with consistent effort.",
-            "hi": "आपकी कुंडली सरकारी नौकरी में मध्यम सफलता की संभावना दिखाती है, नियमित प्रयास आवश्यक हैं।"
+            "en": "Neither your 6th house lord nor your 10th house lord is exalted or in its own sign, so this check found no special strength for a government career.",
+            "hi": "आपके छठे और दसवें भाव के स्वामी न उच्च के हैं न स्वराशि में, इसलिए इस जाँच में सरकारी करियर के लिए कोई विशेष बल नहीं मिला।"
         })
     if not negative:
         negative.append({
-            "en": "Some obstacles may arise, but remedies and hard work can improve outcomes.",
-            "hi": "कुछ बाधाएँ आ सकती हैं, पर उपाय और मेहनत से परिणाम सुधर सकते हैं।"
+            "en": "Neither your 6th house lord nor your 10th house lord is debilitated, so this check found no specific weakness.",
+            "hi": "आपके छठे और दसवें भाव के स्वामियों में से कोई भी नीच का नहीं है, इसलिए इस जाँच में कोई विशेष कमज़ोरी नहीं मिली।"
         })
 
     result = {
@@ -116,12 +116,12 @@ def build_government_job(kundali_data: Dict[str, Any], lang: str = "en") -> Dict
         "positive_points": positive,
         "negative_points": negative,
         "verdict": {
-            "en": "Chances visible, effort and remedies essential",
-            "hi": "संभावनाएँ हैं, प्रयास और उपाय ज़रूरी हैं"
+            "en": "A quick check of your 6th and 10th house lords",
+            "hi": "आपके छठे और दसवें भाव के स्वामियों की एक त्वरित जाँच"
         }[lang],
         "cta": {
-            "en": "Get a detailed government job report based on current planets & timing.",
-            "hi": "वर्तमान ग्रह-स्थिति व समय के आधार पर सरकारी नौकरी की विस्तृत रिपोर्ट पाएँ।"
+            "en": "Get a detailed government job report based on your birth chart and current dasha period.",
+            "hi": "अपनी जन्म कुंडली और वर्तमान दशा अवधि पर आधारित सरकारी नौकरी की विस्तृत रिपोर्ट पाएँ।"
         }[lang]
     }
 

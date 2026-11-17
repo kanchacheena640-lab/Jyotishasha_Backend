@@ -238,8 +238,8 @@ def build_business_path(kundali_data: Dict[str, Any], lang: str = "en") -> Dict[
         "positive_points": positive,
         "negative_points": negative,
         "cta": {
-            "en": "Want a step-by-step business roadmap? Get your detailed PDF.",
-            "hi": "कदम-दर-कदम बिज़नेस रोडमैप चाहिए? अपना विस्तृत PDF लें।"
+            "en": "Want a deeper look at your business potential? Get your detailed Business Report PDF.",
+            "hi": "अपनी व्यावसायिक क्षमता को गहराई से समझने के लिए विस्तृत बिज़नेस रिपोर्ट PDF पाएँ।"
         }[lang]
     }
 

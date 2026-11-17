@@ -102,8 +102,8 @@ def evaluate_dhan_yog_from_planets(planets: List[Dict], language: str = "en", la
         return {
             "id": "dhan_yog",
             "name": "Dhan Yog",
-            "heading": "Dharma-Karmadhipati Rajyog is NOT present in your Birth Chart (Kundali)." if language == "en"
-                       else "धर्म-कर्माधिपति राजयोग आपकी कुंडली में मौजूद नहीं है।",
+            "heading": "Dhan Yog is NOT present in your Birth Chart (Kundali)." if language == "en"
+                       else "धन योग आपकी कुंडली में मौजूद नहीं है।",
             "is_active": False,
             "strength": "None",
             "emoji": content["emoji"],
@@ -137,8 +137,8 @@ def evaluate_dhan_yog_from_planets(planets: List[Dict], language: str = "en", la
         return {
             "id": "dhan_yog",
             "name": "Dhan Yog",
-            "heading": "Dharma-Karmadhipati Rajyog is NOT present in your Birth Chart (Kundali)." if language == "en"
-                       else "धर्म-कर्माधिपति राजयोग आपकी कुंडली में मौजूद नहीं है।",
+            "heading": "Dhan Yog is NOT present in your Birth Chart (Kundali)." if language == "en"
+                       else "धन योग आपकी कुंडली में मौजूद नहीं है।",
             "is_active": False,
             "strength": "None",
             "emoji": content["emoji"],
