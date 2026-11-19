@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime
 
 from email_utils import send_email
@@ -37,16 +38,34 @@ def review_invitation(order: Order) -> str:
     return f"\n\nShare your experience (only buyers of this report can review it):\n{link}"
 
 
+def report_display_name(order: Order) -> str:
+    """Human product name ending in exactly one "Report": career_report ->
+    "Career Report" (previously the subject read "Career Report Report")."""
+    if order.product == "relationship_future_report":
+        return "Love & Marriage Life Report"
+    words = (order.product or "").replace("_", " ").replace("-", " ").split()
+    if words and words[-1].lower() == "report":
+        words = words[:-1]
+    name = " ".join(words).title()
+    return f"{name} Report" if name else "Astrology Report"
+
+
+def attachment_filename(order: Order) -> str:
+    """Neutral PDF name for the recipient: product only, never the customer's
+    name or order id (the on-disk path contains the name)."""
+    slug = re.sub(r"[^A-Za-z0-9]+", "-", report_display_name(order)).strip("-")
+    return f"Jyotishasha-{slug}.pdf"
+
+
 def delivery_message(order: Order) -> tuple[str, str]:
     invitation = review_invitation(order)
     if order.product == "relationship_future_report":
         return (
-            "Your Love & Marriage Life Report",
+            f"Your {report_display_name(order)}",
             f"Hello {order.name},\n\nYour Love & Relationship report is ready.{invitation}",
         )
-    product_name = (order.product or "report").replace("_", " ").replace("-", " ").title()
     return (
-        f"Your {product_name} Report",
+        f"Your {report_display_name(order)}",
         f"Hello {order.name},\n\nPlease find attached your personalized astrology report.{invitation}\n\nRegards,\nTeam Jyotishasha",
     )
 
@@ -68,7 +87,7 @@ def deliver_generated_report(order_id: int, pdf_path: str, *, send_email_fn=send
 
     subject, body = delivery_message(order)
     try:
-        send_email_fn(order.email, subject, body, pdf_path)
+        send_email_fn(order.email, subject, body, pdf_path, attachment_filename=attachment_filename(order))
     except Exception as exc:
         db.session.rollback()
         failed_order = Order.query.get(order_id)

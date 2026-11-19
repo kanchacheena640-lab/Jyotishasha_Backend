@@ -1,26 +1,100 @@
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
+import html
 import os
+import re
+import smtplib
+from email.message import EmailMessage
+from email.utils import formataddr, formatdate, make_msgid
+
 from dotenv import load_dotenv
 load_dotenv()
-
-import os
 
 # -------------------
 # Email Configuration
 # -------------------
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")         # <-- EDIT
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")   # <-- Use App Password (not normal password)
+# Two transports, chosen from the environment at send time:
+#
+#   * SMTP relay (Brevo): used when SMTP_HOST, SMTP_USER and SMTP_PASSWORD are
+#     all set. Logs in with SMTP_USER/SMTP_PASSWORD (the Brevo SMTP login and
+#     SMTP key -- not an API key) and sends From SENDER_EMAIL, which must be a
+#     sender on the authenticated domain (reports@jyotishasha.com).
+#   * Gmail (fallback, the original behaviour): used when none of the three
+#     relay variables is set. Logs in with SENDER_EMAIL/SENDER_PASSWORD (a
+#     Gmail App Password) and sends From SENDER_EMAIL.
+#
+# A partially configured relay raises instead of silently switching transport.
+# Credentials are never logged or included in raised messages.
+GMAIL_SMTP_SERVER = "smtp.gmail.com"
+GMAIL_SMTP_PORT = 587
+SMTP_TIMEOUT_SECONDS = 30
+DEFAULT_SENDER_NAME = "Jyotishasha Pvt. Ltd."
+DEFAULT_ATTACHMENT_FILENAME = "Jyotishasha-Report.pdf"
+
+_RELAY_VARS = ("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD")
+_URL_RE = re.compile(r"https://[^\s<>\"']+")
+
+
+def smtp_settings():
+    """Resolve the active transport from the environment. Returns a dict with
+    transport/host/port/user/password/sender_email/sender_name/reply_to."""
+    present = {name: bool((os.getenv(name) or "").strip()) for name in _RELAY_VARS}
+    sender_email = (os.getenv("SENDER_EMAIL") or "").strip()
+    common = {
+        "sender_email": sender_email,
+        "sender_name": (os.getenv("SENDER_NAME") or "").strip() or DEFAULT_SENDER_NAME,
+        "reply_to": (os.getenv("REPLY_TO") or "").strip() or None,
+    }
+    if all(present.values()):
+        port_raw = (os.getenv("SMTP_PORT") or "").strip() or "587"
+        try:
+            port = int(port_raw)
+        except ValueError:
+            raise ValueError("SMTP_PORT must be a number") from None
+        return {
+            "transport": "smtp-relay",
+            "host": os.getenv("SMTP_HOST").strip(),
+            "port": port,
+            "user": os.getenv("SMTP_USER").strip(),
+            "password": os.getenv("SMTP_PASSWORD").strip(),
+            **common,
+        }
+    if any(present.values()):
+        missing = ", ".join(name for name, ok in present.items() if not ok)
+        raise ValueError(f"SMTP relay is partially configured; missing: {missing}")
+    return {
+        "transport": "gmail",
+        "host": GMAIL_SMTP_SERVER,
+        "port": GMAIL_SMTP_PORT,
+        "user": sender_email,
+        "password": os.getenv("SENDER_PASSWORD"),
+        **common,
+    }
+
+
+def _html_body(body):
+    """Simple HTML twin of the plain-text body: escaped paragraphs, line breaks,
+    and bare https URLs as links whose visible text is the URL itself."""
+    paragraphs = []
+    for block in re.split(r"\n\s*\n", body.strip()):
+        parts, last = [], 0
+        for match in _URL_RE.finditer(block):
+            parts.append(html.escape(block[last:match.start()]))
+            url = html.escape(match.group(0))
+            parts.append(f'<a href="{url}">{url}</a>')
+            last = match.end()
+        parts.append(html.escape(block[last:]))
+        paragraphs.append("<p>" + "".join(parts).replace("\n", "<br>\n") + "</p>")
+    return (
+        '<!DOCTYPE html>\n<html><head><meta charset="utf-8"></head>\n'
+        '<body style="font-family: Arial, sans-serif; font-size: 15px; line-height: 1.5; color: #222222;">\n'
+        + "\n".join(paragraphs)
+        + "\n</body></html>\n"
+    )
+
 
 # -------------------
 # Email Sender
 # -------------------
-def send_email(to_email, subject, body, pdf_path):
+def send_email(to_email, subject, body, pdf_path, attachment_filename=None):
     """
     Task 17B -- CONTRACT CHANGE: this function no longer swallows a send
     failure. Before this task, every exception here (auth failure,
@@ -30,9 +104,13 @@ def send_email(to_email, subject, body, pdf_path):
     observability gap (Task 17A). Now: returns normally on a successful
     send (unchanged); RAISES the original exception on any failure, so
     the caller (tasks.py) can durably record the outcome. Never logs
-    SENDER_PASSWORD/SENDER_EMAIL credentials -- only the recipient and
-    attachment path on success, and the caller decides what (bounded,
-    sanitized) failure detail is worth persisting.
+    SMTP credentials -- only the recipient, transport and attachment path on
+    success, and the caller decides what (bounded, sanitized) failure detail
+    is worth persisting.
+
+    attachment_filename: the name the recipient sees for the PDF. Defaults to
+    a neutral name; the on-disk path (which contains the customer's name) is
+    never used as the attachment name.
     """
     # A paid-report email is never valid without its PDF. Validate the
     # complete attachment before opening an SMTP connection so a missing,
@@ -50,32 +128,53 @@ def send_email(to_email, subject, body, pdf_path):
     if not pdf_bytes.startswith(b"%PDF-"):
         raise ValueError(f"Report artifact is not a valid PDF: {pdf_path!r}")
 
-    # Create Email
-    msg = MIMEMultipart()
-    msg['From'] = SENDER_EMAIL
-    msg['To'] = to_email
-    msg['Subject'] = subject
+    settings = smtp_settings()
+    sender_email = settings["sender_email"]
+    sender_domain = sender_email.rpartition("@")[2] or None
 
-    # Email Body
-    msg.attach(MIMEText(body, 'plain'))
+    # Create Email: multipart/mixed = [multipart/alternative(plain, html), pdf]
+    # (An unset SENDER_EMAIL leaves From empty, as before; the SMTP server
+    # then rejects the send and the caller records FAILED.)
+    msg = EmailMessage()
+    if sender_email:
+        msg["From"] = formataddr((settings["sender_name"], sender_email))
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg["Date"] = formatdate(usegmt=True)
+    msg["Message-ID"] = make_msgid(domain=sender_domain)
+    if settings["reply_to"]:
+        msg["Reply-To"] = settings["reply_to"]
+
+    msg.set_content(body)
+    msg.add_alternative(_html_body(body), subtype="html")
 
     # Attach the already-validated bytes. There is no attachment-free path.
-    part = MIMEBase('application', 'pdf')
-    part.set_payload(pdf_bytes)
-    encoders.encode_base64(part)
-    part.add_header('Content-Disposition', f'attachment; filename={os.path.basename(pdf_path)}')
-    msg.attach(part)
+    msg.add_attachment(
+        pdf_bytes, maintype="application", subtype="pdf",
+        filename=attachment_filename or DEFAULT_ATTACHMENT_FILENAME,
+    )
 
-    # Send Email -- any exception here (SMTP connect/login/send failure,
-    # or the os.path.exists/open above) now propagates to the caller
-    # instead of being caught and hidden.
-    server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-    server.starttls()
-    server.login(SENDER_EMAIL, SENDER_PASSWORD)
-    server.send_message(msg)
-    server.quit()
+    # Send Email -- any exception from connect/starttls/login/send propagates
+    # to the caller unchanged. After the message is accepted, a failure to
+    # close the session politely is ignored so it cannot mark a delivered
+    # email FAILED (which would invite a duplicate resend).
+    server = smtplib.SMTP(settings["host"], settings["port"], timeout=SMTP_TIMEOUT_SECONDS)
+    try:
+        server.starttls()
+        server.login(settings["user"], settings["password"])
+        server.send_message(msg)
+    except Exception:
+        try:
+            server.close()
+        except Exception:
+            pass
+        raise
+    try:
+        server.quit()
+    except Exception:
+        pass
 
-    print(f"Email sent successfully to {to_email} with attachment {pdf_path}")
+    print(f"Email sent successfully to {to_email} via {settings['transport']} with attachment {pdf_path}")
 
 # -------------------
 if __name__ == "__main__":
