@@ -2,6 +2,7 @@ import html
 import os
 import re
 import smtplib
+import ssl
 from email.message import EmailMessage
 from email.utils import formataddr, formatdate, make_msgid
 
@@ -31,6 +32,27 @@ DEFAULT_ATTACHMENT_FILENAME = "Jyotishasha-Report.pdf"
 
 _RELAY_VARS = ("SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD")
 _URL_RE = re.compile(r"https://[^\s<>\"']+")
+
+
+def _tls_context():
+    """Certificate- and hostname-verifying TLS context for STARTTLS.
+    smtplib's own default context verifies nothing (CERT_NONE), which would
+    let an impersonating server capture the SMTP login. Uses certifi's CA
+    bundle (pinned in requirements.txt, already used by requests on Render),
+    falling back to the system store."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
+def _text_cte(text):
+    """Never let a text part go out as raw 8bit: smtplib does not declare
+    BODY=8BITMIME, and an in-transit 8bit->7bit conversion would break the
+    DKIM body hash that DMARC alignment depends on. Non-ASCII -> base64
+    (what MIMEText produced before); ASCII -> the library's 7bit/QP choice."""
+    return None if text.isascii() else "base64"
 
 
 def smtp_settings():
@@ -145,8 +167,9 @@ def send_email(to_email, subject, body, pdf_path, attachment_filename=None):
     if settings["reply_to"]:
         msg["Reply-To"] = settings["reply_to"]
 
-    msg.set_content(body)
-    msg.add_alternative(_html_body(body), subtype="html")
+    html_body = _html_body(body)
+    msg.set_content(body, cte=_text_cte(body))
+    msg.add_alternative(html_body, subtype="html", cte=_text_cte(html_body))
 
     # Attach the already-validated bytes. There is no attachment-free path.
     msg.add_attachment(
@@ -160,7 +183,7 @@ def send_email(to_email, subject, body, pdf_path, attachment_filename=None):
     # email FAILED (which would invite a duplicate resend).
     server = smtplib.SMTP(settings["host"], settings["port"], timeout=SMTP_TIMEOUT_SECONDS)
     try:
-        server.starttls()
+        server.starttls(context=_tls_context())
         server.login(settings["user"], settings["password"])
         server.send_message(msg)
     except Exception:

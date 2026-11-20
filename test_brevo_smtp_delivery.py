@@ -3,11 +3,12 @@ no network connection is opened and no email is sent."""
 import contextlib
 import io
 import os
+import ssl
 import tempfile
 import unittest
 from email.utils import parseaddr, parsedate_to_datetime
 from types import SimpleNamespace
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import email_utils
 from modules.payments.report_delivery_service import (
@@ -57,9 +58,18 @@ class TransportSelectionTests(_Base):
     def test_brevo_relay_uses_smtp_credentials_and_starttls_before_login(self):
         smtp, server, msg, _ = self.send(BREVO_ENV)
         smtp.assert_called_once_with("smtp-relay.brevo.com", 587, timeout=email_utils.SMTP_TIMEOUT_SECONDS)
-        self.assertEqual(server.method_calls[:2], [call.starttls(), call.login("relay-login@smtp-brevo.example", "brevo-smtp-key-SECRET")])
+        self.assertEqual(server.method_calls[:2], [call.starttls(context=ANY), call.login("relay-login@smtp-brevo.example", "brevo-smtp-key-SECRET")])
         server.send_message.assert_called_once()
         server.quit.assert_called_once()
+
+    def test_starttls_verifies_certificate_and_hostname(self):
+        for values in (GMAIL_ENV, BREVO_ENV):
+            _, server, _, _ = self.send(values)
+            context = server.starttls.call_args.kwargs["context"]
+            self.assertIsInstance(context, ssl.SSLContext)
+            self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+            self.assertTrue(context.check_hostname)
+            self.assertGreater(len(context.get_ca_certs()), 0)
 
     def test_relay_port_default_and_override(self):
         no_port = {k: v for k, v in BREVO_ENV.items() if k != "SMTP_PORT"}
@@ -139,6 +149,28 @@ class BodyAndAttachmentTests(_Base):
         self.assertIn('<a href="https://www.jyotishasha.com/review#t=abc.def">https://www.jyotishasha.com/review#t=abc.def</a>', html)
         self.assertEqual(html.count("<a "), 1)
         self.assertNotIn("<img", html)
+
+    def test_non_ascii_text_never_goes_out_as_raw_8bit(self):
+        # Short Devanagari lines are what the stdlib would otherwise send as 8bit.
+        for body in ("Hello राम,\n\nPlease find attached your report.",
+                     "नमस्ते,\n\nअपना अनुभव साझा करें:\nhttps://www.jyotishasha.com/hi/review#t=abc"):
+            with self.subTest(body=body[:12]):
+                with env(BREVO_ENV), patch("email_utils.smtplib.SMTP") as smtp, contextlib.redirect_stdout(io.StringIO()):
+                    email_utils.send_email("buyer@example.com", "Your Career Report", body, self.path)
+                msg = smtp.return_value.send_message.call_args.args[0]
+                plain, html = msg.get_payload()[0].get_payload()
+                self.assertEqual(plain["Content-Transfer-Encoding"], "base64")
+                self.assertEqual(html["Content-Transfer-Encoding"], "base64")
+                self.assertEqual(plain.get_content().rstrip("\n"), body)
+                wire = msg.as_bytes(policy=msg.policy.clone(linesep="\r\n"))
+                self.assertTrue(wire.isascii())
+                self.assertLessEqual(max(len(line) for line in wire.split(b"\r\n")), 998)
+
+    def test_ascii_text_uses_7bit_or_quoted_printable(self):
+        _, _, msg, _ = self.send(BREVO_ENV)
+        plain, html = msg.get_payload()[0].get_payload()
+        self.assertIn(plain["Content-Transfer-Encoding"], ("7bit", "quoted-printable"))
+        self.assertIn(html["Content-Transfer-Encoding"], ("7bit", "quoted-printable"))
 
     def test_hindi_body_survives(self):
         out = io.StringIO()
