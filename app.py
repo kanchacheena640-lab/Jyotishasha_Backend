@@ -34,7 +34,6 @@ from routes.routes_profile_bootstrap import routes_profile_bootstrap
 from routes.routes_chat import routes_chat
 from routes.routes_smartchat import routes_smartchat
 from routes.routes_auth import routes_auth
-from routes.routes_admin_tokens import routes_admin_tokens
 from notifications.notification_routes import notification_bp, admin_notification_bp
 from modules.love.routes_love import love_bp
 from routes.yearly_horoscope import yearly_bp
@@ -115,7 +114,13 @@ app.register_blueprint(routes_profile_bootstrap)
 app.register_blueprint(routes_chat)
 app.register_blueprint(routes_smartchat)
 app.register_blueprint(routes_auth)
-app.register_blueprint(routes_admin_tokens)
+# P1/P2 security: routes/routes_admin_tokens.py removed. It held only two
+# unauthenticated routes with no caller in the backend, website, Flutter app,
+# GitHub workflows or Render cron:
+#   * POST /admin/add-tokens -- anyone could add AskNow tokens to any app_users
+#     row by id.
+#   * GET /_admin/init-daily-counter -- anyone could create the daily_counter
+#     row. scripts/daily_rotation_engine.py already creates it when missing.
 app.register_blueprint(notification_bp)
 app.register_blueprint(admin_notification_bp)
 app.register_blueprint(user_notification_bp)
