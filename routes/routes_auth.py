@@ -22,6 +22,18 @@ from modules.auth.firebase_cleanup_service import (
 routes_auth = Blueprint("routes_auth", __name__)
 
 
+def verified_token_email(decoded: dict) -> str | None:
+    """The caller's email as proven by Firebase: the ID token's `email`
+    claim, only when its `email_verified` claim is exactly True. Anything
+    else (no email, unverified, malformed) -> None, so it can never be
+    used to link, create or overwrite an account's email."""
+    email = decoded.get("email")
+    if decoded.get("email_verified") is not True or not isinstance(email, str):
+        return None
+    email = email.strip()
+    return email or None
+
+
 # ----------------------------------------------------------
 # REGISTER / LINK FIREBASE USER → BACKEND USER
 # ----------------------------------------------------------
@@ -58,8 +70,14 @@ def register_user():
     data = request.get_json() or {}
 
     phone = data.get("phone")
-    email = data.get("email")
     name = data.get("name")
+    # P0 security fix: the email used for account linking/ownership comes
+    # ONLY from the verified Firebase ID token, and only when Firebase
+    # marks it verified. The request-body "email" is ignored entirely --
+    # previously a caller holding ANY valid token could send a victim's
+    # email here and STEP 2 below re-linked the victim's users row (and
+    # every app_users profile) to the caller's firebase_uid.
+    email = verified_token_email(decoded)
 
     # -----------------------------------------
     # STEP 1: LOOK UP BY firebase_uid (unchanged identity -- the
@@ -77,8 +95,15 @@ def register_user():
             user.name = name
             changed = True
         if email and user.email != email:
-            user.email = email
-            changed = True
+            # Only the token's verified email, and never one that another
+            # account row already holds (that would be a UNIQUE violation
+            # and is not this caller's row to touch).
+            held_by_other = User.query.filter(
+                User.email == email, User.id != user.id
+            ).first()
+            if held_by_other is None:
+                user.email = email
+                changed = True
         if user.provider != "firebase":
             user.provider = "firebase"
             changed = True
@@ -99,6 +124,8 @@ def register_user():
     # exactly what was hitting users.email's UNIQUE constraint
     # before this fix. Same user.id preserved, so every existing FK
     # (subscriptions, etc.) keeps pointing at the same row.
+    # `email` here is the token's VERIFIED email only (see above), so a
+    # re-link happens only when Firebase proves the caller owns it.
     # -----------------------------------------
     if email:
         existing_by_email = User.query.filter_by(email=email).first()
@@ -133,8 +160,19 @@ def register_user():
             }), 200
 
     # -----------------------------------------
-    # STEP 3: CREATE NEW USER (unchanged from before)
+    # STEP 3: CREATE NEW USER
+    # users.email is NOT NULL and is the account's linking key, so a new
+    # account is only created for a Firebase-verified email (every Google
+    # Sign-In token has one). Without it, refuse cleanly instead of storing
+    # an unproven address (or failing on the NOT NULL constraint).
     # -----------------------------------------
+    if not email:
+        return jsonify({
+            "success": False,
+            "error": "verified_email_required",
+            "message": "A verified email on the Firebase account is required to register.",
+        }), 403
+
     new_user = User(
         firebase_uid=firebase_uid,
         phone=phone,
