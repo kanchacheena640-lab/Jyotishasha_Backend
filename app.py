@@ -152,26 +152,16 @@ def home():
 def health_check():
     return jsonify({"ok": True})
 
-# ------------------- DEBUG DAILY HOROSCOPE ------------------- #
-@app.route("/_debug/run-daily", methods=["GET"])
-def debug_run_daily():
-    from scripts.daily_rotation_engine import run_daily_rotation
-    run_daily_rotation()
-    return jsonify({"status": "ok"})
-
-# ------------------- USER APIs ------------------- #
-@app.route("/add_user", methods=["POST"])
-def add_user():
-    data = request.get_json()
-    name = data.get("name")
-    email = data.get("email")
-    if not name or not email:
-        return jsonify({"error": "Name and Email are required"}), 400
-
-    user = User(name=name, email=email)
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({"message": "User added successfully!", "user_id": user.id})
+# P1 security: two unauthenticated routes removed (no caller in the backend,
+# website, Flutter app, GitHub workflows or Render cron):
+#   * GET /_debug/run-daily -- anyone could trigger the daily-horoscope
+#     rotation; it imported run_daily_rotation, which no longer exists, so
+#     it only ever 500'd. The live daily horoscope rotates itself via
+#     routes/daily_horoscope.py::get_cached_rotation().
+#   * POST /add_user -- anyone could create a `users` row with any name and
+#     email. Accounts are created only via the Firebase-verified
+#     /api/auth/register.
+# (modules.auth.models.User stays imported above: it registers the model.)
 
 # ------------------- ZODIAC TRAITS ------------------- #
 @app.route('/api/zodiac-traits')
