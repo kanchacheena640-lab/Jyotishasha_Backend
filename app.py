@@ -28,7 +28,6 @@ from models import Order
 from routes.full_kundali_route import full_kundali_modern_bp
 from routes.routes_free_consult import routes_free_consult
 from routes.routes_subscription import routes_subscription
-from routes.routes_asknow import routes_asknow
 from routes.personalized_daily import personalized_daily
 from routes.routes_profile_bootstrap import routes_profile_bootstrap
 from routes.routes_chat import routes_chat
@@ -108,7 +107,18 @@ app.register_blueprint(full_kundali_modern_bp)
 app.register_blueprint(routes_free_consult)
 app.register_blueprint(routes_user)
 app.register_blueprint(routes_subscription)
-app.register_blueprint(routes_asknow)
+# P1 security: routes/routes_asknow.py removed. Its four legacy /asknow/*
+# routes (the discontinued Rs99 / 10-token pack) had no authentication, took
+# user_id from the request, and had no caller in the backend, website, admin
+# panel, Flutter app, GitHub workflows or Render cron:
+#   * POST /asknow/order     -- created a real Razorpay order for any user_id.
+#   * POST /asknow/verify    -- marked that order "success" and added 10 tokens
+#                               WITHOUT verifying the Razorpay payment/signature.
+#   * POST /asknow/use-token -- decremented any user's token balance.
+#   * GET  /asknow/tokens/<id> -- disclosed any user's token balance.
+# The AskNowOrder model and modules/services/asknow_service.py stay (account
+# deletion still reads asknow_orders as historical evidence). Live Ask Now
+# uses the JWT-guarded /api/chat/* and chat-pack routes in routes_chat.py.
 app.register_blueprint(personalized_daily)
 app.register_blueprint(routes_profile_bootstrap)
 app.register_blueprint(routes_chat)
