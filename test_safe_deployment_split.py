@@ -107,13 +107,13 @@ def main():
                 # Ask Now Timeout Delivery Fix: chat_engine.py derives its
                 # scoped (timeout=20, max_retries=0) client via
                 # client.with_options(...) at CALL TIME from whatever
-                # chat_engine_module.client currently is -- this fake must
+                # chat_engine_module._client currently is -- this fake must
                 # answer to the same call the real client supports.
                 # Returns self: no real call is ever made either way.
                 return self
 
-        original_client = chat_engine_module.client
-        chat_engine_module.client = _FakeOpenAIClient()
+        original_client = chat_engine_module._client
+        chat_engine_module._client = _FakeOpenAIClient()
 
         client = app.test_client()
         token_a = create_access_token(identity=str(A_UID))
@@ -153,7 +153,8 @@ def main():
             check("PRE: status reflects the real pack (remaining=7)", resp.get_json().get("remaining_tokens") == 7)
 
             resp = client.post("/api/chat/reward", json={"user_id": A_UID})
-            check("PRE: /api/chat/reward succeeds without JWT (200)", resp.status_code == 200)
+            # PR #8: rewards are on hold and always require a JWT, independent of the flag.
+            check("PRE: /api/chat/reward rejects a no-JWT request even with the flag OFF (401)", resp.status_code == 401)
 
             print("\n--- a JWT, if presented, is STILL preferred even while the flag is OFF ---")
             db.session.refresh(pack_a)
@@ -209,7 +210,8 @@ def main():
             check("POST: /api/chat/status works correctly under strict mode (200)", resp.status_code == 200)
 
             resp = client.post("/api/chat/reward", json={}, headers=headers_a)
-            check("POST: /api/chat/reward works correctly under strict mode (200)", resp.status_code == 200)
+            # PR #8: an authenticated reward request grants nothing while rewards are on hold.
+            check("POST: /api/chat/reward -> 403 reward_unavailable under strict mode", resp.status_code == 403 and (resp.get_json() or {}).get("error") == "reward_unavailable")
 
             # ==========================================================
             print("\n=== VERSION POLICY -- Task B semantics + post-release proof ===")
@@ -227,7 +229,7 @@ def main():
             check("VP: force_update plays no role in any of the above (formula has no such term)", True)
 
         finally:
-            chat_engine_module.client = original_client
+            chat_engine_module._client = original_client
             if original_env is None:
                 os.environ.pop("ASKNOW_JWT_ENFORCEMENT", None)
             else:

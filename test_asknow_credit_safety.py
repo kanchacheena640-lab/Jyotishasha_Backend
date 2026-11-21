@@ -170,14 +170,14 @@ class _SeamProbeOpenAIClient:
     Ask Now OpenAI Client Test-Seam Regression fix -- proof fixture.
 
     A faithful-enough OpenAI client double proving chat_engine.py's
-    monkeypatch seam (chat_engine_module.client, reassigned BEFORE
+    monkeypatch seam (chat_engine_module._client, reassigned BEFORE
     chat_engine() runs) is honored end to end: with_options() is
     called with the exact kwargs chat_engine() uses, and the object IT
     RETURNS -- a distinct instance on every call, matching the real
     SDK's own with_options() semantics, deliberately never literally
     `self` -- is what actually serves chat.completions.create(). No
     import-time-cached client can bypass this, because chat_engine()
-    now reads chat_engine_module.client fresh on every call.
+    now reads chat_engine_module._client fresh on every call.
 
     `create_fn` receives the exact create(**kwargs) call and returns/
     raises whatever the test needs (a canned answer, an
@@ -399,7 +399,7 @@ def main():
             # This section exercises the REAL chat_engine() (not the
             # route-level chat_engine mock used everywhere above) with
             # only the OpenAI call itself mocked -- via the CORRECT,
-            # regression-fixed seam (chat_engine_module.client, read
+            # regression-fixed seam (chat_engine_module._client, read
             # fresh at call time -- see _SeamProbeOpenAIClient's own
             # docstring) -- to prove the distinction: a timeout is
             # compensated like any other generation failure, while
@@ -407,7 +407,7 @@ def main():
             # delivered, consumed fallback answer -- unchanged from the
             # original Credit Safety Fix.
             routes_chat_module.chat_engine = original_chat_engine
-            original_client = chat_engine_module.client
+            original_client = chat_engine_module._client
 
             import httpx
 
@@ -419,7 +419,7 @@ def main():
 
             uid = USER_IDS[9]
             timeout_probe = _SeamProbeOpenAIClient(_timeout_create)
-            chat_engine_module.client = timeout_probe
+            chat_engine_module._client = timeout_probe
             try:
                 resp = client.post(
                     "/api/chat/free",
@@ -427,7 +427,7 @@ def main():
                     headers=_auth_headers(uid),
                 )
             finally:
-                chat_engine_module.client = original_client
+                chat_engine_module._client = original_client
 
             check("10: OpenAI timeout -> controlled 502, not a raw crash", resp.status_code == 502)
             check("10: OpenAI timeout classified as generation_failed", resp.get_json().get("error") == "generation_failed")
@@ -444,7 +444,7 @@ def main():
 
             uid2 = USER_IDS[10]
             other_failure_probe = _SeamProbeOpenAIClient(_other_failure_create)
-            chat_engine_module.client = other_failure_probe
+            chat_engine_module._client = other_failure_probe
             try:
                 resp2 = client.post(
                     "/api/chat/free",
@@ -452,7 +452,7 @@ def main():
                     headers=_auth_headers(uid2),
                 )
             finally:
-                chat_engine_module.client = original_client
+                chat_engine_module._client = original_client
 
             check("10: non-timeout OpenAI failure still delivers a successful fallback answer (200)", resp2.status_code == 200)
             check(
@@ -467,11 +467,11 @@ def main():
             )
 
             # ==================================================
-            print("\n=== 11: OpenAI client test-seam regression proof (chat_engine_module.client) ===")
+            print("\n=== 11: OpenAI client test-seam regression proof (chat_engine_module._client) ===")
             # ==================================================
             # Direct, dedicated proof -- independent of the route/credit
             # machinery above -- that:
-            #   1. monkeypatching chat_engine_module.client AFTER import
+            #   1. monkeypatching chat_engine_module._client AFTER import
             #      affects the client chat_engine() actually uses,
             #   2. no import-time-cached/pre-scoped client can bypass it,
             #   3. with_options() receives exactly timeout=20, max_retries=0,
@@ -490,11 +490,11 @@ def main():
                 return _Resp()
 
             seam_probe = _SeamProbeOpenAIClient(_canned_create)
-            chat_engine_module.client = seam_probe
+            chat_engine_module._client = seam_probe
             try:
                 result = chat_engine_module.chat_engine(dict(BIRTH), "Seam regression proof question")
             finally:
-                chat_engine_module.client = original_client
+                chat_engine_module._client = original_client
 
             check("11: monkeypatch was honored -- fake create() was actually called", seam_probe.state["create_called"] is True)
             check(
@@ -505,7 +505,7 @@ def main():
                 "11: chat_engine() returned/processed the fake's own response, not a real one",
                 result.get("answer") == "[SEAM PROOF] no real OpenAI call was made.",
             )
-            check("11: chat_engine_module.client is restored to the real client afterward", chat_engine_module.client is original_client)
+            check("11: chat_engine_module._client is restored to the real client afterward", chat_engine_module._client is original_client)
 
         finally:
             routes_chat_module.chat_engine = original_chat_engine

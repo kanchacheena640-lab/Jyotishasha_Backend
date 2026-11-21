@@ -37,6 +37,39 @@ their own ids -- never a broad DELETE.
 """
 
 import os
+
+
+
+def _structured_ai_response(body):
+    """A well-formed paid-report AI response for the CURRENT contract.
+
+    Q3-enabled products (modules/payments/report_product_intelligence.py)
+    require `===META===` JSON carrying an answer_hero with each product's
+    required_hero_fields, then `===REPORT===` and the narrative
+    (modules/payments/report_structured_output.py). A bare string is now
+    rejected as ReportMetadataError, so the fake supplies every field any
+    registered product requires; `body` stays the narrative.
+    """
+    import json
+    from modules.payments.report_product_intelligence import REGISTRY
+    fields = {f for intel in REGISTRY.values() for f in intel.required_hero_fields}
+    hero = {f: (["Fake evidence line."] if f == "evidence" else "Fake value") for f in fields}
+    return "\n".join(["===META===", json.dumps({"answer_hero": hero}), "===REPORT===", body])
+
+def _template_placeholders():
+    """Every {placeholder} the shipped prompts/*.txt templates use.
+
+    The real build_summary_blocks_with_transit() fills all of them (e.g.
+    house_lord_summary since 8bd50de); the fake below must too, or
+    template.format() raises KeyError before generation is ever tested.
+    """
+    import glob
+    import re
+    names = set()
+    for path in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts", "*.txt")):
+        with open(path, encoding="utf-8") as f:
+            names.update(re.findall(r"\{([a-z_]+)\}", f.read()))
+    return names
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -87,6 +120,11 @@ def main():
 
     import tasks as tasks_module
     import modules.love.love_premium_task as love_task_module
+    # Paid-report AI calls go through modules/payments/report_ai_client.py
+    # (generate_report_completion -> _get_client(), a lazy singleton read on
+    # every call); tasks.py and love_premium_task.py no longer have an `openai_client` attribute.
+    import modules.payments.report_ai_client as report_ai_client_module
+    from app_config import PAID_REPORT_AI_MODEL
 
     with app.app_context():
         current_db = db.session.execute(text("SELECT current_database()")).scalar()
@@ -395,10 +433,12 @@ def main():
                 return {}
 
             def fake_summary_blocks(kundali, transit):
-                return {
+                blocks = {name: "x" for name in _template_placeholders()}
+                blocks.update({
                     "birth_chart_summary": "x", "current_transit_summary": "x",
                     "mahadasha_summary": "x",
-                }
+                })
+                return blocks
 
             def fake_drawing(**kwargs):
                 return "fake_drawing"
@@ -429,19 +469,22 @@ def main():
                 tasks_module.generate_kundali_drawing = fake_drawing
                 tasks_module.generate_pdf_report = fake_pdf
                 tasks_module.send_email = fake_send_email
-                tasks_module.openai_client = _FakeOpenAIClient(openai_content)
+                report_ai_client_module._client = _FakeOpenAIClient(_structured_ai_response(openai_content))
 
             real_tasks_attrs = {
                 name: getattr(tasks_module, name) for name in (
                     "calculate_full_kundali", "get_current_positions",
                     "build_summary_blocks_with_transit", "generate_kundali_drawing",
-                    "generate_pdf_report", "send_email", "openai_client",
+                    "generate_pdf_report", "send_email",
                 )
             }
+
+            real_report_ai_client = report_ai_client_module._client
 
             def restore_tasks_mocks():
                 for name, value in real_tasks_attrs.items():
                     setattr(tasks_module, name, value)
+                report_ai_client_module._client = real_report_ai_client
 
             # ==========================================================
             print("\n=== 9: Order pipeline -- first Processing commit -> exactly one started ===")
@@ -473,7 +516,17 @@ def main():
                 check("9: profile_id/firebase_uid both None", started_rows_9[0].profile_id is None and started_rows_9[0].firebase_uid is None)
                 check("9: entity_type/entity_id == order/<id>", started_rows_9[0].entity_type == "order" and started_rows_9[0].entity_id == str(order9_id))
                 check("9: properties == {report_type: career_report}", started_rows_9[0].properties == {"report_type": "career_report"})
-                check("10: completed properties == {report_type: career_report}", completed_rows_9[0].properties == {"report_type": "career_report"})
+                # Since e4e51b1 the completed event also carries AI-usage observability
+                # (tasks.py::_emit_report_event): model, duration_seconds and
+                # structured_metadata_valid; ai_*_units only when the API reports usage
+                # (this fake reports none). Never prompt/response text or PII.
+                props_10 = completed_rows_9[0].properties
+                check("10: completed properties == {report_type, model, duration_seconds, structured_metadata_valid}",
+                      set(props_10) == {"report_type", "model", "duration_seconds", "structured_metadata_valid"}
+                      and props_10["report_type"] == "career_report"
+                      and props_10["model"] == PAID_REPORT_AI_MODEL
+                      and props_10["structured_metadata_valid"] is True
+                      and isinstance(props_10["duration_seconds"], (int, float)) and props_10["duration_seconds"] >= 0)
                 # Sanity-check the extracted attempt identity is a real,
                 # parseable ISO timestamp (proves the prefix-strip above
                 # actually isolated the timestamp, not a truncated colon
@@ -589,7 +642,9 @@ def main():
             # LOVE PREMIUM PIPELINE (modules/love/love_premium_task.py)
             # ==============================================================
             def fake_love_collect(**kwargs):
-                return {"fake": "payload"}
+                # Minimal shape love_premium_task.py reads (compatibility.case /
+                # .ashtakoot, identity.partner) since Q3 Batch 4.
+                return {"compatibility": {"case": "B_SINGLE"}, "identity": {"partner": None}}
 
             def fake_love_prompt(payload):
                 return "Fake love prompt."
@@ -602,20 +657,21 @@ def main():
                 love_task_module.generate_kundali_drawing = fake_drawing
                 love_task_module.generate_pdf_report = fake_pdf
                 love_task_module.send_email = fake_send_email
-                love_task_module.openai_client = _FakeOpenAIClient(openai_content)
+                report_ai_client_module._client = _FakeOpenAIClient(_structured_ai_response(openai_content))
 
             real_love_attrs = {
                 name: getattr(love_task_module, name) for name in (
                     "calculate_full_kundali", "get_current_positions",
                     "collect_love_report_data", "build_love_premium_prompt",
                     "generate_kundali_drawing", "generate_pdf_report",
-                    "send_email", "openai_client",
+                    "send_email",
                 )
             }
 
             def restore_love_mocks():
                 for name, value in real_love_attrs.items():
                     setattr(love_task_module, name, value)
+                report_ai_client_module._client = real_report_ai_client
 
             # ==========================================================
             print("\n=== 17a: Love premium pipeline -- Processing -> started, Ready -> completed ===")
@@ -640,7 +696,15 @@ def main():
                 prefix_love = f"ORDER:{order_love_ok_id}:"
                 check("17a: attempt identity shared between started/completed", love_started[0].dedupe_key.split(prefix_love, 1)[-1] == love_completed[0].dedupe_key.split(prefix_love, 1)[-1])
                 check("17a: identity/entity correct", love_started[0].profile_id is None and love_started[0].firebase_uid is None and love_started[0].entity_type == "order")
-                check("17a: properties == {report_type: relationship_future_report}", love_completed[0].properties == {"report_type": "relationship_future_report"})
+                # Same AI-usage observability as the order pipeline (love_premium_task.py
+                # emitter): model, duration_seconds, structured_metadata_valid; never content/PII.
+                props_17a = love_completed[0].properties
+                check("17a: completed properties == {report_type, model, duration_seconds, structured_metadata_valid}",
+                      set(props_17a) == {"report_type", "model", "duration_seconds", "structured_metadata_valid"}
+                      and props_17a["report_type"] == "relationship_future_report"
+                      and props_17a["model"] == PAID_REPORT_AI_MODEL
+                      and props_17a["structured_metadata_valid"] is True
+                      and isinstance(props_17a["duration_seconds"], (int, float)) and props_17a["duration_seconds"] >= 0)
 
             # ==========================================================
             print("\n=== 17b: Love premium pipeline -- failure (missing partner details) -> failed ===")

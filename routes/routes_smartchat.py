@@ -1,12 +1,50 @@
     # routes/routes_smartchat.py
 
+import logging
+import time
+
 from flask import Blueprint, request, jsonify
+from modules.reviews import rate_limit
 from modules.smartchat.smartchat_engine import run_smartchat
 
 routes_smartchat = Blueprint("routes_smartchat", __name__)
 
+# PR #8 -- kept only for Android builds <= 1.1.0 (removed from the app in
+# 1.1.1+46); unauthenticated and OpenAI-backed.
+#
+# Protection is a GLOBAL request budget, deliberately NOT keyed by client IP:
+# Render's documentation does not state how its proxy sets X-Forwarded-For
+# (append / overwrite / pass-through) or how many hops sit in front of the
+# app, so no client-IP header can be verified as unspoofable, and
+# request.remote_addr is the proxy itself. A budget shared by every caller
+# cannot be bypassed by forging, rotating or malforming any header, never
+# singles out users who share an IP (CGNAT, offices), and hard-bounds OpenAI
+# spend on this route. Counters live in Redis (atomic INCR, shared by every
+# worker and instance) via the existing limiter; if Redis is unavailable the
+# limiter degrades to a per-process window, i.e. the cap applies per worker.
+# Checked BEFORE any OpenAI call; a request rejected by the hourly cap does
+# not consume the daily cap.
+SMARTCHAT_GLOBAL_LIMITS = (("smartchat-global-hour", 120, 3600), ("smartchat-global-day", 1000, 86400))
+_GLOBAL_KEY = "all"
+_limit_logger = logging.getLogger("smartchat_rate_limit")
+_last_limit_log = {"window": None}
+
+
+def _rate_limited() -> bool:
+    for bucket, limit, window in SMARTCHAT_GLOBAL_LIMITS:
+        if not rate_limit.allow(bucket, _GLOBAL_KEY, limit, window):
+            current = (bucket, int(time.time() // window))
+            if _last_limit_log["window"] != current:  # one line per bucket window
+                _last_limit_log["window"] = current
+                _limit_logger.warning("smartchat_rate_limited bucket=%s limit=%d window_seconds=%d", bucket, limit, window)
+            return True
+    return False
+
 @routes_smartchat.route("/api/smartchat", methods=["POST"])
 def smartchat_api():
+    if _rate_limited():
+        return jsonify({"success": False, "error": "rate_limited"}), 429
+
     data = request.get_json() or {}
 
     question = data.get("question", "").strip()

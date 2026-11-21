@@ -70,6 +70,14 @@ class SureshWebhookFirstRegression(unittest.TestCase):
             "dob": "1991-06-15", "tob": "09:20", "pob": "New Delhi",
             "latitude": "28.6139", "longitude": "77.2090", "language": "en",
         }
+        # The server prices the order from the report_products registry; the
+        # Rs51 -> Rs99 catalog change (a62606d) made a hardcoded paise amount
+        # stale. Read the authoritative registry price so the assertions still
+        # prove the charged amount is the catalog amount, never a client value.
+        from modules.payments.report_product_registry import ReportProduct
+        product_row = db.session.get(ReportProduct, self.payload["product"])
+        self.assertIsNotNone(product_row, "seeded report_products row required")
+        self.amount_paise = int(product_row.price) * 100
         self.order_id = None
         self.before_orders = Order.query.count()
         self.inserted_claims = []
@@ -94,7 +102,7 @@ class SureshWebhookFirstRegression(unittest.TestCase):
         self.fetch_remote = self.stack.enter_context(patch.object(
             sdk.payment, "fetch", return_value={
                 "id": self.payment_id, "order_id": self.rp_order,
-                "amount": 5100, "status": "captured",
+                "amount": self.amount_paise, "status": "captured",
             }
         ))
         # These spies delegate to the real SDK cryptography, never return True blindly.
@@ -184,7 +192,7 @@ class SureshWebhookFirstRegression(unittest.TestCase):
         self.assertIsNotNone(order)
         for field, value in self.payload.items():
             self.assertEqual(getattr(order, field), value, field)
-        self.assertEqual(order.amount_paise, 5100)
+        self.assertEqual(order.amount_paise, self.amount_paise)
         self.assertEqual(order.razorpay_order_id, self.rp_order)
         self.assertEqual(order.email_status, "NOT_ATTEMPTED")
         self.assertIsNone(order.pdf_url)
@@ -208,10 +216,10 @@ class SureshWebhookFirstRegression(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.get_json()
         self.order_id = body["internal_order_id"]
-        self.assertEqual(body["amount"], 5100)
+        self.assertEqual(body["amount"], self.amount_paise)
         self.assertEqual(body["order_id"], self.rp_order)
         self.create_remote.assert_called_once()
-        self.assertEqual(self.create_remote.call_args.args[0]["amount"], 5100)
+        self.assertEqual(self.create_remote.call_args.args[0]["amount"], self.amount_paise)
         order = self.read_order()
         self.assertEqual(order.payment_status, "PAYMENT_PENDING")
         self.assertEqual(order.status, "PENDING")

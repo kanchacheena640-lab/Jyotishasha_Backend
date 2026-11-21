@@ -97,6 +97,7 @@ already built. Nothing else in this file needs to change.
 """
 import logging
 import os
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -206,6 +207,40 @@ def _asknow_jwt_enforced() -> bool:
     return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
+# PR #8 -- Ask Now observability. One WARNING line per route at most every
+# _UNAUTH_LOG_INTERVAL_SECONDS (per worker process), carrying the number of
+# further unauthenticated requests suppressed since the last line. Logs the
+# route pattern, a UTC timestamp, the enforcement mode and the outcome only:
+# never a token, a user id, a header or any part of the request body.
+_asknow_auth_logger = logging.getLogger("asknow_auth")
+_UNAUTH_LOG_INTERVAL_SECONDS = 300
+_unauth_log_state = {}
+_unauth_log_lock = threading.Lock()
+
+
+def _note_unauthenticated_request(outcome: str) -> None:
+    try:
+        route = request.url_rule.rule if request.url_rule is not None else "unknown"
+        now = time.monotonic()
+        with _unauth_log_lock:
+            last, suppressed = _unauth_log_state.get(route, (None, 0))
+            if last is not None and now - last < _UNAUTH_LOG_INTERVAL_SECONDS:
+                _unauth_log_state[route] = (last, suppressed + 1)
+                return
+            _unauth_log_state[route] = (now, 0)
+        _asknow_auth_logger.warning(
+            "asknow_unauthenticated_request route=%s at=%s auth=missing_jwt "
+            "enforcement=%s outcome=%s suppressed_since_last=%d",
+            route,
+            datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "on" if _asknow_jwt_enforced() else "off",
+            outcome,
+            suppressed,
+        )
+    except Exception:
+        pass  # observability must never affect the request
+
+
 def _resolve_gated_user_id():
     """
     Identity resolver for the four build-48-compatible routes ONLY. See
@@ -219,7 +254,10 @@ def _resolve_gated_user_id():
         return int(verified_identity), None
 
     if _asknow_jwt_enforced():
+        _note_unauthenticated_request("rejected_401")
         return None, (jsonify({"msg": "Missing Authorization Header"}), 401)
+
+    _note_unauthenticated_request("legacy_body_user_id")
 
     # Flag OFF, no JWT -- build 48's exact pre-hardening contract.
     data = request.get_json(silent=True) or {}
@@ -504,41 +542,11 @@ def free_status():
     return jsonify(status), 200
 
 # ----------------------------------------------------------
-# 7) REQUIREMENT EXTRACTOR (GPT-based)
+# PR #8: POST /requirements removed. It was unauthenticated, called OpenAI on
+# every request, printed users' questions to the logs and returned raw
+# exception text. No backend, website or Flutter caller in any repository's
+# history. (modules/services/chat_requirement_engine.py is now unreferenced.)
 # ----------------------------------------------------------
-# Unchanged by Trust Foundation Phase 0: touches no per-user identity,
-# credit, or financial state -- confirmed LOW severity, out of scope for
-# this pass (Trust Foundation Audit, Section K).
-@routes_chat.route("/requirements", methods=["POST"])
-def chat_requirements():
-    from modules.services.chat_requirement_engine import get_required_data
-
-    data = request.get_json() or {}
-    question = data.get("question", "").strip()
-
-    if not question:
-        return jsonify({
-            "success": False,
-            "error": "Missing 'question'"
-        }), 400
-
-    try:
-        requirements = get_required_data(question)
-
-        print("\n🔥 REQUIREMENT ENGINE OUTPUT:")
-        print(requirements)
-        print("================================\n")
-
-        return jsonify({
-            "success": True,
-            "requirements": requirements
-        }), 200
-
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
 
 # ----------------------------------------------------------
 # 7) COMBINED CHAT STATUS  (FREE + PAID)
@@ -651,21 +659,27 @@ def debug_add_or_reset_pack():
 @jwt_required(optional=True)
 def chat_reward():
     """
-    User watches 2 ads → we add 1 question.
+    PR #8 -- rewarded questions are ON HOLD server-side.
 
-    Rules:
-    - If user has NO pack → create mini-pack (questions_total=1)
-    - If user HAS a pack → increment questions_total by +1
-      (questions_used remains SAME)
+    The product put "2 ads = 1 question" on hold (Flutter 1.1.2+47 hides the
+    reward entry point), and this route never verified that an ad was
+    watched -- every call granted a question. It now:
+    - always requires a valid backend JWT, independent of
+      ASKNOW_JWT_ENFORCEMENT (missing -> 401, same body as the other Ask Now
+      routes; malformed/invalid -> 422 from Flask-JWT-Extended);
+    - grants nothing: an authenticated caller gets 403 reward_unavailable.
+    No balance, pack or quota is read or written. To re-enable, add real ad
+    verification (or a server-side cap) and restore a grant here.
     """
-    from modules.services.chat_pack_service import add_reward_question
+    if get_jwt_identity() is None:
+        _note_unauthenticated_request("rejected_401")
+        return jsonify({"msg": "Missing Authorization Header"}), 401
 
-    user_id, error = _resolve_gated_user_id()
-    if error:
-        return error
-
-    result = add_reward_question(user_id)
-    return jsonify(result), 200
+    return jsonify({
+        "success": False,
+        "error": "reward_unavailable",
+        "message": "Rewarded questions are currently unavailable.",
+    }), 403
 
 
 _chatpack_verify_logger = logging.getLogger("chatpack_verify")
