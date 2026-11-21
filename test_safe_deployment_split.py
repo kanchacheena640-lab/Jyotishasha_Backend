@@ -153,7 +153,8 @@ def main():
             check("PRE: status reflects the real pack (remaining=7)", resp.get_json().get("remaining_tokens") == 7)
 
             resp = client.post("/api/chat/reward", json={"user_id": A_UID})
-            check("PRE: /api/chat/reward succeeds without JWT (200)", resp.status_code == 200)
+            # PR #8: rewards are on hold and always require a JWT, independent of the flag.
+            check("PRE: /api/chat/reward rejects a no-JWT request even with the flag OFF (401)", resp.status_code == 401)
 
             print("\n--- a JWT, if presented, is STILL preferred even while the flag is OFF ---")
             db.session.refresh(pack_a)
@@ -209,7 +210,8 @@ def main():
             check("POST: /api/chat/status works correctly under strict mode (200)", resp.status_code == 200)
 
             resp = client.post("/api/chat/reward", json={}, headers=headers_a)
-            check("POST: /api/chat/reward works correctly under strict mode (200)", resp.status_code == 200)
+            # PR #8: an authenticated reward request grants nothing while rewards are on hold.
+            check("POST: /api/chat/reward -> 403 reward_unavailable under strict mode", resp.status_code == 403 and (resp.get_json() or {}).get("error") == "reward_unavailable")
 
             # ==========================================================
             print("\n=== VERSION POLICY -- Task B semantics + post-release proof ===")

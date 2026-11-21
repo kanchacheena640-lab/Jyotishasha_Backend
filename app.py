@@ -26,7 +26,6 @@ from modules.subscription import register_subscription
 from flask import send_file
 from models import Order
 from routes.full_kundali_route import full_kundali_modern_bp
-from routes.routes_free_consult import routes_free_consult
 from routes.routes_subscription import routes_subscription
 from routes.personalized_daily import personalized_daily
 from routes.routes_profile_bootstrap import routes_profile_bootstrap
@@ -68,6 +67,14 @@ from routes.routes_website_analytics import routes_website_analytics
 
 app = create_app()
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
+# PR #8 -- warn-only secret validation for the WEB SERVICE. Runs once per
+# worker process on its first HTTP request, so scripts, Celery, cron jobs and
+# migration workflows that merely import `app` never trigger it. It never
+# blocks startup or a request, never changes a secret, and never logs a
+# secret's value -- only which variable is missing or unsafe.
+from modules.security.secret_validation import register_secret_validation  # noqa: E402
+register_secret_validation(app)
 migrate = Migrate(app, db)
 app.register_blueprint(life_tools_bp)
 # Legacy /api/generate-report bypasses payment verification; keep it unregistered.
@@ -79,7 +86,7 @@ app.register_blueprint(life_tools_bp)
 # every script merely importing `app` (e.g.
 # scripts/campaign_worker_runner.py, which never touches OpenAI) to
 # also have a real-shaped OPENAI_API_KEY just to boot. See
-# report_writer.py / summary_api.py / routes/routes_free_consult.py /
+# report_writer.py / summary_api.py /
 # modules/services/chat_engine.py / modules/smartchat/smartchat_engine.py
 # / services/ai_prediction_lab/openai_client.py for the ACTUALLY-used
 # clients, which were converted to lazy singletons instead of removed.)
@@ -104,7 +111,9 @@ register_subscription(app)
 # /api/profile/api/profile/subscription-info) that nothing depends on.
 # Every real, documented endpoint (S3 audit) is unaffected.
 app.register_blueprint(full_kundali_modern_bp)
-app.register_blueprint(routes_free_consult)
+# PR #8: POST /api/free-consult (routes/routes_free_consult.py) removed --
+# unauthenticated OpenAI call; only pre-release Flutter builds (Nov - 3 Dec
+# 2025) ever called it.
 app.register_blueprint(routes_user)
 app.register_blueprint(routes_subscription)
 # P1 security: routes/routes_asknow.py removed. Its four legacy /asknow/*

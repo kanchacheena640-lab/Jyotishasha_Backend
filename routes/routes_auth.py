@@ -1,5 +1,7 @@
 # routes/routes_auth.py
 
+import logging
+
 from flask import Blueprint, request, jsonify
 from extensions import db
 from modules.auth.models import User
@@ -18,6 +20,8 @@ from modules.auth.firebase_cleanup_service import (
     cleanup_firebase_account,
 )
 
+
+_auth_logger = logging.getLogger("auth_register")
 
 routes_auth = Blueprint("routes_auth", __name__)
 
@@ -130,6 +134,25 @@ def register_user():
     if email:
         existing_by_email = User.query.filter_by(email=email).first()
         if existing_by_email:
+            # PR #8 -- account-takeover guard. A row that carries a password
+            # credential was created through /api/auth/signup, which never
+            # verified the email. Linking a Google identity to it by email
+            # alone would hand the real owner's account to whoever created
+            # that row (and still holds its tokens). Refuse instead; the row
+            # is left completely untouched for manual review. Rows without a
+            # password (every Google-created account) link exactly as before.
+            if existing_by_email.password_hash:
+                _auth_logger.warning(
+                    "auth_register: refused email link to a password-credential account "
+                    "(users.id=%s) -- manual review required", existing_by_email.id,
+                )
+                return jsonify({
+                    "success": False,
+                    "error": "account_link_conflict",
+                    "message": "This email is already registered with a different sign-in method. "
+                               "Please contact support to link your account.",
+                }), 409
+
             old_firebase_uid = existing_by_email.firebase_uid
             existing_by_email.firebase_uid = firebase_uid
             if existing_by_email.provider != "firebase":

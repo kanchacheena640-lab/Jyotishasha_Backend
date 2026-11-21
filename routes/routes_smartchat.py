@@ -1,12 +1,30 @@
     # routes/routes_smartchat.py
 
 from flask import Blueprint, request, jsonify
+from modules.reviews import rate_limit
 from modules.smartchat.smartchat_engine import run_smartchat
 
 routes_smartchat = Blueprint("routes_smartchat", __name__)
 
+# PR #8 -- kept only for Android builds <= 1.1.0 (removed from the app in
+# 1.1.1+46); unauthenticated and OpenAI-backed, so conservatively limited
+# per client IP using the existing Redis limiter (per-process in-memory
+# fallback if Redis is unavailable). Generous for a real person, a hard cap
+# for scripted abuse. Checked BEFORE any OpenAI call.
+SMARTCHAT_LIMITS = (("smartchat-hour", 10, 3600), ("smartchat-day", 30, 86400))
+
+
+def _rate_limited() -> bool:
+    key = rate_limit.client_key(request.remote_addr, request.headers.get("X-Forwarded-For"))
+    # every window is counted on every call, so the daily cap still applies
+    results = [rate_limit.allow(bucket, key, limit, window) for bucket, limit, window in SMARTCHAT_LIMITS]
+    return not all(results)
+
 @routes_smartchat.route("/api/smartchat", methods=["POST"])
 def smartchat_api():
+    if _rate_limited():
+        return jsonify({"success": False, "error": "rate_limited"}), 429
+
     data = request.get_json() or {}
 
     question = data.get("question", "").strip()
