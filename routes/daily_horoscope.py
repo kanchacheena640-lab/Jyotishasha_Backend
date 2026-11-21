@@ -65,7 +65,7 @@ def get_daily_horoscope():
     if not result:
         return jsonify({"error": "Horoscope not found"}), 404
 
-    now = datetime.now()
+    now = datetime.now(pytz.timezone("Asia/Kolkata"))  # IST, same as the rotation and summary
 
     if lang == "hi":
         today_date = f"{now.day} {MONTH_HI[now.month]} {now.year}"
