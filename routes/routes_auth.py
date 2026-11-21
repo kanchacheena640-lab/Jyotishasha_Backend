@@ -26,6 +26,27 @@ _auth_logger = logging.getLogger("auth_register")
 routes_auth = Blueprint("routes_auth", __name__)
 
 
+QUARANTINE_EMAIL_DOMAIN = "quarantined.invalid"  # RFC 2606 reserved TLD: never deliverable
+
+
+def _quarantine_unverified_password_account(user: User) -> None:
+    """Move an unverified password account out of the way of its email's
+    verified owner (see register_user STEP 2). Keeps the row and all of its
+    data for support review; removes only its claim on the email and its
+    password credential, so neither its creator's password nor the email can
+    be used to reach the verified owner's new account. Flushed (not committed)
+    so the owner's account can take the email in the same transaction."""
+    user.email = f"quarantined+{user.id}@{QUARANTINE_EMAIL_DOMAIN}"
+    user.password_hash = None
+    user.provider = "quarantined"
+    db.session.flush()
+    _auth_logger.warning(
+        "auth_register: quarantined an unverified password account (users.id=%s) "
+        "in favour of the Firebase-verified owner of its email -- review if needed",
+        user.id,
+    )
+
+
 def verified_token_email(decoded: dict) -> str | None:
     """The caller's email as proven by Firebase: the ID token's `email`
     claim, only when its `email_verified` claim is exactly True. Anything
@@ -133,26 +154,30 @@ def register_user():
     # -----------------------------------------
     if email:
         existing_by_email = User.query.filter_by(email=email).first()
-        if existing_by_email:
-            # PR #8 -- account-takeover guard. A row that carries a password
-            # credential was created through /api/auth/signup, which never
-            # verified the email. Linking a Google identity to it by email
-            # alone would hand the real owner's account to whoever created
-            # that row (and still holds its tokens). Refuse instead; the row
-            # is left completely untouched for manual review. Rows without a
-            # password (every Google-created account) link exactly as before.
-            if existing_by_email.password_hash:
-                _auth_logger.warning(
-                    "auth_register: refused email link to a password-credential account "
-                    "(users.id=%s) -- manual review required", existing_by_email.id,
-                )
-                return jsonify({
-                    "success": False,
-                    "error": "account_link_conflict",
-                    "message": "This email is already registered with a different sign-in method. "
-                               "Please contact support to link your account.",
-                }), 409
+        # PR #8 -- email-squatting / account-takeover guard. A row that has a
+        # password credential but has NEVER been bound to a verified Firebase
+        # identity was created through the removed, unverified
+        # /api/auth/signup: nothing ever proved its creator owns this email.
+        # The caller here HAS proved ownership (Firebase-verified email), so:
+        #   * never link to that row -- whoever created it may still hold its
+        #     tokens, which would then reach the real owner's account;
+        #   * never block the real owner either -- quarantine the unverified
+        #     row (email moved to a reserved, undeliverable .invalid address,
+        #     password credential removed, provider "quarantined"; all other
+        #     data kept intact for support review) and create the owner's own
+        #     account in STEP 3, in the same transaction.
+        # Rows without a password (every Google-created account, and legacy
+        # rows whose provider merely defaults to "password") and rows already
+        # bound to a Firebase identity link exactly as before.
+        if (
+            existing_by_email is not None
+            and existing_by_email.password_hash
+            and not existing_by_email.firebase_uid
+        ):
+            _quarantine_unverified_password_account(existing_by_email)
+            existing_by_email = None  # fall through to STEP 3
 
+        if existing_by_email:
             old_firebase_uid = existing_by_email.firebase_uid
             existing_by_email.firebase_uid = firebase_uid
             if existing_by_email.provider != "firebase":

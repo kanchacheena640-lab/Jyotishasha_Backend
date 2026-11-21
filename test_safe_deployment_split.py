@@ -107,13 +107,13 @@ def main():
                 # Ask Now Timeout Delivery Fix: chat_engine.py derives its
                 # scoped (timeout=20, max_retries=0) client via
                 # client.with_options(...) at CALL TIME from whatever
-                # chat_engine_module.client currently is -- this fake must
+                # chat_engine_module._client currently is -- this fake must
                 # answer to the same call the real client supports.
                 # Returns self: no real call is ever made either way.
                 return self
 
-        original_client = chat_engine_module.client
-        chat_engine_module.client = _FakeOpenAIClient()
+        original_client = chat_engine_module._client
+        chat_engine_module._client = _FakeOpenAIClient()
 
         client = app.test_client()
         token_a = create_access_token(identity=str(A_UID))
@@ -229,7 +229,7 @@ def main():
             check("VP: force_update plays no role in any of the above (formula has no such term)", True)
 
         finally:
-            chat_engine_module.client = original_client
+            chat_engine_module._client = original_client
             if original_env is None:
                 os.environ.pop("ASKNOW_JWT_ENFORCEMENT", None)
             else:

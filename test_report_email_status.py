@@ -51,6 +51,39 @@ DELETE.
 """
 
 import os
+
+
+
+def _structured_ai_response(body):
+    """A well-formed paid-report AI response for the CURRENT contract.
+
+    Q3-enabled products (modules/payments/report_product_intelligence.py)
+    require `===META===` JSON carrying an answer_hero with each product's
+    required_hero_fields, then `===REPORT===` and the narrative
+    (modules/payments/report_structured_output.py). A bare string is now
+    rejected as ReportMetadataError, so the fake supplies every field any
+    registered product requires; `body` stays the narrative.
+    """
+    import json
+    from modules.payments.report_product_intelligence import REGISTRY
+    fields = {f for intel in REGISTRY.values() for f in intel.required_hero_fields}
+    hero = {f: (["Fake evidence line."] if f == "evidence" else "Fake value") for f in fields}
+    return "\n".join(["===META===", json.dumps({"answer_hero": hero}), "===REPORT===", body])
+
+def _template_placeholders():
+    """Every {placeholder} the shipped prompts/*.txt templates use.
+
+    The real build_summary_blocks_with_transit() fills all of them (e.g.
+    house_lord_summary since 8bd50de); the fake below must too, or
+    template.format() raises KeyError before generation is ever tested.
+    """
+    import glob
+    import re
+    names = set()
+    for path in glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts", "*.txt")):
+        with open(path, encoding="utf-8") as f:
+            names.update(re.findall(r"\{([a-z_]+)\}", f.read()))
+    return names
 import sys
 import tempfile
 import uuid
@@ -86,6 +119,10 @@ def main():
 
     from models import Order
     import tasks as tasks_module
+    # Paid-report AI calls go through modules/payments/report_ai_client.py
+    # (generate_report_completion -> _get_client(), a lazy singleton read on
+    # every call); tasks.py no longer has an `openai_client` attribute.
+    import modules.payments.report_ai_client as report_ai_client_module
     import email_utils as email_utils_module
 
     with app.app_context():
@@ -144,10 +181,12 @@ def main():
             return {}
 
         def fake_summary_blocks(kundali, transit):
-            return {
+            blocks = {name: "x" for name in _template_placeholders()}
+            blocks.update({
                 "birth_chart_summary": "x", "current_transit_summary": "x",
                 "mahadasha_summary": "x",
-            }
+            })
+            return blocks
 
         def fake_drawing(**kwargs):
             return "fake_drawing"
@@ -181,19 +220,22 @@ def main():
             tasks_module.generate_kundali_drawing = fake_drawing
             tasks_module.generate_pdf_report = fake_pdf
             tasks_module.send_email = send_email_fn
-            tasks_module.openai_client = _FakeOpenAIClient(openai_content)
+            report_ai_client_module._client = _FakeOpenAIClient(_structured_ai_response(openai_content))
 
         real_tasks_attrs = {
             name: getattr(tasks_module, name) for name in (
                 "calculate_full_kundali", "get_current_positions",
                 "build_summary_blocks_with_transit", "generate_kundali_drawing",
-                "generate_pdf_report", "send_email", "openai_client",
+                "generate_pdf_report", "send_email",
             )
         }
+
+        real_report_ai_client = report_ai_client_module._client
 
         def restore_tasks_mocks():
             for name, value in real_tasks_attrs.items():
                 setattr(tasks_module, name, value)
+            report_ai_client_module._client = real_report_ai_client
 
         try:
             # ==========================================================

@@ -12,30 +12,12 @@ from modules.auth.models import User
 password_bp = Blueprint("password_auth", __name__)
 
 
-@password_bp.post("/api/auth/signup")
-def signup():
-    data = request.get_json() or {}
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-    phone = (data.get("phone") or "").strip()
-
-    if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
-
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email already exists"}), 409
-
-    user = User(email=email, phone=phone, provider="password")
-    user.set_password(password)
-
-    db.session.add(user)
-    db.session.commit()
-
-    return jsonify({
-        "access_token": create_access_token(identity=str(user.id)),
-        "refresh_token": create_refresh_token(identity=str(user.id)),
-        "user": user.to_public()
-    }), 201
+# PR #8: POST /api/auth/signup removed. It created accounts for any email
+# without proving the caller owned it (email squatting / pre-registration
+# account takeover). No backend, website or Flutter build ever called it.
+# /api/auth/login and /api/auth/refresh stay for any pre-existing password
+# accounts (production count unverified); routes/routes_auth.py quarantines
+# such an account when the email's Firebase-verified owner signs in.
 
 
 @password_bp.post("/api/auth/login")
