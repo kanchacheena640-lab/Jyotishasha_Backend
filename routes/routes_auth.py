@@ -1,8 +1,10 @@
 # routes/routes_auth.py
 
 import logging
+import secrets
 
 from flask import Blueprint, request, jsonify
+from sqlalchemy.exc import IntegrityError
 from extensions import db
 from modules.auth.models import User
 from modules.models_user import AppUser
@@ -27,6 +29,23 @@ routes_auth = Blueprint("routes_auth", __name__)
 
 
 QUARANTINE_EMAIL_DOMAIN = "quarantined.invalid"  # RFC 2606 reserved TLD: never deliverable
+QUARANTINE_MAX_ATTEMPTS = 5
+
+
+class QuarantineAllocationError(RuntimeError):
+    """No free quarantine address after QUARANTINE_MAX_ATTEMPTS tries."""
+
+
+def _quarantine_address(user_id: int) -> str:
+    # 128 bits from the OS CSPRNG: an attacker cannot predict -- and so cannot
+    # pre-register -- the address a given account will be moved to. The id is
+    # kept only as a human-readable hint for support. Max length ~75 chars,
+    # well under users.email's 120.
+    return f"quarantined+{user_id}.{secrets.token_hex(16)}@{QUARANTINE_EMAIL_DOMAIN}"
+
+
+def _quarantine_address_taken(address: str) -> bool:
+    return db.session.query(User.id).filter(User.email == address).first() is not None
 
 
 def _quarantine_unverified_password_account(user: User) -> None:
@@ -34,16 +53,34 @@ def _quarantine_unverified_password_account(user: User) -> None:
     verified owner (see register_user STEP 2). Keeps the row and all of its
     data for support review; removes only its claim on the email and its
     password credential, so neither its creator's password nor the email can
-    be used to reach the verified owner's new account. Flushed (not committed)
-    so the owner's account can take the email in the same transaction."""
-    user.email = f"quarantined+{user.id}@{QUARANTINE_EMAIL_DOMAIN}"
-    user.password_hash = None
-    user.provider = "quarantined"
-    db.session.flush()
-    _auth_logger.warning(
-        "auth_register: quarantined an unverified password account (users.id=%s) "
-        "in favour of the Firebase-verified owner of its email -- review if needed",
-        user.id,
+    be used to reach the verified owner's new account.
+
+    Each attempt runs in a SAVEPOINT: a uniqueness conflict on the random
+    address (pre-existing row, or a concurrent writer between the check and
+    the flush) rolls back only that attempt, and the next attempt uses a
+    fresh address. After QUARANTINE_MAX_ATTEMPTS it raises, and the caller's
+    whole transaction -- quarantine and owner account alike -- rolls back.
+    Nothing is committed here: the owner's account takes the email in the
+    same outer transaction."""
+    for _attempt in range(QUARANTINE_MAX_ATTEMPTS):
+        address = _quarantine_address(user.id)
+        if _quarantine_address_taken(address):
+            continue
+        try:
+            with db.session.begin_nested():
+                user.email = address
+                user.password_hash = None
+                user.provider = "quarantined"
+        except IntegrityError:
+            continue  # only this savepoint was rolled back; `user` reloads on next access
+        _auth_logger.warning(
+            "auth_register: quarantined an unverified password account (users.id=%s) "
+            "in favour of the Firebase-verified owner of its email -- review if needed",
+            user.id,
+        )
+        return
+    raise QuarantineAllocationError(
+        f"could not allocate a free quarantine address for users.id={user.id}"
     )
 
 
@@ -230,7 +267,23 @@ def register_user():
     )
 
     db.session.add(new_user)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        # PR #8: a concurrent sign-in for the SAME Firebase identity committed
+        # first (double tap, retry). Everything this request did -- including
+        # any quarantine -- is rolled back; the winner already applied it. If
+        # the winner is this very identity, answer as a returning user rather
+        # than a 500. Any other conflict is re-raised unchanged.
+        db.session.rollback()
+        winner = User.query.filter_by(firebase_uid=firebase_uid).first()
+        if winner is None:
+            raise
+        return jsonify({
+            "success": True,
+            "user_id": winner.id,
+            "new": False
+        }), 200
 
     return jsonify({
         "success": True,

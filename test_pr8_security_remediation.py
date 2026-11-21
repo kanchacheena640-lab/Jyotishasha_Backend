@@ -64,6 +64,8 @@ import routes.routes_smartchat as routes_smartchat  # noqa: E402
 from modules.reviews import rate_limit  # noqa: E402
 _PRODUCTION_SMARTCHAT_LIMITS = routes_smartchat.SMARTCHAT_GLOBAL_LIMITS  # captured before any test patches it
 
+# Unpredictable quarantine address: users.id hint + 128-bit CSPRNG hex.
+QUARANTINE_RE = r"^quarantined\+{id}\.[0-9a-f]{{32}}@quarantined\.invalid$"
 BIRTH = {"name": "A", "dob": "1990-01-01", "tob": "10:00", "pob": "Delhi", "lat": 28.6, "lng": 77.2, "tz": "+05:30"}
 
 
@@ -180,7 +182,7 @@ class AccountLinkingTests(_Base):
         self.assertEqual((owner.email, owner.firebase_uid, owner.provider, owner.password_hash),
                          (email, f"fb-owner-{self.tag}", "firebase", None))
         q = db.session.get(User, squat.id)
-        self.assertEqual(q.email, f"quarantined+{squat.id}@quarantined.invalid")
+        self.assertRegex(q.email, QUARANTINE_RE.format(id=squat.id))
         self.assertIsNone(q.password_hash)
         self.assertEqual(q.provider, "quarantined")
         self.assertIsNone(q.firebase_uid)
@@ -271,6 +273,124 @@ class AccountLinkingTests(_Base):
         self.assertEqual(r.status_code, 403)  # an unproven email never quarantines anything
         db.session.expire_all()
         self.assertEqual(db.session.get(User, squat.id).email, email)
+
+    # ---- quarantine address: unpredictable, collision-safe, atomic ---------
+    def plant(self, address):
+        row = self.make_user(email=address, provider="password", name="Planted")
+        row.set_password("planted-pass-123")
+        db.session.commit()
+        return row
+
+    def assert_quarantined(self, row_id):
+        db.session.expire_all()
+        q = db.session.get(User, row_id)
+        self.assertRegex(q.email, QUARANTINE_RE.format(id=row_id))
+        self.assertEqual((q.provider, q.password_hash, q.firebase_uid), ("quarantined", None, None))
+        return q
+
+    def test_preplanted_predictable_address_cannot_block_the_owner(self):
+        # The old deterministic format, planted in advance by an attacker.
+        email = f"victim3-{self.tag}@example.test"
+        squat = self.squat(email)
+        self.plant(f"quarantined+{squat.id}@quarantined.invalid")
+        r = self.register(f"fb-owner3-{self.tag}", email)
+        self.assertEqual((r.status_code, r.get_json()["new"]), (200, True))
+        self.user_ids.append(r.get_json()["user_id"])
+        self.assert_quarantined(squat.id)
+
+    def test_addresses_are_random_and_distinct(self):
+        import routes.routes_auth as ra
+        addresses = {ra._quarantine_address(42) for _ in range(200)}
+        self.assertEqual(len(addresses), 200)
+        for a in addresses:
+            self.assertRegex(a, QUARANTINE_RE.format(id=42))
+        with mock.patch("routes.routes_auth.secrets.token_hex", return_value="f" * 32) as tok:
+            self.assertEqual(ra._quarantine_address(7), "quarantined+7." + "f" * 32 + "@quarantined.invalid")
+            tok.assert_called_once_with(16)  # 128 bits from the secrets CSPRNG
+
+    def test_colliding_random_address_is_retried(self):
+        email = f"victim4-{self.tag}@example.test"
+        squat = self.squat(email)
+        taken = "a" * 32
+        self.plant(f"quarantined+{squat.id}.{taken}@quarantined.invalid")
+        with mock.patch("routes.routes_auth.secrets.token_hex", side_effect=[taken, "b" * 32]):
+            r = self.register(f"fb-owner4-{self.tag}", email)
+        self.assertEqual((r.status_code, r.get_json()["new"]), (200, True))
+        self.user_ids.append(r.get_json()["user_id"])
+        self.assertEqual(self.assert_quarantined(squat.id).email, f"quarantined+{squat.id}.{'b' * 32}@quarantined.invalid")
+
+    def test_conflict_at_flush_is_retried_inside_a_savepoint(self):
+        # The pre-check misses (race between check and flush): the savepoint
+        # absorbs the IntegrityError, the next attempt succeeds, and the outer
+        # transaction (owner account) is unaffected.
+        email = f"victim5-{self.tag}@example.test"
+        squat = self.squat(email)
+        taken = "c" * 32
+        self.plant(f"quarantined+{squat.id}.{taken}@quarantined.invalid")
+        with mock.patch("routes.routes_auth._quarantine_address_taken", return_value=False), \
+             mock.patch("routes.routes_auth.secrets.token_hex", side_effect=[taken, "d" * 32]):
+            r = self.register(f"fb-owner5-{self.tag}", email)
+        self.assertEqual((r.status_code, r.get_json()["new"]), (200, True))
+        owner_id = r.get_json()["user_id"]
+        self.user_ids.append(owner_id)
+        self.assertEqual(self.assert_quarantined(squat.id).email, f"quarantined+{squat.id}.{'d' * 32}@quarantined.invalid")
+        self.assertEqual(db.session.get(User, owner_id).email, email)
+
+    def test_exhausted_retries_roll_back_everything(self):
+        import routes.routes_auth as ra
+        email = f"victim6-{self.tag}@example.test"
+        squat = self.squat(email)
+        before = (squat.email, squat.provider, squat.password_hash)
+        with mock.patch("routes.routes_auth._quarantine_address_taken", return_value=True) as taken:
+            try:
+                outcome = self.register(f"fb-owner6-{self.tag}", email).status_code
+            except ra.QuarantineAllocationError:
+                outcome = "raised"
+        self.assertIn(outcome, (500, "raised"))  # depends only on PROPAGATE_EXCEPTIONS
+        self.assertEqual(taken.call_count, ra.QUARANTINE_MAX_ATTEMPTS)  # bounded
+        db.session.rollback()
+        db.session.expire_all()
+        row = db.session.get(User, squat.id)
+        self.assertEqual((row.email, row.provider, row.password_hash), before)  # untouched
+        self.assertIsNone(User.query.filter_by(firebase_uid=f"fb-owner6-{self.tag}").first())  # no owner row
+        r = self.register(f"fb-owner6-{self.tag}", email)  # normal retry then succeeds
+        self.assertEqual((r.status_code, r.get_json()["new"]), (200, True))
+        self.user_ids.append(r.get_json()["user_id"])
+
+    def test_concurrent_owner_signins_yield_one_account_and_no_errors(self):
+        email = f"victim7-{self.tag}@example.test"
+        squat = self.squat(email)
+        uid = f"fb-owner7-{self.tag}"
+        decoded = {"uid": uid, "email": email, "email_verified": True, "name": "Owner"}
+        results, lock, barrier = [], threading.Lock(), threading.Barrier(6)
+
+        def worker():
+            with app.app_context():
+                barrier.wait()
+                try:
+                    with mock.patch("routes.routes_auth.firebase_auth.verify_id_token", return_value=decoded):
+                        r = app.test_client().post("/api/auth/register", headers={"Authorization": "Bearer g"}, json={})
+                    out = (r.status_code, (r.get_json() or {}).get("user_id"))
+                except Exception as exc:  # surfaced below
+                    out = (type(exc).__name__, None)
+                finally:
+                    db.session.remove()
+                with lock:
+                    results.append(out)
+
+        threads = [threading.Thread(target=worker) for _ in range(6)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        db.session.expire_all()
+        owners = User.query.filter_by(email=email).all()
+        self.assertEqual(len(owners), 1)
+        self.user_ids.append(owners[0].id)
+        self.assertEqual(owners[0].firebase_uid, uid)
+        self.assertEqual(sorted(code for code, _ in results), [200] * 6, results)  # every caller succeeds
+        self.assertEqual({user_id for _, user_id in results}, {owners[0].id})  # all see the same account
+        self.assert_quarantined(squat.id)
 
 
 # --------------------------------------------------------------------------- C
