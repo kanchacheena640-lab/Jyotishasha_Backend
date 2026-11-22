@@ -604,8 +604,10 @@ def calculate_panchang(date, lat, lon, language="en", ref_dt_ist=None):
     is_kshaya = (transition_count >= 2)
     is_vriddhi = (transition_count == 0)
 
+    # Panchak = Moon in Kumbha/Meena (300-360 deg): Dhanishta padas 3-4 through Revati.
+    # Dhanishta padas 1-2 lie in Makara and are not Panchak.
     PANCHAK_NAKSHATRAS = ["Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"]
-    is_panchak = n_name in PANCHAK_NAKSHATRAS
+    is_panchak = n_name in PANCHAK_NAKSHATRAS and not (n_name == "Dhanishta" and n_pada < 3)
 
     month_name_en = get_lunar_month(ref)
     # FIX: lunar_month_engine returns dict
