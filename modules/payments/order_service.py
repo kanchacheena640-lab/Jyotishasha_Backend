@@ -139,6 +139,8 @@ LOVE_PREMIUM_GENERATOR = "love_premium_v1"
 # task is introduced.
 FOCUSED_GENERATOR = "focused_v1"
 FOCUSED_DUAL_GENERATOR = "focused_dual_v1"
+# standard_v1 product whose generator needs a valid birth time and place.
+PERSONALIZED_HOROSCOPE_2027_SLUG = "personalized_horoscope_2027"
 LOVE_PREMIUM_PRIMARY_REQUIRED_FIELDS = (
     "name", "email", "dob", "tob", "pob", "latitude", "longitude",
 )
@@ -289,6 +291,11 @@ def validate_report_order_fields(product: ReportProduct, payload: Dict[str, Any]
         if missing:
             raise OrderValidationError(f"Missing required field(s): {', '.join(missing)}")
         _validate_dob(payload.get("dob"), "dob")
+        if getattr(product, "report_slug", None) == PERSONALIZED_HOROSCOPE_2027_SLUG:
+            # Lagna and Moon sign depend on the exact birth time and place:
+            # reject an unusable one before payment, not after.
+            _validate_tob(payload.get("tob"), "tob")
+            _validate_birth_coordinates(payload)
         # Not required for a standard report, but stored verbatim
         # if a caller happens to send one -- never invented, never
         # rejected either way. Matches create_paid_report_order()'s

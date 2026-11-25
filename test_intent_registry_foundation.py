@@ -58,6 +58,7 @@ FROZEN_ORIGINALS = {
         "second_marriage_report", "divorce_possibility_report",
         "spouse_nature_report")},  # SNR-2D (rep_026)
     "relationship_future_report": 199,
+    "personalized_horoscope_2027": 99,  # PH27 (rep_027), seeded at its live price
 }
 
 
@@ -321,13 +322,13 @@ class FrozenSystemAndIsolationTests(unittest.TestCase):
     def test_the_original_report_registries_are_unchanged(self):
         from config.pricing import PRODUCT_PRICES
         from modules.payments.report_product_intelligence import REGISTRY
-        self.assertEqual(len(FROZEN_ORIGINALS), 26)
+        self.assertEqual(len(FROZEN_ORIGINALS), 27)
         self.assertEqual(dict(PRODUCT_PRICES), FROZEN_ORIGINALS)
         self.assertEqual(set(REGISTRY), set(FROZEN_ORIGINALS))
         self.assertEqual(PRODUCT_PRICES["relationship_future_report"], 199)
         self.assertEqual(sum(1 for p in PRODUCT_PRICES.values() if p == 51), 25)
         self.assertEqual(REGISTRY["relationship_future_report"].generator, "love_premium_v1")
-        self.assertEqual(sum(1 for p in REGISTRY.values() if p.generator == "standard_v1"), 25)
+        self.assertEqual(sum(1 for p in REGISTRY.values() if p.generator == "standard_v1"), 26)
         self.assertFalse(set(INTENT_SLUGS) & set(PRODUCT_PRICES))
         self.assertFalse({q.question_key for q in QUESTIONS} & set(PRODUCT_PRICES))
 

@@ -95,7 +95,7 @@ EXPECTED_ORIGINALS = {
     "jupiter_transit_report", "legal_disputes_report", "lifestyle_analysis_report", "love_disappointment_report", "love_marriage_report",
     "love_relationship_report", "marriage_report", "mood_mental_health_report", "problem_in_marriage_report", "property_report",
     "sadhesati_report", "saturn_transit_report", "second_marriage_report", "startup_suggestion_report", "relationship_future_report",
-    "spouse_nature_report",
+    "spouse_nature_report", "personalized_horoscope_2027",
 }
 STANDARD_SLUG = "startup_suggestion_report"      # standard_v1, category finance
 RELATIONSHIP_SLUG = "relationship_future_report"  # love_premium_v1, category love
@@ -191,13 +191,13 @@ def main():
             # ==========================================================
             originals = {r.report_slug: r for r in ReportProduct.query.filter(ReportProduct.generator.in_(("standard_v1", "love_premium_v1"))).all()}
             mapping = pm.ORIGINAL_REPORT_CATEGORIES
-            check("A1: the registry holds exactly 26 original products (25 standard_v1 + 1 love_premium_v1)",
-                  len(originals) == 26 and sum(1 for r in originals.values() if r.generator == "standard_v1") == 25
+            check("A1: the registry holds exactly 27 original products (26 standard_v1 + 1 love_premium_v1)",
+                  len(originals) == 27 and sum(1 for r in originals.values() if r.generator == "standard_v1") == 26
                   and [r.generator for r in originals.values() if r.report_slug == RELATIONSHIP_SLUG] == ["love_premium_v1"])
-            check("A2: the registry's originals equal the frozen expected 26 slugs", set(originals) == EXPECTED_ORIGINALS)
-            check("A3: COVERAGE -- ORIGINAL_REPORT_CATEGORIES keys equal EXACTLY the 26 original registry products (no missing, no extra)",
-                  set(mapping) == set(originals) == EXPECTED_ORIGINALS and len(mapping) == 26)
-            check("A4: ...and the legacy pricing table covers the same 26", set(PRODUCT_PRICES) == EXPECTED_ORIGINALS)
+            check("A2: the registry's originals equal the frozen expected 27 slugs", set(originals) == EXPECTED_ORIGINALS)
+            check("A3: COVERAGE -- ORIGINAL_REPORT_CATEGORIES keys equal EXACTLY the 27 original registry products (no missing, no extra)",
+                  set(mapping) == set(originals) == EXPECTED_ORIGINALS and len(mapping) == 27)
+            check("A4: ...and the legacy pricing table covers the same 27", set(PRODUCT_PRICES) == EXPECTED_ORIGINALS)
             check("A5: every mapped category is from the approved vocabulary; NONE is the 'other' fallback",
                   set(mapping.values()) <= CATEGORY_VOCAB and pm.UNMAPPED_ORIGINAL_CATEGORY not in mapping.values())
             check("A6: the registry prices are 51 for the 25 standard reports and 199 for relationship_future_report",

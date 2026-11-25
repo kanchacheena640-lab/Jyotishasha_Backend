@@ -595,6 +595,23 @@ REGISTRY: dict = {
         gemstone="disabled", disclaimer="spouse_nature_non_certainty_mandatory",
         q3_enabled=True,
     ),
+    # PH27 -- Personalized Horoscope 2027 (rep_027). Like the Spouse Nature
+    # Report, tasks.py handles it in its own branch BEFORE the generic Q3
+    # path: deterministic evidence (natal chart + validated 2027 transit
+    # master, modules/payments/horoscope_2027_evidence.py), two validated
+    # Luna calls and backend-built facts/tables/disclaimer
+    # (horoscope_2027_narrative.py). This entry documents that contract.
+    "personalized_horoscope_2027": _standard(
+        "personalized_horoscope_2027",
+        hero_label="Your 2027 at a Glance",
+        houses=tuple(range(1, 13)), planets=("Jupiter", "Saturn", "Rahu", "Ketu"),
+        context_keys=(),  # horoscope_2027_evidence_v1, not summary_blocks
+        hero_value_source="deterministic:horoscope_2027_evidence_v1",
+        required_hero_fields=("label", "value", "interpretation", "evidence"),
+        components={"answer_hero": True, "timeline": False, "gemstone": False, "action_list": True, "disclaimer": True},
+        gemstone="disabled", disclaimer="horoscope_2027_non_certainty_mandatory",
+        q3_enabled=True,
+    ),
     "relationship_future_report": ProductIntelligence(
         report_slug="relationship_future_report",
         hero_label="Relationship Outlook",

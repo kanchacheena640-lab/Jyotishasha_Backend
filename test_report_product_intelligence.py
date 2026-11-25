@@ -66,17 +66,18 @@ EXPECTED_SLUGS = {
     "second_marriage_report", "divorce_possibility_report",
     "legal_disputes_report", "relationship_future_report",
     "spouse_nature_report",
+    "personalized_horoscope_2027",  # PH27 (rep_027, migration d7a3c9e1f2b4)
 }
 
 # =================================================================
-print("=== A: all 26 report_slug entries exist ===")
+print("=== A: all 27 report_slug entries exist ===")
 # =================================================================
-check("A: exactly 26 entries in REGISTRY", len(REGISTRY) == 26)
-check("A: REGISTRY keys are exactly the 26 trusted report_slugs (no typo, none missing, none extra)",
+check("A: exactly 27 entries in REGISTRY", len(REGISTRY) == 27)
+check("A: REGISTRY keys are exactly the 27 trusted report_slugs (no typo, none missing, none extra)",
       set(REGISTRY.keys()) == EXPECTED_SLUGS)
 
 # =================================================================
-print("\n=== B: CRITICAL -- exactly ALL 26 products are enabled (Q3 Batches 1-5 + SNR-2D) ===")
+print("\n=== B: CRITICAL -- exactly ALL 27 products are enabled (Q3 Batches 1-5 + SNR-2D + PH27) ===")
 # =================================================================
 EXPECTED_Q3_ENABLED = {
     # Q3 Batch 1
@@ -97,11 +98,13 @@ EXPECTED_Q3_ENABLED = {
     "legal_disputes_report",
     # SNR-2D -- structured from day one (SNR-2C contract)
     "spouse_nature_report",
+    # PH27 -- own deterministic-evidence branch in tasks.py
+    "personalized_horoscope_2027",
 }
 actually_enabled = {slug for slug, p in REGISTRY.items() if p.q3_enabled}
-check("B: exactly these 26 products have q3_enabled=True (Q3 Batches 1-5 + SNR-2D)",
+check("B: exactly these 27 products have q3_enabled=True (Q3 Batches 1-5 + SNR-2D + PH27)",
       actually_enabled == EXPECTED_Q3_ENABLED)
-check("B: EXPECTED_Q3_ENABLED covers the entire 26-product registry -- 0 remain disabled",
+check("B: EXPECTED_Q3_ENABLED covers the entire 27-product registry -- 0 remain disabled",
       EXPECTED_Q3_ENABLED == set(REGISTRY.keys()))
 check("B: 0 products have q3_enabled=False (staged migration COMPLETE)",
       all(p.q3_enabled for p in REGISTRY.values()))

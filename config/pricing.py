@@ -29,5 +29,7 @@ PRODUCT_PRICES = {
     "divorce_possibility_report": 51,
     "relationship_future_report": 199,
     "spouse_nature_report": 51,
+    # PH27 -- seeded at Rs99 (its live, one-time price) by migration d7a3c9e1f2b4.
+    "personalized_horoscope_2027": 99,
     # Add more here...
 }

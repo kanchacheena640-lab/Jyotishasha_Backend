@@ -30,6 +30,8 @@ BASE_TO_FOCUSED = {
     "delay_in_marriage_report": ("marriage_delay_easing", "marriage_talks_current_period", "kundali_match_for_marriage"),
     "financial_stability_report": ("money_growth_periods", "income_increase_timing"),
     "jupiter_transit_report": ("important_years_ahead", "best_career_years", "money_growth_periods"),
+    # PH27 -- a year-ahead reader is offered the same forward-looking timing reports as Jupiter transit.
+    "personalized_horoscope_2027": ("important_years_ahead", "best_career_years", "money_growth_periods"),
     "lifestyle_analysis_report": (),
     "love_disappointment_report": ("current_phase_meaning",),
     "problem_in_marriage_report": ("strengthen_relationship", "emotional_communication_fit", "relationship_care_periods"),

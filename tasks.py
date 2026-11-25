@@ -96,6 +96,20 @@ from modules.payments.spouse_narrative import (
     combined_disclaimer as spouse_disclaimer,
 )
 
+# Personalized Horoscope 2027 -- same pattern as the Spouse Nature Report:
+# deterministic evidence (natal chart + validated 2027 transit master), two
+# validated Luna calls, backend-built PDF tables/facts. Reached only for an
+# Order whose product is this slug (needs its report_products row).
+from modules.payments.horoscope_2027_evidence import (
+    PRODUCT_SLUG as HOROSCOPE_2027_SLUG,
+    build_horoscope_2027_evidence,
+)
+from modules.payments.horoscope_2027_narrative import (
+    assemble_horoscope_2027_report,
+    build_horoscope_2027_prompts,
+    generate_horoscope_2027_sections,
+)
+
 # Phase 4C -- the existing, unmodified Phase-2 ledger write path. This
 # import introduces no circular dependency: modules.activity_events.*
 # imports nothing from tasks.py.
@@ -350,6 +364,13 @@ def _generate_and_send_report_core(order_id):
                 prompt_final = build_spouse_prompt(spouse_evidence, spouse_language)
                 # Same Birth Chart Summary card the other marriage reports show.
                 used_placeholders = ["birth_chart_summary"]
+            elif product_slug == HOROSCOPE_2027_SLUG:
+                # Evidence failure raises before any AI call -> "Failed".
+                h27_language = "hi" if language == "hi" else "en"
+                h27_evidence = build_horoscope_2027_evidence(kundali)
+                h27_prompts = build_horoscope_2027_prompts(h27_evidence, h27_language)
+                prompt_final = "\n\n===== PART B =====\n\n".join(h27_prompts)
+                used_placeholders = ["birth_chart_summary"]
             else:
                 template_path = f"prompts/{product_slug}_{language}.txt"
                 try:
@@ -374,7 +395,14 @@ def _generate_and_send_report_core(order_id):
             # by this function's own existing outer except-Exception
             # below, exactly as an OpenAI failure already was before
             # this change.
-            completion = generate_report_completion(prompt_final)
+            if product_slug == HOROSCOPE_2027_SLUG:
+                # Two validated calls (part A then part B); `completion` is
+                # their aggregate for the existing observability event.
+                h27_sections, completion = generate_horoscope_2027_sections(
+                    h27_prompts, h27_evidence, h27_language, generate_report_completion,
+                )
+            else:
+                completion = generate_report_completion(prompt_final)
 
             # Q3 Batch 0/1 -- product-intelligence lookup. Exactly 4
             # products (gemstone_consultation, saturn_transit_report,
@@ -400,6 +428,12 @@ def _generate_and_send_report_core(order_id):
                 gpt_content = spouse_report["narrative"]
                 if spouse_report["action_items"]:
                     action_list_component = {"heading": get_label("suggested_next_steps", language), "items": spouse_report["action_items"]}
+                structured_metadata_valid = True
+            elif product_slug == HOROSCOPE_2027_SLUG:
+                h27_report = assemble_horoscope_2027_report(h27_sections, h27_evidence, h27_language)
+                answer_hero = h27_report["answer_hero"]
+                gpt_content = h27_report["narrative"]
+                action_list_component = h27_report["action_list"]
                 structured_metadata_valid = True
             elif product_intel.q3_enabled:
                 # Q3 Batch 0 correction #1 (LOCKED): missing/malformed
@@ -545,6 +579,8 @@ def _generate_and_send_report_core(order_id):
             if product_slug == SPOUSE_PRODUCT_SLUG:
                 # SNR-2D -- the SNR-2C fixed general/health/financial text.
                 disclaimer_text = spouse_disclaimer(spouse_language)
+            elif product_slug == HOROSCOPE_2027_SLUG:
+                disclaimer_text = h27_report["disclaimer"]
 
             # Q3 Batch 1 (visual QA correction) -- Q2.1's own LOCKED
             # closing CTA. Every paid report (not just the 4 Q3-enabled
@@ -606,6 +642,9 @@ def _generate_and_send_report_core(order_id):
             )
 
             output_path = f"/home/Jyotishasha/reports/{product_slug}_{safe_name}.pdf"
+            if product_slug == HOROSCOPE_2027_SLUG:
+                # Unique per order (no customer name in the path).
+                output_path = f"/home/Jyotishasha/reports/{product_slug}_{order_id}.pdf"
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
             generate_pdf_report(
@@ -647,6 +686,9 @@ def _generate_and_send_report_core(order_id):
                 # avoid page breaks, which stranded section headings). Every
                 # other report passes nothing extra and keeps its card style.
                 **({"narrative_style": "plain"} if product_slug == SPOUSE_PRODUCT_SLUG else {}),
+                # Personalized Horoscope 2027 only: subtitle, deterministic
+                # tables and Saturn-cycle notices (existing PDF components).
+                **(h27_report["pdf_kwargs"] if product_slug == HOROSCOPE_2027_SLUG else {}),
             )
 
             # Step 7: Save + Email
