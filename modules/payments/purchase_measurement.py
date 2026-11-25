@@ -87,6 +87,7 @@ ORIGINAL_REPORT_CATEGORIES = {
     "sadhesati_report": "transit",
     "jupiter_transit_report": "transit",
     "saturn_transit_report": "transit",
+    "personalized_horoscope_2027": "transit",
     "financial_report": "finance",
     "financial_stability_report": "finance",
     "startup_suggestion_report": "finance",

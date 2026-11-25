@@ -89,7 +89,7 @@ check("A: BATCH5_PRODUCT_SLUGS is exactly the 7 expected slugs", BATCH5_PRODUCT_
 print("=== A/B/C/D: exactly 26/26 Q3 enabled (25 + SNR-2D), 0 disabled, previous 18 unchanged, exactly 7 Batch-5 products ===")
 
 enabled = {slug for slug, p in REGISTRY.items() if p.q3_enabled}
-check("A: exactly 26 of 26 products are q3_enabled=True (25 + SNR-2D spouse_nature_report)", len(enabled) == 26)
+check("A: exactly 27 of 27 products are q3_enabled=True (25 + SNR-2D spouse_nature_report + PH27)", len(enabled) == 27)
 check("B: exactly 0 products are q3_enabled=False", len(REGISTRY) - len(enabled) == 0)
 check("C: all previous 18 products remain enabled",
       (BATCH1_SLUGS | BATCH2_SLUGS | BATCH3_SLUGS | BATCH4_SLUGS) <= enabled)

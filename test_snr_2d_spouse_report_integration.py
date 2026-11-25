@@ -125,10 +125,10 @@ class RegistrationTests(_NoLiveOpenAI):
             # I/J: backend original catalogue = 26; focused population unchanged and separate.
             originals = ReportProduct.query.filter(ReportProduct.generator.in_(ORIGINAL_GENERATORS)).all()
             self.assertEqual({r.report_slug: r.price for r in originals}, PRODUCT_PRICES)
-            self.assertEqual(len(PRODUCT_PRICES), 26)
+            self.assertEqual(len(PRODUCT_PRICES), 27)  # + PH27 personalized_horoscope_2027
             self.assertEqual(ReportProduct.query.filter_by(generator="focused_v1").count(), 54)
             self.assertEqual(ReportProduct.query.filter_by(generator="focused_dual_v1").count(), 9)
-        self.assertEqual(len(REGISTRY), 26)
+        self.assertEqual(len(REGISTRY), 27)
         self.assertEqual(set(pm.ORIGINAL_REPORT_CATEGORIES), set(PRODUCT_PRICES))
 
     def test_duplicate_registration_is_detected_and_rejected(self):

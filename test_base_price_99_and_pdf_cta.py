@@ -29,6 +29,9 @@ from pdf_generator_weasy import generate_pdf_report_weasy
 
 ROOT = pathlib.Path(__file__).resolve().parent
 STANDARD_SLUGS = sorted(slug for slug in PRODUCT_PRICES if slug != "relationship_future_report")
+# The 25 standard reports migration c5e1d7a9b2f4 moves from Rs51 to Rs99. personalized_horoscope_2027 is
+# seeded afterwards (d7a3c9e1f2b4) directly at Rs99, so it is not part of that migration's population.
+PRICE_99_MIGRATED_SLUGS = [s for s in STANDARD_SLUGS if s != "personalized_horoscope_2027"]
 FOCUSED_KEYS = [q.question_key for q in QUESTIONS]
 
 
@@ -44,7 +47,7 @@ def registry_engine(standard_price=51, standard_count=25):
     engine = sa.create_engine("sqlite://")
     with engine.begin() as conn:
         conn.execute(sa.text("CREATE TABLE report_products (report_slug TEXT PRIMARY KEY, generator TEXT, price INTEGER)"))
-        rows = [(s, "standard_v1", standard_price) for s in STANDARD_SLUGS[:standard_count]]
+        rows = [(s, "standard_v1", standard_price) for s in PRICE_99_MIGRATED_SLUGS[:standard_count]]
         rows += [(k, "focused_dual_v1" if q.person_mode == "dual" else "focused_v1", 51) for k, q in zip(FOCUSED_KEYS, QUESTIONS)]
         rows.append(("relationship_future_report", "love_premium_v1", 199))
         conn.execute(sa.text("INSERT INTO report_products VALUES (:s, :g, :p)"), [dict(s=s, g=g, p=p) for s, g, p in rows])
@@ -68,7 +71,7 @@ class PriceMigrationTests(unittest.TestCase):
         before = prices(engine)
         run(engine, "upgrade")
         after = prices(engine)
-        self.assertEqual({s: after[s] for s in STANDARD_SLUGS}, {s: 99 for s in STANDARD_SLUGS})
+        self.assertEqual({s: after[s] for s in PRICE_99_MIGRATED_SLUGS}, {s: 99 for s in PRICE_99_MIGRATED_SLUGS})
         self.assertEqual({k: after[k] for k in FOCUSED_KEYS}, {k: 51 for k in FOCUSED_KEYS})
         self.assertEqual(after["relationship_future_report"], 199)
         run(engine, "downgrade")

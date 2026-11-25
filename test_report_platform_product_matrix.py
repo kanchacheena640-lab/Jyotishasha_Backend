@@ -25,7 +25,7 @@ lifestyle_analysis_report love_disappointment_report love_marriage_report
 love_relationship_report marriage_report mood_mental_health_report
 problem_in_marriage_report property_report sadhesati_report saturn_transit_report
 second_marriage_report startup_suggestion_report relationship_future_report
-spouse_nature_report""".split())
+spouse_nature_report personalized_horoscope_2027""".split())
 LOVE = "relationship_future_report"
 
 
@@ -44,7 +44,7 @@ class ProductMatrixTests(unittest.TestCase):
 
     def test_catalog_seed_prices_and_resources(self):
         prices = dict(PRODUCT_PRICES)
-        self.assertEqual(len(prices), 26)
+        self.assertEqual(len(prices), 27)
         self.assertEqual(set(prices), EXPECTED)
         seed = ast.parse(next(Path("migrations/versions").glob("65bed70e2520*.py")).read_text())
         values = {n.targets[0].id: ast.literal_eval(n.value) for n in seed.body
@@ -55,8 +55,13 @@ class ProductMatrixTests(unittest.TestCase):
         spouse = next(ast.literal_eval(n.value) for n in snr.body
                       if isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name)
                       and n.targets[0].id == "_SPOUSE_NATURE_PRODUCT")
+        # PH27 -- personalized_horoscope_2027 is seeded by its own additive migration.
+        ph27 = ast.parse(next(Path("migrations/versions").glob("d7a3c9e1f2b4*.py")).read_text())
+        horoscope = next(ast.literal_eval(n.value) for n in ph27.body
+                         if isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name)
+                         and n.targets[0].id == "_PERSONALIZED_HOROSCOPE_2027_PRODUCT")
         self.assertEqual({s: p for s, _, p in values["_STANDARD_PRODUCTS"] +
-                          [values["_LOVE_PREMIUM_PRODUCT"], spouse]}, prices)
+                          [values["_LOVE_PREMIUM_PRODUCT"], spouse, horoscope]}, prices)
         source = Path("tasks.py").read_text(encoding="utf-8")
         loader = next(n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.Try)
                       and any(isinstance(h.type, ast.Name) and h.type.id == "FileNotFoundError"
@@ -74,7 +79,7 @@ class ProductMatrixTests(unittest.TestCase):
                     self.assertEqual(row.generator, "love_premium_v1" if row.report_slug == LOVE else "standard_v1")
                     self.assertIn(row.generator, KNOWN_GENERATORS)
                     self.assertEqual(row.prompt_template_id, row.report_slug)
-                    self.assertEqual(row.price, 199 if row.report_slug == LOVE else 51)
+                    self.assertEqual(row.price, prices[row.report_slug])  # seed price (199 / 51 / PH27 99)
                     for language in ("en", "hi"):
                         path = Path(f"prompts/{row.prompt_template_id}_{language}.txt")
                         self.assertTrue(path.is_file(), str(path))
@@ -105,7 +110,7 @@ class ProductMatrixTests(unittest.TestCase):
                 try:
                     fixture.setUp()
                     payload = dict(fixture.payload, product=slug, price=1, amount=1, amount_paise=1)
-                    amount = 19900 if slug == LOVE else 5100
+                    amount = PRODUCT_PRICES[slug] * 100
                     if slug == LOVE:
                         del payload["phone"]
                         payload["partner"] = dict(name="Synthetic Partner", dob="1993-02-17",

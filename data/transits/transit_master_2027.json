@@ -1,0 +1,2044 @@
+{
+ "conventions": {
+  "ayanamsa": "Lahiri (SIDM_LAHIRI)",
+  "nodes": "Mean node (swe.MEAN_NODE); Ketu = Rahu + 180",
+  "canonical_style": "A = tropical calc_ut - get_ayanamsa_ut (transit_engine.py)",
+  "cross_check_style": "B = calc_ut with FLG_SIDEREAL (astro_core.py / panchang_engine.py)",
+  "ephemeris": "Moshier fallback (flags & FLG_MOSEPH); swisseph 2.10.03",
+  "timezone": "IST (UTC+05:30)",
+  "lahiri_ayanamsa_2027_01_01_00IST": 24.23425615912356
+ },
+ "positions_2027_01_01_0000_IST": [
+  {
+   "planet": "Sun",
+   "sign": "Sagittarius",
+   "deg": 15.8525,
+   "abs": 255.8525,
+   "nakshatra": "Purva Ashadha",
+   "pada": 1,
+   "motion": "D"
+  },
+  {
+   "planet": "Moon",
+   "sign": "Virgo",
+   "deg": 27.4722,
+   "abs": 177.4722,
+   "nakshatra": "Chitra",
+   "pada": 2,
+   "motion": "D"
+  },
+  {
+   "planet": "Mars",
+   "sign": "Leo",
+   "deg": 15.6102,
+   "abs": 135.6102,
+   "nakshatra": "Purva Phalguni",
+   "pada": 1,
+   "motion": "D"
+  },
+  {
+   "planet": "Mercury",
+   "sign": "Sagittarius",
+   "deg": 15.3004,
+   "abs": 255.3004,
+   "nakshatra": "Purva Ashadha",
+   "pada": 1,
+   "motion": "D"
+  },
+  {
+   "planet": "Jupiter",
+   "sign": "Leo",
+   "deg": 2.2218,
+   "abs": 122.2218,
+   "nakshatra": "Magha",
+   "pada": 1,
+   "motion": "R"
+  },
+  {
+   "planet": "Venus",
+   "sign": "Libra",
+   "deg": 29.0269,
+   "abs": 209.0269,
+   "nakshatra": "Vishakha",
+   "pada": 3,
+   "motion": "D"
+  },
+  {
+   "planet": "Saturn",
+   "sign": "Pisces",
+   "deg": 14.0892,
+   "abs": 344.0892,
+   "nakshatra": "Uttara Bhadrapada",
+   "pada": 4,
+   "motion": "D"
+  },
+  {
+   "planet": "Rahu",
+   "sign": "Capricorn",
+   "deg": 28.6219,
+   "abs": 298.6219,
+   "nakshatra": "Dhanishta",
+   "pada": 2,
+   "motion": "R"
+  },
+  {
+   "planet": "Ketu",
+   "sign": "Cancer",
+   "deg": 28.6219,
+   "abs": 118.6219,
+   "nakshatra": "Ashlesha",
+   "pada": 4,
+   "motion": "R"
+  }
+ ],
+ "events": {
+  "Jupiter": [
+   {
+    "type": "ingress",
+    "from": "Cancer",
+    "to": "Leo",
+    "retro": false,
+    "ist": "2026-10-31 11:35",
+    "style_B_ist": "2026-10-31 12:02",
+    "B_minus_A_min": 26.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "retrograde",
+    "sign": "Leo",
+    "ist": "2026-12-13 06:26",
+    "style_B_ist": "2026-12-13 06:00",
+    "B_minus_A_min": -25.7,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Leo",
+    "to": "Cancer",
+    "retro": true,
+    "ist": "2027-01-25 02:12",
+    "style_B_ist": "2027-01-25 01:31",
+    "B_minus_A_min": -40.7,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "direct",
+    "sign": "Cancer",
+    "ist": "2027-04-13 07:41",
+    "style_B_ist": "2027-04-13 08:12",
+    "B_minus_A_min": 31.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Cancer",
+    "to": "Leo",
+    "retro": false,
+    "ist": "2027-06-26 04:50",
+    "style_B_ist": "2027-06-26 05:18",
+    "B_minus_A_min": 28.8,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Leo",
+    "to": "Virgo",
+    "retro": false,
+    "ist": "2027-11-26 18:06",
+    "style_B_ist": "2027-11-26 18:45",
+    "B_minus_A_min": 38.2,
+    "date_differs_A_B": false
+   }
+  ],
+  "Saturn": [
+   {
+    "type": "direct",
+    "sign": "Pisces",
+    "ist": "2026-12-11 05:01",
+    "style_B_ist": "2026-12-11 06:00",
+    "B_minus_A_min": 59.0,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Pisces",
+    "to": "Aries",
+    "retro": false,
+    "ist": "2027-06-03 04:43",
+    "style_B_ist": "2027-06-03 05:28",
+    "B_minus_A_min": 44.7,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "retrograde",
+    "sign": "Aries",
+    "ist": "2027-08-09 23:35",
+    "style_B_ist": "2027-08-09 22:54",
+    "B_minus_A_min": -41.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Aries",
+    "to": "Pisces",
+    "retro": true,
+    "ist": "2027-10-20 08:13",
+    "style_B_ist": "2027-10-20 07:12",
+    "B_minus_A_min": -61.3,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "direct",
+    "sign": "Pisces",
+    "ist": "2027-12-24 08:17",
+    "style_B_ist": "2027-12-24 09:04",
+    "B_minus_A_min": 47.4,
+    "date_differs_A_B": false
+   }
+  ],
+  "Rahu": [
+   {
+    "type": "ingress",
+    "from": "Aquarius",
+    "to": "Capricorn",
+    "retro": true,
+    "ist": "2026-12-05 23:39",
+    "style_B_ist": "2026-12-05 22:32",
+    "B_minus_A_min": -67.2,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Capricorn",
+    "to": "Sagittarius",
+    "retro": true,
+    "ist": "2028-06-24 03:29",
+    "style_B_ist": "2028-06-24 01:29",
+    "B_minus_A_min": -119.4,
+    "date_differs_A_B": false
+   }
+  ],
+  "Mars": [
+   {
+    "type": "retrograde",
+    "sign": "Leo",
+    "ist": "2027-01-10 18:29",
+    "style_B_ist": "2027-01-10 18:24",
+    "B_minus_A_min": -4.8,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Leo",
+    "to": "Cancer",
+    "retro": true,
+    "ist": "2027-03-10 00:29",
+    "style_B_ist": "2027-03-10 00:13",
+    "B_minus_A_min": -16.0,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "direct",
+    "sign": "Cancer",
+    "ist": "2027-04-01 19:38",
+    "style_B_ist": "2027-04-01 19:41",
+    "B_minus_A_min": 3.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Cancer",
+    "to": "Leo",
+    "retro": false,
+    "ist": "2027-04-26 11:30",
+    "style_B_ist": "2027-04-26 11:47",
+    "B_minus_A_min": 17.0,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Leo",
+    "to": "Virgo",
+    "retro": false,
+    "ist": "2027-07-05 04:25",
+    "style_B_ist": "2027-07-05 04:34",
+    "B_minus_A_min": 9.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Virgo",
+    "to": "Libra",
+    "retro": false,
+    "ist": "2027-08-24 09:43",
+    "style_B_ist": "2027-08-24 09:51",
+    "B_minus_A_min": 8.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Libra",
+    "to": "Scorpio",
+    "retro": false,
+    "ist": "2027-10-08 01:21",
+    "style_B_ist": "2027-10-08 01:28",
+    "B_minus_A_min": 7.3,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Scorpio",
+    "to": "Sagittarius",
+    "retro": false,
+    "ist": "2027-11-18 08:39",
+    "style_B_ist": "2027-11-18 08:45",
+    "B_minus_A_min": 6.7,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Sagittarius",
+    "to": "Capricorn",
+    "retro": false,
+    "ist": "2027-12-27 12:57",
+    "style_B_ist": "2027-12-27 13:05",
+    "B_minus_A_min": 7.4,
+    "date_differs_A_B": false
+   }
+  ],
+  "Mercury": [
+   {
+    "type": "ingress",
+    "from": "Sagittarius",
+    "to": "Capricorn",
+    "retro": false,
+    "ist": "2027-01-10 00:34",
+    "style_B_ist": "2027-01-10 00:37",
+    "B_minus_A_min": 2.7,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Capricorn",
+    "to": "Aquarius",
+    "retro": false,
+    "ist": "2027-01-28 03:30",
+    "style_B_ist": "2027-01-28 03:34",
+    "B_minus_A_min": 3.1,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "retrograde",
+    "sign": "Aquarius",
+    "ist": "2027-02-09 23:06",
+    "style_B_ist": "2027-02-09 23:06",
+    "B_minus_A_min": -0.1,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Aquarius",
+    "to": "Capricorn",
+    "retro": true,
+    "ist": "2027-02-24 04:45",
+    "style_B_ist": "2027-02-24 04:40",
+    "B_minus_A_min": -5.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "direct",
+    "sign": "Capricorn",
+    "ist": "2027-03-03 18:02",
+    "style_B_ist": "2027-03-03 18:02",
+    "B_minus_A_min": 0.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Capricorn",
+    "to": "Aquarius",
+    "retro": false,
+    "ist": "2027-03-12 05:01",
+    "style_B_ist": "2027-03-12 05:07",
+    "B_minus_A_min": 6.3,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Aquarius",
+    "to": "Pisces",
+    "retro": false,
+    "ist": "2027-04-05 16:13",
+    "style_B_ist": "2027-04-05 16:16",
+    "B_minus_A_min": 2.7,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Pisces",
+    "to": "Aries",
+    "retro": false,
+    "ist": "2027-04-22 08:10",
+    "style_B_ist": "2027-04-22 08:12",
+    "B_minus_A_min": 2.1,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Aries",
+    "to": "Taurus",
+    "retro": false,
+    "ist": "2027-05-06 12:34",
+    "style_B_ist": "2027-05-06 12:36",
+    "B_minus_A_min": 1.9,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Taurus",
+    "to": "Gemini",
+    "retro": false,
+    "ist": "2027-05-23 18:28",
+    "style_B_ist": "2027-05-23 18:32",
+    "B_minus_A_min": 3.4,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "retrograde",
+    "sign": "Gemini",
+    "ist": "2027-06-10 23:45",
+    "style_B_ist": "2027-06-10 23:44",
+    "B_minus_A_min": -0.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "direct",
+    "sign": "Gemini",
+    "ist": "2027-07-05 01:09",
+    "style_B_ist": "2027-07-05 01:10",
+    "B_minus_A_min": 1.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Gemini",
+    "to": "Cancer",
+    "retro": false,
+    "ist": "2027-07-30 18:28",
+    "style_B_ist": "2027-07-30 18:31",
+    "B_minus_A_min": 2.9,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Cancer",
+    "to": "Leo",
+    "retro": false,
+    "ist": "2027-08-14 11:50",
+    "style_B_ist": "2027-08-14 11:53",
+    "B_minus_A_min": 2.8,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Leo",
+    "to": "Virgo",
+    "retro": false,
+    "ist": "2027-08-31 01:57",
+    "style_B_ist": "2027-08-31 02:01",
+    "B_minus_A_min": 3.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Virgo",
+    "to": "Libra",
+    "retro": false,
+    "ist": "2027-09-21 18:16",
+    "style_B_ist": "2027-09-21 18:20",
+    "B_minus_A_min": 4.7,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "retrograde",
+    "sign": "Libra",
+    "ist": "2027-10-07 20:07",
+    "style_B_ist": "2027-10-07 20:06",
+    "B_minus_A_min": -0.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Libra",
+    "to": "Virgo",
+    "retro": true,
+    "ist": "2027-10-21 08:16",
+    "style_B_ist": "2027-10-21 08:12",
+    "B_minus_A_min": -4.2,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "direct",
+    "sign": "Virgo",
+    "ist": "2027-10-28 19:40",
+    "style_B_ist": "2027-10-28 19:40",
+    "B_minus_A_min": 0.1,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Virgo",
+    "to": "Libra",
+    "retro": false,
+    "ist": "2027-11-05 17:06",
+    "style_B_ist": "2027-11-05 17:11",
+    "B_minus_A_min": 4.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Libra",
+    "to": "Scorpio",
+    "retro": false,
+    "ist": "2027-11-26 00:26",
+    "style_B_ist": "2027-11-26 00:29",
+    "B_minus_A_min": 3.2,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Scorpio",
+    "to": "Sagittarius",
+    "retro": false,
+    "ist": "2027-12-15 02:03",
+    "style_B_ist": "2027-12-15 02:06",
+    "B_minus_A_min": 3.5,
+    "date_differs_A_B": false
+   }
+  ],
+  "Venus": [
+   {
+    "type": "ingress",
+    "from": "Libra",
+    "to": "Scorpio",
+    "retro": false,
+    "ist": "2027-01-01 23:18",
+    "style_B_ist": "2027-01-01 23:22",
+    "B_minus_A_min": 4.2,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Scorpio",
+    "to": "Sagittarius",
+    "retro": false,
+    "ist": "2027-01-29 18:37",
+    "style_B_ist": "2027-01-29 18:41",
+    "B_minus_A_min": 4.2,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Sagittarius",
+    "to": "Capricorn",
+    "retro": false,
+    "ist": "2027-02-24 15:12",
+    "style_B_ist": "2027-02-24 15:16",
+    "B_minus_A_min": 4.0,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Capricorn",
+    "to": "Aquarius",
+    "retro": false,
+    "ist": "2027-03-21 18:48",
+    "style_B_ist": "2027-03-21 18:51",
+    "B_minus_A_min": 3.8,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Aquarius",
+    "to": "Pisces",
+    "retro": false,
+    "ist": "2027-04-15 15:16",
+    "style_B_ist": "2027-04-15 15:20",
+    "B_minus_A_min": 3.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Pisces",
+    "to": "Aries",
+    "retro": false,
+    "ist": "2027-05-10 08:45",
+    "style_B_ist": "2027-05-10 08:48",
+    "B_minus_A_min": 3.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Aries",
+    "to": "Taurus",
+    "retro": false,
+    "ist": "2027-06-04 00:37",
+    "style_B_ist": "2027-06-04 00:41",
+    "B_minus_A_min": 3.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Taurus",
+    "to": "Gemini",
+    "retro": false,
+    "ist": "2027-06-28 14:35",
+    "style_B_ist": "2027-06-28 14:39",
+    "B_minus_A_min": 4.0,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Gemini",
+    "to": "Cancer",
+    "retro": false,
+    "ist": "2027-07-23 01:42",
+    "style_B_ist": "2027-07-23 01:46",
+    "B_minus_A_min": 4.4,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Cancer",
+    "to": "Leo",
+    "retro": false,
+    "ist": "2027-08-16 09:30",
+    "style_B_ist": "2027-08-16 09:34",
+    "B_minus_A_min": 4.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Leo",
+    "to": "Virgo",
+    "retro": false,
+    "ist": "2027-09-09 14:36",
+    "style_B_ist": "2027-09-09 14:40",
+    "B_minus_A_min": 4.4,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Virgo",
+    "to": "Libra",
+    "retro": false,
+    "ist": "2027-10-03 18:20",
+    "style_B_ist": "2027-10-03 18:24",
+    "B_minus_A_min": 4.0,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Libra",
+    "to": "Scorpio",
+    "retro": false,
+    "ist": "2027-10-27 21:53",
+    "style_B_ist": "2027-10-27 21:57",
+    "B_minus_A_min": 3.9,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Scorpio",
+    "to": "Sagittarius",
+    "retro": false,
+    "ist": "2027-11-21 02:04",
+    "style_B_ist": "2027-11-21 02:08",
+    "B_minus_A_min": 4.1,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Sagittarius",
+    "to": "Capricorn",
+    "retro": false,
+    "ist": "2027-12-15 08:06",
+    "style_B_ist": "2027-12-15 08:11",
+    "B_minus_A_min": 4.5,
+    "date_differs_A_B": false
+   }
+  ],
+  "Sun": [
+   {
+    "type": "ingress",
+    "from": "Sagittarius",
+    "to": "Capricorn",
+    "retro": false,
+    "ist": "2027-01-14 21:06",
+    "style_B_ist": "2027-01-14 21:10",
+    "B_minus_A_min": 4.4,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Capricorn",
+    "to": "Aquarius",
+    "retro": false,
+    "ist": "2027-02-13 10:04",
+    "style_B_ist": "2027-02-13 10:09",
+    "B_minus_A_min": 4.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Aquarius",
+    "to": "Pisces",
+    "retro": false,
+    "ist": "2027-03-15 06:55",
+    "style_B_ist": "2027-03-15 07:00",
+    "B_minus_A_min": 4.6,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Pisces",
+    "to": "Aries",
+    "retro": false,
+    "ist": "2027-04-14 15:23",
+    "style_B_ist": "2027-04-14 15:28",
+    "B_minus_A_min": 4.4,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Aries",
+    "to": "Taurus",
+    "retro": false,
+    "ist": "2027-05-15 12:15",
+    "style_B_ist": "2027-05-15 12:19",
+    "B_minus_A_min": 4.5,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Taurus",
+    "to": "Gemini",
+    "retro": false,
+    "ist": "2027-06-15 18:51",
+    "style_B_ist": "2027-06-15 18:55",
+    "B_minus_A_min": 4.9,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Gemini",
+    "to": "Cancer",
+    "retro": false,
+    "ist": "2027-07-17 05:43",
+    "style_B_ist": "2027-07-17 05:48",
+    "B_minus_A_min": 5.7,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Cancer",
+    "to": "Leo",
+    "retro": false,
+    "ist": "2027-08-17 14:07",
+    "style_B_ist": "2027-08-17 14:13",
+    "B_minus_A_min": 5.9,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Leo",
+    "to": "Virgo",
+    "retro": false,
+    "ist": "2027-09-17 14:05",
+    "style_B_ist": "2027-09-17 14:10",
+    "B_minus_A_min": 5.4,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Virgo",
+    "to": "Libra",
+    "retro": false,
+    "ist": "2027-10-18 02:04",
+    "style_B_ist": "2027-10-18 02:08",
+    "B_minus_A_min": 4.8,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Libra",
+    "to": "Scorpio",
+    "retro": false,
+    "ist": "2027-11-17 01:53",
+    "style_B_ist": "2027-11-17 01:58",
+    "B_minus_A_min": 4.9,
+    "date_differs_A_B": false
+   },
+   {
+    "type": "ingress",
+    "from": "Scorpio",
+    "to": "Sagittarius",
+    "retro": false,
+    "ist": "2027-12-16 16:33",
+    "style_B_ist": "2027-12-16 16:38",
+    "B_minus_A_min": 5.5,
+    "date_differs_A_B": false
+   }
+  ]
+ },
+ "rahu_true_node_ingresses": [
+  {
+   "ist": "2026-11-25 19:34",
+   "from": "Aquarius",
+   "to": "Capricorn"
+  },
+  {
+   "ist": "2028-05-24 15:55",
+   "from": "Capricorn",
+   "to": "Sagittarius"
+  }
+ ],
+ "eclipses_2027": [
+  {
+   "kind": "solar",
+   "type": "Annular",
+   "max_ist": "2027-02-06 21:29",
+   "sign": "Capricorn",
+   "nakshatra": "Dhanishta",
+   "india_visibility": "not visible from the checked Indian cities"
+  },
+  {
+   "kind": "lunar",
+   "type": "Penumbral",
+   "max_ist": "2027-02-21 04:42",
+   "penumbral_begin_ist": "2027-02-21 02:42",
+   "penumbral_end_ist": "2027-02-21 06:43",
+   "sign": "Leo",
+   "nakshatra": "Magha",
+   "india_visibility": {
+    "New Delhi": {
+     "max_ist": "2027-02-21 04:42",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-02-21 02:42",
+     "penumbral_end_ist": "2027-02-21 06:43",
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.9258
+    },
+    "Mumbai": {
+     "max_ist": "2027-02-21 04:42",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-02-21 02:42",
+     "penumbral_end_ist": "2027-02-21 06:43",
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.9258
+    },
+    "Kolkata": {
+     "max_ist": "2027-02-21 04:42",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-02-21 02:42",
+     "penumbral_end_ist": null,
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.9258
+    },
+    "Chennai": {
+     "max_ist": "2027-02-21 04:42",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-02-21 02:42",
+     "penumbral_end_ist": null,
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.9258
+    },
+    "Lucknow": {
+     "max_ist": "2027-02-21 04:42",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-02-21 02:42",
+     "penumbral_end_ist": null,
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.9258
+    }
+   }
+  },
+  {
+   "kind": "lunar",
+   "type": "Penumbral",
+   "max_ist": "2027-07-18 21:33",
+   "penumbral_begin_ist": "2027-07-18 21:27",
+   "penumbral_end_ist": "2027-07-18 21:38",
+   "sign": "Capricorn",
+   "nakshatra": "Uttara Ashadha",
+   "india_visibility": {
+    "New Delhi": {
+     "max_ist": "2027-07-18 21:33",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-07-18 21:27",
+     "penumbral_end_ist": "2027-07-18 21:38",
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.0014
+    },
+    "Mumbai": {
+     "max_ist": "2027-07-18 21:33",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-07-18 21:27",
+     "penumbral_end_ist": "2027-07-18 21:38",
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.0014
+    },
+    "Kolkata": {
+     "max_ist": "2027-07-18 21:33",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-07-18 21:27",
+     "penumbral_end_ist": "2027-07-18 21:38",
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.0014
+    },
+    "Chennai": {
+     "max_ist": "2027-07-18 21:33",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-07-18 21:27",
+     "penumbral_end_ist": "2027-07-18 21:38",
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.0014
+    },
+    "Lucknow": {
+     "max_ist": "2027-07-18 21:33",
+     "max_visible": true,
+     "penumbral_begin_ist": "2027-07-18 21:27",
+     "penumbral_end_ist": "2027-07-18 21:38",
+     "umbral_magnitude": 0.0,
+     "penumbral_magnitude": 0.0014
+    }
+   }
+  },
+  {
+   "kind": "solar",
+   "type": "Total",
+   "max_ist": "2027-08-02 15:36",
+   "sign": "Cancer",
+   "nakshatra": "Pushya",
+   "india_visibility": {
+    "New Delhi": {
+     "max_ist": "2027-08-02 16:29",
+     "first_contact_ist": "2027-08-02 15:53",
+     "last_contact_ist": "2027-08-02 17:02",
+     "magnitude": 0.169
+    },
+    "Mumbai": {
+     "max_ist": "2027-08-02 16:41",
+     "first_contact_ist": "2027-08-02 15:47",
+     "last_contact_ist": "2027-08-02 17:31",
+     "magnitude": 0.428
+    },
+    "Kolkata": {
+     "max_ist": "2027-08-02 16:44",
+     "first_contact_ist": "2027-08-02 16:14",
+     "last_contact_ist": "2027-08-02 17:12",
+     "magnitude": 0.137
+    },
+    "Chennai": {
+     "max_ist": "2027-08-02 16:54",
+     "first_contact_ist": "2027-08-02 16:02",
+     "last_contact_ist": "2027-08-02 17:41",
+     "magnitude": 0.452
+    },
+    "Lucknow": {
+     "max_ist": "2027-08-02 16:34",
+     "first_contact_ist": "2027-08-02 16:01",
+     "last_contact_ist": "2027-08-02 17:05",
+     "magnitude": 0.149
+    }
+   }
+  },
+  {
+   "kind": "lunar",
+   "type": "Penumbral",
+   "max_ist": "2027-08-17 12:43",
+   "penumbral_begin_ist": "2027-08-17 10:54",
+   "penumbral_end_ist": "2027-08-17 14:33",
+   "sign": "Capricorn",
+   "nakshatra": "Dhanishta",
+   "india_visibility": "not visible from the checked Indian cities"
+  }
+ ],
+ "residency": {
+  "Jupiter": [
+   {
+    "sign": "Gemini",
+    "from_ist": "2026-06-01 00:00",
+    "to_ist": "2026-06-02 01:36"
+   },
+   {
+    "sign": "Cancer",
+    "from_ist": "2026-06-02 01:36",
+    "to_ist": "2026-10-31 11:35"
+   },
+   {
+    "sign": "Leo",
+    "from_ist": "2026-10-31 11:35",
+    "to_ist": "2027-01-25 02:12"
+   },
+   {
+    "sign": "Cancer",
+    "from_ist": "2027-01-25 02:12",
+    "to_ist": "2027-06-26 04:50"
+   },
+   {
+    "sign": "Leo",
+    "from_ist": "2027-06-26 04:50",
+    "to_ist": "2027-11-26 18:06"
+   },
+   {
+    "sign": "Virgo",
+    "from_ist": "2027-11-26 18:06",
+    "to_ist": "2028-02-28 20:07"
+   },
+   {
+    "sign": "Leo",
+    "from_ist": "2028-02-28 20:07",
+    "to_ist": "2028-06-01 00:00"
+   }
+  ],
+  "Saturn": [
+   {
+    "sign": "Aquarius",
+    "from_ist": "2024-01-01 00:00",
+    "to_ist": "2025-03-29 21:42"
+   },
+   {
+    "sign": "Pisces",
+    "from_ist": "2025-03-29 21:42",
+    "to_ist": "2027-06-03 04:43"
+   },
+   {
+    "sign": "Aries",
+    "from_ist": "2027-06-03 04:43",
+    "to_ist": "2027-10-20 08:13"
+   },
+   {
+    "sign": "Pisces",
+    "from_ist": "2027-10-20 08:13",
+    "to_ist": "2028-02-23 18:17"
+   },
+   {
+    "sign": "Aries",
+    "from_ist": "2028-02-23 18:17",
+    "to_ist": "2029-08-08 10:06"
+   },
+   {
+    "sign": "Taurus",
+    "from_ist": "2029-08-08 10:06",
+    "to_ist": "2029-10-05 19:04"
+   },
+   {
+    "sign": "Aries",
+    "from_ist": "2029-10-05 19:04",
+    "to_ist": "2030-04-17 08:15"
+   },
+   {
+    "sign": "Taurus",
+    "from_ist": "2030-04-17 08:15",
+    "to_ist": "2031-01-01 00:00"
+   }
+  ],
+  "Rahu": [
+   {
+    "sign": "Pisces",
+    "from_ist": "2025-01-01 00:00",
+    "to_ist": "2025-05-18 19:40"
+   },
+   {
+    "sign": "Aquarius",
+    "from_ist": "2025-05-18 19:40",
+    "to_ist": "2026-12-05 23:39"
+   },
+   {
+    "sign": "Capricorn",
+    "from_ist": "2026-12-05 23:39",
+    "to_ist": "2028-06-24 03:29"
+   },
+   {
+    "sign": "Sagittarius",
+    "from_ist": "2028-06-24 03:29",
+    "to_ist": "2029-12-31 00:00"
+   }
+  ]
+ },
+ "moon_sign_matrix_2027": {
+  "Aries": {
+   "moon_sign": "Aries",
+   "moon_sign_hi": "मेष",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 5
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 4
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 5
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 6
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 12
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 1
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 12
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 10
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 4
+    }
+   ],
+   "sade_sati": [
+    {
+     "phase": "1st phase (rising, 12th)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2025-03-29 21:42",
+     "to_ist": "2027-06-03 04:43"
+    },
+    {
+     "phase": "2nd phase (peak, 1st)",
+     "saturn_sign": "Aries",
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13"
+    },
+    {
+     "phase": "1st phase (rising, 12th)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-02-23 18:17"
+    }
+   ],
+   "dhaiya": []
+  },
+  "Taurus": {
+   "moon_sign": "Taurus",
+   "moon_sign_hi": "वृषभ",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 4
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 3
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 4
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 5
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 11
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 12
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 11
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 9
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 3
+    }
+   ],
+   "sade_sati": [
+    {
+     "phase": "1st phase (rising, 12th)",
+     "saturn_sign": "Aries",
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13"
+    }
+   ],
+   "dhaiya": []
+  },
+  "Gemini": {
+   "moon_sign": "Gemini",
+   "moon_sign_hi": "मिथुन",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 3
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 2
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 3
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 4
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 10
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 11
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 10
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 8
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 2
+    }
+   ],
+   "sade_sati": [],
+   "dhaiya": []
+  },
+  "Cancer": {
+   "moon_sign": "Cancer",
+   "moon_sign_hi": "कर्क",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 2
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 1
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 2
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 3
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 9
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 10
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 9
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 7
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 1
+    }
+   ],
+   "sade_sati": [],
+   "dhaiya": []
+  },
+  "Leo": {
+   "moon_sign": "Leo",
+   "moon_sign_hi": "सिंह",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 1
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 12
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 1
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 2
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 8
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 9
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 8
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 6
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 12
+    }
+   ],
+   "sade_sati": [],
+   "dhaiya": [
+    {
+     "type": "Ashtama (8th)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2025-03-29 21:42",
+     "to_ist": "2027-06-03 04:43"
+    },
+    {
+     "type": "Ashtama (8th)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-02-23 18:17"
+    }
+   ]
+  },
+  "Virgo": {
+   "moon_sign": "Virgo",
+   "moon_sign_hi": "कन्या",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 12
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 11
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 12
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 1
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 7
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 8
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 7
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 5
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 11
+    }
+   ],
+   "sade_sati": [],
+   "dhaiya": [
+    {
+     "type": "Ashtama (8th)",
+     "saturn_sign": "Aries",
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13"
+    }
+   ]
+  },
+  "Libra": {
+   "moon_sign": "Libra",
+   "moon_sign_hi": "तुला",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 11
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 10
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 11
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 12
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 6
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 7
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 6
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 4
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 10
+    }
+   ],
+   "sade_sati": [],
+   "dhaiya": []
+  },
+  "Scorpio": {
+   "moon_sign": "Scorpio",
+   "moon_sign_hi": "वृश्चिक",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 10
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 9
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 10
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 11
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 5
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 6
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 5
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 3
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 9
+    }
+   ],
+   "sade_sati": [],
+   "dhaiya": []
+  },
+  "Sagittarius": {
+   "moon_sign": "Sagittarius",
+   "moon_sign_hi": "धनु",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 9
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 8
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 9
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 10
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 4
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 5
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 4
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 2
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 8
+    }
+   ],
+   "sade_sati": [],
+   "dhaiya": [
+    {
+     "type": "Kantak/Ardhashtama (4th)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2025-03-29 21:42",
+     "to_ist": "2027-06-03 04:43"
+    },
+    {
+     "type": "Kantak/Ardhashtama (4th)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-02-23 18:17"
+    }
+   ]
+  },
+  "Capricorn": {
+   "moon_sign": "Capricorn",
+   "moon_sign_hi": "मकर",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 8
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 7
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 8
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 9
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 3
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 4
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 3
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 1
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 7
+    }
+   ],
+   "sade_sati": [],
+   "dhaiya": [
+    {
+     "type": "Kantak/Ardhashtama (4th)",
+     "saturn_sign": "Aries",
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13"
+    }
+   ]
+  },
+  "Aquarius": {
+   "moon_sign": "Aquarius",
+   "moon_sign_hi": "कुंभ",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 7
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 6
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 7
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 8
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 2
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 3
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 2
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 12
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 6
+    }
+   ],
+   "sade_sati": [
+    {
+     "phase": "3rd phase (setting, 2nd)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2025-03-29 21:42",
+     "to_ist": "2027-06-03 04:43"
+    },
+    {
+     "phase": "3rd phase (setting, 2nd)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-02-23 18:17"
+    }
+   ],
+   "dhaiya": []
+  },
+  "Pisces": {
+   "moon_sign": "Pisces",
+   "moon_sign_hi": "मीन",
+   "Jupiter": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-01-25 02:12",
+     "sign": "Leo",
+     "house": 6
+    },
+    {
+     "from_ist": "2027-01-25 02:12",
+     "to_ist": "2027-06-26 04:50",
+     "sign": "Cancer",
+     "house": 5
+    },
+    {
+     "from_ist": "2027-06-26 04:50",
+     "to_ist": "2027-11-26 18:06",
+     "sign": "Leo",
+     "house": 6
+    },
+    {
+     "from_ist": "2027-11-26 18:06",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Virgo",
+     "house": 7
+    }
+   ],
+   "Saturn": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2027-06-03 04:43",
+     "sign": "Pisces",
+     "house": 1
+    },
+    {
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13",
+     "sign": "Aries",
+     "house": 2
+    },
+    {
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Pisces",
+     "house": 1
+    }
+   ],
+   "Rahu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Capricorn",
+     "house": 11
+    }
+   ],
+   "Ketu": [
+    {
+     "from_ist": "2027-01-01 00:00",
+     "to_ist": "2028-01-01 00:00",
+     "sign": "Cancer",
+     "house": 5
+    }
+   ],
+   "sade_sati": [
+    {
+     "phase": "2nd phase (peak, 1st)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2025-03-29 21:42",
+     "to_ist": "2027-06-03 04:43"
+    },
+    {
+     "phase": "3rd phase (setting, 2nd)",
+     "saturn_sign": "Aries",
+     "from_ist": "2027-06-03 04:43",
+     "to_ist": "2027-10-20 08:13"
+    },
+    {
+     "phase": "2nd phase (peak, 1st)",
+     "saturn_sign": "Pisces",
+     "from_ist": "2027-10-20 08:13",
+     "to_ist": "2028-02-23 18:17"
+    }
+   ],
+   "dhaiya": []
+  }
+ },
+ "backend_transit_engine_check": [
+  {
+   "planet": "Jupiter",
+   "ist": "2026-10-31 11:35",
+   "engine_before": "Cancer",
+   "engine_after": "Leo",
+   "ok": true
+  },
+  {
+   "planet": "Jupiter",
+   "ist": "2027-01-25 02:12",
+   "engine_before": "Leo",
+   "engine_after": "Cancer",
+   "ok": true
+  },
+  {
+   "planet": "Jupiter",
+   "ist": "2027-06-26 04:50",
+   "engine_before": "Cancer",
+   "engine_after": "Leo",
+   "ok": true
+  },
+  {
+   "planet": "Jupiter",
+   "ist": "2027-11-26 18:06",
+   "engine_before": "Leo",
+   "engine_after": "Virgo",
+   "ok": true
+  },
+  {
+   "planet": "Saturn",
+   "ist": "2027-06-03 04:43",
+   "engine_before": "Pisces",
+   "engine_after": "Aries",
+   "ok": true
+  },
+  {
+   "planet": "Saturn",
+   "ist": "2027-10-20 08:13",
+   "engine_before": "Aries",
+   "engine_after": "Pisces",
+   "ok": true
+  },
+  {
+   "planet": "Rahu",
+   "ist": "2026-12-05 23:39",
+   "engine_before": "Aquarius",
+   "engine_after": "Capricorn",
+   "ok": true
+  },
+  {
+   "planet": "Rahu",
+   "ist": "2028-06-24 03:29",
+   "engine_before": "Capricorn",
+   "engine_after": "Sagittarius",
+   "ok": true
+  }
+ ]
+}
