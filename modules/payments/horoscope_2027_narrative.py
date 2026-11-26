@@ -3,18 +3,22 @@
 Division of labour (same principle as the Spouse Nature Report):
   * horoscope_2027_evidence.py computes every planetary fact;
   * Luna (the shared paid-report AI client) writes interpretation only, in two
-    calls (part A: overview, 12 houses, dasha, transits; part B: 12 months,
-    guidance, summary) so each response stays a manageable size;
+    calls (part A: overview, chart summary + 2-3 themes, dasha, transits;
+    part B: 12 structured months, guidance, summary) so each response stays a
+    manageable size;
   * validate_part() rejects a response only for structural gaps, banned
     guarantee/fear wording, or a PROVEN contradiction of the evidence (a
     planet stated in a house/sign it never occupies, an unknown date, a
     year outside the evidence). A rejection raises ReportMetadataError ->
     report_stage="Failed" (recoverable); nothing is repaired or guessed;
   * assemble_horoscope_2027_report() builds the PDF payload: deterministic
-    tables, a deterministic "2027 at a glance" box, and a numbered narrative
-    where every house and month section starts with backend-written facts
-    followed by Luna's interpretation. All 12 houses always appear,
-    including empty ones.
+    tables, a deterministic "2027 at a glance" box, and a numbered narrative.
+    The customer sees a plain-language chart summary (key factors + 2-3
+    themes), not a house table or house-by-house reading; the full house
+    facts (lords, occupants, aspects) stay in the prompt and the checks.
+    Every month is Focus / Do / Don't / Why, and a month with no new major
+    transit (evidence "continues_previous") says so and carries the previous
+    month's focus forward instead of inventing a new prediction.
 
 The prompt never contains the customer's name, e-mail or birth details --
 only derived chart facts.
@@ -28,7 +32,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Callable, Dict, List, Optional, Tuple
 
-from data.name_mappings import planet_labels_hi, sign_labels_hi
+from data.name_mappings import nakshatra_names_hi, planet_labels_hi, sign_labels_hi
 from modules.payments.horoscope_2027_evidence import GRAHAS, PRODUCT_SLUG, SIGNS, YEAR
 from modules.payments.report_ai_client import ReportAICompletion
 from modules.payments.report_date_format import EN_MONTHS, HI_MONTHS, format_customer_date, format_customer_date_range
@@ -36,28 +40,18 @@ from modules.payments.report_structured_output import ReportMetadataError
 
 LANGUAGES = ("en", "hi")
 PROMPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "prompts")
-# 12-15 page target, measured with the real PDF renderer (pdf_generator_weasy,
-# 2 sample charts): the prompts ask for ~1,950 (EN) / ~2,550 (HI) words, which
-# renders at ~14-15 pages; below these floors the PDF would drop under the
-# advertised 13 pages.
-MIN_TOTAL_WORDS = {"en": 1300, "hi": 2000}
-MIN_SECTION_WORDS = 25          # every house and month must be genuinely interpreted
+# 13-15 page claim, measured with the real PDF renderer (pdf_generator_weasy) on
+# a fictional chart with every AI text cut proportionally: EN 1,975 words ->
+# 14 pages, 1,103 -> 13; HI 2,446 -> 14, 1,594 -> 13. The prompts target
+# ~2,000 (EN) / ~2,450 (HI) words; these floors keep a report at 13+ pages.
+MIN_TOTAL_WORDS = {"en": 1300, "hi": 1700}
+MIN_SECTION_WORDS = 25          # long free-text sections (chart summary)
+MIN_WHY_WORDS = 18              # each month's explanation
+MIN_ITEM_WORDS = 4              # each Do / Don't item and the month focus
 GUIDANCE_ITEMS = (4, 8)
-
-HOUSE_THEMES = {
-    "en": {
-        1: "Self, Health and Personality", 2: "Wealth, Family and Speech", 3: "Courage, Siblings and Communication",
-        4: "Home, Mother and Inner Peace", 5: "Children, Learning and Creativity", 6: "Health Routines, Work and Competition",
-        7: "Marriage and Partnerships", 8: "Change, Shared Resources and Research", 9: "Fortune, Father and Higher Learning",
-        10: "Career and Public Standing", 11: "Income, Gains and Friendships", 12: "Expenses, Travel Abroad and Spirituality",
-    },
-    "hi": {
-        1: "स्वयं, स्वास्थ्य और व्यक्तित्व", 2: "धन, परिवार और वाणी", 3: "साहस, भाई-बहन और संवाद",
-        4: "घर, माता और मानसिक शांति", 5: "संतान, शिक्षा और रचनात्मकता", 6: "स्वास्थ्य-दिनचर्या, कार्य और प्रतिस्पर्धा",
-        7: "विवाह और साझेदारी", 8: "परिवर्तन, साझा संसाधन और शोध", 9: "भाग्य, पिता और उच्च शिक्षा",
-        10: "करियर और सामाजिक प्रतिष्ठा", 11: "आय, लाभ और मित्र", 12: "व्यय, विदेश यात्रा और आध्यात्म",
-    },
-}
+THEME_ITEMS = (2, 3)
+DO_ITEMS = (2, 3)
+DONT_ITEMS = (1, 2)
 EN_ORDINALS = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 6: "6th", 7: "7th", 8: "8th", 9: "9th",
                10: "10th", 11: "11th", 12: "12th"}
 HI_ORDINALS = {1: "पहला", 2: "दूसरा", 3: "तीसरा", 4: "चौथा", 5: "पाँचवाँ", 6: "छठा", 7: "सातवाँ", 8: "आठवाँ",
@@ -75,18 +69,36 @@ UI = {
         "hero_house_item": "{house} house ({range})",
         "hero_sade_sati": "Sade Sati in 2027: {items}", "hero_no_sade_sati": "No Sade Sati in 2027.",
         "hero_dhaiya": "Saturn Dhaiya in 2027: {items}",
-        "t_houses": "Your 12 Houses at a Glance",
-        "h_houses": ["House", "Sign", "Lord (placed in)", "Planets", "Aspected by"],
         "t_transits": "Major Planetary Movements in 2027",
         "h_transits": ["Planet", "Sign", "Period", "House from Lagna", "House from Moon"],
         "t_dashas": "Your Dasha Periods in 2027",
         "h_dashas": ["Mahadasha", "Antardasha", "Period"],
         "t_eclipses": "Eclipses in 2027",
         "h_eclipses": ["Date", "Eclipse", "Sign", "House from Lagna", "In India"],
-        "none": "None", "empty": "Empty",
+        "none": "None",
         "vis_yes": "Visible", "vis_partial": "Visible as partial", "vis_no": "Not visible",
         "solar": "Solar", "lunar": "Lunar",
-        "s_overview": "Your 2027 Overview", "s_house": "{ord} House: {theme}",
+        "s_overview": "Your 2027 Overview", "s_chart": "Your Chart in Brief",
+        "c_lagna": "Rising sign (Lagna): {sign}, ruled by {lord}, which sits in your {house} house",
+        "c_moon": "Moon sign: {sign} (nakshatra {nakshatra}), in your {house} house",
+        "c_cluster": "{planets} together in your {house} house",
+        "c_dasha": "Running through 2027: {items}",
+        "dasha_period": "{maha} Mahadasha, {antar} Antardasha",
+        "and": "and",
+        "themes_label": "Your main themes for 2027",
+        "m_focus": "Focus", "m_do": "Do", "m_dont": "Don't", "m_why": "Why this month",
+        "m_continue": "No new major transit this month",
+        "m_continue_body": "continue {month}'s focus. Still active: {items}.",
+        "m_active_planet": "{planet} in {sign} (your {house} house)",
+        "m_active_dasha": "the {maha}–{antar} period",
+        "p_new_major": "NEW MAJOR CHANGE THIS MONTH: {items}. Base this month's focus on it.",
+        "p_opening": "THE YEAR OPENS: base this month's focus on what is active: {items}.",
+        "p_continue": ("NO NEW MAJOR TRANSIT THIS MONTH: continue the previous month's focus. Still active: {items}. "
+                       "Explain what remains active; do not invent a new prediction."),
+        "p_change_transit": "{planet} {type} {sign} on {date}",
+        "p_change_eclipse": "{kind} eclipse on {date}",
+        "p_change_dasha": "{maha}–{antar} period begins on {date}",
+        "p_types": {"ingress": "enters", "retrograde": "turns retrograde in", "direct": "turns direct in"},
         "s_dasha": "Your Dasha Periods in 2027", "s_transits": "Major Transits of 2027",
         "s_month": "{month} 2027", "s_summary": "Your 2027 in Summary",
         "f_house": "{sign} · lord {lord} (in your {lord_house} house) · planets: {planets} · aspects: {aspects}",
@@ -126,18 +138,36 @@ UI = {
         "hero_house_item": "{house} भाव ({range})",
         "hero_sade_sati": "2027 में साढ़ेसाती: {items}", "hero_no_sade_sati": "2027 में साढ़ेसाती नहीं है।",
         "hero_dhaiya": "2027 में शनि की ढैया: {items}",
-        "t_houses": "आपके 12 भाव एक नज़र में",
-        "h_houses": ["भाव", "राशि", "स्वामी (किस भाव में)", "ग्रह", "दृष्टि"],
         "t_transits": "2027 के प्रमुख ग्रह गोचर",
         "h_transits": ["ग्रह", "राशि", "अवधि", "लग्न से भाव", "चंद्र से भाव"],
         "t_dashas": "2027 में आपकी दशा",
         "h_dashas": ["महादशा", "अंतर्दशा", "अवधि"],
         "t_eclipses": "2027 के ग्रहण",
         "h_eclipses": ["तिथि", "ग्रहण", "राशि", "लग्न से भाव", "भारत में"],
-        "none": "कोई नहीं", "empty": "खाली",
+        "none": "कोई नहीं",
         "vis_yes": "दिखाई देगा", "vis_partial": "आंशिक रूप में दिखाई देगा", "vis_no": "दिखाई नहीं देगा",
         "solar": "सूर्य", "lunar": "चंद्र",
-        "s_overview": "आपका 2027: एक परिचय", "s_house": "{ord} भाव: {theme}",
+        "s_overview": "आपका 2027: एक परिचय", "s_chart": "आपकी कुंडली संक्षेप में",
+        "c_lagna": "लग्न: {sign}, जिसके स्वामी {lord} आपके {house} भाव में हैं",
+        "c_moon": "चंद्र राशि: {sign} (नक्षत्र {nakshatra}), आपके {house} भाव में",
+        "c_cluster": "{planets} एक साथ आपके {house} भाव में",
+        "c_dasha": "पूरे 2027 में: {items}",
+        "dasha_period": "{maha} महादशा, {antar} अंतर्दशा",
+        "and": "और",
+        "themes_label": "2027 में आपके मुख्य विषय",
+        "m_focus": "मुख्य ध्यान", "m_do": "करें", "m_dont": "न करें", "m_why": "इस महीने ऐसा क्यों",
+        "m_continue": "इस महीने कोई नया बड़ा गोचर नहीं",
+        "m_continue_body": "{month} का मुख्य ध्यान जारी रखें। अभी भी सक्रिय: {items}।",
+        "m_active_planet": "{planet} {sign} राशि में (आपके {house} भाव में)",
+        "m_active_dasha": "{maha}–{antar} दशा",
+        "p_new_major": "इस महीने नया बड़ा बदलाव: {items}। इस महीने का मुख्य ध्यान इसी पर आधारित करें।",
+        "p_opening": "वर्ष का आरंभ: इस महीने का मुख्य ध्यान इन सक्रिय स्थितियों पर आधारित करें: {items}।",
+        "p_continue": ("इस महीने कोई नया बड़ा गोचर नहीं: पिछले महीने का मुख्य ध्यान जारी रखें। अभी भी सक्रिय: {items}। "
+                       "बताएँ कि क्या सक्रिय है; कोई नई भविष्यवाणी न गढ़ें।"),
+        "p_change_transit": "{date} को {planet} {sign} राशि में {type}",
+        "p_change_eclipse": "{date} को {kind} ग्रहण",
+        "p_change_dasha": "{date} से {maha}–{antar} दशा आरंभ",
+        "p_types": {"ingress": "प्रवेश", "retrograde": "वक्री", "direct": "मार्गी"},
         "s_dasha": "2027 में आपकी दशा", "s_transits": "2027 के प्रमुख गोचर",
         "s_month": "{month} 2027", "s_summary": "आपका 2027: सार",
         "f_house": "{sign} · स्वामी {lord} (आपके {lord_house} भाव में) · ग्रह: {planets} · दृष्टि: {aspects}",
@@ -293,20 +323,86 @@ def month_fact_lines(evidence: dict, month: int, language: str) -> List[str]:
 
 def natal_fact_lines(evidence: dict, language: str) -> List[str]:
     lines = []
+    nak = (lambda n: nakshatra_names_hi.get(n, n)) if language == "hi" else (lambda n: n)
     for g in GRAHAS:
         p = evidence["planets"][g]
         lines.append(f"{P(g, language)}: {S(p['sign'], language)}, {ordinal(p['house'], language)} "
-                     f"{'भाव' if language == 'hi' else 'house'}, {p['degree']}°, {p['nakshatra']}")
+                     f"{'भाव' if language == 'hi' else 'house'}, {p['degree']}°, {nak(p['nakshatra'])}")
     lagna, moon = evidence["lagna"], evidence["moon"]
     if language == "hi":
         lines.insert(0, f"लग्न: {S(lagna['sign'], language)} (स्वामी {P(lagna['lord'], language)}, "
                         f"{ordinal(lagna['lord_house'], language)} भाव में); चंद्र राशि: {S(moon['sign'], language)}, "
-                        f"नक्षत्र {moon['nakshatra']}")
+                        f"नक्षत्र {nak(moon['nakshatra'])}")
     else:
         lines.insert(0, f"Lagna (Ascendant): {lagna['sign']} (lord {lagna['lord']}, in the "
                         f"{ordinal(lagna['lord_house'], language)} house); Moon sign: {moon['sign']}, "
                         f"nakshatra {moon['nakshatra']}")
     return lines
+
+
+def _and_join(items: List[str], language: str) -> str:
+    if len(items) <= 1:
+        return "".join(items)
+    return f"{', '.join(items[:-1])} {UI[language]['and']} {items[-1]}"
+
+
+def chart_factor_lines(evidence: dict, language: str) -> List[str]:
+    """The customer-facing key chart factors, in plain language: rising sign and
+    its ruler, Moon sign, any house holding two or more planets, and the dasha
+    running through 2027. (The full house table stays internal.)"""
+    u = UI[language]
+    lagna, moon = evidence["lagna"], evidence["moon"]
+    lines = [
+        u["c_lagna"].format(sign=S(lagna["sign"], language), lord=P(lagna["lord"], language),
+                            house=ordinal(lagna["lord_house"], language)),
+        u["c_moon"].format(sign=S(moon["sign"], language),
+                           nakshatra=(nakshatra_names_hi.get(moon["nakshatra"], moon["nakshatra"])
+                                      if language == "hi" else moon["nakshatra"]),
+                           house=ordinal(moon["house"], language)),
+    ]
+    for h in evidence["houses"]:
+        if len(h["occupants"]) >= 2:
+            lines.append(u["c_cluster"].format(planets=_and_join([P(p, language) for p in h["occupants"]], language),
+                                               house=ordinal(h["house"], language)))
+    periods = [u["dasha_period"].format(maha=P(d["mahadasha"], language), antar=P(d["antardasha"], language))
+               + f" ({R(d['from'], d['to'], language)})" for d in evidence["dashas"]]
+    lines.append(u["c_dasha"].format(items="; ".join(periods)))
+    return lines
+
+
+def month_still_active(evidence: dict, month: int, language: str) -> List[str]:
+    """What carries a continuation month: each slow planet's position (from the
+    Lagna) and the dasha period(s) active in that month."""
+    u = UI[language]
+    m = evidence["months"][month - 1]
+    items = [u["m_active_planet"].format(planet=P(planet, language), sign=S(rows[0]["sign"], language),
+                                         house=ordinal(rows[0]["house_from_lagna"], language))
+             for planet, rows in m["slow_planets"].items() if rows]
+    items += [u["m_active_dasha"].format(maha=P(d["mahadasha"], language), antar=P(d["antardasha"], language))
+              for d in m["dashas"]]
+    return items
+
+
+def month_prompt_line(evidence: dict, month: int, language: str) -> str:
+    """Tells the AI whether this month starts a new focus or continues the last one."""
+    u = UI[language]
+    m = evidence["months"][month - 1]
+    if m["continues_previous"]:
+        return u["p_continue"].format(items="; ".join(month_still_active(evidence, month, language)))
+    changes = []
+    for c in m["major_changes"]:
+        if c["kind"] == "transit":
+            changes.append(u["p_change_transit"].format(planet=P(c["planet"], language), sign=S(c["sign"], language),
+                                                        type=u["p_types"][c["type"]], date=D(c["date"], language)))
+        elif c["kind"] == "eclipse":
+            kind = next(e["kind"] for e in m["eclipses"] if e["date"] == c["date"])
+            changes.append(u["p_change_eclipse"].format(kind=u[kind], date=D(c["date"], language)))
+        else:
+            changes.append(u["p_change_dasha"].format(maha=P(c["mahadasha"], language), antar=P(c["antardasha"], language),
+                                                      date=D(c["date"], language)))
+    if not changes:  # January: the year opens, so its focus comes from what is active
+        return u["p_opening"].format(items="; ".join(month_still_active(evidence, month, language)))
+    return u["p_new_major"].format(items="; ".join(changes))
 
 
 # ---------------------------------------------------------------------------
@@ -319,19 +415,23 @@ def build_facts_block(evidence: dict, language: str) -> str:
     month_names = HI_MONTHS if language == "hi" else EN_MONTHS
     blocks = [
         section("NATAL CHART", natal_fact_lines(evidence, language)),
-        *[section(f"HOUSE {n}", house_fact_lines(evidence, n, language)) for n in range(1, 13)],
+        section("KEY CHART FACTORS (printed in the PDF above your chart summary)",
+                chart_factor_lines(evidence, language)),
+        *[section(f"HOUSE {n} (background only)", house_fact_lines(evidence, n, language)) for n in range(1, 13)],
         section("DASHA PERIODS OVERLAPPING 2027", dasha_fact_lines(evidence, language)),
         section("2027 SLOW-PLANET TRANSITS, SATURN CYCLE AND ECLIPSES", transit_fact_lines(evidence, language)),
-        *[section(f"MONTH {m} ({month_names[m - 1]} 2027)", month_fact_lines(evidence, m, language))
+        *[section(f"MONTH {m} ({month_names[m - 1]} 2027)",
+                  month_fact_lines(evidence, m, language) + [month_prompt_line(evidence, m, language)])
           for m in range(1, 13)],
     ]
     return "\n\n".join(blocks)
 
 
 PART_KEYS = {
-    "A": ("headline", "overview", "houses", "dasha", "transits"),
+    "A": ("headline", "overview", "chart_summary", "themes", "dasha", "transits"),
     "B": ("months", "guidance", "summary"),
 }
+MONTH_KEYS = ("focus", "do", "dont", "why")
 
 
 def build_horoscope_2027_prompts(evidence: dict, language: str) -> Tuple[str, str]:
@@ -362,6 +462,17 @@ def parse_json_object(raw: str) -> dict:
 
 def word_count(text: str) -> int:
     return len(re.findall(r"\S+", text or ""))
+
+
+def total_word_count(value) -> int:
+    """Words in any (nested) section value: str, list or dict."""
+    if isinstance(value, str):
+        return word_count(value)
+    if isinstance(value, dict):
+        return sum(total_word_count(v) for v in value.values())
+    if isinstance(value, list):
+        return sum(total_word_count(v) for v in value)
+    return 0
 
 
 _PLANET_EN = r"(Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu|Ketu)"
@@ -496,25 +607,52 @@ def validate_part(part: str, raw: str, evidence: dict, language: str) -> dict:
         raise ReportMetadataError(f"horoscope 2027 part {part}: missing key(s) {', '.join(missing)}")
 
     texts: Dict[str, str] = {}
+
+    def text_list(label, value, bounds, min_words):
+        if not isinstance(value, list) or not (bounds[0] <= len(value) <= bounds[1]):
+            problems.append(f"{label}: expected {bounds[0]}-{bounds[1]} items")
+            return
+        for i, v in enumerate(value, start=1):
+            if not isinstance(v, str) or word_count(v) < min_words:
+                problems.append(f"{label}[{i}]: missing or too short")
+            texts[f"{label}[{i}]"] = v if isinstance(v, str) else ""
+
     for key in PART_KEYS[part]:
         value = data[key]
-        if key in ("houses", "months"):
+        if key == "months":
             if not isinstance(value, dict) or set(map(str, value)) != {str(n) for n in range(1, 13)}:
-                raise ReportMetadataError(f"horoscope 2027 part {part}: '{key}' must have exactly the keys 1-12")
+                raise ReportMetadataError(f"horoscope 2027 part {part}: 'months' must have exactly the keys 1-12")
             for n in range(1, 13):
-                text = value.get(str(n)) if str(n) in value else value.get(n)
-                if not isinstance(text, str) or word_count(text) < MIN_SECTION_WORDS:
-                    problems.append(f"{key}[{n}]: missing or too short")
-                texts[f"{key}[{n}]"] = text if isinstance(text, str) else ""
+                month = value.get(str(n)) if str(n) in value else value.get(n)
+                if not isinstance(month, dict) or any(k not in month for k in MONTH_KEYS):
+                    raise ReportMetadataError(f"horoscope 2027 part {part}: months[{n}] must have keys "
+                                              + ", ".join(MONTH_KEYS))
+                for field, min_words in (("focus", MIN_ITEM_WORDS), ("why", MIN_WHY_WORDS)):
+                    text = month[field]
+                    if not isinstance(text, str) or word_count(text) < min_words:
+                        problems.append(f"months[{n}].{field}: missing or too short")
+                    texts[f"months[{n}].{field}"] = text if isinstance(text, str) else ""
+                text_list(f"months[{n}].do", month["do"], DO_ITEMS, MIN_ITEM_WORDS)
+                text_list(f"months[{n}].dont", month["dont"], DONT_ITEMS, MIN_ITEM_WORDS)
+                if evidence["months"][n - 1]["continues_previous"]:
+                    problems += _continuation_problems(n, month, evidence, language)
+        elif key == "themes":
+            if not isinstance(value, list) or not (THEME_ITEMS[0] <= len(value) <= THEME_ITEMS[1]):
+                problems.append(f"themes: expected {THEME_ITEMS[0]}-{THEME_ITEMS[1]} items")
+                value = []
+            for i, theme in enumerate(value, start=1):
+                if not isinstance(theme, dict) or not isinstance(theme.get("title"), str) \
+                        or not theme["title"].strip() or not isinstance(theme.get("text"), str) \
+                        or word_count(theme["text"]) < MIN_WHY_WORDS:
+                    problems.append(f"themes[{i}]: needs a title and a text of at least {MIN_WHY_WORDS} words")
+                    continue
+                texts[f"themes[{i}].title"], texts[f"themes[{i}].text"] = theme["title"], theme["text"]
         elif key == "guidance":
-            if not isinstance(value, list) or not (GUIDANCE_ITEMS[0] <= len(value) <= GUIDANCE_ITEMS[1]) \
-                    or not all(isinstance(v, str) and v.strip() for v in value):
-                problems.append(f"guidance: expected {GUIDANCE_ITEMS[0]}-{GUIDANCE_ITEMS[1]} non-empty items")
-            for i, v in enumerate(value if isinstance(value, list) else []):
-                texts[f"guidance[{i + 1}]"] = v if isinstance(v, str) else ""
+            text_list("guidance", value, GUIDANCE_ITEMS, 1)
         else:
-            if not isinstance(value, str) or not value.strip():
-                problems.append(f"{key}: missing or empty")
+            min_words = MIN_SECTION_WORDS if key == "chart_summary" else 1
+            if not isinstance(value, str) or word_count(value) < min_words:
+                problems.append(f"{key}: missing or too short")
             texts[key] = value if isinstance(value, str) else ""
 
     checker = _Checker(evidence, language)
@@ -523,6 +661,23 @@ def validate_part(part: str, raw: str, evidence: dict, language: str) -> dict:
     if problems:
         raise ReportMetadataError("horoscope 2027 part " + part + ": " + "; ".join(problems[:12]))
     return {k: data[k] for k in PART_KEYS[part]}
+
+
+def _continuation_problems(n: int, month: dict, evidence: dict, language: str) -> List[str]:
+    """A month without a new major transit must explain what remains active,
+    so its focus/why has to name at least one still-active slow planet or
+    dasha lord."""
+    m = evidence["months"][n - 1]
+    active = {p for p, rows in m["slow_planets"].items() if rows}
+    active |= {d[k] for d in m["dashas"] for k in ("mahadasha", "antardasha")}
+    text = f"{month.get('focus') or ''} {month.get('why') or ''}"
+    if language == "hi":
+        named = {_HI_PLANETS[w] for w in _HI_PLANETS if re.search(rf"(?<![{_DEV}]){w}(?![{_DEV}])", text)}
+    else:
+        named = {p for p in GRAHAS if re.search(rf"\b{p}\b", text, re.IGNORECASE)}
+    if not named & active:
+        return [f"months[{n}]: no new major transit, but the text does not say what remains active"]
+    return []
 
 
 def generate_horoscope_2027_sections(prompts: Tuple[str, str], evidence: dict, language: str,
@@ -536,9 +691,7 @@ def generate_horoscope_2027_sections(prompts: Tuple[str, str], evidence: dict, l
         completion = completion_fn(prompt)
         completions.append(completion)
         sections.update(validate_part(part, completion.content, evidence, language))
-    total_words = sum(word_count(v) if isinstance(v, str) else
-                      sum(word_count(x) for x in (v.values() if isinstance(v, dict) else v))
-                      for v in sections.values())
+    total_words = total_word_count(sections)
     if total_words < MIN_TOTAL_WORDS[language]:
         raise ReportMetadataError(
             f"horoscope 2027: report too short ({total_words} words, minimum {MIN_TOTAL_WORDS[language]})")
@@ -562,15 +715,11 @@ def generate_horoscope_2027_sections(prompts: Tuple[str, str], evidence: dict, l
 # PDF assembly
 # ---------------------------------------------------------------------------
 def _tables(evidence: dict, language: str) -> List[dict]:
-    """Natal placements are already in the Birth Chart Summary card, so the
-    tables start with the 12 houses."""
+    """Natal placements are already in the Birth Chart Summary card; the
+    technical 12-house table (lords, occupants, aspects) is not shown to the
+    customer, so the tables cover only the 2027 timing facts."""
     u = UI[language]
-    houses = [[ordinal(h["house"], language, oblique=False), S(h["sign"], language),
-               f"{P(h['lord'], language)} ({ordinal(h['lord_house'], language, oblique=False)})",
-               ", ".join(P(p, language) for p in h["occupants"]) or u["empty"],
-               ", ".join(P(p, language) for p in h["aspected_by"]) or u["none"]]
-              for h in evidence["houses"]]
-    transits = [[P(planet, language), S(r["sign"], language), R(r["from"], r["to"], language),
+    transits =[[P(planet, language), S(r["sign"], language), R(r["from"], r["to"], language),
                  ordinal(r["house_from_lagna"], language, oblique=False),
                  ordinal(r["house_from_moon"], language, oblique=False)]
                 for planet in ("Jupiter", "Saturn", "Rahu", "Ketu") for r in evidence["slow_transits"][planet]]
@@ -582,7 +731,6 @@ def _tables(evidence: dict, language: str) -> List[dict]:
                  u["vis_partial"] if e["partial_in_india"] else (u["vis_yes"] if e["visible_in_india"] else u["vis_no"])]
                 for e in evidence["eclipses"]]
     return [
-        {"heading": u["t_houses"], "headers": u["h_houses"], "rows": houses},
         {"heading": u["t_transits"], "headers": u["h_transits"], "rows": transits},
         {"heading": u["t_dashas"], "headers": u["h_dashas"], "rows": dashas},
         {"heading": u["t_eclipses"], "headers": u["h_eclipses"], "rows": eclipses},
@@ -614,11 +762,47 @@ def _answer_hero(sections: dict, evidence: dict, language: str) -> dict:
     return {"label": u["hero_label"], "value": value, "interpretation": sections["headline"].strip(), "evidence": points}
 
 
+def _clean(text: str) -> str:
+    """One line of AI text for the PDF: no markdown markers, no line breaks,
+    no leading bullet (the renderer adds its own)."""
+    text = re.sub(r"\s+", " ", (text or "").replace("**", "")).strip()
+    return re.sub(r"^(?:[-*•]\s*)+", "", text)
+
+
 def _section(number: int, title: str, facts: List[str], body: str) -> str:
     parts = [f"**{number}. {title}**", ""]
     if facts:
         parts += [f"- {line}" for line in facts] + [""]
     parts.append(body.strip())
+    return "\n".join(parts)
+
+
+def _chart_section(number: int, sections: dict, evidence: dict, language: str) -> str:
+    u = UI[language]
+    parts = [f"**{number}. {u['s_chart']}**", ""]
+    parts += [f"- {line}" for line in chart_factor_lines(evidence, language)] + [""]
+    # Sub-headings (not "**Label:**" lead-ins): the template keeps an H3 with the
+    # text below it across a page break, and its accent colour marks the label
+    # in Hindi too (only the Regular Devanagari face is bundled).
+    parts += [sections["chart_summary"].strip(), "", f"### {u['themes_label']}"]
+    parts += [f"**{_clean(t['title']).rstrip(':')}:** {_clean(t['text'])}" for t in sections["themes"]]
+    return "\n".join(parts)
+
+
+def _month_section(number: int, month: int, data: dict, evidence: dict, language: str) -> str:
+    u = UI[language]
+    month_names = HI_MONTHS if language == "hi" else EN_MONTHS
+    parts = [f"**{number}. {u['s_month'].format(month=month_names[month - 1])}**", ""]
+    parts += [f"- {line}" for line in month_fact_lines(evidence, month, language)] + [""]
+    if evidence["months"][month - 1]["continues_previous"]:
+        body = u["m_continue_body"].format(month=month_names[month - 2],
+                                           items="; ".join(month_still_active(evidence, month, language)))
+        parts += [f"**{u['m_continue']}:** {body}", ""]
+    parts += [f"**{u['m_focus']}:** {_clean(data['focus'])}", f"### {u['m_do']}"]
+    parts += [f"- {_clean(item)}" for item in data["do"]]
+    parts += [f"### {u['m_dont']}"]
+    parts += [f"- {_clean(item)}" for item in data["dont"]]
+    parts += [f"**{u['m_why']}:** {_clean(data['why'])}"]
     return "\n".join(parts)
 
 
@@ -637,28 +821,20 @@ def _notices(evidence: dict, language: str) -> List[dict]:
 def assemble_horoscope_2027_report(sections: dict, evidence: dict, language: str) -> dict:
     language = _lang(language)
     u = UI[language]
-    month_names = HI_MONTHS if language == "hi" else EN_MONTHS
-    houses, months = sections["houses"], sections["months"]
-    blocks, n = [], 1
-    blocks.append(_section(n, u["s_overview"], [], sections["overview"]))
-    for h in range(1, 13):
-        n += 1
-        title = u["s_house"].format(ord=ordinal(h, language, oblique=False), theme=HOUSE_THEMES[language][h])
-        blocks.append(_section(n, title, house_fact_lines(evidence, h, language), houses[str(h)]))
-    n += 1
-    blocks.append(_section(n, u["s_dasha"], dasha_fact_lines(evidence, language), sections["dasha"]))
-    n += 1
-    blocks.append(_section(n, u["s_transits"], transit_fact_lines(evidence, language), sections["transits"]))
+    months = {str(k): v for k, v in sections["months"].items()}
+    blocks = [
+        _section(1, u["s_overview"], [], sections["overview"]),
+        _chart_section(2, sections, evidence, language),
+        _section(3, u["s_dasha"], dasha_fact_lines(evidence, language), sections["dasha"]),
+        _section(4, u["s_transits"], transit_fact_lines(evidence, language), sections["transits"]),
+    ]
     for m in range(1, 13):
-        n += 1
-        blocks.append(_section(n, u["s_month"].format(month=month_names[m - 1]),
-                               month_fact_lines(evidence, m, language), months[str(m)]))
-    n += 1
-    blocks.append(_section(n, u["s_summary"], [], sections["summary"]))
+        blocks.append(_month_section(4 + m, m, months[str(m)], evidence, language))
+    blocks.append(_section(17, u["s_summary"], [], sections["summary"]))
     return {
         "answer_hero": _answer_hero(sections, evidence, language),
         "narrative": "\n\n".join(blocks),
-        "action_list": {"heading": u["guidance"], "items": [g.strip() for g in sections["guidance"]]},
+        "action_list": {"heading": u["guidance"], "items": [_clean(g) for g in sections["guidance"]]},
         "disclaimer": u["disclaimer"],
         "pdf_kwargs": {
             # Long sections must be allowed to break across pages (same as the

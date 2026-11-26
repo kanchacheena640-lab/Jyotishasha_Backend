@@ -41,11 +41,20 @@ def _filler(words, language):
     return " ".join(base[i % len(base)] for i in range(words))
 
 
-def _responses(language, words=70, month_words=55):
+ACTIVE = {"en": " Saturn remains active.", "hi": " शनि सक्रिय है।"}  # every month has an active Saturn
+
+
+def _month(language, why_words=40):
+    return {"focus": _filler(15, language), "do": [_filler(12, language), _filler(12, language)],
+            "dont": [_filler(12, language)], "why": _filler(why_words, language) + ACTIVE[language]}
+
+
+def _responses(language, summary_words=100, why_words=40):
     a = {"headline": _filler(25, language), "overview": _filler(130, language),
-         "houses": {str(n): _filler(words, language) for n in range(1, 13)},
+         "chart_summary": _filler(summary_words, language),
+         "themes": [{"title": _filler(4, language), "text": _filler(40, language)} for _ in range(3)],
          "dasha": _filler(90, language), "transits": _filler(110, language)}
-    b = {"months": {str(n): _filler(month_words, language) for n in range(1, 13)},
+    b = {"months": {str(n): _month(language, why_words) for n in range(1, 13)},
          "guidance": [_filler(20, language) for _ in range(5)], "summary": _filler(70, language)}
     return a, b
 
@@ -124,6 +133,23 @@ class Evidence(unittest.TestCase):
                                   key=he.GRAHAS.index)
                 self.assertEqual(h["aspected_by"], expected, f"chart {i} house {h['house']}")
 
+    def test_month_continuation_follows_major_changes(self):
+        """A month continues the previous focus only when no Jupiter/Saturn change or
+        station, eclipse or new dasha period falls in it; January never continues."""
+        for i in range(len(CHARTS)):
+            ev = he.build_horoscope_2027_evidence(_kundali(i))
+            self.assertFalse(ev["months"][0]["continues_previous"])
+            for m in ev["months"]:
+                major = ([e for e in m["events"] if e["planet"] in ("Jupiter", "Saturn")] + m["eclipses"]
+                         + [d for d in m["dashas"] if m["from"] <= d["from"] <= m["to"]])
+                self.assertEqual(bool(m["major_changes"]), bool(major), f"chart {i} month {m['month']}")
+                if m["month"] > 1:
+                    self.assertEqual(m["continues_previous"], not major, f"chart {i} month {m['month']}")
+            # 2027 is fixed: Saturn enters Aries (June), eclipses (Feb, Jul, Aug), Jupiter (Jan, Apr, Jun, Nov).
+            flags = {m["month"]: m["continues_previous"] for m in ev["months"]}
+            for month in (1, 2, 4, 6, 7, 8, 10, 11, 12):
+                self.assertFalse(flags[month], f"chart {i} month {month}")
+
     def test_dashas_cover_2027_and_dates_are_allowed(self):
         ev = he.build_horoscope_2027_evidence(_kundali(1))
         self.assertLessEqual(ev["dashas"][0]["from"], "2027-01-01")
@@ -161,27 +187,73 @@ class Validation(unittest.TestCase):
             self.assertEqual(set(sections), set(hn.PART_KEYS["A"]) | set(hn.PART_KEYS["B"]))
             self.assertEqual(agg.total_tokens, 60)
 
+    def _b(self, language="en", **month_overrides):
+        _, b = _responses(language)
+        for n, fields in month_overrides.items():
+            b["months"][n.lstrip("m")].update(fields)
+        return json.dumps(b, ensure_ascii=False)
+
     def test_prompt_has_facts_but_no_customer_details(self):
         prompt = hn.build_horoscope_2027_prompts(self.ev["en"], "en")[0]
-        self.assertIn("HOUSE 12", prompt)
+        self.assertIn("HOUSE 12 (background only)", prompt)  # full house facts stay internal
+        self.assertIn("KEY CHART FACTORS", prompt)
         self.assertIn("3 June 2027", prompt)
+        self.assertIn("NEW MAJOR CHANGE THIS MONTH: Saturn enters Aries on 3 June 2027", prompt)
         self.assertNotIn("1990-05-15", prompt)  # birth date never sent
         self.assertNotIn("10:30", prompt)       # birth time never sent
         self.assertNotIn("Test", prompt)        # customer name never sent
 
+    def test_prompt_marks_continuation_months(self):
+        for lang, marker in (("en", "NO NEW MAJOR TRANSIT THIS MONTH"), ("hi", "इस महीने कोई नया बड़ा गोचर नहीं")):
+            prompt = hn.build_horoscope_2027_prompts(self.ev[lang], lang)[1]
+            expected = sum(m["continues_previous"] for m in self.ev[lang]["months"])
+            self.assertGreater(expected, 0)
+            self.assertEqual(prompt.count(marker), expected + 1)  # + the rule that explains the marker
+
     def test_invented_house_placement_is_rejected(self):
         allowed = self.ev["en"]["allowed_placements"]["Saturn"]["houses"]
         wrong = next(n for n in range(1, 13) if n not in allowed)
-        houses = {str(n): _filler(70, "en") for n in range(1, 13)}
-        houses["3"] += f" Saturn is now in your {hn.EN_ORDINALS[wrong]} house this year."
+        text = _filler(100, "en") + f" Saturn is now in your {hn.EN_ORDINALS[wrong]} house this year."
         with self.assertRaisesRegex(ReportMetadataError, "never in house"):
-            hn.validate_part("A", self._a(houses=houses), self.ev["en"], "en")
+            hn.validate_part("A", self._a(chart_summary=text), self.ev["en"], "en")
+        with self.assertRaisesRegex(ReportMetadataError, "never in house"):  # also inside a month's Do item
+            hn.validate_part("B", self._b(m3={"do": [_filler(10, "en"), f"Plan ahead while Saturn is in your "
+                                                                         f"{hn.EN_ORDINALS[wrong]} house."]}),
+                             self.ev["en"], "en")
 
     def test_true_placement_is_accepted(self):
         house = self.ev["en"]["slow_transits"]["Jupiter"][0]["house_from_lagna"]
-        houses = {str(n): _filler(70, "en") for n in range(1, 13)}
-        houses["1"] += f" Jupiter moves into your {hn.EN_ORDINALS[house]} house."
-        hn.validate_part("A", self._a(houses=houses), self.ev["en"], "en")
+        text = _filler(100, "en") + f" Jupiter moves into your {hn.EN_ORDINALS[house]} house."
+        hn.validate_part("A", self._a(chart_summary=text), self.ev["en"], "en")
+
+    def test_month_structure_is_enforced(self):
+        for fields, pattern in [({"do": [_filler(10, "en")]}, r"months\[2\]\.do: expected 2-3"),
+                                ({"do": [_filler(10, "en")] * 4}, r"months\[2\]\.do: expected 2-3"),
+                                ({"dont": []}, r"months\[2\]\.dont: expected 1-2"),
+                                ({"why": "Too short."}, r"months\[2\]\.why: missing or too short")]:
+            with self.assertRaisesRegex(ReportMetadataError, pattern):
+                hn.validate_part("B", self._b(m2=fields), self.ev["en"], "en")
+        _, b = _responses("en")
+        del b["months"]["4"]["why"]
+        with self.assertRaisesRegex(ReportMetadataError, "must have keys"):
+            hn.validate_part("B", json.dumps(b), self.ev["en"], "en")
+
+    def test_continuation_month_must_say_what_remains_active(self):
+        for lang in hn.LANGUAGES:
+            month = next(m["month"] for m in self.ev[lang]["months"] if m["continues_previous"])
+            silent = {"focus": _filler(15, lang), "why": _filler(40, lang)}  # names no planet
+            with self.assertRaisesRegex(ReportMetadataError, "does not say what remains active"):
+                hn.validate_part("B", self._b(lang, **{f"m{month}": silent}), self.ev[lang], lang)
+            # The same text is fine in a month that starts something new.
+            new = next(m["month"] for m in self.ev[lang]["months"] if not m["continues_previous"])
+            hn.validate_part("B", self._b(lang, **{f"m{new}": silent}), self.ev[lang], lang)
+
+    def test_themes_must_be_two_or_three(self):
+        for themes in ([{"title": "One", "text": _filler(40, "en")}],
+                       [{"title": "T", "text": _filler(40, "en")}] * 4,
+                       [{"title": "", "text": _filler(40, "en")}] * 2):
+            with self.assertRaises(ReportMetadataError):
+                hn.validate_part("A", self._a(themes=themes), self.ev["en"], "en")
 
     def test_invented_sign_and_date_and_year_are_rejected(self):
         for extra, pattern in [(" Saturn moves into Leo.", "never in Leo"),
@@ -191,26 +263,35 @@ class Validation(unittest.TestCase):
             with self.assertRaisesRegex(ReportMetadataError, pattern):
                 hn.validate_part("A", self._a(overview=_filler(130, "en") + extra), self.ev["en"], "en")
 
-    def test_banned_wording_and_missing_house_are_rejected(self):
+    def test_banned_wording_and_missing_month_are_rejected(self):
         with self.assertRaisesRegex(ReportMetadataError, "banned"):
             hn.validate_part("A", self._a(overview=_filler(130, "en") + " Success is guaranteed."), self.ev["en"], "en")
-        houses = {str(n): _filler(70, "en") for n in range(1, 12)}
+        with self.assertRaisesRegex(ReportMetadataError, "banned"):
+            hn.validate_part("B", self._b(m5={"dont": ["Avoid this: results are definitely delayed this month."]}),
+                             self.ev["en"], "en")
+        _, b = _responses("en")
+        del b["months"]["12"]
         with self.assertRaisesRegex(ReportMetadataError, "exactly the keys 1-12"):
-            hn.validate_part("A", self._a(houses=houses), self.ev["en"], "en")
+            hn.validate_part("B", json.dumps(b), self.ev["en"], "en")
 
     def test_hindi_invented_house_is_rejected(self):
         allowed = self.ev["hi"]["allowed_placements"]["Saturn"]["houses"]
         wrong = next(n for n in range(1, 13) if n not in allowed)
-        houses = {str(n): _filler(70, "hi") for n in range(1, 13)}
-        houses["2"] += f" शनि आपके {hn.HI_ORDINALS_OBLIQUE[wrong]} भाव में रहेगा।"
+        text = _filler(100, "hi") + f" शनि आपके {hn.HI_ORDINALS_OBLIQUE[wrong]} भाव में रहेगा।"
         with self.assertRaisesRegex(ReportMetadataError, "never in house"):
-            hn.validate_part("A", self._a("hi", houses=houses), self.ev["hi"], "hi")
+            hn.validate_part("A", self._a("hi", chart_summary=text), self.ev["hi"], "hi")
 
     def test_too_short_report_is_rejected(self):
         ev = self.ev["en"]
         prompts = hn.build_horoscope_2027_prompts(ev, "en")
+        # Every field at its own minimum passes validate_part, but the report as a whole is too short.
+        a = {"headline": "x", "overview": "x", "chart_summary": _filler(hn.MIN_SECTION_WORDS, "en"),
+             "themes": [{"title": "T", "text": _filler(hn.MIN_WHY_WORDS, "en")}] * 2, "dasha": "x", "transits": "x"}
+        month = {"focus": _filler(4, "en"), "do": [_filler(4, "en")] * 2, "dont": [_filler(4, "en")],
+                 "why": _filler(hn.MIN_WHY_WORDS - 3, "en") + ACTIVE["en"]}
+        b = {"months": {str(n): dict(month) for n in range(1, 13)}, "guidance": ["x"] * 4, "summary": "x"}
         with self.assertRaisesRegex(ReportMetadataError, "too short"):
-            hn.generate_horoscope_2027_sections(prompts, ev, "en", _stub(_responses("en", words=30, month_words=30)))
+            hn.generate_horoscope_2027_sections(prompts, ev, "en", _stub((a, b)))
 
 
 class Assembly(unittest.TestCase):
@@ -220,17 +301,42 @@ class Assembly(unittest.TestCase):
             sections, _ = hn.generate_horoscope_2027_sections(hn.build_horoscope_2027_prompts(ev, lang), ev, lang,
                                                               _stub(_responses(lang)))
             report = hn.assemble_horoscope_2027_report(sections, ev, lang)
-            headings = re.findall(r"^\*\*(\d+)\. ", report["narrative"], re.M)
-            self.assertEqual([int(h) for h in headings], list(range(1, 29)))  # overview, 12 houses, dasha, transits, 12 months, summary
-            empty = UI_EMPTY[lang]
-            self.assertEqual(report["narrative"].count(empty), sum(1 for h in ev["houses"] if not h["occupants"]))
-            self.assertEqual(len(report["pdf_kwargs"]["tables"]), 4)
+            narrative, u = report["narrative"], hn.UI[lang]
+            headings = re.findall(r"^\*\*(\d+)\. ", narrative, re.M)
+            self.assertEqual([int(h) for h in headings], list(range(1, 18)))  # overview, chart, dasha, transits, 12 months, summary
+            # No technical house table or house-by-house reading reaches the customer.
+            self.assertEqual([t["heading"] for t in report["pdf_kwargs"]["tables"]],
+                             [u["t_transits"], u["t_dashas"], u["t_eclipses"]])
+            for technical in (HOUSE_LINE[lang], "(empty house)", "(खाली भाव)", "1st House:", "पहला भाव:"):
+                self.assertNotIn(technical, narrative)
+            # Chart summary: deterministic key factors, the AI summary, then 2-3 themes.
+            for line in hn.chart_factor_lines(ev, lang):
+                self.assertIn(f"- {line}", narrative)
+            self.assertIn(f"### {u['themes_label']}", narrative)
+            self.assertEqual(narrative.count(f"### {u['m_do']}\n"), 12)
+            self.assertEqual(narrative.count(f"### {u['m_dont']}\n"), 12)
+            self.assertEqual(narrative.count(f"**{u['m_why']}:**"), 12)
+            continuing = [m["month"] for m in ev["months"] if m["continues_previous"]]
+            self.assertEqual(narrative.count(f"**{u['m_continue']}:**"), len(continuing))
+            month_names = hn.HI_MONTHS if lang == "hi" else hn.EN_MONTHS
+            for month in continuing:
+                body = u["m_continue_body"].split("{items}")[0].format(month=month_names[month - 2])
+                self.assertIn(body, narrative)
             self.assertEqual(report["pdf_kwargs"]["narrative_style"], "plain")
             self.assertIn(hn.P(ev["dashas"][0]["mahadasha"], lang), report["answer_hero"]["value"])
             self.assertTrue(report["disclaimer"])
 
+    def test_ai_markdown_and_line_breaks_cannot_break_the_layout(self):
+        ev = he.build_horoscope_2027_evidence(_kundali(0))
+        a, b = _responses("en")
+        b["months"]["1"]["do"][0] = "- **Plan**\nyour week " + _filler(8, "en")
+        sections, _ = hn.generate_horoscope_2027_sections(hn.build_horoscope_2027_prompts(ev, "en"), ev, "en",
+                                                          _stub((a, b)))
+        narrative = hn.assemble_horoscope_2027_report(sections, ev, "en")["narrative"]
+        self.assertIn("\n- Plan your week Steady", narrative)
 
-UI_EMPTY = {"en": "planets: none (empty house)", "hi": "ग्रह: कोई नहीं (खाली भाव)"}
+
+HOUSE_LINE = {"en": "· aspects:", "hi": "· दृष्टि:"}
 
 
 class OrderValidation(unittest.TestCase):

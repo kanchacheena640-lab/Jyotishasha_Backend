@@ -14,8 +14,9 @@ Sources, both already used by the paid-report pipeline:
     calculation of its own). test_horoscope_2027.py re-checks every 2027
     ingress in the file against the live ephemeris engine.
 
-Houses are whole-sign. Natal houses and the house-by-house section use the
-Lagna. Transits are given from BOTH the Lagna and the Moon sign (Gochar);
+Houses are whole-sign. Natal houses (kept in full, with aspects, for the AI
+prompt and the contradiction checks; the customer PDF shows a short chart
+summary instead of a house-by-house reading) use the Lagna. Transits are given from BOTH the Lagna and the Moon sign (Gochar);
 Sade Sati and Dhaiya are, by definition, counted from the Moon sign.
 
 Any inconsistency in the chart raises ReportMetadataError before the AI call,
@@ -265,10 +266,27 @@ def _active(rows: List[dict], start: date, end: date) -> List[dict]:
     return [r for r in rows if date.fromisoformat(r["from"]) <= end and date.fromisoformat(r["to"]) >= start]
 
 
+def _major_changes(month: int, events: List[dict], eclipses: List[dict], dashas: List[dict]) -> List[dict]:
+    """What materially changes the monthly guidance: a Jupiter or Saturn sign
+    change or station (Sade Sati/Dhaiya start and end with Saturn's sign
+    changes), an eclipse, or a new dasha period. Fast-planet movements (Sun,
+    Mercury, Venus, Mars) refine a month's advice but never start a new focus,
+    so a month without any of these continues the previous month's focus."""
+    start, end = _month_bounds(month)
+    changes = [{"kind": "transit", "planet": e["planet"], "type": e["type"], "date": e["date"], "sign": e["sign"]}
+               for e in events if e["planet"] in ("Jupiter", "Saturn") and start <= date.fromisoformat(e["date"]) <= end]
+    changes += [{"kind": "eclipse", "date": e["date"], "sign": e["sign"]}
+                for e in eclipses if start <= date.fromisoformat(e["date"]) <= end]
+    changes += [{"kind": "dasha", "date": d["from"], "mahadasha": d["mahadasha"], "antardasha": d["antardasha"]}
+                for d in dashas if start <= date.fromisoformat(d["from"]) <= end]
+    return sorted(changes, key=lambda c: c["date"])
+
+
 def _months(segments, events, eclipses, dashas, moon_periods) -> List[dict]:
     months = []
     for month in range(1, 13):
         start, end = _month_bounds(month)
+        major = _major_changes(month, events, eclipses, dashas)
         months.append({
             "month": month,
             "from": _iso(start),
@@ -280,6 +298,9 @@ def _months(segments, events, eclipses, dashas, moon_periods) -> List[dict]:
             "eclipses": [e for e in eclipses if start <= date.fromisoformat(e["date"]) <= end],
             "sade_sati": _active(moon_periods["sade_sati"], start, end),
             "dhaiya": _active(moon_periods["dhaiya"], start, end),
+            "major_changes": major,
+            # January opens the year, so it always sets its own focus.
+            "continues_previous": month > 1 and not major,
         })
     return months
 
