@@ -12,7 +12,11 @@ from models import AstroEvent
 # Services
 from services.event_master import generate_events_for_date, save_events_to_db
 from services.notification_engine import build_notifications, send_push_notification, send_data_only_notification
-from services.notification_builder import get_user_notifications, build_event_content
+from services.notification_builder import (
+    get_user_notifications,
+    build_event_content,
+    build_personalization_context,
+)
 from services.notification_engine import send_topic_notification
 from notifications.notification_models import UserNotification, NotificationLog
 from services.event_adapters.festival_adapter import normalize_events
@@ -328,6 +332,16 @@ def run_daily_event_job():
 
         print("📡 Sending personalized notifications...")
 
+        # Transit / Dasha / Panchak selections are identical for every user
+        # in this run -- compute them ONCE here instead of once per user
+        # inside get_user_notifications(). None -> builder uses its
+        # original per-user path (same output, just slower).
+        try:
+            personalization_context = build_personalization_context(normalized_events)
+        except Exception as e:
+            print(f"❌ Personalization precompute failed: {str(e)} (per-user fallback)")
+            personalization_context = None
+
         while True:
             users = db.session.query(AppUser).limit(BATCH_SIZE).offset(offset).all()
             if not users:
@@ -337,7 +351,8 @@ def run_daily_event_job():
                 try:
                     user_notifications = get_user_notifications(
                         user,
-                        normalized_events   # ✔ DB events
+                        normalized_events,   # ✔ DB events
+                        context=personalization_context,
                     )
 
                     seen_events = set()

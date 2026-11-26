@@ -205,13 +205,105 @@ def build_panchang_content(event):
     }
 
 
-def get_user_notifications(user, events):
+def build_personalization_context(events):
+    """
+    Run-level precompute for get_user_notifications(), built ONCE per
+    scheduler run instead of once per user.
+
+    get_users_for_transit(), get_users_for_dasha_change() and the Panchak
+    "already running yesterday?" lookup each return the SAME result for
+    every user in a run, yet were re-executed inside the per-user loop --
+    N users x (transit events + 2 full scans + panchak lookups). This
+    calls the exact same, unmodified selection functions once and keeps
+    only plain values (user ids, strings, dates), never ORM instances:
+    the scheduler commits per user, which expires instances, and touching
+    an expired instance's attributes would re-query.
+
+    Every part is independent and optional. A part that fails here is
+    simply left out (transit: event id absent; dasha: None; panchak:
+    event id absent), and get_user_notifications() then falls back to the
+    original per-user call for that part -- identical to pre-precompute
+    behavior, including its own error handling.
+    """
+    context = {
+        "transit": {},        # event_id -> {user_id: [{"planet", "house"}, ...]}
+        "dasha_pre": None,    # {user_id: [{"mahadasha", "antardasha", "start_date"}, ...]}
+        "dasha_today": None,  # {user_id: [{"mahadasha", "antardasha"}, ...]}
+        "panchak_running": {},  # panchak event_id -> bool (row exists for event.date - 1)
+    }
+
+    for event in events:
+        event_type = getattr(event, "type", None)
+        event_id = getattr(event, "id", None)
+
+        if event_type != "transit" or not event_id:
+            continue
+
+        try:
+            per_user = {}
+            for u in get_users_for_transit(event):
+                per_user.setdefault(u["user"].id, []).append(
+                    {"planet": u["planet"], "house": u["house"]}
+                )
+            context["transit"][event_id] = per_user
+        except Exception as e:
+            print(f"❌ Transit precompute error for event {event_id}: {str(e)} (per-user fallback)")
+
+    try:
+        dasha_pre = {}
+        for d in get_users_for_dasha_change(days_before=5):
+            dasha_pre.setdefault(d["user"].id, []).append({
+                "mahadasha": d["mahadasha"],
+                "antardasha": d["antardasha"],
+                "start_date": d["start_date"],
+            })
+        context["dasha_pre"] = dasha_pre
+    except Exception as e:
+        print(f"❌ Dasha T-5 precompute error: {str(e)} (per-user fallback)")
+
+    try:
+        dasha_today = {}
+        for d in get_users_for_dasha_change():
+            dasha_today.setdefault(d["user"].id, []).append({
+                "mahadasha": d["mahadasha"],
+                "antardasha": d["antardasha"],
+            })
+        context["dasha_today"] = dasha_today
+    except Exception as e:
+        print(f"❌ Dasha start precompute error: {str(e)} (per-user fallback)")
+
+    for event in events:
+        try:
+            event_type = getattr(event, "type", None)
+            event_id = getattr(event, "id", None)
+            event_date = getattr(event, "date", None)
+
+            if event_type != "panchak" or not event_id or not event_date:
+                continue
+
+            prev_day = event_date - timedelta(days=1)
+            context["panchak_running"][event_id] = AstroEvent.query.filter_by(
+                type="panchak",
+                date=prev_day
+            ).first() is not None
+        except Exception as e:
+            print(f"❌ Panchak precompute error: {str(e)} (per-user fallback)")
+
+    return context
+
+
+def get_user_notifications(user, events, *, context=None):
     """
     Returns personalized notifications for a user. There is no generic
     "global" fallback section any more -- if nothing below has anything
     eligible to say, this simply returns an empty list (v1.1 freeze:
     the generic "Aaj ka Din Mahatvapurn Hai" fallback is removed and
     must never be sent).
+
+    `context` (keyword-only, optional) is build_personalization_context()'s
+    run-level precompute. Omitted/None -> every section runs its original
+    per-user query, exactly as before. Selection, wording, identities and
+    ordering are the same either way.
     """
 
     final_notifications = []
@@ -268,7 +360,11 @@ def get_user_notifications(user, events):
     # refuse to send once the transit day has actually begun (delayed-cron
     # safety), and what stops the morning slot from ever double-sending the
     # same transit later the same day.
+    # transit_map: event_id -> THIS user's own [{"planet", "house"}, ...],
+    # in get_users_for_transit()'s original order. From the run-level
+    # context when present, else the original per-user call.
     transit_map = {}
+    precomputed_transit = context["transit"] if context is not None else {}
 
     for event in events:
         event_type = getattr(event, "type", None)
@@ -277,8 +373,16 @@ def get_user_notifications(user, events):
         if event_type != "transit" or not event_id:
             continue
 
+        if event_id in precomputed_transit:
+            transit_map[event_id] = precomputed_transit[event_id].get(user.id, [])
+            continue
+
         try:
-            transit_map[event_id] = get_users_for_transit(event)
+            transit_map[event_id] = [
+                {"planet": u["planet"], "house": u["house"]}
+                for u in get_users_for_transit(event)
+                if u["user"].id == user.id
+            ]
         except Exception as e:
             print(f"❌ Transit map error for event {event_id}: {str(e)}")
             continue
@@ -300,9 +404,6 @@ def get_user_notifications(user, events):
 
         for u in transit_map.get(event_id, []):
             try:
-                if u["user"].id != user.id:
-                    continue
-
                 event_id_str = f"transit_{event_id}_{u['planet']}_{u['house']}"
 
                 if event_id_str in seen:
@@ -346,13 +447,16 @@ def get_user_notifications(user, events):
     # ---------------------------
     # 🔹 DASHA T-5 ALERT
     # ---------------------------
-    t_minus_5_users = get_users_for_dasha_change(days_before=5)
+    if context is not None and context["dasha_pre"] is not None:
+        t_minus_5_users = context["dasha_pre"].get(user.id, [])
+    else:
+        t_minus_5_users = [
+            d for d in get_users_for_dasha_change(days_before=5)
+            if d["user"].id == user.id
+        ]
 
     for d in t_minus_5_users:
-        if d["user"].id != user.id:
-            continue
-
-        event_id_str = f"dasha_pre_{d['user'].id}_{d['mahadasha']}_{d['antardasha']}"
+        event_id_str = f"dasha_pre_{user.id}_{d['mahadasha']}_{d['antardasha']}"
 
         if event_id_str in seen:
             continue
@@ -380,13 +484,16 @@ def get_user_notifications(user, events):
     # ---------------------------
     # 🔹 DASHA START (SAME DAY)
     # ---------------------------
-    dasha_users = get_users_for_dasha_change()
+    if context is not None and context["dasha_today"] is not None:
+        dasha_users = context["dasha_today"].get(user.id, [])
+    else:
+        dasha_users = [
+            d for d in get_users_for_dasha_change()
+            if d["user"].id == user.id
+        ]
 
     for d in dasha_users:
-        if d["user"].id != user.id:
-            continue
-
-        event_id_str = f"dasha_{d['user'].id}_{d['mahadasha']}_{d['antardasha']}"
+        event_id_str = f"dasha_{user.id}_{d['mahadasha']}_{d['antardasha']}"
 
         if event_id_str in seen:
             continue
@@ -419,12 +526,15 @@ def get_user_notifications(user, events):
             # 🔥 Only notify on the FIRST day of this Panchak window.
             # AstroEvent gets a fresh "panchak" row every day it stays active,
             # so a row dated "yesterday" means today is a continuation, not the start.
-            prev_day = event_date - timedelta(days=1)
+            if context is not None and event_id in context["panchak_running"]:
+                already_running = context["panchak_running"][event_id]
+            else:
+                prev_day = event_date - timedelta(days=1)
 
-            already_running = AstroEvent.query.filter_by(
-                type="panchak",
-                date=prev_day
-            ).first()
+                already_running = AstroEvent.query.filter_by(
+                    type="panchak",
+                    date=prev_day
+                ).first()
 
             if already_running:
                 continue
