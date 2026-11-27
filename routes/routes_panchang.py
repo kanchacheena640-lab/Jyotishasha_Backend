@@ -11,8 +11,30 @@ from datetime import datetime, timedelta
 from services.sun_calc import calculate_sunrise_sunset
 from services.moon_calc import get_moon_rise_set
 from datetime import date
+from services.kharmas_awareness import annotate_muhurat_results, awareness_level
 
 routes_panchang = Blueprint("routes_panchang", __name__)
+
+
+def _with_kharmas_awareness(response, activity, lat, lon, language, window_start, window_end):
+    """Kharmas AWARENESS (never a restriction): for marriage / grah_pravesh /
+    naamkaran, return a NEW response dict whose results carry additive
+    "kharmas" metadata plus a top-level "kharmas_awareness" block. Every other
+    activity, and ANY failure, returns `response` itself untouched -- the
+    annotator works on a deep copy and the swap happens only after it succeeded."""
+    if awareness_level(activity) is None:
+        return response
+    try:
+        annotated = annotate_muhurat_results(activity, response["results"], lat, lon, language,
+                                             window_start, window_end)
+        if annotated is None:
+            return response
+        results, awareness = annotated
+        return {**response, "results": results, "kharmas_awareness": awareness}
+    except Exception:
+        print(">> Kharmas awareness failed; returning the unannotated Muhurat response")
+        traceback.print_exc()
+        return response
 
 # ------------------- HELPER ------------------- #
 def validate_lat_lon(data):
@@ -109,14 +131,19 @@ def api_muhurth_list():
             skipped=skipped_dates
         )
 
-        return jsonify({
+        response = {
             "activity": activity,
             "window_days": days,
             "language": language,
             "results": results,
             # Days that could not be calculated (logged server-side); normally empty.
             "skipped_dates": skipped_dates
-        })
+        }
+        # Same "today" expression as next_best_dates() uses for its window.
+        window_start = datetime.now().date()
+        response = _with_kharmas_awareness(response, activity, lat, lon, language,
+                                           window_start, window_start + timedelta(days=days))
+        return jsonify(response)
 
     except Exception as e:
         print(">> Muhurth Error:", e)
@@ -182,7 +209,7 @@ def api_muhurth_month():
             skipped=skipped_dates
         )
 
-        return jsonify({
+        response = {
             "activity": activity,
             "month": month,
             "year": year,
@@ -190,7 +217,12 @@ def api_muhurth_month():
             "results": results,
             # Days that could not be calculated (logged server-side); normally empty.
             "skipped_dates": skipped_dates
-        })
+        }
+        month_start = date(year, month, 1)
+        month_end = date(year + (month == 12), month % 12 + 1, 1)
+        response = _with_kharmas_awareness(response, activity, lat, lon, language,
+                                           month_start, month_end)
+        return jsonify(response)
 
     except Exception as e:
         print(">> Muhurth Month Error:")

@@ -387,6 +387,29 @@ def ephemeris_in_use():
     return _ephemeris_at(datetime(2000, 1, 1, 17, 30))
 
 
+def get_kharmas_intervals(start, end):
+    """Kharmas periods overlapping the half-open window [start, end), oldest
+    first, as plain dicts with exact (sub-second) aware IST datetimes:
+    {id, kind, start, end, start_sign, end_sign}. No status, no observance
+    dates, no location -- the cheap building block for annotations. Naive
+    inputs are interpreted as IST. Uses the cached yearly calculation."""
+    ensure_lahiri_mode()
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=IST)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=IST)
+    start, end = start.astimezone(IST), end.astimezone(IST)
+    out = []
+    # A period starting in year Y-1 (Dhanu) can still be running in year Y.
+    for y in range(max(MIN_YEAR, start.year - 1), min(MAX_YEAR, end.year) + 1):
+        for kind, s, s_sign, e, e_sign in _periods_starting_in(y)[0]:
+            if s < end and e > start:
+                out.append({"id": f"{kind}-{s.year}", "kind": kind, "start": s, "end": e,
+                            "start_sign": s_sign, "end_sign": e_sign})
+    out.sort(key=lambda p: p["start"])
+    return out
+
+
 def clear_caches():
     """For tests: drop the yearly caches."""
     _periods_starting_in.cache_clear()
