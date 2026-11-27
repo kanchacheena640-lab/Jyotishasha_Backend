@@ -1,3 +1,4 @@
+import traceback
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang
@@ -20,6 +21,28 @@ from services.sankranti_engine import (
     get_sankranti_details,
     find_next_sankranti
 )
+from services.kharmas_engine import (
+    AS_OF_MAX_YEAR,
+    AS_OF_MIN_YEAR,
+    DEFAULT_LATITUDE,
+    DEFAULT_LONGITUDE,
+    IST,
+    MAX_YEAR,
+    MIN_YEAR,
+    OBSERVANCE_LAT_RANGE,
+    OBSERVANCE_LON_RANGE,
+    SEARCH_RESOLUTION_SECONDS,
+    KharmasInputError,
+    ephemeris_for_year,
+    get_kharmas_periods,
+    get_kharmas_status,
+    observance_supported,
+)
+
+
+def _round_coord_for_meta(value, default):
+    # Only reached after get_kharmas_status() validated the coordinates.
+    return round(float(default if value is None else value), 2)
 
 routes_events = Blueprint("routes_events", __name__)
 
@@ -251,6 +274,125 @@ def api_adhik_maas():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+def _kharmas_body():
+    """The JSON body as a dict. Empty body -> {}. Any non-empty body that is
+    not a JSON object (malformed JSON, array, string, ...) -> 400, whatever
+    the Content-Type."""
+    raw = request.get_data(cache=True)
+    if not raw or not raw.strip():
+        return {}
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        raise KharmasInputError("request body must be valid JSON")
+    if not isinstance(data, dict):
+        raise KharmasInputError("request body must be a JSON object")
+    return data
+
+
+def _parse_kharmas_instant(data):
+    """Optional reference instant ("as of"): `at` (ISO 8601; no offset = IST)
+    or `date` (YYYY-MM-DD = 00:00 IST that day). null = omitted. Default: now."""
+    at_raw, date_raw = data.get("at"), data.get("date")
+    if at_raw is not None and date_raw is not None:
+        raise KharmasInputError("send either 'at' or 'date', not both")
+    if at_raw is not None:
+        if not isinstance(at_raw, str):
+            raise KharmasInputError("'at' must be an ISO 8601 string")
+        try:
+            return datetime.fromisoformat(at_raw.strip().replace("Z", "+00:00"))
+        except ValueError:
+            raise KharmasInputError("'at' must be an ISO 8601 date-time, e.g. 2026-12-16T10:25:00+05:30")
+    if date_raw is not None:
+        if not isinstance(date_raw, str):
+            raise KharmasInputError("'date' must be a YYYY-MM-DD string")
+        try:
+            return datetime.strptime(date_raw.strip(), "%Y-%m-%d").replace(tzinfo=IST)
+        except ValueError:
+            raise KharmasInputError("'date' must be YYYY-MM-DD")
+    return datetime.now(IST)   # resolved ONCE so status and periods share one "as of"
+
+
+def _parse_kharmas_year(data):
+    year = data.get("year")
+    if year is None:
+        return None
+    if isinstance(year, bool) or not isinstance(year, (int, str)):
+        raise KharmasInputError("year must be an integer")
+    text = str(year).strip()
+    if not text.lstrip("-").isdigit() or len(text) > 6:
+        raise KharmasInputError("year must be an integer")
+    return int(text)
+
+
+@routes_events.route("/kharmas", methods=["POST"])
+def api_kharmas():
+    """Kharmas (Sun in Dhanu / Meena). Read-only.
+
+    Body (JSON object; every field optional, null = omitted):
+      language | lang  "en" (default) | "hi"
+      latitude, longitude   numbers; used only for Sankranti observance dates
+      at | date        the "as of" instant for all statuses (default now)
+      year             also list the two periods that START in this year
+    `year` and `at` are independent: `year` selects which periods are listed,
+    `at` decides their status and previous/current/upcoming.
+    """
+    try:
+        data = _kharmas_body()
+        language = data.get("language")
+        if language is None:
+            language = data.get("lang")
+        lat, lon = data.get("latitude"), data.get("longitude")
+        at = _parse_kharmas_instant(data)
+        year = _parse_kharmas_year(data)
+
+        status = get_kharmas_status(at=at, language=language, latitude=lat, longitude=lon)
+        language = (language or "en").strip().lower()
+        ephemeris = set(status["ephemeris"])
+
+        body = {
+            "as_of": status["as_of"],
+            "timezone": "Asia/Kolkata",
+            "language": language,
+            "is_kharmas": status["is_kharmas"],
+            "previous": status["previous"],
+            "current": status["current"],
+            "upcoming": status["upcoming"],
+        }
+        if year is not None:
+            body["year"] = year
+            body["periods"] = get_kharmas_periods(year, language=language, latitude=lat, longitude=lon, at=at)
+            ephemeris.update(ephemeris_for_year(year))
+
+        body["meta"] = {
+            "definition": "Sun (sidereal) in Dhanu or Meena",
+            "interval": "start inclusive, end exclusive (ingress instants)",
+            "semantics": {
+                "as_of": "reference instant for every status and for previous/current/upcoming",
+                "year": "selects the periods listed in `periods`: the two that start in that IST calendar year",
+            },
+            "observance_rule": "Sankranti observance date: ingress before local sunset -> same day, otherwise next day",
+            "observance_supported": observance_supported(_round_coord_for_meta(lat, DEFAULT_LATITUDE),
+                                                         _round_coord_for_meta(lon, DEFAULT_LONGITUDE)),
+            "observance_supported_region": {"latitude": list(OBSERVANCE_LAT_RANGE), "longitude": list(OBSERVANCE_LON_RANGE),
+                                            "note": "outside this region observance_date is null (IST-based sunrise model)"},
+            "ayanamsa": "Lahiri (Swiss Ephemeris SIDM_LAHIRI)",
+            "ephemeris": sorted(ephemeris),
+            "search_resolution_seconds": SEARCH_RESOLUTION_SECONDS,
+            "accuracy_note": "Search resolution is 1 s. Ephemeris differences are ~2 s. Published Panchangs "
+                             "may differ by several minutes (Drik Panchang: 2-7 min later, 2025-2028; cause not established).",
+            "supported_years": [MIN_YEAR, MAX_YEAR],
+            "supported_as_of_years": [AS_OF_MIN_YEAR, AS_OF_MAX_YEAR],
+        }
+        return jsonify(body)
+
+    except KharmasInputError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "Kharmas calculation failed"}), 500
 
 import os
 import json
