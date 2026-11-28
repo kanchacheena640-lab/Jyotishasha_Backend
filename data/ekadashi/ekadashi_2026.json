@@ -17,9 +17,11 @@
       },
       "parana": {
         "parana_date": "2026-01-15",
-        "start": "2026-01-15 06:57",
-        "end": "2026-01-15 20:17",
-        "hari_vasara_end": "2026-01-15 00:29"
+        "start": "2026-01-15 06:56",
+        "end": "2026-01-15 09:04",
+        "hari_vasara_end": "2026-01-15 00:29",
+        "dwadashi_end": "2026-01-15 20:17",
+        "rule": "pratahkal"
       }
     },
     {
@@ -38,8 +40,10 @@
       "parana": {
         "parana_date": "2026-01-30",
         "start": "2026-01-30 06:52",
-        "end": "2026-01-30 11:09",
-        "hari_vasara_end": "2026-01-29 19:13"
+        "end": "2026-01-30 09:03",
+        "hari_vasara_end": "2026-01-29 19:14",
+        "dwadashi_end": "2026-01-30 11:09",
+        "rule": "pratahkal"
       }
     },
     {
@@ -58,8 +62,10 @@
       "parana": {
         "parana_date": "2026-02-14",
         "start": "2026-02-14 06:43",
-        "end": "2026-02-14 16:02",
-        "hari_vasara_end": "2026-02-13 20:50"
+        "end": "2026-02-14 08:58",
+        "hari_vasara_end": "2026-02-13 20:50",
+        "dwadashi_end": "2026-02-14 16:02",
+        "rule": "pratahkal"
       }
     },
     {
@@ -78,8 +84,10 @@
       "parana": {
         "parana_date": "2026-02-28",
         "start": "2026-02-28 06:31",
-        "end": "2026-02-28 20:43",
-        "hari_vasara_end": "2026-02-28 04:05"
+        "end": "2026-02-28 08:50",
+        "hari_vasara_end": "2026-02-28 04:05",
+        "dwadashi_end": "2026-02-28 20:43",
+        "rule": "pratahkal"
       }
     },
     {
@@ -98,8 +106,10 @@
       "parana": {
         "parana_date": "2026-03-16",
         "start": "2026-03-16 06:15",
-        "end": "2026-03-16 09:41",
-        "hari_vasara_end": "2026-03-15 15:23"
+        "end": "2026-03-16 08:39",
+        "hari_vasara_end": "2026-03-15 15:23",
+        "dwadashi_end": "2026-03-16 09:41",
+        "rule": "pratahkal"
       }
     },
     {
@@ -117,9 +127,11 @@
       },
       "parana": {
         "parana_date": "2026-03-30",
-        "start": "2026-03-30 06:00",
+        "start": "2026-03-30 05:59",
         "end": "2026-03-30 07:10",
-        "hari_vasara_end": "2026-03-29 13:37"
+        "hari_vasara_end": "2026-03-29 13:37",
+        "dwadashi_end": "2026-03-30 07:10",
+        "rule": "pratahkal"
       }
     },
     {
@@ -137,9 +149,11 @@
       },
       "parana": {
         "parana_date": "2026-04-14",
-        "start": "2026-04-14 06:54",
-        "end": "2026-04-15 00:12",
-        "hari_vasara_end": "2026-04-14 06:54"
+        "start": "2026-04-14 06:55",
+        "end": "2026-04-14 08:17",
+        "hari_vasara_end": "2026-04-14 06:55",
+        "dwadashi_end": "2026-04-15 00:12",
+        "rule": "pratahkal"
       }
     },
     {
@@ -157,9 +171,11 @@
       },
       "parana": {
         "parana_date": "2026-04-28",
-        "start": "2026-04-28 05:31",
-        "end": "2026-04-28 18:52",
-        "hari_vasara_end": "2026-04-28 00:25"
+        "start": "2026-04-28 05:30",
+        "end": "2026-04-28 08:08",
+        "hari_vasara_end": "2026-04-28 00:25",
+        "dwadashi_end": "2026-04-28 18:52",
+        "rule": "pratahkal"
       }
     },
     {
@@ -169,17 +185,19 @@
       "slug": "apara",
       "vrat_date": "2026-05-13",
       "tithi": {
-        "start": "2026-05-13 13:30",
-        "end": "2026-05-14 11:21",
+        "start": "2026-05-12 14:52",
+        "end": "2026-05-13 13:30",
         "paksha": "Krishna",
         "month": "Vaishakha",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2026-05-14",
-        "start": "2026-05-14 16:38",
-        "end": "2026-05-15 08:31",
-        "hari_vasara_end": "2026-05-14 16:38"
+        "start": "2026-05-14 05:19",
+        "end": "2026-05-14 08:00",
+        "hari_vasara_end": "2026-05-13 18:58",
+        "dwadashi_end": "2026-05-14 11:21",
+        "rule": "pratahkal"
       }
     },
     {
@@ -189,17 +207,19 @@
       "slug": "padmini-ekadashi",
       "vrat_date": "2026-05-27",
       "tithi": {
-        "start": "2026-05-27 06:22",
-        "end": "2026-05-28 07:57",
+        "start": "2026-05-26 05:11",
+        "end": "2026-05-27 06:22",
         "paksha": "Shukla",
         "month": "Vaishakha",
         "is_adhik": true
       },
       "parana": {
         "parana_date": "2026-05-28",
-        "start": "2026-05-28 14:25",
-        "end": "2026-05-29 09:51",
-        "hari_vasara_end": "2026-05-28 14:25"
+        "start": "2026-05-28 05:13",
+        "end": "2026-05-28 07:57",
+        "hari_vasara_end": "2026-05-27 12:46",
+        "dwadashi_end": "2026-05-28 07:57",
+        "rule": "pratahkal"
       }
     },
     {
@@ -209,17 +229,19 @@
       "slug": "parama-ekadashi",
       "vrat_date": "2026-06-11",
       "tithi": {
-        "start": "2026-06-11 22:36",
-        "end": "2026-06-12 19:37",
+        "start": "2026-06-11 00:58",
+        "end": "2026-06-11 22:36",
         "paksha": "Krishna",
         "month": "Jyeshtha",
         "is_adhik": true
       },
       "parana": {
         "parana_date": "2026-06-12",
-        "start": "2026-06-13 00:44",
-        "end": "2026-06-13 16:08",
-        "hari_vasara_end": "2026-06-13 00:44"
+        "start": "2026-06-12 05:12",
+        "end": "2026-06-12 07:57",
+        "hari_vasara_end": "2026-06-12 03:51",
+        "dwadashi_end": "2026-06-12 19:37",
+        "rule": "pratahkal"
       }
     },
     {
@@ -229,38 +251,56 @@
       "slug": "nirjala",
       "vrat_date": "2026-06-25",
       "tithi": {
-        "start": "2026-06-25 20:09",
-        "end": "2026-06-26 22:22",
+        "start": "2026-06-24 18:12",
+        "end": "2026-06-25 20:09",
         "paksha": "Shukla",
         "month": "Vaishakha",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2026-06-26",
-        "start": "2026-06-27 04:57",
-        "end": "2026-06-28 00:43",
-        "hari_vasara_end": "2026-06-27 04:57"
+        "start": "2026-06-26 05:14",
+        "end": "2026-06-26 08:00",
+        "hari_vasara_end": "2026-06-26 02:43",
+        "dwadashi_end": "2026-06-26 22:22",
+        "rule": "pratahkal"
       }
     },
     {
       "type": "ekadashi",
-      "name_en": "Trisparsha Mahadwadashi, Yogini",
+      "name_en": "Yogini",
       "name_hi": "योगिनी",
       "slug": "yogini",
-      "vrat_date": "2026-07-11",
+      "vrat_date": "2026-07-10",
       "tithi": {
-        "start": "2026-07-12 02:04",
-        "end": "2026-07-12 22:30",
+        "start": "2026-07-10 08:16",
+        "end": "2026-07-11 05:23",
         "paksha": "Krishna",
         "month": "Jyeshtha",
         "is_adhik": false
       },
       "parana": {
-        "parana_date": "2026-07-12",
-        "start": "2026-07-13 03:35",
-        "end": "2026-07-13 18:50",
-        "hari_vasara_end": "2026-07-13 03:35"
-      }
+        "parana_date": "2026-07-11",
+        "start": "2026-07-11 13:33",
+        "end": "2026-07-11 16:18",
+        "hari_vasara_end": "2026-07-11 10:33",
+        "dwadashi_end": "2026-07-12 02:04",
+        "rule": "aparahna"
+      },
+      "alternate_observances": [
+        {
+          "tradition": "Gauna/Vaishnava",
+          "vrat_date": "2026-07-11",
+          "parana": {
+            "parana_date": "2026-07-12",
+            "start": "2026-07-12 05:20",
+            "end": "2026-07-12 08:05",
+            "hari_vasara_end": "2026-07-11 10:33",
+            "dwadashi_end": "2026-07-12 02:04",
+            "rule": "after_dwadashi"
+          }
+        }
+      ]
     },
     {
       "type": "ekadashi",
@@ -269,17 +309,19 @@
       "slug": "devshayani",
       "vrat_date": "2026-07-25",
       "tithi": {
-        "start": "2026-07-25 11:34",
-        "end": "2026-07-26 13:58",
+        "start": "2026-07-24 09:13",
+        "end": "2026-07-25 11:34",
         "paksha": "Shukla",
         "month": "Jyeshtha",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2026-07-26",
-        "start": "2026-07-26 20:32",
-        "end": "2026-07-27 16:15",
-        "hari_vasara_end": "2026-07-26 20:32"
+        "start": "2026-07-26 05:27",
+        "end": "2026-07-26 08:09",
+        "hari_vasara_end": "2026-07-25 18:10",
+        "dwadashi_end": "2026-07-26 13:58",
+        "rule": "pratahkal"
       }
     },
     {
@@ -299,28 +341,46 @@
         "parana_date": "2026-08-10",
         "start": "2026-08-10 05:35",
         "end": "2026-08-10 08:01",
-        "hari_vasara_end": "2026-08-09 16:19"
+        "hari_vasara_end": "2026-08-09 16:19",
+        "dwadashi_end": "2026-08-10 08:01",
+        "rule": "pratahkal"
       }
     },
     {
       "type": "ekadashi",
-      "name_en": "Pakshavarddhini Mahadwadashi, Putrada (Shravana)",
+      "name_en": "Putrada (Shravana)",
       "name_hi": "पुत्रदा",
       "slug": "putrada-shravana",
-      "vrat_date": "2026-08-24",
+      "vrat_date": "2026-08-23",
       "tithi": {
-        "start": "2026-08-24 04:19",
-        "end": "2026-08-25 06:21",
+        "start": "2026-08-23 02:00",
+        "end": "2026-08-24 04:19",
         "paksha": "Shukla",
         "month": "Ashadha",
         "is_adhik": false
       },
       "parana": {
-        "parana_date": "2026-08-25",
-        "start": "2026-08-25 05:42",
-        "end": "2026-08-25 06:21",
-        "hari_vasara_end": "2026-08-24 10:49"
-      }
+        "parana_date": "2026-08-24",
+        "start": "2026-08-24 13:25",
+        "end": "2026-08-24 16:00",
+        "hari_vasara_end": "2026-08-24 10:49",
+        "dwadashi_end": "2026-08-25 06:21",
+        "rule": "aparahna"
+      },
+      "alternate_observances": [
+        {
+          "tradition": "Vaishnava",
+          "vrat_date": "2026-08-24",
+          "parana": {
+            "parana_date": "2026-08-25",
+            "start": "2026-08-25 05:42",
+            "end": "2026-08-25 06:21",
+            "hari_vasara_end": "2026-08-24 10:49",
+            "dwadashi_end": "2026-08-25 06:21",
+            "rule": "pratahkal"
+          }
+        }
+      ]
     },
     {
       "type": "ekadashi",
@@ -338,8 +398,10 @@
       "parana": {
         "parana_date": "2026-09-08",
         "start": "2026-09-08 05:48",
-        "end": "2026-09-08 14:43",
-        "hari_vasara_end": "2026-09-07 22:28"
+        "end": "2026-09-08 08:18",
+        "hari_vasara_end": "2026-09-07 22:29",
+        "dwadashi_end": "2026-09-08 14:43",
+        "rule": "pratahkal"
       }
     },
     {
@@ -358,8 +420,10 @@
       "parana": {
         "parana_date": "2026-09-23",
         "start": "2026-09-23 05:55",
-        "end": "2026-09-23 22:51",
-        "hari_vasara_end": "2026-09-23 04:00"
+        "end": "2026-09-23 08:20",
+        "hari_vasara_end": "2026-09-23 04:00",
+        "dwadashi_end": "2026-09-23 22:51",
+        "rule": "pratahkal"
       }
     },
     {
@@ -378,8 +442,10 @@
       "parana": {
         "parana_date": "2026-10-07",
         "start": "2026-10-07 06:15",
-        "end": "2026-10-07 23:17",
-        "hari_vasara_end": "2026-10-07 06:15"
+        "end": "2026-10-07 08:22",
+        "hari_vasara_end": "2026-10-07 06:15",
+        "dwadashi_end": "2026-10-07 23:17",
+        "rule": "pratahkal"
       }
     },
     {
@@ -398,8 +464,10 @@
       "parana": {
         "parana_date": "2026-10-23",
         "start": "2026-10-23 06:10",
-        "end": "2026-10-23 14:36",
-        "hari_vasara_end": "2026-10-22 20:45"
+        "end": "2026-10-23 08:26",
+        "hari_vasara_end": "2026-10-22 20:45",
+        "dwadashi_end": "2026-10-23 14:36",
+        "rule": "pratahkal"
       }
     },
     {
@@ -418,16 +486,18 @@
       "parana": {
         "parana_date": "2026-11-06",
         "start": "2026-11-06 06:19",
-        "end": "2026-11-06 10:31",
-        "hari_vasara_end": "2026-11-05 16:34"
+        "end": "2026-11-06 08:31",
+        "hari_vasara_end": "2026-11-05 16:34",
+        "dwadashi_end": "2026-11-06 10:31",
+        "rule": "pratahkal"
       }
     },
     {
       "type": "ekadashi",
-      "name_en": "Trisparsha Mahadwadashi, Devutthana",
+      "name_en": "Devutthana",
       "name_hi": "देवोत्थान",
       "slug": "devutthana",
-      "vrat_date": "2026-11-21",
+      "vrat_date": "2026-11-20",
       "tithi": {
         "start": "2026-11-20 07:16",
         "end": "2026-11-21 06:32",
@@ -436,11 +506,27 @@
         "is_adhik": false
       },
       "parana": {
-        "parana_date": "2026-11-22",
-        "start": "2026-11-22 10:22",
-        "end": "2026-11-23 02:37",
-        "hari_vasara_end": "2026-11-22 10:22"
-      }
+        "parana_date": "2026-11-21",
+        "start": "2026-11-21 12:56",
+        "end": "2026-11-21 15:04",
+        "hari_vasara_end": "2026-11-21 12:08",
+        "dwadashi_end": "2026-11-22 04:57",
+        "rule": "aparahna"
+      },
+      "alternate_observances": [
+        {
+          "tradition": "Gauna/Vaishnava",
+          "vrat_date": "2026-11-21",
+          "parana": {
+            "parana_date": "2026-11-22",
+            "start": "2026-11-22 06:31",
+            "end": "2026-11-22 08:39",
+            "hari_vasara_end": "2026-11-21 12:08",
+            "dwadashi_end": "2026-11-22 04:57",
+            "rule": "after_dwadashi"
+          }
+        }
+      ]
     },
     {
       "type": "ekadashi",
@@ -458,8 +544,10 @@
       "parana": {
         "parana_date": "2026-12-05",
         "start": "2026-12-05 06:40",
-        "end": "2026-12-06 00:52",
-        "hari_vasara_end": "2026-12-05 06:01"
+        "end": "2026-12-05 08:47",
+        "hari_vasara_end": "2026-12-05 06:02",
+        "dwadashi_end": "2026-12-06 00:52",
+        "rule": "pratahkal"
       }
     },
     {
@@ -478,8 +566,10 @@
       "parana": {
         "parana_date": "2026-12-21",
         "start": "2026-12-21 06:50",
-        "end": "2026-12-21 17:36",
-        "hari_vasara_end": "2026-12-21 01:35"
+        "end": "2026-12-21 08:56",
+        "hari_vasara_end": "2026-12-21 01:35",
+        "dwadashi_end": "2026-12-21 17:36",
+        "rule": "pratahkal"
       }
     }
   ]
