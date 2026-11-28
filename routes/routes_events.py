@@ -3,8 +3,20 @@ from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 from services.panchang_engine import calculate_panchang
 from services.adhik_maas_engine import detect_adhik_maas
+from services.astro_core import _tithi_number_at
+from services.pradosh_engine import (
+    DEFAULT_LATITUDE as PRADOSH_DEFAULT_LATITUDE,
+    DEFAULT_LONGITUDE as PRADOSH_DEFAULT_LONGITUDE,
+    PradoshInputError,
+    convention as pradosh_convention,
+    get_pradosh_calendar,
+    get_pradosh_today_next,
+    ist_today as pradosh_ist_today,
+    normalise_language,
+    normalise_location,
+    validate_year as pradosh_validate_year,
+)
 from services.events_engine import (
-    get_pradosh_details,
     find_next_pradosh,
     get_sankashti_details,       
     find_next_sankashti,    
@@ -47,35 +59,130 @@ def _round_coord_for_meta(value, default):
 routes_events = Blueprint("routes_events", __name__)
 
 
+def _pradosh_body():
+    """JSON body as a dict (empty body -> {}); anything else that is not a JSON object -> 400."""
+    raw = request.get_data(cache=True)
+    if not raw or not raw.strip():
+        return {}
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        raise PradoshInputError("request body must be valid JSON")
+    if not isinstance(data, dict):
+        raise PradoshInputError("request body must be a JSON object")
+    return data
+
+
+def _pradosh_legacy(record, language):
+    """A resolved Pradosh record in the pre-existing {today,next} item shape
+    (type/name_en/name_hi/slug/date/paksha/sunset_time/tithi_at_sunset, unchanged
+    names and formats), plus additive fields."""
+    if record is None:
+        return None
+    sunset = datetime.fromisoformat(record["sunset"]).replace(tzinfo=None)
+    sunset_minute = sunset.replace(second=0, microsecond=0)   # legacy sunset_time is HH:MM
+    paksha = record["paksha"]
+    item = {
+        # --- legacy fields (same keys, same value formats as before) ---
+        "type": "pradosh",
+        "name_en": f"{paksha['en']} Pradosh Vrat",
+        "name_hi": f"{paksha['hi']} प्रदोष व्रत",
+        "slug": "pradosh-vrat",
+        "date": record["date"],
+        "paksha": paksha["en"],
+        "sunset_time": sunset_minute.strftime("%H:%M"),
+        "tithi_at_sunset": _tithi_number_at(sunset_minute),
+    }
+    item.update(_pradosh_additive(record, language))
+    return item
+
+
+def _pradosh_additive(record, language):
+    return {
+        "id": record["id"],
+        "status": record["status"],
+        "resolution": record["resolution"],
+        "display_name": record["name"][language],
+        "vrat_name_en": record["name"]["en"],
+        "vrat_name_hi": record["name"]["hi"],
+        "weekday": record["weekday"],
+        "classification": record["classification"],
+        "paksha_detail": record["paksha"],
+        "trayodashi": record["tithi"],
+        "sunset": record["sunset"],
+        "pradosh_kaal": record["pradosh_kaal"],
+        "puja_muhurat": record["puja_muhurat"],
+        "overlap_minutes": record["overlap_minutes"],
+        "lunar_month": record["lunar_month"],
+        "candidates": record["candidates"],
+        **({"note": record["note"]} if "note" in record else {}),
+    }
+
+
+def _pradosh_calendar_item(record, language):
+    item = {"date": record["date"], "anchor_date": record["anchor_date"]}
+    item.update(_pradosh_additive(record, language))
+    return item
+
+
 @routes_events.route("/pradosh", methods=["POST"])
 def api_pradosh():
+    """Pradosh Vrat. Read-only.
+
+    Body (JSON object; every field optional, null = omitted):
+      latitude, longitude   default New Delhi; must be inside the supported region
+      date                  YYYY-MM-DD, an IST civil date (default: today in IST)
+      language | lang       "en" (default) | "hi" -- selects `display_name`; both languages are always returned
+      year                  also return the annual `calendar` for this IST year
+    `today`/`next` keep their previous shape (resolved observances only); unresolved
+    Trayodashi before `next` are listed separately and never given a date.
+    """
     try:
-        data = request.get_json() or {}
+        data = _pradosh_body()
+        language = normalise_language(data.get("language") if data.get("language") is not None else data.get("lang"))
+        lat, lon = normalise_location(data.get("latitude"), data.get("longitude"))
 
-        lat = float(data.get("latitude", 28.61))
-        lon = float(data.get("longitude", 77.23))
-        date_str = data.get("date")
-
-        if date_str:
-            current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        date_raw = data.get("date")
+        if date_raw is None:
+            on_date = pradosh_ist_today()
         else:
-            current_date = datetime.now().date()
+            if not isinstance(date_raw, str):
+                raise PradoshInputError("'date' must be a YYYY-MM-DD string")
+            try:
+                on_date = datetime.strptime(date_raw.strip(), "%Y-%m-%d").date()
+            except ValueError:
+                raise PradoshInputError("'date' must be YYYY-MM-DD")
 
-        # Today's Panchang
-        panchang = calculate_panchang(current_date, lat, lon, "en")
+        year = data.get("year")
+        if year is not None:
+            if isinstance(year, bool) or not isinstance(year, (int, str)) or not str(year).strip().lstrip("-").isdigit():
+                raise PradoshInputError("year must be an integer")
+            year = pradosh_validate_year(int(str(year).strip()))
 
-        today_pradosh = get_pradosh_details(panchang)
+        view = get_pradosh_today_next(on_date=on_date, latitude=lat, longitude=lon)
+        body = {
+            "today": _pradosh_legacy(view["today"], language),
+            "next": _pradosh_legacy(view["next"], language),
+            "date": view["date"],
+            "timezone": "Asia/Kolkata",
+            "language": language,
+            "location": {**view["location"],
+                         "is_default": (lat, lon) == (PRADOSH_DEFAULT_LATITUDE, PRADOSH_DEFAULT_LONGITUDE)},
+            "unresolved_before_next": [_pradosh_calendar_item(r, language) for r in view["unresolved_before_next"]],
+        }
+        if year is not None:
+            body["year"] = year
+            body["calendar"] = [_pradosh_calendar_item(r, language)
+                                for r in get_pradosh_calendar(year, latitude=lat, longitude=lon)]
+        body["meta"] = pradosh_convention()
+        return jsonify(body)
 
-        next_pradosh = find_next_pradosh(current_date, lat, lon, "en")
+    except PradoshInputError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "Pradosh calculation failed"}), 500
 
-        return jsonify({
-            "today": today_pradosh,
-            "next": next_pradosh
-        })
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
 @routes_events.route("/sankashti", methods=["POST"])
 def api_sankashti():
     try:
