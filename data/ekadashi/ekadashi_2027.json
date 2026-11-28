@@ -1,6 +1,6 @@
 {
   "year": 2027,
-  "count": 24,
+  "count": 25,
   "ekadashi_list": [
     {
       "type": "ekadashi",
@@ -18,16 +18,18 @@
       "parana": {
         "parana_date": "2027-01-04",
         "start": "2027-01-04 06:55",
-        "end": "2027-01-04 18:16",
-        "hari_vasara_end": "2027-01-03 22:40"
+        "end": "2027-01-04 09:01",
+        "hari_vasara_end": "2027-01-03 22:40",
+        "dwadashi_end": "2027-01-04 18:16",
+        "rule": "pratahkal"
       }
     },
     {
       "type": "ekadashi",
-      "name_en": "Trisparsha Mahadwadashi, Putrada (Pausha)",
+      "name_en": "Putrada (Pausha)",
       "name_hi": "पुत्रदा",
       "slug": "putrada-pausha",
-      "vrat_date": "2027-01-19",
+      "vrat_date": "2027-01-18",
       "tithi": {
         "start": "2027-01-18 10:27",
         "end": "2027-01-19 07:50",
@@ -36,11 +38,27 @@
         "is_adhik": false
       },
       "parana": {
-        "parana_date": "2027-01-20",
-        "start": "2027-01-20 09:48",
-        "end": "2027-01-21 01:12",
-        "hari_vasara_end": "2027-01-20 09:48"
-      }
+        "parana_date": "2027-01-19",
+        "start": "2027-01-19 13:21",
+        "end": "2027-01-19 15:29",
+        "hari_vasara_end": "2027-01-19 13:02",
+        "dwadashi_end": "2027-01-20 04:41",
+        "rule": "aparahna"
+      },
+      "alternate_observances": [
+        {
+          "tradition": "Gauna/Vaishnava",
+          "vrat_date": "2027-01-19",
+          "parana": {
+            "parana_date": "2027-01-20",
+            "start": "2027-01-20 06:56",
+            "end": "2027-01-20 09:04",
+            "hari_vasara_end": "2027-01-19 13:02",
+            "dwadashi_end": "2027-01-20 04:41",
+            "rule": "after_dwadashi"
+          }
+        }
+      ]
     },
     {
       "type": "ekadashi",
@@ -58,8 +76,10 @@
       "parana": {
         "parana_date": "2027-02-03",
         "start": "2027-02-03 06:51",
-        "end": "2027-02-03 13:50",
-        "hari_vasara_end": "2027-02-02 17:50"
+        "end": "2027-02-03 09:02",
+        "hari_vasara_end": "2027-02-02 17:50",
+        "dwadashi_end": "2027-02-03 13:50",
+        "rule": "pratahkal"
       }
     },
     {
@@ -78,8 +98,10 @@
       "parana": {
         "parana_date": "2027-02-18",
         "start": "2027-02-18 06:40",
-        "end": "2027-02-18 14:28",
-        "hari_vasara_end": "2027-02-17 22:46"
+        "end": "2027-02-18 08:56",
+        "hari_vasara_end": "2027-02-17 22:46",
+        "dwadashi_end": "2027-02-18 14:28",
+        "rule": "pratahkal"
       }
     },
     {
@@ -97,9 +119,11 @@
       },
       "parana": {
         "parana_date": "2027-03-05",
-        "start": "2027-03-05 06:27",
-        "end": "2027-03-05 09:54",
-        "hari_vasara_end": "2027-03-04 14:01"
+        "start": "2027-03-05 06:26",
+        "end": "2027-03-05 08:47",
+        "hari_vasara_end": "2027-03-04 14:02",
+        "dwadashi_end": "2027-03-05 09:54",
+        "rule": "pratahkal"
       }
     },
     {
@@ -117,9 +141,11 @@
       },
       "parana": {
         "parana_date": "2027-03-19",
-        "start": "2027-03-19 07:12",
-        "end": "2027-03-19 23:17",
-        "hari_vasara_end": "2027-03-19 07:12"
+        "start": "2027-03-19 07:13",
+        "end": "2027-03-19 08:36",
+        "hari_vasara_end": "2027-03-19 07:13",
+        "dwadashi_end": "2027-03-19 23:17",
+        "rule": "pratahkal"
       }
     },
     {
@@ -137,9 +163,11 @@
       },
       "parana": {
         "parana_date": "2027-04-03",
-        "start": "2027-04-03 09:15",
-        "end": "2027-04-04 04:27",
-        "hari_vasara_end": "2027-04-03 09:15"
+        "start": "2027-04-03 13:24",
+        "end": "2027-04-03 15:54",
+        "hari_vasara_end": "2027-04-03 09:16",
+        "dwadashi_end": "2027-04-04 04:27",
+        "rule": "aparahna"
       }
     },
     {
@@ -159,7 +187,9 @@
         "parana_date": "2027-04-18",
         "start": "2027-04-18 05:40",
         "end": "2027-04-18 07:42",
-        "hari_vasara_end": "2027-04-17 15:01"
+        "hari_vasara_end": "2027-04-17 15:01",
+        "dwadashi_end": "2027-04-18 07:42",
+        "rule": "pratahkal"
       }
     },
     {
@@ -169,17 +199,19 @@
       "slug": "varuthini",
       "vrat_date": "2027-05-02",
       "tithi": {
-        "start": "2027-05-02 19:52",
-        "end": "2027-05-03 20:04",
+        "start": "2027-05-01 18:54",
+        "end": "2027-05-02 19:52",
         "paksha": "Krishna",
         "month": "Chaitra",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2027-05-03",
-        "start": "2027-05-04 01:55",
-        "end": "2027-05-04 19:31",
-        "hari_vasara_end": "2027-05-04 01:55"
+        "start": "2027-05-03 05:27",
+        "end": "2027-05-03 08:05",
+        "hari_vasara_end": "2027-05-03 01:55",
+        "dwadashi_end": "2027-05-03 20:04",
+        "rule": "pratahkal"
       }
     },
     {
@@ -189,17 +221,19 @@
       "slug": "mohini",
       "vrat_date": "2027-05-16",
       "tithi": {
-        "start": "2027-05-16 17:13",
-        "end": "2027-05-17 16:28",
+        "start": "2027-05-15 18:18",
+        "end": "2027-05-16 17:13",
         "paksha": "Shukla",
         "month": "Chaitra",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2027-05-17",
-        "start": "2027-05-17 22:22",
-        "end": "2027-05-18 16:04",
-        "hari_vasara_end": "2027-05-17 22:22"
+        "start": "2027-05-17 05:18",
+        "end": "2027-05-17 07:59",
+        "hari_vasara_end": "2027-05-16 23:02",
+        "dwadashi_end": "2027-05-17 16:28",
+        "rule": "pratahkal"
       }
     },
     {
@@ -209,17 +243,19 @@
       "slug": "apara",
       "vrat_date": "2027-06-01",
       "tithi": {
-        "start": "2027-06-01 09:40",
-        "end": "2027-06-02 08:29",
+        "start": "2027-05-31 10:02",
+        "end": "2027-06-01 09:40",
         "paksha": "Krishna",
         "month": "Vaishakha",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2027-06-02",
-        "start": "2027-06-02 14:00",
-        "end": "2027-06-03 06:35",
-        "hari_vasara_end": "2027-06-02 14:00"
+        "start": "2027-06-02 05:12",
+        "end": "2027-06-02 07:57",
+        "hari_vasara_end": "2027-06-01 15:22",
+        "dwadashi_end": "2027-06-02 08:29",
+        "rule": "pratahkal"
       }
     },
     {
@@ -229,17 +265,19 @@
       "slug": "nirjala",
       "vrat_date": "2027-06-14",
       "tithi": {
-        "start": "2027-06-15 02:08",
-        "end": "2027-06-16 02:31",
+        "start": "2027-06-14 02:12",
+        "end": "2027-06-15 02:08",
         "paksha": "Shukla",
         "month": "Vaishakha",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2027-06-15",
-        "start": "2027-06-16 08:43",
-        "end": "2027-06-17 03:20",
-        "hari_vasara_end": "2027-06-16 08:43"
+        "start": "2027-06-15 13:29",
+        "end": "2027-06-15 16:15",
+        "hari_vasara_end": "2027-06-15 08:14",
+        "dwadashi_end": "2027-06-16 02:31",
+        "rule": "aparahna"
       }
     },
     {
@@ -249,17 +287,19 @@
       "slug": "yogini",
       "vrat_date": "2027-06-30",
       "tithi": {
-        "start": "2027-06-30 20:31",
-        "end": "2027-07-01 18:15",
+        "start": "2027-06-29 22:04",
+        "end": "2027-06-30 20:31",
         "paksha": "Krishna",
         "month": "Jyeshtha",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2027-07-01",
-        "start": "2027-07-01 23:32",
-        "end": "2027-07-02 15:23",
-        "hari_vasara_end": "2027-07-01 23:32"
+        "start": "2027-07-01 05:16",
+        "end": "2027-07-01 08:01",
+        "hari_vasara_end": "2027-07-01 01:57",
+        "dwadashi_end": "2027-07-01 18:15",
+        "rule": "pratahkal"
       }
     },
     {
@@ -269,18 +309,56 @@
       "slug": "devshayani",
       "vrat_date": "2027-07-14",
       "tithi": {
-        "start": "2027-07-14 13:10",
-        "end": "2027-07-15 14:41",
+        "start": "2027-07-13 12:09",
+        "end": "2027-07-14 13:10",
         "paksha": "Shukla",
         "month": "Jyeshtha",
         "is_adhik": false
       },
       "parana": {
         "parana_date": "2027-07-15",
-        "start": "2027-07-15 21:09",
-        "end": "2027-07-16 16:35",
-        "hari_vasara_end": "2027-07-15 21:09"
+        "start": "2027-07-15 05:22",
+        "end": "2027-07-15 08:06",
+        "hari_vasara_end": "2027-07-14 19:33",
+        "dwadashi_end": "2027-07-15 14:41",
+        "rule": "pratahkal"
       }
+    },
+    {
+      "type": "ekadashi",
+      "name_en": "Kamika",
+      "name_hi": "कामिका",
+      "slug": "kamika",
+      "vrat_date": "2027-07-29",
+      "tithi": {
+        "start": "2027-07-29 07:34",
+        "end": "2027-07-30 05:13",
+        "paksha": "Krishna",
+        "month": "Ashadha",
+        "is_adhik": false
+      },
+      "parana": {
+        "parana_date": "2027-07-30",
+        "start": "2027-07-30 13:33",
+        "end": "2027-07-30 16:14",
+        "hari_vasara_end": "2027-07-30 10:29",
+        "dwadashi_end": "2027-07-31 02:18",
+        "rule": "aparahna"
+      },
+      "alternate_observances": [
+        {
+          "tradition": "Gauna/Vaishnava",
+          "vrat_date": "2027-07-30",
+          "parana": {
+            "parana_date": "2027-07-31",
+            "start": "2027-07-31 05:30",
+            "end": "2027-07-31 08:11",
+            "hari_vasara_end": "2027-07-30 10:29",
+            "dwadashi_end": "2027-07-31 02:18",
+            "rule": "after_dwadashi"
+          }
+        }
+      ]
     },
     {
       "type": "ekadashi",
@@ -297,9 +375,11 @@
       },
       "parana": {
         "parana_date": "2027-08-13",
-        "start": "2027-08-13 09:35",
-        "end": "2027-08-14 05:21",
-        "hari_vasara_end": "2027-08-13 09:35"
+        "start": "2027-08-13 13:29",
+        "end": "2027-08-13 16:07",
+        "hari_vasara_end": "2027-08-13 09:35",
+        "dwadashi_end": "2027-08-14 05:21",
+        "rule": "aparahna"
       }
     },
     {
@@ -318,8 +398,10 @@
       "parana": {
         "parana_date": "2027-08-29",
         "start": "2027-08-29 05:44",
-        "end": "2027-08-29 09:36",
-        "hari_vasara_end": "2027-08-28 17:55"
+        "end": "2027-08-29 08:17",
+        "hari_vasara_end": "2027-08-28 17:56",
+        "dwadashi_end": "2027-08-29 09:36",
+        "rule": "pratahkal"
       }
     },
     {
@@ -338,8 +420,10 @@
       "parana": {
         "parana_date": "2027-09-12",
         "start": "2027-09-12 05:50",
-        "end": "2027-09-12 22:13",
-        "hari_vasara_end": "2027-09-12 02:15"
+        "end": "2027-09-12 08:19",
+        "hari_vasara_end": "2027-09-12 02:15",
+        "dwadashi_end": "2027-09-12 22:13",
+        "rule": "pratahkal"
       }
     },
     {
@@ -357,9 +441,11 @@
       },
       "parana": {
         "parana_date": "2027-09-27",
-        "start": "2027-09-27 05:57",
-        "end": "2027-09-27 16:55",
-        "hari_vasara_end": "2027-09-27 01:05"
+        "start": "2027-09-27 05:56",
+        "end": "2027-09-27 08:21",
+        "hari_vasara_end": "2027-09-27 01:06",
+        "dwadashi_end": "2027-09-27 16:55",
+        "rule": "pratahkal"
       }
     },
     {
@@ -378,29 +464,47 @@
       "parana": {
         "parana_date": "2027-10-12",
         "start": "2027-10-12 06:04",
-        "end": "2027-10-12 16:14",
-        "hari_vasara_end": "2027-10-11 20:40"
+        "end": "2027-10-12 08:23",
+        "hari_vasara_end": "2027-10-11 20:40",
+        "dwadashi_end": "2027-10-12 16:14",
+        "rule": "pratahkal"
       }
     },
     {
       "type": "ekadashi",
-      "name_en": "Gauna, Vaishnava, Rama",
+      "name_en": "Rama",
       "name_hi": "रमा",
       "slug": "rama",
-      "vrat_date": "2027-10-26",
+      "vrat_date": "2027-10-25",
       "tithi": {
-        "start": "2027-10-26 03:22",
-        "end": "2027-10-27 01:04",
+        "start": "2027-10-25 05:40",
+        "end": "2027-10-26 03:22",
         "paksha": "Krishna",
         "month": "Ashwin",
         "is_adhik": false
       },
       "parana": {
-        "parana_date": "2027-10-27",
-        "start": "2027-10-27 06:30",
-        "end": "2027-10-27 22:50",
-        "hari_vasara_end": "2027-10-27 06:30"
-      }
+        "parana_date": "2027-10-26",
+        "start": "2027-10-26 12:57",
+        "end": "2027-10-26 15:12",
+        "hari_vasara_end": "2027-10-26 08:47",
+        "dwadashi_end": "2027-10-27 01:04",
+        "rule": "aparahna"
+      },
+      "alternate_observances": [
+        {
+          "tradition": "Vaishnava",
+          "vrat_date": "2027-10-26",
+          "parana": {
+            "parana_date": "2027-10-27",
+            "start": "2027-10-27 06:12",
+            "end": "2027-10-27 08:27",
+            "hari_vasara_end": "2027-10-26 08:47",
+            "dwadashi_end": "2027-10-27 01:04",
+            "rule": "after_dwadashi"
+          }
+        }
+      ]
     },
     {
       "type": "ekadashi",
@@ -418,8 +522,10 @@
       "parana": {
         "parana_date": "2027-11-11",
         "start": "2027-11-11 06:22",
-        "end": "2027-11-11 10:07",
-        "hari_vasara_end": "2027-11-10 15:25"
+        "end": "2027-11-11 08:33",
+        "hari_vasara_end": "2027-11-10 15:25",
+        "dwadashi_end": "2027-11-11 10:07",
+        "rule": "pratahkal"
       }
     },
     {
@@ -438,8 +544,10 @@
       "parana": {
         "parana_date": "2027-11-25",
         "start": "2027-11-25 06:33",
-        "end": "2027-11-25 10:51",
-        "hari_vasara_end": "2027-11-24 17:51"
+        "end": "2027-11-25 08:41",
+        "hari_vasara_end": "2027-11-24 17:51",
+        "dwadashi_end": "2027-11-25 10:51",
+        "rule": "pratahkal"
       }
     },
     {
@@ -457,9 +565,11 @@
       },
       "parana": {
         "parana_date": "2027-12-10",
-        "start": "2027-12-10 09:13",
-        "end": "2027-12-11 02:53",
-        "hari_vasara_end": "2027-12-10 09:13"
+        "start": "2027-12-10 13:01",
+        "end": "2027-12-10 15:07",
+        "hari_vasara_end": "2027-12-10 09:13",
+        "dwadashi_end": "2027-12-11 02:53",
+        "rule": "aparahna"
       }
     },
     {
@@ -478,8 +588,10 @@
       "parana": {
         "parana_date": "2027-12-24",
         "start": "2027-12-24 06:52",
-        "end": "2027-12-24 23:08",
-        "hari_vasara_end": "2027-12-24 05:11"
+        "end": "2027-12-24 08:57",
+        "hari_vasara_end": "2027-12-24 05:11",
+        "dwadashi_end": "2027-12-24 23:08",
+        "rule": "pratahkal"
       }
     }
   ]

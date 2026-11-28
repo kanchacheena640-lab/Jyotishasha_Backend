@@ -1,7 +1,7 @@
 import os
 import json
-from flask import Blueprint, jsonify
-from datetime import datetime
+from flask import Blueprint, jsonify, request
+from datetime import date, datetime
 
 # Blueprint define kiya
 ekadashi_bp = Blueprint('ekadashi_new', __name__)
@@ -14,14 +14,28 @@ DATA_DIR = os.path.join(BASE_DIR, "data", "ekadashi")
 def get_ekadashi_by_slug(slug):
     """
     Ye route slug ke basis par data fetch karta hai.
-    Supports: ?year=2026 or ?year=2027 (Default: Current Year)
+    Supports year, exact observance date (YYYY-MM-DD), and optional
+    include_occurrences=true. The default response still contains one data object.
     Flexible for slugs like 'amalaki' or 'amalaki-ekadashi'
     """
-    from flask import request
     
-    # 1. Year determine karein (URL parameter se ya current system year)
-    requested_year = request.args.get('year', type=int) or datetime.now().year
-    
+    date_arg = request.args.get("date")
+    requested_date = None
+    if date_arg is not None:
+        try:
+            requested_date = date.fromisoformat(date_arg)
+            if requested_date.isoformat() != date_arg:
+                raise ValueError
+        except ValueError:
+            return jsonify(status="error", message="date must be YYYY-MM-DD"), 400
+
+    requested_year = request.args.get("year", type=int)
+    if requested_date and "year" in request.args and requested_year != requested_date.year:
+        return jsonify(status="error", message="year must match date"), 400
+    requested_year = requested_year or (
+        requested_date.year if requested_date else datetime.now().year
+    )
+
     # 2. File path setup
     file_path = os.path.join(DATA_DIR, f"ekadashi_{requested_year}.json")
     
@@ -36,25 +50,32 @@ def get_ekadashi_by_slug(slug):
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             
-        # 4. SMART SLUG MATCHING
-        # Frontend se kuch bhi aaye (amalaki ya amalaki-ekadashi), hum dono check karenge
-        search_slug = slug.lower().strip()
-        base_slug = search_slug.replace("-ekadashi", "") # e.g. 'amalaki'
-        
-        matched = next((
-            item for item in data.get('ekadashi_list', []) 
-            if item.get('slug') == search_slug or 
-               item.get('slug') == base_slug or
-               item.get('slug').replace("-ekadashi", "") == base_slug
-        ), None)
-        
-        if matched:
-            return jsonify({
-                "status": "success", 
-                "year": requested_year, 
-                "data": matched
-            })
-        
+        search_slug = slug.lower().strip().removesuffix("-ekadashi")
+        matches = [
+            item for item in data.get("ekadashi_list", [])
+            if item["slug"].removesuffix("-ekadashi") == search_slug
+        ]
+        selected = matches[0] if matches else None
+        if requested_date:
+            wanted = requested_date.isoformat()
+            selected = next((item for item in matches if item["vrat_date"] == wanted), None)
+            if selected is None:
+                for item in matches:
+                    alternate = next(
+                        (row for row in item.get("alternate_observances", [])
+                         if row["vrat_date"] == wanted),
+                        None,
+                    )
+                    if alternate:
+                        selected = {**item, **alternate}
+                        break
+
+        if selected:
+            response = {"status": "success", "year": requested_year, "data": selected}
+            if request.args.get("include_occurrences", "").lower() == "true":
+                response["occurrences"] = matches
+            return jsonify(response)
+
         # 5. Agar slug nahi mila
         return jsonify({
             "status": "error", 
@@ -73,7 +94,6 @@ def get_all_ekadashi():
     Ye naya route saari Ekadashis ki list bhejega.
     Example: /api/ekadashi/all?year=2026
     """
-    from flask import request
     
     # 1. Year determine karein
     requested_year = request.args.get('year', type=int) or datetime.now().year
