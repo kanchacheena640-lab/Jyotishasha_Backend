@@ -4,6 +4,18 @@ from services.sankranti_engine import get_sankranti_details
 from services.lunar_month_engine import get_lunar_month
 from services.lunar_month_engine import _sun_rashi_index
 
+def _as_datetime(value):
+    """tithi_end as a naive datetime (datetime or 'YYYY-MM-DD HH:MM'); None if unusable."""
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value.strip()[:16], "%Y-%m-%d %H:%M")
+        except ValueError:
+            return None
+    return None
+
+
 # ---------------------------------------------------------
 # FIND ALL AMAVASYA IN A YEAR
 # ---------------------------------------------------------
@@ -88,10 +100,13 @@ def detect_adhik_maas(year, lat, lon):
         hit_start = amavasya_data_list[i]
         hit_end = amavasya_data_list[i + 1]
 
-        # Exact transition times (Amavasya kab khatam hui)
-        # Format assumed from your amavasya_details: "YYYY-MM-DD HH:MM"
-        tithi_end_start = datetime.strptime(hit_start["tithi_end"], "%Y-%m-%d %H:%M")
-        tithi_end_next = datetime.strptime(hit_end["tithi_end"], "%Y-%m-%d %H:%M")
+        # Exact transition times (Amavasya kab khatam hui). get_amavasya_details()
+        # returns a naive IST datetime since 467e932; a "YYYY-MM-DD HH:MM" string
+        # (the original format) is still accepted.
+        tithi_end_start = _as_datetime(hit_start["tithi_end"])
+        tithi_end_next = _as_datetime(hit_end["tithi_end"])
+        if tithi_end_start is None or tithi_end_next is None:
+            continue
 
         # Scientific Check: Amavasya khatam hone ke thik baad aur agli khatam hone ke thik pehle
         # Agar Sun ki Rashi nahi badli, matlab beech mein koi Sankranti nahi hui = Adhik Maas

@@ -50,7 +50,22 @@ class EkadashiCalendarTests(unittest.TestCase):
                 self.assertEqual(calendar["count"], len(expected))
                 self.assertEqual([r["vrat_date"] for r in calendar["ekadashi_list"]], expected)
                 for path in DATA_DIR.glob(f"ekadashi_{year}*.json"):
+                    # Full equality, including the corrected (Purnimanta) tithi.month labels.
                     self.assertEqual(json.loads(path.read_text(encoding="utf-8")), calendar)
+
+    def test_month_labels_are_purnimanta(self):
+        # Shared Lunar Month Engine fix: tithi.month is the Purnimanta month (Drik), in the
+        # engine output AND the shipped JSON (Utpanna = Margashirsha Krishna, Mokshada =
+        # Margashirsha Shukla, Padmini/Parama = Adhik Jyeshtha, Nirjala = Nija Jyeshtha).
+        expected = {"2026-12-04": "Margashirsha", "2026-12-20": "Margashirsha", "2026-05-27": "Jyeshtha",
+                    "2026-06-11": "Jyeshtha", "2026-06-25": "Jyeshtha", "2027-01-03": "Pausha", "2027-12-23": "Pausha"}
+        shipped = {}
+        for year in EXPECTED_DATES:
+            data = json.loads((DATA_DIR / f"ekadashi_{year}.json").read_text(encoding="utf-8"))
+            shipped.update({r["vrat_date"]: r["tithi"]["month"] for r in data["ekadashi_list"]})
+        for day, month in expected.items():
+            self.assertEqual(self.rows[day]["tithi"]["month"], month)
+            self.assertEqual(shipped[day], month)
 
     def test_alternates_and_adhik_observances(self):
         actual = {

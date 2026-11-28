@@ -64,6 +64,7 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
             # Sunrise पर Pratipada मिले
             if (
                 lunar_info["name"] == target_month_name
+                and not lunar_info["is_adhik"]          # Navratri is in the Nija month, never the Adhik one
                 and tithi_sunrise == 1
             ):
                 
@@ -98,12 +99,14 @@ def detect_navratri(year, lat, lon, navratri_type="chaitra"):
                     )
 
                     next_tithi = _tithi_number_at(next_sunrise)
-                    next_month = get_amanta_month(next_sunrise)["name"]
+                    next_info = get_amanta_month(next_sunrise)
+                    next_month = next_info["name"]
 
                     if (
                         pratipada_inside_day
                         and next_tithi == 2
                         and next_month == target_month_name
+                        and not next_info["is_adhik"]       # Nija month only
                     ):
                         
                         started = True
