@@ -47,17 +47,10 @@ def get_ekadashi_name(engine_month, tithi_number, is_adhik):
     if is_adhik:
         return ("Padmini Ekadashi", "पद्मिनी एकादशी") if is_shukla else ("Parama Ekadashi", "परमा एकादशी")
 
-    # DRIK PANCHANG (North India) MATCHING LOGIC
-    # Engine Amanta hai, Drik Purnimanta hai. 
-    # Dono Paksha (Krishna aur Shukla) ko 1 step aage shift karna padta hai 
-    # engine ke mahine se align karne ke liye.
-    try:
-        current_idx = HINDU_MONTHS.index(engine_month)
-        display_month = HINDU_MONTHS[(current_idx + 1) % 12]
-    except ValueError:
-        display_month = engine_month
-
-    return EKADASHI_MAP.get((display_month, paksha_key), ("Ekadashi", "एकादशी"))
+    # get_lunar_month() returns the Purnimanta month (Drik Panchang, North India)
+    # directly. The former +1 display offset compensated a one-month lag in the
+    # shared engine and was removed together with that fix.
+    return EKADASHI_MAP.get((engine_month, paksha_key), ("Ekadashi", "एकादशी"))
 
 
 # --- Helpers ---

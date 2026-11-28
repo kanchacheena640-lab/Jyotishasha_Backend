@@ -12,7 +12,7 @@
         "start": "2027-01-02 14:24",
         "end": "2027-01-03 16:08",
         "paksha": "Krishna",
-        "month": "Margashirsha",
+        "month": "Pausha",
         "is_adhik": false
       },
       "parana": {
@@ -34,7 +34,7 @@
         "start": "2027-01-18 10:27",
         "end": "2027-01-19 07:50",
         "paksha": "Shukla",
-        "month": "Margashirsha",
+        "month": "Pausha",
         "is_adhik": false
       },
       "parana": {
@@ -70,7 +70,7 @@
         "start": "2027-02-01 08:41",
         "end": "2027-02-02 11:10",
         "paksha": "Krishna",
-        "month": "Pausha",
+        "month": "Magha",
         "is_adhik": false
       },
       "parana": {
@@ -92,7 +92,7 @@
         "start": "2027-02-16 20:19",
         "end": "2027-02-17 17:32",
         "paksha": "Shukla",
-        "month": "Pausha",
+        "month": "Magha",
         "is_adhik": false
       },
       "parana": {
@@ -114,7 +114,7 @@
         "start": "2027-03-03 04:44",
         "end": "2027-03-04 07:24",
         "paksha": "Krishna",
-        "month": "Magha",
+        "month": "Phalguna",
         "is_adhik": false
       },
       "parana": {
@@ -136,7 +136,7 @@
         "start": "2027-03-18 04:21",
         "end": "2027-03-19 01:51",
         "paksha": "Shukla",
-        "month": "Magha",
+        "month": "Phalguna",
         "is_adhik": false
       },
       "parana": {
@@ -158,7 +158,7 @@
         "start": "2027-04-02 00:45",
         "end": "2027-04-03 02:52",
         "paksha": "Krishna",
-        "month": "Phalguna",
+        "month": "Chaitra",
         "is_adhik": false
       },
       "parana": {
@@ -180,7 +180,7 @@
         "start": "2027-04-16 11:22",
         "end": "2027-04-17 09:28",
         "paksha": "Shukla",
-        "month": "Phalguna",
+        "month": "Chaitra",
         "is_adhik": false
       },
       "parana": {
@@ -202,7 +202,7 @@
         "start": "2027-05-01 18:54",
         "end": "2027-05-02 19:52",
         "paksha": "Krishna",
-        "month": "Chaitra",
+        "month": "Vaishakha",
         "is_adhik": false
       },
       "parana": {
@@ -224,7 +224,7 @@
         "start": "2027-05-15 18:18",
         "end": "2027-05-16 17:13",
         "paksha": "Shukla",
-        "month": "Chaitra",
+        "month": "Vaishakha",
         "is_adhik": false
       },
       "parana": {
@@ -246,7 +246,7 @@
         "start": "2027-05-31 10:02",
         "end": "2027-06-01 09:40",
         "paksha": "Krishna",
-        "month": "Vaishakha",
+        "month": "Jyeshtha",
         "is_adhik": false
       },
       "parana": {
@@ -268,7 +268,7 @@
         "start": "2027-06-14 02:12",
         "end": "2027-06-15 02:08",
         "paksha": "Shukla",
-        "month": "Vaishakha",
+        "month": "Jyeshtha",
         "is_adhik": false
       },
       "parana": {
@@ -290,7 +290,7 @@
         "start": "2027-06-29 22:04",
         "end": "2027-06-30 20:31",
         "paksha": "Krishna",
-        "month": "Jyeshtha",
+        "month": "Ashadha",
         "is_adhik": false
       },
       "parana": {
@@ -312,7 +312,7 @@
         "start": "2027-07-13 12:09",
         "end": "2027-07-14 13:10",
         "paksha": "Shukla",
-        "month": "Jyeshtha",
+        "month": "Ashadha",
         "is_adhik": false
       },
       "parana": {
@@ -334,7 +334,7 @@
         "start": "2027-07-29 07:34",
         "end": "2027-07-30 05:13",
         "paksha": "Krishna",
-        "month": "Ashadha",
+        "month": "Shravana",
         "is_adhik": false
       },
       "parana": {
@@ -370,7 +370,7 @@
         "start": "2027-08-12 00:59",
         "end": "2027-08-13 03:00",
         "paksha": "Shukla",
-        "month": "Ashadha",
+        "month": "Shravana",
         "is_adhik": false
       },
       "parana": {
@@ -392,7 +392,7 @@
         "start": "2027-08-27 15:25",
         "end": "2027-08-28 12:42",
         "paksha": "Krishna",
-        "month": "Shravana",
+        "month": "Bhadrapada",
         "is_adhik": false
       },
       "parana": {
@@ -414,7 +414,7 @@
         "start": "2027-09-10 17:00",
         "end": "2027-09-11 19:36",
         "paksha": "Shukla",
-        "month": "Shravana",
+        "month": "Bhadrapada",
         "is_adhik": false
       },
       "parana": {
@@ -436,7 +436,7 @@
         "start": "2027-09-25 22:31",
         "end": "2027-09-26 19:49",
         "paksha": "Krishna",
-        "month": "Bhadrapada",
+        "month": "Ashwin",
         "is_adhik": false
       },
       "parana": {
@@ -458,7 +458,7 @@
         "start": "2027-10-10 11:41",
         "end": "2027-10-11 14:09",
         "paksha": "Shukla",
-        "month": "Bhadrapada",
+        "month": "Ashwin",
         "is_adhik": false
       },
       "parana": {
@@ -480,7 +480,7 @@
         "start": "2027-10-25 05:40",
         "end": "2027-10-26 03:22",
         "paksha": "Krishna",
-        "month": "Ashwin",
+        "month": "Kartik",
         "is_adhik": false
       },
       "parana": {
@@ -516,7 +516,7 @@
         "start": "2027-11-09 07:35",
         "end": "2027-11-10 09:11",
         "paksha": "Shukla",
-        "month": "Ashwin",
+        "month": "Kartik",
         "is_adhik": false
       },
       "parana": {
@@ -538,7 +538,7 @@
         "start": "2027-11-23 13:45",
         "end": "2027-11-24 12:11",
         "paksha": "Krishna",
-        "month": "Kartik",
+        "month": "Margashirsha",
         "is_adhik": false
       },
       "parana": {
@@ -560,7 +560,7 @@
         "start": "2027-12-09 02:59",
         "end": "2027-12-10 03:20",
         "paksha": "Shukla",
-        "month": "Kartik",
+        "month": "Margashirsha",
         "is_adhik": false
       },
       "parana": {
@@ -582,7 +582,7 @@
         "start": "2027-12-22 23:41",
         "end": "2027-12-23 23:12",
         "paksha": "Krishna",
-        "month": "Margashirsha",
+        "month": "Pausha",
         "is_adhik": false
       },
       "parana": {
