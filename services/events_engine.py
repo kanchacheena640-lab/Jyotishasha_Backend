@@ -80,18 +80,48 @@ def get_pradosh_details(panchang_data):
 
 
 def find_next_pradosh(start_date, lat, lon, language="en", days_ahead=45):
+    """
+    Next Pradosh strictly AFTER start_date within days_ahead, from the
+    documented engine (services/pradosh_engine.py: maximum Trayodashi overlap
+    with sunset + 1/5 of the night). Used by the notification scheduler
+    (event_master) and /api/events/home-upcoming.
 
-    for i in range(1, days_ahead + 1):
-        check_date = start_date + timedelta(days=i)
+    Output keeps the legacy item shape and the legacy name_en/name_hi
+    ("Shukla/Krishna Pradosh Vrat") so stored AstroEvent rows keep the same
+    (name, date, type) de-duplication key. `meta` (type + slug) lets
+    event_resolver point notifications at the live /panchang/pradosh page.
+    Unresolved Trayodashi (no date) never produce an event. Unsupported
+    coordinates return None instead of an IST-model guess.
+    """
+    from services.pradosh_engine import PradoshInputError, get_pradosh_today_next
 
-        panchang = calculate_panchang(check_date, lat, lon, language)
+    if isinstance(start_date, datetime):
+        start_date = start_date.date()
+    try:
+        record = get_pradosh_today_next(on_date=start_date, latitude=lat, longitude=lon)["next"]
+    except PradoshInputError:
+        return None
+    if not record:
+        return None
+    if (datetime.strptime(record["date"], "%Y-%m-%d").date() - start_date).days > days_ahead:
+        return None
 
-        pradosh = get_pradosh_details(panchang)
-
-        if pradosh:
-            return pradosh
-
-    return None
+    paksha = record["paksha"]
+    sunset_minute = datetime.fromisoformat(record["sunset"]).replace(tzinfo=None, second=0, microsecond=0)
+    return {
+        "type": "pradosh",
+        "name_en": f"{paksha['en']} Pradosh Vrat",
+        "name_hi": f"{paksha['hi']} प्रदोष व्रत",
+        "slug": "pradosh-vrat",
+        "date": record["date"],
+        "paksha": paksha["en"],
+        "sunset_time": sunset_minute.strftime("%H:%M"),
+        "tithi_at_sunset": _tithi_number_at(sunset_minute),
+        "vrat_name_en": record["name"]["en"],
+        "vrat_name_hi": record["name"]["hi"],
+        "puja_muhurat": record["puja_muhurat"],
+        "meta": {"type": "pradosh", "slug": "pradosh-vrat"},
+    }
 
 # ==========================================================
 # SANKASHTI CHATURTHI DETECTOR

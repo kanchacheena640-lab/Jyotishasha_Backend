@@ -42,12 +42,21 @@ results.append(check(
     padmini["url"] == "https://www.jyotishasha.com/ekadashi/padmini-ekadashi"
 ))
 
-# 3. Other resource sub-types are untouched by the ekadashi-specific fix
-#    (legacy scheme, unchanged from before this change).
-pradosh = resolve_resource(FakeEvent({"type": "pradosh", "slug": "pradosh-vrat"}))
+# 3. Sub-types without a canonical builder keep the legacy scheme
+#    (unchanged from before; "navratri" has no canonical builder).
+legacy = resolve_resource(FakeEvent({"type": "navratri", "slug": "navratri"}))
 results.append(check(
-    "Non-ekadashi resource.url keeps the legacy scheme (English has no /en/)",
-    pradosh["url"] == "https://jyotishasha.com/pradosh/pradosh-vrat"
+    "Non-canonical resource.url keeps the legacy scheme (English has no /en/)",
+    legacy["url"] == "https://jyotishasha.com/navratri/navratri"
+))
+
+# 3b. Pradosh now resolves to the live evergreen page (was a legacy 404 URL).
+pradosh = resolve_resource(FakeEvent({"type": "pradosh", "slug": "pradosh-vrat"}))
+pradosh_hi_live = resolve_resource(FakeEvent({"type": "pradosh", "slug": "pradosh-vrat"}), lang="hi")
+results.append(check(
+    "Pradosh resource.url is the live /panchang/pradosh page (EN and HI)",
+    pradosh["url"] == "https://www.jyotishasha.com/panchang/pradosh"
+    and pradosh_hi_live["url"] == "https://www.jyotishasha.com/hi/panchang/pradosh"
 ))
 
 # 4. Events with no slug/type still resolve to None (unchanged contract).
@@ -64,10 +73,10 @@ results.append(check(
 
 # 6. lang="hi" still falls back correctly for the legacy scheme, and is
 #    ignored (no path segment) for the ekadashi canonical scheme.
-pradosh_hi = resolve_resource(FakeEvent({"type": "pradosh", "slug": "pradosh-vrat"}), lang="hi")
+legacy_hi = resolve_resource(FakeEvent({"type": "navratri", "slug": "navratri"}), lang="hi")
 results.append(check(
     "Legacy scheme still honors lang",
-    pradosh_hi["url"] == "https://jyotishasha.com/hi/pradosh/pradosh-vrat"
+    legacy_hi["url"] == "https://jyotishasha.com/hi/navratri/navratri"
 ))
 
 yogini_hi = resolve_resource(FakeEvent({"type": "ekadashi", "slug": "yogini"}), lang="hi")

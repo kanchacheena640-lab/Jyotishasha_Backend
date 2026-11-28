@@ -11,9 +11,14 @@ from models import AstroEvent
 
 LINK_MAP = {
     "ekadashi": "jyotishasha.com/ekadashi",
+    "pradosh": "jyotishasha.com/panchang/pradosh",
     # future:
-    # "pradosh": "jyotishasha.com/pradosh",
     # "amavasya": "jyotishasha.com/amavasya",
+}
+
+# Body line for linked vrats; anything not listed keeps the original Ekadashi wording.
+LINK_DETAIL = {
+    "pradosh": "Pradosh Kaal aur Puja Muhurat jaane",
 }
 
 _DAY_WORD = {
@@ -135,15 +140,17 @@ def build_event_content(event):
     name_lower = (event_name or "").lower()
 
     link = None
+    detail = "Vrat vidhi, mahatva aur Paran time jaane"
     for key in LINK_MAP:
         if key in name_lower:
             link = LINK_MAP[key]
+            detail = LINK_DETAIL.get(key, detail)
             break
 
     if link:
         body = f"""{event_name} {day_word} 🙏
 
-        Vrat vidhi, mahatva aur Paran time jaane
+        {detail}
         👉 Read Full Guide
 
         {link}"""

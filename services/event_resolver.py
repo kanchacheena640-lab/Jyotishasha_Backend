@@ -47,6 +47,14 @@ def _ekadashi_canonical_url(resource_id, lang):
     return f"{FRONTEND_BASE_URL}/{sub_type}/{canonical_slug}"
 
 
+def _pradosh_canonical_url(resource_id, lang):
+    """
+    Pradosh resource ids are "pradosh/pradosh-vrat" (one evergreen page for
+    every Pradosh). The live page is /panchang/pradosh, with /hi for Hindi.
+    """
+    return f"{FRONTEND_BASE_URL}{'/hi' if lang == 'hi' else ''}/panchang/pradosh"
+
+
 # Default URL builder per resource.type. A type with no entry here has
 # no known URL scheme yet, so build_resource_url() returns None for
 # it instead of guessing a shape.
@@ -63,6 +71,7 @@ _URL_BUILDERS = {
 # module needs to change, and every existing entry is unaffected.
 _CANONICAL_URL_BUILDERS = {
     "ekadashi": _ekadashi_canonical_url,
+    "pradosh": _pradosh_canonical_url,
 }
 
 
